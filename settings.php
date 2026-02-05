@@ -14,12 +14,16 @@ $settings = [];
 
 if (file_exists($settingsFile)) {
     $jsonContent = file_get_contents($settingsFile);
-    $allSettings = json_decode($jsonContent, true) ?? [];
-    // Get settings for current user
-    $settings = $allSettings[$_SESSION['smtp_user']] ?? [];
+    $allSettings = json_decode($jsonContent, true);
+    
+    // Check if JSON is valid and is an array
+    if (is_array($allSettings)) {
+        // Get settings for current user
+        $settings = $allSettings[$_SESSION['smtp_user']] ?? [];
+    }
 }
 
-// Set defaults if not found
+// Set defaults if not found - ensure all keys exist
 $settings = array_merge([
     'display_name' => '',
     'signature' => '',
@@ -263,7 +267,7 @@ $settings = array_merge([
                         <div class="setting-item">
                             <label for="display_name">Display Name</label>
                             <input type="text" id="display_name" name="display_name" 
-                                   value="<?= htmlspecialchars($settings['display_name']) ?>" 
+                                   value="<?php echo htmlspecialchars($settings['display_name']); ?>" 
                                    placeholder="Your Name">
                             <div class="setting-description">This name will appear as the sender name in emails</div>
                         </div>
@@ -271,7 +275,7 @@ $settings = array_merge([
                         <div class="setting-item">
                             <label for="signature">Email Signature</label>
                             <textarea id="signature" name="signature" 
-                                      placeholder="Best regards,&#10;Your Name&#10;Your Title"><?= htmlspecialchars($settings['signature']) ?></textarea>
+                                      placeholder="Best regards,&#10;Your Name&#10;Your Title"><?php echo htmlspecialchars($settings['signature']); ?></textarea>
                             <div class="setting-description">Automatically added to the end of your emails</div>
                         </div>
                     </div>
@@ -285,23 +289,23 @@ $settings = array_merge([
                         <div class="setting-item">
                             <label for="default_subject_prefix">Default Subject Prefix</label>
                             <input type="text" id="default_subject_prefix" name="default_subject_prefix" 
-                                   value="<?= htmlspecialchars($settings['default_subject_prefix']) ?>" 
+                                   value="<?php echo htmlspecialchars($settings['default_subject_prefix']); ?>" 
                                    placeholder="e.g., [Important]">
                             <div class="setting-description">Prefix to be added to all email subjects</div>
                         </div>
 
                         <div class="setting-item">
                             <div class="checkbox-wrapper">
-                                <input type="checkbox" id="cc_yourself" name="cc_yourself" 
-                                       <?= $settings['cc_yourself'] ? 'checked' : '' ?>>
+                                <input type="checkbox" id="cc_yourself" name="cc_yourself" value="1"
+                                       <?php echo $settings['cc_yourself'] ? 'checked' : ''; ?>>
                                 <label for="cc_yourself">Always CC yourself on sent emails</label>
                             </div>
                         </div>
 
                         <div class="setting-item">
                             <div class="checkbox-wrapper">
-                                <input type="checkbox" id="email_preview" name="email_preview" 
-                                       <?= $settings['email_preview'] ? 'checked' : '' ?>>
+                                <input type="checkbox" id="email_preview" name="email_preview" value="1"
+                                       <?php echo $settings['email_preview'] ? 'checked' : ''; ?>>
                                 <label for="email_preview">Enable email preview before sending</label>
                             </div>
                         </div>
@@ -317,14 +321,14 @@ $settings = array_merge([
                             <div class="setting-item">
                                 <label for="smtp_host">SMTP Host</label>
                                 <input type="text" id="smtp_host" name="smtp_host" 
-                                       value="<?= htmlspecialchars($settings['smtp_host']) ?>" 
+                                       value="<?php echo htmlspecialchars($settings['smtp_host']); ?>" 
                                        placeholder="smtp.gmail.com">
                             </div>
 
                             <div class="setting-item">
                                 <label for="smtp_port">SMTP Port</label>
                                 <input type="text" id="smtp_port" name="smtp_port" 
-                                       value="<?= htmlspecialchars($settings['smtp_port']) ?>" 
+                                       value="<?php echo htmlspecialchars($settings['smtp_port']); ?>" 
                                        placeholder="587">
                             </div>
                         </div>
@@ -340,16 +344,16 @@ $settings = array_merge([
                         <div class="setting-item">
                             <label for="theme">Theme</label>
                             <select id="theme" name="theme">
-                                <option value="light" <?= $settings['theme'] == 'light' ? 'selected' : '' ?>>Light</option>
-                                <option value="dark" <?= $settings['theme'] == 'dark' ? 'selected' : '' ?>>Dark</option>
-                                <option value="auto" <?= $settings['theme'] == 'auto' ? 'selected' : '' ?>>Auto</option>
+                                <option value="light" <?php echo $settings['theme'] == 'light' ? 'selected' : ''; ?>>Light</option>
+                                <option value="dark" <?php echo $settings['theme'] == 'dark' ? 'selected' : ''; ?>>Dark</option>
+                                <option value="auto" <?php echo $settings['theme'] == 'auto' ? 'selected' : ''; ?>>Auto</option>
                             </select>
                         </div>
 
                         <div class="setting-item">
                             <div class="checkbox-wrapper">
-                                <input type="checkbox" id="auto_save_drafts" name="auto_save_drafts" 
-                                       <?= $settings['auto_save_drafts'] ? 'checked' : '' ?>>
+                                <input type="checkbox" id="auto_save_drafts" name="auto_save_drafts" value="1"
+                                       <?php echo $settings['auto_save_drafts'] ? 'checked' : ''; ?>>
                                 <label for="auto_save_drafts">Auto-save drafts</label>
                             </div>
                         </div>
@@ -376,14 +380,6 @@ $settings = array_merge([
             e.preventDefault();
             
             const formData = new FormData(this);
-            
-            // Add unchecked checkboxes as false
-            const checkboxes = ['cc_yourself', 'email_preview', 'auto_save_drafts'];
-            checkboxes.forEach(name => {
-                if (!formData.has(name)) {
-                    formData.append(name, '0');
-                }
-            });
             
             fetch('save_settings.php', {
                 method: 'POST',
