@@ -265,7 +265,7 @@ $settings = array_merge([
                         </div>
                         
                         <div class="setting-item">
-                            <label for="display_name">Display Name</label>
+                            <label for="display_name">Author Name</label>
                             <input type="text" id="display_name" name="display_name" 
                                    value="<?php echo htmlspecialchars($settings['display_name']); ?>" 
                                    placeholder="Your Name">
