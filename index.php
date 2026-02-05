@@ -1,12 +1,12 @@
 <?php
 // htdocs/index.php
-session_start();
+// session_start();
 
-// Security check: Redirect to login if session credentials do not exist
-if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
-    header("Location: login.php");
-    exit();
-}
+// // Security check: Redirect to login if session credentials do not exist
+// if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
+//     header("Location: login.php");
+//     exit();
+// }
 
 // Load settings from JSON file
 $settingsFile = 'settings.json';
@@ -71,7 +71,7 @@ $_SESSION['user_settings'] = $settings;
             padding: 40px;
             border-radius: 10px;
             border: 1px solid #e5e5e5;
-            max-width: 900px;
+            max-width: 800px;
             margin: 0 auto;
         }
 
@@ -91,23 +91,8 @@ $_SESSION['user_settings'] = $settings;
             border-bottom: 1px solid #e5e5e5;
         }
 
-        .section-header {
-            font-size: 16px;
-            font-weight: 600;
-            color: #1a1a1a;
-            margin: 32px 0 16px 0;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #1a1a1a;
-        }
-
         .form-group {
             margin-bottom: 24px;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
         }
 
         label {
@@ -119,20 +104,14 @@ $_SESSION['user_settings'] = $settings;
             letter-spacing: 0.2px;
         }
 
-        label .required {
-            color: #d32f2f;
-            margin-left: 4px;
-        }
-
         input[type="email"], 
         input[type="text"], 
-        input[type="date"],
         textarea, 
         select {
             width: 100%;
             padding: 12px 16px;
             border: 1px solid #d0d0d0;
-            border-radius: 7px;
+            border-radius:7px;
             font-size: 15px;
             font-family: inherit;
             transition: all 0.2s;
@@ -141,7 +120,6 @@ $_SESSION['user_settings'] = $settings;
 
         input[type="email"]:focus, 
         input[type="text"]:focus, 
-        input[type="date"]:focus,
         textarea:focus, 
         select:focus {
             outline: none;
@@ -262,13 +240,161 @@ $_SESSION['user_settings'] = $settings;
             font-style: italic;
         }
 
+        /* Error Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e5e5e5;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .modal-header.error {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+        .modal-header.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .modal-header.warning {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .modal-header i {
+            font-size: 24px;
+        }
+
+        .modal-title {
+            flex: 1;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-body {
+            padding: 24px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .failed-emails-list {
+            background: #f5f5f5;
+            border-radius: 4px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .failed-emails-list h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 12px;
+        }
+
+        .failed-email-item {
+            padding: 8px 12px;
+            background: white;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            border-left: 3px solid #d32f2f;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .failed-email-item .email {
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .failed-email-item .reason {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #e5e5e5;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .btn-modal {
+            padding: 10px 20px;
+            border-radius: 4px;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-modal-primary {
+            background: #1a1a1a;
+            color: white;
+        }
+
+        .btn-modal-primary:hover {
+            background: #000;
+        }
+
+        .btn-modal-secondary {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .btn-modal-secondary:hover {
+            background: #e5e5e5;
+            color: #1a1a1a;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .content-area {
                 padding: 20px;
-            }
-            .form-row {
-                grid-template-columns: 1fr;
             }
         }
 
@@ -299,61 +425,18 @@ $_SESSION['user_settings'] = $settings;
     <div class="main-content">
         <div class="content-area" id="contentArea">
             <div class="compose-card">
-                <h3>Draft Placement Drive Invitation</h3>
-                <p class="compose-subtitle">Send professional placement drive invitations to corporate partners</p>
+                <h3>Draft Mail</h3>
+                <p class="compose-subtitle">Send professional emails with attachments</p>
                 
                 <form action="send.php" method="POST" enctype="multipart/form-data" id="composeForm">
-                    
-                    <!-- Company Details Section -->
-                    <div class="section-header">Company Information</div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Company Name<span class="required">*</span></label>
-                            <input type="text" name="company_name" required placeholder="e.g., Tech Solutions Pvt. Ltd.">
-                        </div>
-                        <div class="form-group">
-                            <label>HR Contact Person<span class="required">*</span></label>
-                            <input type="text" name="contact_person" required placeholder="e.g., Mr. John Doe">
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Designation</label>
-                            <input type="text" name="designation" placeholder="e.g., HR Manager">
-                        </div>
-                        <div class="form-group">
-                            <label>Contact Email<span class="required">*</span></label>
-                            <input type="email" name="email" required placeholder="recipient@company.com">
-                        </div>
-                    </div>
-
-                    <!-- Placement Drive Details Section -->
-                    <div class="section-header">Placement Drive Details</div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Proposed Date<span class="required">*</span></label>
-                            <input type="date" name="drive_date" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Program/Department</label>
-                            <input type="text" name="program" placeholder="e.g., Data Science, Computer Science">
-                        </div>
-                    </div>
-
                     <div class="form-group">
-                        <label>Job Position/Role</label>
-                        <input type="text" name="job_position" placeholder="e.g., Software Engineer, Data Analyst">
+                        <label>Recipient Email (To)</label>
+                        <input type="email" name="email" required placeholder="recipient@example.com">
                     </div>
-
-                    <!-- Email Configuration Section -->
-                    <div class="section-header">Email Configuration</div>
 
                     <!-- CC Field -->
                     <div class="form-group">
-                        <label>CC (if any)</label>
+                        <label>CC ( if any)</label>
                         <div class="input-with-file">
                             <input type="text" name="cc" id="ccInput" placeholder="cc1@example.com, cc2@example.com">
                             <button type="button" class="btn-attach-list" onclick="document.getElementById('ccFile').click()">
@@ -378,20 +461,18 @@ $_SESSION['user_settings'] = $settings;
                     </div>
                     
                     <div class="form-group">
-                        <label>Subject<span class="required">*</span></label>
-                        <input type="text" name="subject" required value="Invitation for On-Campus Placement Drive" placeholder="Enter Your Mail Subject">
+                        <label>Subject</label>
+                        <input type="text" name="subject" required placeholder="Enter Your Mail Subject">
                     </div>
                     
                     <div class="form-group">
-                        <label>Message<span class="required">*</span></label>
-                        <textarea name="message" required placeholder="Compose your message to the corporate partner..."></textarea>
-                        <small class="help-text">This message will be inserted into the professional email template</small>
+                        <label>Message</label>
+                        <textarea name="message" required placeholder="Compose your message..."></textarea>
                     </div>
                     
                     <div class="form-group">
                         <label>Attachment (Optional)</label>
                         <input type="file" name="attachment" id="attachment">
-                        <small class="help-text">You can attach placement brochure, company profile, etc.</small>
                     </div>
                     
                     <div style="display: flex; gap: 12px;">
@@ -399,7 +480,7 @@ $_SESSION['user_settings'] = $settings;
                             <i class="fa-solid fa-eye"></i> Preview Email
                         </button>
                         <button type="submit" class="btn-send">
-                            <i class="fa-solid fa-paper-plane"></i> Send Invitation
+                            <i class="fa-solid fa-paper-plane"></i> Send Email
                         </button>
                     </div>
                 </form>
@@ -410,21 +491,16 @@ $_SESSION['user_settings'] = $settings;
     <script>
         // Preview Email Functionality
         document.getElementById('previewBtn').addEventListener('click', () => {
-            const formData = new FormData(document.getElementById('composeForm'));
-            
+            const recipientEmail = document.querySelector('input[name="email"]').value;
+            const subject = document.querySelector('input[name="subject"]').value;
+            const message = document.querySelector('textarea[name="message"]').value;
+            const attachment = document.querySelector('input[name="attachment"]').files[0];
+
             // Validate required fields
-            const requiredFields = ['company_name', 'contact_person', 'email', 'drive_date', 'subject', 'message'];
-            let isValid = true;
-            
-            for (const field of requiredFields) {
-                if (!formData.get(field)) {
-                    alert(`Please fill in the required field: ${field.replace('_', ' ')}`);
-                    isValid = false;
-                    break;
-                }
+            if (!recipientEmail || !subject || !message) {
+                alert('Please fill in all required fields (Recipient, Subject, and Message) before previewing.');
+                return;
             }
-            
-            if (!isValid) return;
 
             // Create a form to submit to preview.php
             const form = document.createElement('form');
@@ -432,24 +508,19 @@ $_SESSION['user_settings'] = $settings;
             form.action = 'preview.php';
             form.target = '_blank';
 
-            // Add all form fields
-            for (const [key, value] of formData.entries()) {
-                if (key !== 'attachment' && key !== 'cc_file' && key !== 'bcc_file') {
-                    const input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = key;
-                    input.value = value;
-                    form.appendChild(input);
-                }
-            }
+            // Add form fields
+            const fields = {
+                'email': recipientEmail,
+                'subject': subject,
+                'message': message,
+                'attachment_name': attachment ? attachment.name : ''
+            };
 
-            // Add attachment name if exists
-            const attachment = document.querySelector('input[name="attachment"]').files[0];
-            if (attachment) {
+            for (const [key, value] of Object.entries(fields)) {
                 const input = document.createElement('input');
                 input.type = 'hidden';
-                input.name = 'attachment_name';
-                input.value = attachment.name;
+                input.name = key;
+                input.value = value;
                 form.appendChild(input);
             }
 

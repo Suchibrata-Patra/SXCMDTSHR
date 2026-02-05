@@ -85,23 +85,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             );
         }
 
-        // --- Extract Company and Drive Information ---
-        $companyName = $_POST['company_name'] ?? 'Esteemed Organization';
-        $contactPerson = $_POST['contact_person'] ?? 'Sir/Madam';
-        $designation = $_POST['designation'] ?? '';
-        $driveDate = $_POST['drive_date'] ?? '';
-        $program = $_POST['program'] ?? 'our programs';
-        $jobPosition = $_POST['job_position'] ?? '';
-
-        // Format drive date
-        $formattedDriveDate = '';
-        if (!empty($driveDate)) {
-            $dateObj = DateTime::createFromFormat('Y-m-d', $driveDate);
-            if ($dateObj) {
-                $formattedDriveDate = $dateObj->format('F j, Y');
-            }
-        }
-
         // --- Content Processing ---
         $mail->isHTML(true);
         
@@ -123,11 +106,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         if (file_exists($templatePath)) {
             $htmlStructure = file_get_contents($templatePath);
-            
-            // Format message with line breaks
             $formattedText = nl2br(htmlspecialchars($messageBody));
-            
-            // Replace all placeholders
             $finalHtml = str_replace('{{MESSAGE}}', $formattedText, $htmlStructure);
             $finalHtml = str_replace('{{SUBJECT}}', htmlspecialchars($subject), $finalHtml);
             $finalHtml = str_replace('{{SENDER_NAME}}', htmlspecialchars($displayName), $finalHtml);
@@ -135,24 +114,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $finalHtml = str_replace('{{RECIPIENT_EMAIL}}', htmlspecialchars($recipient), $finalHtml);
             $finalHtml = str_replace('{{CURRENT_DATE}}', date('F j, Y'), $finalHtml);
             $finalHtml = str_replace('{{CURRENT_YEAR}}', date('Y'), $finalHtml);
-            
-            // Company and Drive specific placeholders
-            $finalHtml = str_replace('{{COMPANY_NAME}}', htmlspecialchars($companyName), $finalHtml);
-            $finalHtml = str_replace('{{CONTACT_PERSON}}', htmlspecialchars($contactPerson), $finalHtml);
-            $finalHtml = str_replace('{{DESIGNATION}}', htmlspecialchars($designation), $finalHtml);
-            $finalHtml = str_replace('{{DRIVE_DATE}}', htmlspecialchars($formattedDriveDate), $finalHtml);
-            $finalHtml = str_replace('{{PROGRAM}}', htmlspecialchars($program), $finalHtml);
-            $finalHtml = str_replace('{{JOB_POSITION}}', htmlspecialchars($jobPosition), $finalHtml);
-            
-            // Greeting customization
-            $greeting = "Dear";
-            if (!empty($contactPerson)) {
-                $greeting .= " " . htmlspecialchars($contactPerson);
-            } else {
-                $greeting .= " Esteemed Corporate Partner";
-            }
-            $finalHtml = str_replace('Dear Esteemed Corporate Partner', $greeting, $finalHtml);
-            
+            $finalHtml = str_replace('{{ATTACHMENT}}', '', $finalHtml);
             $mail->Body = $finalHtml;
             $mail->AltBody = strip_tags($messageBody);
         } else {
@@ -162,7 +124,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $mail->send();
         
         // Generate response HTML
-        showResultPage($subject, $successEmails, $failedEmails, $companyName);
+        showResultPage($subject, $successEmails, $failedEmails);
 
     } catch (Exception $e) {
         showErrorPage("Message could not be sent. Mailer Error: {$mail->ErrorInfo}");
@@ -185,14 +147,15 @@ function parseEmailList($emailString) {
 }
 
 /**
- * Show success result page
+ * Show result page with sidebar navigation - Nature style
  */
-function showResultPage($subject, $successEmails, $failedEmails, $companyName = '') {
+function showResultPage($subject, $successEmails, $failedEmails) {
     $totalEmails = count($successEmails) + count($failedEmails);
     $successCount = count($successEmails);
     $failureCount = count($failedEmails);
     $timestamp = date('d F Y, H:i');
     
+    // Get user initial for avatar
     $userEmail = $_SESSION['smtp_user'];
     $userInitial = strtoupper(substr($userEmail, 0, 1));
     ?>
@@ -201,24 +164,185 @@ function showResultPage($subject, $successEmails, $failedEmails, $companyName = 
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Email Sent Successfully</title>
+        <title>Transmission Report</title>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Harding:wght@400;600;700&family=Inter:wght@400;500;600&display=swap">
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             
             body { 
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-                background-color: #fafafa;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+                background-color: #ffffff;
                 color: #222;
                 display: flex;
                 height: 100vh;
                 overflow: hidden;
+                font-size: 14px;
+                line-height: 1.6;
             }
 
+            /* Sidebar Styles */
+            .sidebar {
+                width: 280px;
+                background-color: #ffffff;
+                border-right: 1px solid #e0e0e0;
+                display: flex;
+                flex-direction: column;
+                transition: transform 0.3s ease, width 0.3s ease;
+                position: relative;
+                z-index: 100;
+            }
+
+            .sidebar.collapsed { width: 70px; }
+
+            .sidebar-header {
+                padding: 24px 20px;
+                border-bottom: 1px solid #e0e0e0;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            .logo {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                font-size: 20px;
+                font-weight: 600;
+                color: #222;
+                letter-spacing: -0.5px;
+                text-decoration: none;
+            }
+
+            .logo i { font-size: 24px; }
+            .sidebar.collapsed .logo-text { display: none; }
+
+            .toggle-sidebar {
+                background: none;
+                border: none;
+                cursor: pointer;
+                padding: 8px;
+                color: #666;
+                border-radius: 4px;
+                transition: all 0.2s;
+            }
+
+            .toggle-sidebar:hover {
+                background-color: #f5f5f5;
+                color: #222;
+            }
+
+            .sidebar.collapsed .toggle-sidebar { transform: rotate(180deg); }
+
+            .nav-section {
+                flex: 1;
+                padding: 20px 0;
+                overflow-y: auto;
+            }
+
+            .nav-item {
+                display: flex;
+                align-items: center;
+                padding: 12px 20px;
+                color: #666;
+                text-decoration: none;
+                transition: all 0.2s;
+                cursor: pointer;
+                border-left: 3px solid transparent;
+                gap: 12px;
+                font-size: 15px;
+            }
+
+            .nav-item:hover {
+                background-color: #f9f9f9;
+                color: #222;
+            }
+
+            .nav-item.active {
+                background-color: #f5f5f5;
+                color: #222;
+                border-left-color: #222;
+                font-weight: 500;
+            }
+
+            .nav-item i {
+                width: 20px;
+                text-align: center;
+            }
+
+            .sidebar.collapsed .nav-item span { display: none; }
+            .sidebar.collapsed .nav-item {
+                justify-content: center;
+                padding: 12px;
+            }
+
+            .user-info {
+                padding: 20px;
+                border-top: 1px solid #e0e0e0;
+            }
+
+            .user-details {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 16px;
+            }
+
+            .user-avatar {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                background: #222;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: 600;
+                font-size: 16px;
+            }
+
+            .user-email {
+                flex: 1;
+                font-size: 13px;
+                color: #666;
+                overflow: hidden;
+            }
+
+            .user-email strong {
+                display: block;
+                color: #222;
+                font-size: 14px;
+                margin-bottom: 2px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .sidebar.collapsed .user-email { display: none; }
+
+            .logout-link {
+                color: #d32f2f;
+                text-decoration: none;
+                padding: 10px 12px;
+                border-radius: 6px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                transition: all 0.2s;
+                font-size: 14px;
+                font-weight: 500;
+            }
+
+            .logout-link:hover { background-color: #ffebee; }
+            .sidebar.collapsed .logout-link span { display: none; }
+            .sidebar.collapsed .logout-link { justify-content: center; }
+
+            /* Main Content Area */
             .main-content {
                 flex: 1;
                 display: flex;
                 overflow: hidden;
+                background-color: #fafafa;
             }
 
             .content-area {
@@ -227,271 +351,419 @@ function showResultPage($subject, $successEmails, $failedEmails, $companyName = 
                 overflow-y: auto;
             }
 
-            .success-card {
-                background: white;
-                border-radius: 10px;
-                border: 1px solid #e5e5e5;
-                max-width: 800px;
-                margin: 0 auto;
-                overflow: hidden;
+            /* Report Styles */
+            .report-header {
+                background: #fff;
+                border: 1px solid #e0e0e0;
+                border-radius: 4px;
+                padding: 32px;
+                margin-bottom: 24px;
             }
 
-            .success-header {
-                background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
-                color: white;
-                padding: 40px;
-                text-align: center;
-            }
-
-            .success-icon {
-                width: 80px;
-                height: 80px;
-                background: rgba(255,255,255,0.2);
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                margin: 0 auto 20px;
-            }
-
-            .success-icon i {
-                font-size: 40px;
-            }
-
-            .success-header h1 {
-                font-size: 28px;
-                font-weight: 600;
-                margin-bottom: 8px;
-            }
-
-            .success-header p {
-                font-size: 16px;
-                opacity: 0.9;
-            }
-
-            .success-body {
-                padding: 40px;
-            }
-
-            .info-grid {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 24px;
-                margin-bottom: 32px;
-            }
-
-            .info-item {
-                background: #f5f5f5;
-                padding: 20px;
-                border-radius: 8px;
-            }
-
-            .info-label {
-                font-size: 12px;
-                color: #666;
+            .report-type {
+                font-size: 11px;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
-                margin-bottom: 8px;
+                color: #0073e6;
+                font-weight: 600;
+                margin-bottom: 12px;
+            }
+
+            h1 {
+                font-family: 'Harding', Georgia, serif;
+                font-size: 28px;
+                font-weight: 700;
+                line-height: 1.3;
+                color: #222;
+                margin-bottom: 16px;
+            }
+
+            .meta-info {
+                font-size: 13px;
+                color: #666;
+                line-height: 1.8;
+                border-top: 1px solid #e0e0e0;
+                padding-top: 16px;
+                margin-top: 16px;
+            }
+
+            .meta-info strong {
+                color: #222;
                 font-weight: 600;
             }
 
-            .info-value {
-                font-size: 16px;
-                color: #1a1a1a;
-                font-weight: 500;
+            .meta-timestamp {
+                font-size: 12px;
+                color: #999;
+                margin-top: 8px;
             }
 
-            .recipients-section {
-                margin-top: 32px;
-                padding-top: 32px;
-                border-top: 1px solid #e5e5e5;
+            /* Summary Box */
+            .summary-box {
+                background: #fff;
+                border: 1px solid #e0e0e0;
+                border-left: 3px solid #0073e6;
+                border-radius: 4px;
+                padding: 24px;
+                margin-bottom: 24px;
             }
 
-            .recipients-header {
+            .summary-title {
+                font-size: 12px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                color: #666;
+                margin-bottom: 16px;
+                font-weight: 600;
+            }
+
+            .summary-stats {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                gap: 20px;
+            }
+
+            .stat-item {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .stat-label {
+                font-size: 11px;
+                color: #666;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+                margin-bottom: 4px;
+            }
+
+            .stat-value {
+                font-size: 24px;
+                font-weight: 600;
+                color: #222;
+            }
+
+            .stat-value.success { color: #087f23; }
+            .stat-value.failure { color: #c5221f; }
+
+            /* Content Sections */
+            .content-section {
+                background: #fff;
+                border: 1px solid #e0e0e0;
+                border-radius: 4px;
+                padding: 32px;
+                margin-bottom: 24px;
+            }
+
+            h2 {
+                font-family: 'Harding', Georgia, serif;
                 font-size: 18px;
                 font-weight: 600;
-                margin-bottom: 16px;
-                color: #1a1a1a;
+                color: #222;
+                margin-bottom: 20px;
+                padding-bottom: 12px;
+                border-bottom: 2px solid #222;
             }
 
-            .recipient-item {
-                background: #f8f9fa;
-                padding: 12px 16px;
-                border-radius: 6px;
-                margin-bottom: 8px;
-                display: flex;
-                align-items: center;
-                gap: 12px;
+            /* Email Table */
+            .email-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 16px;
+                font-size: 13px;
             }
 
-            .recipient-icon {
-                width: 32px;
-                height: 32px;
-                background: #4caf50;
-                color: white;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 14px;
-            }
+            .email-table thead { border-bottom: 2px solid #222; }
 
-            .recipient-email {
-                flex: 1;
-                font-size: 14px;
-                color: #1a1a1a;
-            }
-
-            .recipient-type {
-                background: #e8f5e9;
-                color: #2e7d32;
-                padding: 4px 12px;
-                border-radius: 12px;
-                font-size: 12px;
+            .email-table th {
+                text-align: left;
                 font-weight: 600;
+                padding: 12px 16px 12px 0;
+                color: #222;
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
             }
 
+            .email-table td {
+                padding: 14px 16px 14px 0;
+                border-bottom: 1px solid #e0e0e0;
+                vertical-align: top;
+            }
+
+            .email-table tbody tr:last-child td { border-bottom: none; }
+
+            .email-address {
+                font-family: 'Monaco', 'Courier New', monospace;
+                font-size: 13px;
+                color: #222;
+            }
+
+            .email-type {
+                display: inline-block;
+                padding: 3px 10px;
+                background: #e0e0e0;
+                border-radius: 3px;
+                font-size: 11px;
+                font-weight: 600;
+                color: #222;
+            }
+
+            .email-type.to { background: #e3f2fd; color: #0d47a1; }
+            .email-type.cc { background: #fff3e0; color: #e65100; }
+            .email-type.bcc { background: #f3e5f5; color: #4a148c; }
+
+            .error-reason {
+                color: #c5221f;
+                font-size: 12px;
+                line-height: 1.5;
+            }
+
+            /* Action Buttons */
             .actions {
-                margin-top: 32px;
+                background: #fff;
+                border: 1px solid #e0e0e0;
+                border-radius: 4px;
+                padding: 24px;
                 display: flex;
                 gap: 12px;
+                flex-wrap: wrap;
             }
 
             .btn {
-                flex: 1;
-                padding: 14px 24px;
-                border: none;
-                border-radius: 6px;
-                font-size: 15px;
+                padding: 10px 20px;
+                border: 1px solid #222;
+                background: #fff;
+                color: #222;
+                text-decoration: none;
+                font-size: 13px;
                 font-weight: 500;
                 cursor: pointer;
                 transition: all 0.2s;
-                display: flex;
+                font-family: 'Inter', sans-serif;
+                border-radius: 3px;
+                display: inline-flex;
                 align-items: center;
-                justify-content: center;
                 gap: 8px;
-                text-decoration: none;
+            }
+
+            .btn:hover {
+                background: #222;
+                color: #fff;
             }
 
             .btn-primary {
-                background: #1a1a1a;
-                color: white;
+                background: #222;
+                color: #fff;
             }
 
-            .btn-primary:hover {
-                background: #000;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            }
-
-            .btn-secondary {
-                background: white;
-                color: #1a1a1a;
-                border: 1px solid #d0d0d0;
-            }
-
-            .btn-secondary:hover {
-                background: #f5f5f5;
-                border-color: #1a1a1a;
-            }
+            .btn-primary:hover { background: #000; }
+            .btn i { font-size: 12px; }
 
             @media (max-width: 768px) {
-                .info-grid {
-                    grid-template-columns: 1fr;
-                }
-                .actions {
-                    flex-direction: column;
+                .content-area { padding: 24px 20px; }
+                h1 { font-size: 24px; }
+                .email-table { font-size: 12px; }
+                .summary-stats { grid-template-columns: 1fr; }
+                .actions { flex-direction: column; }
+                .btn {
+                    width: 100%;
+                    justify-content: center;
                 }
             }
         </style>
     </head>
     <body>
-        <?php include 'sidebar.php'; ?>
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+            <a href="index.php" class="logo">
+            <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg" alt="Logo">
+        </a>
+                <button class="toggle-sidebar" id="toggleSidebar">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+            </div>
 
+            <nav class="nav-section">
+                <a href="index.php" class="nav-item">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span>Compose</span>
+                </a>
+                <div class="nav-item active">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Report</span>
+                </div>
+                <a href="#" class="nav-item" id="settingsBtn">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+
+            <div class="user-info">
+                <div class="user-details">
+                    <div class="user-avatar"><?= $userInitial ?></div>
+                    <div class="user-email">
+                        <strong>Account</strong>
+                        <?= htmlspecialchars($userEmail) ?>
+                    </div>
+                </div>
+                <a href="logout.php" class="logout-link">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Content -->
         <div class="main-content">
             <div class="content-area">
-                <div class="success-card">
-                    <div class="success-header">
-                        <div class="success-icon">
-                            <i class="fa-solid fa-check"></i>
-                        </div>
-                        <h1>Email Sent Successfully!</h1>
-                        <p>Your placement drive invitation has been delivered</p>
+                <!-- Report Header -->
+                <div class="report-header">
+                    <!-- <div class="report-type">Transmission Report</div> -->
+                    <h1>Mail Delivery Status</h1>
+                    <div class="meta-info">
+                        <strong>Subject:</strong> <?= htmlspecialchars($subject) ?><br>
+                        <strong>Sender:</strong> <?= htmlspecialchars($_SESSION['smtp_user']) ?>
+                        <div class="meta-timestamp">Generated on <?= $timestamp ?></div>
                     </div>
+                </div>
 
-                    <div class="success-body">
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <div class="info-label">Subject</div>
-                                <div class="info-value"><?= htmlspecialchars($subject) ?></div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">Sent At</div>
-                                <div class="info-value"><?= $timestamp ?></div>
-                            </div>
-                            <?php if (!empty($companyName)): ?>
-                            <div class="info-item">
-                                <div class="info-label">Company</div>
-                                <div class="info-value"><?= htmlspecialchars($companyName) ?></div>
-                            </div>
-                            <?php endif; ?>
-                            <div class="info-item">
-                                <div class="info-label">Total Recipients</div>
-                                <div class="info-value"><?= $successCount ?> recipient(s)</div>
-                            </div>
+                <!-- Summary Statistics -->
+                <div class="summary-box">
+                    <div class="summary-title">Summary</div>
+                    <div class="summary-stats">
+                        <div class="stat-item">
+                            <div class="stat-label">Total Recipients</div>
+                            <div class="stat-value"><?= $totalEmails ?></div>
                         </div>
-
-                        <div class="recipients-section">
-                            <div class="recipients-header">Email Recipients</div>
-                            <?php foreach ($successEmails as $email): ?>
-                            <div class="recipient-item">
-                                <div class="recipient-icon">
-                                    <i class="fa-solid fa-envelope"></i>
-                                </div>
-                                <div class="recipient-email"><?= htmlspecialchars($email['email']) ?></div>
-                                <div class="recipient-type"><?= htmlspecialchars($email['type']) ?></div>
-                            </div>
-                            <?php endforeach; ?>
+                        <div class="stat-item">
+                            <div class="stat-label">Successfully Sent</div>
+                            <div class="stat-value success"><?= $successCount ?></div>
                         </div>
-
                         <?php if ($failureCount > 0): ?>
-                        <div class="recipients-section">
-                            <div class="recipients-header" style="color: #d32f2f;">Failed Recipients</div>
-                            <?php foreach ($failedEmails as $email): ?>
-                            <div class="recipient-item" style="background: #ffebee;">
-                                <div class="recipient-icon" style="background: #d32f2f;">
-                                    <i class="fa-solid fa-xmark"></i>
-                                </div>
-                                <div class="recipient-email"><?= htmlspecialchars($email['email']) ?></div>
-                                <div class="recipient-type" style="background: #ffcdd2; color: #c62828;">Failed</div>
-                            </div>
-                            <?php endforeach; ?>
+                        <div class="stat-item">
+                            <div class="stat-label">Failed</div>
+                            <div class="stat-value failure"><?= $failureCount ?></div>
                         </div>
                         <?php endif; ?>
-
-                        <div class="actions">
-                            <a href="index.php" class="btn btn-primary">
-                                <i class="fa-solid fa-plus"></i>
-                                Send Another Email
-                            </a>
-                            <a href="dashboard.php" class="btn btn-secondary">
-                                <i class="fa-solid fa-home"></i>
-                                Back to Dashboard
-                            </a>
-                        </div>
                     </div>
+                </div>
+
+                <!-- Successfully Delivered -->
+                <?php if (count($successEmails) > 0): ?>
+                <div class="content-section">
+                    <h2>Successfully Delivered</h2>
+                    <table class="email-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 60%">Email Address</th>
+                                <th style="width: 40%">Recipient Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($successEmails as $email): ?>
+                            <tr>
+                                <td class="email-address"><?= htmlspecialchars($email['email']) ?></td>
+                                <td><span class="email-type <?= strtolower($email['type']) ?>"><?= htmlspecialchars($email['type']) ?></span></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <?php endif; ?>
+
+                <!-- Delivery Failures -->
+                <?php if (count($failedEmails) > 0): ?>
+                <div class="content-section">
+                    <h2>Delivery Failures</h2>
+                    <table class="email-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 45%">Email Address</th>
+                                <th style="width: 15%">Type</th>
+                                <th style="width: 40%">Failure Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($failedEmails as $email): ?>
+                            <tr>
+                                <td class="email-address"><?= htmlspecialchars($email['email']) ?></td>
+                                <td><span class="email-type <?= strtolower($email['type']) ?>"><?= htmlspecialchars($email['type']) ?></span></td>
+                                <td class="error-reason"><?= htmlspecialchars($email['reason']) ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <?php endif; ?>
+
+                <!-- Actions -->
+                <div class="actions">
+                    <a href="index.php" class="btn btn-primary">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        Send Another Email
+                    </a>
+                    <?php if ($failureCount > 0): ?>
+                    <button onclick="copyFailedEmails()" class="btn">
+                        <i class="fa-solid fa-copy"></i>
+                        Copy Failed Addresses
+                    </button>
+                    <?php endif; ?>
+                    <?php if ($successCount > 0): ?>
+                    <button onclick="copySuccessEmails()" class="btn">
+                        <i class="fa-solid fa-copy"></i>
+                        Copy Successful Addresses
+                    </button>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
+
+        <script>
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('toggleSidebar');
+            
+            toggleBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('collapsed');
+            });
+
+            function copyFailedEmails() {
+                const failedEmails = <?= json_encode(array_column($failedEmails, 'email')) ?>;
+                const emailList = failedEmails.join(', ');
+                
+                navigator.clipboard.writeText(emailList).then(() => {
+                    alert('Failed email addresses copied to clipboard.');
+                }).catch(() => {
+                    alert('Failed to copy. Please select and copy manually.');
+                });
+            }
+
+            function copySuccessEmails() {
+                const successEmails = <?= json_encode(array_column($successEmails, 'email')) ?>;
+                const emailList = successEmails.join(', ');
+                
+                navigator.clipboard.writeText(emailList).then(() => {
+                    alert('Successful email addresses copied to clipboard.');
+                }).catch(() => {
+                    alert('Failed to copy. Please select and copy manually.');
+                });
+            }
+
+            document.getElementById('settingsBtn').addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.href = 'index.php#settings';
+            });
+        </script>
     </body>
     </html>
     <?php
 }
 
 /**
- * Show error page
+ * Show error page with sidebar navigation
  */
 function showErrorPage($errorMessage) {
+    $timestamp = date('d F Y, H:i');
     $userEmail = $_SESSION['smtp_user'];
     $userInitial = strtoupper(substr($userEmail, 0, 1));
     ?>
@@ -502,22 +774,181 @@ function showErrorPage($errorMessage) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Transmission Error</title>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Harding:wght@400;600;700&family=Inter:wght@400;500;600&display=swap">
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             
             body { 
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-                background-color: #fafafa;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+                background-color: #ffffff;
                 color: #222;
                 display: flex;
                 height: 100vh;
                 overflow: hidden;
+                font-size: 14px;
+                line-height: 1.6;
             }
+
+            .sidebar {
+                width: 280px;
+                background-color: #ffffff;
+                border-right: 1px solid #e0e0e0;
+                display: flex;
+                flex-direction: column;
+                transition: transform 0.3s ease, width 0.3s ease;
+                position: relative;
+                z-index: 100;
+            }
+
+            .sidebar.collapsed { width: 70px; }
+
+            .sidebar-header {
+                padding: 24px 20px;
+                border-bottom: 1px solid #e0e0e0;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            .logo {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                font-size: 20px;
+                font-weight: 600;
+                color: #222;
+                letter-spacing: -0.5px;
+                text-decoration: none;
+            }
+
+            .logo i { font-size: 24px; }
+            .sidebar.collapsed .logo-text { display: none; }
+
+            .toggle-sidebar {
+                background: none;
+                border: none;
+                cursor: pointer;
+                padding: 8px;
+                color: #666;
+                border-radius: 4px;
+                transition: all 0.2s;
+            }
+
+            .toggle-sidebar:hover {
+                background-color: #f5f5f5;
+                color: #222;
+            }
+
+            .sidebar.collapsed .toggle-sidebar { transform: rotate(180deg); }
+
+            .nav-section {
+                flex: 1;
+                padding: 20px 0;
+                overflow-y: auto;
+            }
+
+            .nav-item {
+                display: flex;
+                align-items: center;
+                padding: 12px 20px;
+                color: #666;
+                text-decoration: none;
+                transition: all 0.2s;
+                cursor: pointer;
+                border-left: 3px solid transparent;
+                gap: 12px;
+                font-size: 15px;
+            }
+
+            .nav-item:hover {
+                background-color: #f9f9f9;
+                color: #222;
+            }
+
+            .nav-item.active {
+                background-color: #f5f5f5;
+                color: #222;
+                border-left-color: #222;
+                font-weight: 500;
+            }
+
+            .nav-item i {
+                width: 20px;
+                text-align: center;
+            }
+
+            .sidebar.collapsed .nav-item span { display: none; }
+            .sidebar.collapsed .nav-item {
+                justify-content: center;
+                padding: 12px;
+            }
+
+            .user-info {
+                padding: 20px;
+                border-top: 1px solid #e0e0e0;
+            }
+
+            .user-details {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 16px;
+            }
+
+            .user-avatar {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                background: #222;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: 600;
+                font-size: 16px;
+            }
+
+            .user-email {
+                flex: 1;
+                font-size: 13px;
+                color: #666;
+                overflow: hidden;
+            }
+
+            .user-email strong {
+                display: block;
+                color: #222;
+                font-size: 14px;
+                margin-bottom: 2px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .sidebar.collapsed .user-email { display: none; }
+
+            .logout-link {
+                color: #d32f2f;
+                text-decoration: none;
+                padding: 10px 12px;
+                border-radius: 6px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                transition: all 0.2s;
+                font-size: 14px;
+                font-weight: 500;
+            }
+
+            .logout-link:hover { background-color: #ffebee; }
+            .sidebar.collapsed .logout-link span { display: none; }
+            .sidebar.collapsed .logout-link { justify-content: center; }
 
             .main-content {
                 flex: 1;
                 display: flex;
                 overflow: hidden;
+                background-color: #fafafa;
             }
 
             .content-area {
@@ -526,117 +957,160 @@ function showErrorPage($errorMessage) {
                 overflow-y: auto;
             }
 
-            .error-card {
-                background: white;
-                border-radius: 10px;
-                border: 1px solid #e5e5e5;
-                max-width: 700px;
-                margin: 0 auto;
-                overflow: hidden;
-            }
-
             .error-header {
-                background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%);
-                color: white;
-                padding: 40px;
-                text-align: center;
+                background: #fff;
+                border: 1px solid #e0e0e0;
+                border-radius: 4px;
+                padding: 32px;
+                margin-bottom: 24px;
             }
 
-            .error-icon {
-                width: 80px;
-                height: 80px;
-                background: rgba(255,255,255,0.2);
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                margin: 0 auto 20px;
-            }
-
-            .error-icon i {
-                font-size: 40px;
-            }
-
-            .error-header h1 {
-                font-size: 28px;
+            .error-type {
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                color: #c5221f;
                 font-weight: 600;
-                margin-bottom: 8px;
+                margin-bottom: 12px;
             }
 
-            .error-body {
-                padding: 40px;
+            h1 {
+                font-family: 'Harding', Georgia, serif;
+                font-size: 28px;
+                font-weight: 700;
+                line-height: 1.3;
+                color: #222;
+                margin-bottom: 24px;
+            }
+
+            .error-box {
+                background: #fff;
+                border: 1px solid #e0e0e0;
+                border-left: 3px solid #c5221f;
+                border-radius: 4px;
+                padding: 24px;
+                margin-bottom: 24px;
+            }
+
+            .error-title {
+                font-size: 12px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                color: #c5221f;
+                margin-bottom: 12px;
+                font-weight: 600;
             }
 
             .error-message {
-                background: #ffebee;
-                border-left: 4px solid #d32f2f;
-                padding: 20px;
-                border-radius: 4px;
-                margin-bottom: 24px;
-                font-size: 14px;
+                color: #222;
                 line-height: 1.6;
-                color: #333;
+                font-size: 14px;
             }
 
             .actions {
-                display: flex;
-                gap: 12px;
+                background: #fff;
+                border: 1px solid #e0e0e0;
+                border-radius: 4px;
+                padding: 24px;
             }
 
             .btn {
-                flex: 1;
-                padding: 14px 24px;
-                border: none;
-                border-radius: 6px;
-                font-size: 15px;
+                padding: 10px 20px;
+                border: 1px solid #222;
+                background: #222;
+                color: #fff;
+                text-decoration: none;
+                font-size: 13px;
                 font-weight: 500;
                 cursor: pointer;
                 transition: all 0.2s;
-                text-decoration: none;
-                display: flex;
+                border-radius: 3px;
+                display: inline-flex;
                 align-items: center;
-                justify-content: center;
                 gap: 8px;
             }
 
-            .btn-primary {
-                background: #1a1a1a;
-                color: white;
-            }
-
-            .btn-primary:hover {
-                background: #000;
-            }
+            .btn:hover { background: #000; }
+            .btn i { font-size: 12px; }
         </style>
     </head>
     <body>
-        <?php include 'sidebar.php'; ?>
+    <?php include 'sidebar.php'; ?>
+        <!-- <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="index.php" class="logo">
+                    <i class="fa-solid fa-envelope"></i>
+                    <span class="logo-text">MailDash</span>
+                </a>
+                <button class="toggle-sidebar" id="toggleSidebar">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+            </div>
+
+            <nav class="nav-section">
+                <a href="index.php" class="nav-item">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span>Compose</span>
+                </a>
+                <div class="nav-item active">
+                    <i class="fa-solid fa-exclamation-triangle"></i>
+                    <span>Error</span>
+                </div>
+                <a href="#" class="nav-item" id="settingsBtn">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+
+            <div class="user-info">
+                <div class="user-details">
+                    <div class="user-avatar"><?= $userInitial ?></div>
+                    <div class="user-email">
+                        <strong>Account</strong>
+                        <?= htmlspecialchars($userEmail) ?>
+                    </div>
+                </div>
+                <a href="logout.php" class="logout-link">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </div> -->
 
         <div class="main-content">
             <div class="content-area">
-                <div class="error-card">
-                    <div class="error-header">
-                        <div class="error-icon">
-                            <i class="fa-solid fa-exclamation-triangle"></i>
-                        </div>
-                        <h1>Email Transmission Failed</h1>
-                    </div>
+                <div class="error-header">
+                    <div class="error-type">Error Report</div>
+                    <h1>Email Transmission Failed</h1>
+                </div>
 
-                    <div class="error-body">
-                        <div class="error-message">
-                            <?= htmlspecialchars($errorMessage) ?>
-                        </div>
+                <div class="error-box">
+                    <div class="error-title">Error Details</div>
+                    <div class="error-message"><?= htmlspecialchars($errorMessage) ?></div>
+                </div>
 
-                        <div class="actions">
-                            <a href="index.php" class="btn btn-primary">
-                                <i class="fa-solid fa-arrow-left"></i>
-                                Return to Compose
-                            </a>
-                        </div>
-                    </div>
+                <div class="actions">
+                    <a href="index.php" class="btn">
+                        <i class="fa-solid fa-arrow-left"></i>
+                        Return to Compose
+                    </a>
                 </div>
             </div>
         </div>
+
+        <script>
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('toggleSidebar');
+            
+            toggleBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('collapsed');
+            });
+
+            document.getElementById('settingsBtn').addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.href = 'index.php#settings';
+            });
+        </script>
     </body>
     </html>
     <?php
