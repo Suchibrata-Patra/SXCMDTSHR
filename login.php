@@ -18,13 +18,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $user_pass = $_POST['app_password'];
 
     $mail = new PHPMailer(true);
+    $mail->SMTPDebug = 2;
+    $mail->Debugoutput = 'html';
     try {
         $mail->isSMTP();
         $mail->Host       = env("SMTP_HOST"); 
         $mail->SMTPAuth   = true;
         $mail->Username   = $user_email;
         $mail->Password   = $user_pass;
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTP;
         $mail->Port       = env("SMTP_PORT");
 
         $mail->setFrom($user_email, 'NoReply Security');
