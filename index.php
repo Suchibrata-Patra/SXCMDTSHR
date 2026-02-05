@@ -1,12 +1,12 @@
 <?php
 // htdocs/index.php
-// session_start();
+session_start();
 
-// // Security check: Redirect to login if session credentials do not exist
-// if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
-//     header("Location: login.php");
-//     exit();
-// }
+// Security check: Redirect to login if session credentials do not exist
+if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
+    header("Location: login.php");
+    exit();
+}
 
 // Load settings from JSON file
 $settingsFile = 'settings.json';
