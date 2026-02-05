@@ -69,7 +69,7 @@ $_SESSION['user_settings'] = $settings;
         .compose-card {
             background: white;
             padding: 40px;
-            border-radius: 2px;
+            border-radius: 10px;
             border: 1px solid #e5e5e5;
             max-width: 800px;
             margin: 0 auto;
@@ -111,7 +111,7 @@ $_SESSION['user_settings'] = $settings;
             width: 100%;
             padding: 12px 16px;
             border: 1px solid #d0d0d0;
-            border-radius: 2px;
+            border-radius:7px;
             font-size: 15px;
             font-family: inherit;
             transition: all 0.2s;
@@ -436,7 +436,7 @@ $_SESSION['user_settings'] = $settings;
 
                     <!-- CC Field -->
                     <div class="form-group">
-                        <label>CC (Carbon Copy) - Optional</label>
+                        <label>CC (if any)</label>
                         <div class="input-with-file">
                             <input type="text" name="cc" id="ccInput" placeholder="cc1@example.com, cc2@example.com">
                             <button type="button" class="btn-attach-list" onclick="document.getElementById('ccFile').click()">
@@ -449,7 +449,7 @@ $_SESSION['user_settings'] = $settings;
 
                     <!-- BCC Field -->
                     <div class="form-group">
-                        <label>BCC (Blind Carbon Copy) - Optional</label>
+                        <label>BCC (if any)</label>
                         <div class="input-with-file">
                             <input type="text" name="bcc" id="bccInput" placeholder="bcc1@example.com, bcc2@example.com">
                             <button type="button" class="btn-attach-list" onclick="document.getElementById('bccFile').click()">
@@ -462,7 +462,7 @@ $_SESSION['user_settings'] = $settings;
                     
                     <div class="form-group">
                         <label>Subject</label>
-                        <input type="text" name="subject" required placeholder="Enter your subject line">
+                        <input type="text" name="subject" required placeholder="Enter Your Mail Subject">
                     </div>
                     
                     <div class="form-group">

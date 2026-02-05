@@ -39,11 +39,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 </head>
 <body>
     <div class="container">
-        <h2 style="text-align:center; color: #333;">Review Your Design</h2>
+        <!-- <h2 style="text-align:center; color: #333;">Review Your Design</h2> -->
         
         <div class="preview-window">
             <div class="toolbar">
-                <span><strong>To:</strong> <?php echo htmlspecialchars($email); ?></span>
+                <!-- <span><strong>To:</strong> <?php echo htmlspecialchars($email); ?></span> -->
                 <span><strong>Subject:</strong> <?php echo htmlspecialchars($subject); ?></span>
             </div>
             <?php echo $previewHtml; ?>
