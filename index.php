@@ -464,6 +464,10 @@ $_SESSION['user_settings'] = $settings;
                         <label>Subject</label>
                         <input type="text" name="subject" required placeholder="Enter Your Mail Subject">
                     </div>
+                    <div class="form-group">
+                        <label>articletitle</label>
+                        <input type="text" name="articletitle" required placeholder="Enter Your Mail Subject">
+                    </div>
                     
                     <div class="form-group">
                         <label>Message</label>
@@ -493,6 +497,7 @@ $_SESSION['user_settings'] = $settings;
         document.getElementById('previewBtn').addEventListener('click', () => {
             const recipientEmail = document.querySelector('input[name="email"]').value;
             const subject = document.querySelector('input[name="subject"]').value;
+            const articletitle = document.querySelector('input[name="articletitle"]').value;
             const message = document.querySelector('textarea[name="message"]').value;
             const attachment = document.querySelector('input[name="attachment"]').files[0];
 
@@ -512,6 +517,7 @@ $_SESSION['user_settings'] = $settings;
             const fields = {
                 'email': recipientEmail,
                 'subject': subject,
+                'articletitle':articletitle,
                 'message': message,
                 'attachment_name': attachment ? attachment.name : ''
             };
