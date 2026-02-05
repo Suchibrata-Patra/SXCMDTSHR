@@ -620,8 +620,8 @@ function showResultPage($subject, $successEmails, $failedEmails) {
             <div class="content-area">
                 <!-- Report Header -->
                 <div class="report-header">
-                    <div class="report-type">Transmission Report</div>
-                    <h1>Email Delivery Status</h1>
+                    <!-- <div class="report-type">Transmission Report</div> -->
+                    <h1>Mail Delivery Status</h1>
                     <div class="meta-info">
                         <strong>Subject:</strong> <?= htmlspecialchars($subject) ?><br>
                         <strong>Sender:</strong> <?= htmlspecialchars($_SESSION['smtp_user']) ?>
