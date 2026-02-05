@@ -267,7 +267,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </label>
                 </div>
 
-                <button type="submit">Verify</button>
+                <button type="submit">Verify & Update</button>
             </form>
 
             <!-- <footer>
