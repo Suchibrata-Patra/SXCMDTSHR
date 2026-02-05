@@ -1,12 +1,12 @@
 <?php
-session_start();
-require 'vendor/autoload.php';
-require 'config.php';
+// session_start();
+// require 'vendor/autoload.php';
+// require 'config.php';
 
-if (file_exists(__DIR__ . '/.env')) {
-    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-    $dotenv->load();
-}
+// if (file_exists(__DIR__ . '/.env')) {
+//     $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+//     $dotenv->load();
+// }
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
