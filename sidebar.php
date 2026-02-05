@@ -193,7 +193,7 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
             <span>Compose</span>
         </a>
 
-        <a href="settings.php" class="nav-item <?= ($current_page == 'settings') ? 'active' : ''; ?>">
+        <a href="save_settings.php" class="nav-item <?= ($current_page == 'settings') ? 'active' : ''; ?>">
             <span class="material-icons">settings</span>
             <span>Preference</span>
         </a>
