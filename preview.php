@@ -4,6 +4,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = $_POST['email'];
     $subject = $_POST['subject'];
     $message = $_POST['message'];
+    $articletitle = $_POST['articletitle'] ?? ''; // Capture articletitle
     
     // Explicitly using your stunning template
     $templatePath = 'templates/template1.html';
@@ -17,6 +18,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         // Swap placeholders
         $previewHtml = str_replace('{{MESSAGE}}', $safeMessage, $templateContent);
+        $previewHtml = str_replace('{{articletitle}}', htmlspecialchars($articletitle), $previewHtml); // Replace articletitle
         $previewHtml = str_replace('{{YEAR}}', date('Y'), $previewHtml);
     } else {
         $previewHtml = "<div style='color:red; padding:20px;'>Error: Template not found at $templatePath</div>";
@@ -54,6 +56,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <input type="hidden" name="email" value="<?php echo htmlspecialchars($email); ?>">
                 <input type="hidden" name="subject" value="<?php echo htmlspecialchars($subject); ?>">
                 <input type="hidden" name="message" value="<?php echo htmlspecialchars($message); ?>">
+                <input type="hidden" name="articletitle" value="<?php echo htmlspecialchars($articletitle); ?>">
                 
                 <button type="button" class="btn btn-back" onclick="history.back()">Edit Message</button>
                 <button type="submit" class="btn btn-send">Confirm & Send Now</button>
