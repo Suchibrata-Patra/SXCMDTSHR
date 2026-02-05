@@ -110,7 +110,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $formattedText = nl2br(htmlspecialchars($messageBody));
             $finalHtml = str_replace('{{MESSAGE}}', $formattedText, $htmlStructure);
             $finalHtml = str_replace('{{SUBJECT}}', htmlspecialchars($subject), $finalHtml);
-            $template = str_replace('{{articletitle}}', $articleTitle, $htmlStructure);
+            $finalHtml = str_replace('{{articletitle}}', htmlspecialchars($articleTitle), $finalHtml); // Fixed: use $finalHtml
             $finalHtml = str_replace('{{SENDER_NAME}}', htmlspecialchars($displayName), $finalHtml);
             $finalHtml = str_replace('{{SENDER_EMAIL}}', htmlspecialchars($_SESSION['smtp_user']), $finalHtml);
             $finalHtml = str_replace('{{RECIPIENT_EMAIL}}', htmlspecialchars($recipient), $finalHtml);
@@ -122,7 +122,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         } else {
             $mail->Body = nl2br(htmlspecialchars($messageBody));
         }
-
+        
         $mail->send();
         
         // Generate response HTML
