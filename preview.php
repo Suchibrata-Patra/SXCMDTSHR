@@ -27,7 +27,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Preview Email | MailDash</title>
+    <title>SXC MDTS</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #eaeff2; margin: 0; padding: 20px; }
         .container { max-width: 800px; margin: 0 auto; }
