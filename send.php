@@ -579,7 +579,7 @@ function showResultPage($subject, $successEmails, $failedEmails) {
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
             <a href="index.php" class="logo">
-            <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg" alt="Logo">
+            <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg" alt="Logo" style="width:70px;height:auto;">
         </a>
                 <button class="toggle-sidebar" id="toggleSidebar">
                     <i class="fa-solid fa-chevron-left"></i>

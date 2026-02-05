@@ -430,7 +430,7 @@ $_SESSION['user_settings'] = $settings;
                 
                 <form action="send.php" method="POST" enctype="multipart/form-data" id="composeForm">
                     <div class="form-group">
-                        <label>Recipient Email (To)</label>
+                        <label>Recipient Email</label>
                         <input type="email" name="email" required placeholder="recipient@example.com">
                     </div>
 
