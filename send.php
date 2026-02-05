@@ -773,7 +773,7 @@ function showErrorPage($errorMessage) {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Transmission Error | MailDash</title>
+        <title>Transmission Error</title>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Harding:wght@400;600;700&family=Inter:wght@400;500;600&display=swap">
         <style>
@@ -1036,7 +1036,8 @@ function showErrorPage($errorMessage) {
         </style>
     </head>
     <body>
-        <div class="sidebar" id="sidebar">
+    <?php include 'sidebar.php'; ?>
+        <!-- <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <a href="index.php" class="logo">
                     <i class="fa-solid fa-envelope"></i>
@@ -1075,7 +1076,7 @@ function showErrorPage($errorMessage) {
                     <span>Logout</span>
                 </a>
             </div>
-        </div>
+        </div> -->
 
         <div class="main-content">
             <div class="content-area">
