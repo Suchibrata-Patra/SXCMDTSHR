@@ -21,12 +21,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     try {
         // --- SMTP Configuration ---
         $mail->isSMTP();
-        $mail->Host       = env("SMTP_HOST", "smtp.gmail.com"); 
+        $mail->Host       = env("SMTP_HOST", "smtp.hostinger.com"); 
         $mail->SMTPAuth   = true;
         $mail->Username   = $_SESSION['smtp_user']; 
         $mail->Password   = $_SESSION['smtp_pass']; 
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; 
-        $mail->Port       = env("SMTP_PORT", 587);
+        $mail->Port       = env("SMTP_PORT", 465);
 
         // --- Recipients ---
         $settings = $_SESSION['user_settings'] ?? [];
