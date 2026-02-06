@@ -463,7 +463,7 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
                 </div>
                 <div class="logo-text">
                     <span class="logo-title">St. Xavier's</span>
-                    <span class="logo-subtitle">Mail System</span>
+                    <!-- <span class="logo-subtitle">Mail System</span> -->
                 </div>
             </a>
             <button class="toggle-sidebar" id="toggleSidebar" aria-label="Toggle Sidebar">
