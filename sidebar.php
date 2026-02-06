@@ -183,7 +183,7 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
             <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg" alt="Logo">
         </a>
         <button class="toggle-sidebar" id="toggleSidebar">
-            <span class="material-icons">chevron_left</span>
+            <span class="material-icons">menu</span>
         </button>
     </div>
 
