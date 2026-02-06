@@ -17,17 +17,15 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
 
     <style>
         :root {
-            --primary-white: #ffffff;
-            --secondary-white: #fafafa;
-            --border-gray: #e5e7eb;
-            --text-primary: #111827;
-            --text-secondary: #6b7280;
-            --text-muted: #9ca3af;
-            --hover-bg: #f9fafb;
-            --active-bg: #f3f4f6;
-            --accent-black: #111827;
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --primary-black: #0a0a0a;
+            --secondary-black: #1a1a1a;
+            --border-gray: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #6b6b6b;
+            --hover-bg: #222222;
+            --active-bg: #2d2d2d;
+            --accent-white: #ffffff;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
@@ -46,7 +44,7 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
         /* Sidebar Container */
         .sidebar {
             width: 280px;
-            background: var(--primary-white);
+            background: var(--primary-black);
             border-right: 1px solid var(--border-gray);
             display: flex;
             flex-direction: column;
@@ -54,7 +52,6 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
             position: relative;
             height: 100vh;
             overflow: hidden;
-            box-shadow: var(--shadow-sm);
         }
 
         .sidebar.collapsed {
@@ -68,25 +65,25 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
             top: 0;
             left: 0;
             right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--accent-black) 0%, transparent 100%);
-            opacity: 0.1;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-white) 0%, transparent 100%);
+            opacity: 0.3;
         }
 
         /* Header Section */
         .sidebar-header {
-            padding: 20px;
+            padding: 24px 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             border-bottom: 1px solid var(--border-gray);
-            background: var(--secondary-white);
+            position: relative;
         }
 
         .logo {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
             text-decoration: none;
             transition: var(--transition);
         }
@@ -101,22 +98,16 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
             height: 48px;
             border-radius: 12px;
             overflow: hidden;
-            background: var(--primary-white);
-            border: 2px solid var(--border-gray);
-            padding: 3px;
-            transition: var(--transition);
-        }
-
-        .logo:hover .logo-wrapper {
-            border-color: var(--accent-black);
-            box-shadow: var(--shadow-md);
+            background: var(--secondary-black);
+            border: 1px solid var(--border-gray);
+            padding: 2px;
         }
 
         .logo img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-radius: 8px;
+            border-radius: 10px;
         }
 
         .logo-text {
@@ -128,7 +119,7 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
 
         .logo-title {
             font-size: 15px;
-            font-weight: 700;
+            font-weight: 600;
             color: var(--text-primary);
             letter-spacing: -0.02em;
         }
@@ -139,7 +130,6 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
             text-transform: uppercase;
             letter-spacing: 0.05em;
             margin-top: 2px;
-            font-weight: 600;
         }
 
         .sidebar.collapsed .logo-text {
@@ -150,36 +140,29 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
 
         /* Toggle Button */
         .toggle-sidebar {
-            background: var(--primary-white);
-            border: 2px solid var(--border-gray);
+            background: var(--secondary-black);
+            border: 1px solid var(--border-gray);
             cursor: pointer;
             color: var(--text-secondary);
             padding: 8px;
-            border-radius: 10px;
+            border-radius: 8px;
             transition: var(--transition);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: var(--shadow-sm);
         }
 
         .toggle-sidebar:hover {
             background: var(--hover-bg);
             color: var(--text-primary);
-            border-color: var(--accent-black);
-            transform: scale(1.05);
-        }
-
-        .toggle-sidebar:active {
-            transform: scale(0.95);
+            border-color: var(--text-muted);
         }
 
         .toggle-sidebar .material-icons {
             font-size: 20px;
-            transition: var(--transition);
         }
 
-        .sidebar.collapsed .toggle-sidebar .material-icons {
+        .sidebar.collapsed .toggle-sidebar {
             transform: rotate(180deg);
         }
 
@@ -210,7 +193,7 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
 
         .nav-label {
             font-size: 11px;
-            font-weight: 700;
+            font-weight: 600;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.1em;
@@ -235,11 +218,10 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
             text-decoration: none;
             color: var(--text-secondary);
             transition: var(--transition);
-            border-radius: 12px;
-            margin-bottom: 6px;
+            border-radius: 10px;
+            margin-bottom: 4px;
             position: relative;
             overflow: hidden;
-            border: 1px solid transparent;
         }
 
         .nav-item::before {
@@ -248,17 +230,16 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
             left: 0;
             top: 50%;
             transform: translateY(-50%);
-            width: 4px;
+            width: 3px;
             height: 0;
-            background: var(--accent-black);
+            background: var(--accent-white);
             transition: var(--transition);
-            border-radius: 0 3px 3px 0;
+            border-radius: 0 2px 2px 0;
         }
 
         .nav-item:hover {
             background: var(--hover-bg);
             color: var(--text-primary);
-            border-color: var(--border-gray);
         }
 
         .nav-item:hover::before {
@@ -268,8 +249,7 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
         .nav-item.active {
             background: var(--active-bg);
             color: var(--text-primary);
-            font-weight: 600;
-            border-color: var(--border-gray);
+            font-weight: 500;
         }
 
         .nav-item.active::before {
@@ -304,7 +284,7 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
         .user-info {
             padding: 20px;
             border-top: 1px solid var(--border-gray);
-            background: var(--secondary-white);
+            background: var(--secondary-black);
         }
 
         .user-details {
@@ -313,15 +293,14 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
             gap: 12px;
             margin-bottom: 16px;
             padding: 12px;
-            background: var(--primary-white);
+            background: var(--primary-black);
             border-radius: 12px;
-            border: 2px solid var(--border-gray);
+            border: 1px solid var(--border-gray);
             transition: var(--transition);
         }
 
         .user-details:hover {
             border-color: var(--text-muted);
-            box-shadow: var(--shadow-sm);
         }
 
         .user-avatar {
@@ -329,29 +308,27 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
             height: 44px;
             min-width: 44px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #111827 0%, #374151 100%);
+            background: linear-gradient(135deg, #ffffff 0%, #d0d0d0 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--primary-white);
+            color: var(--primary-black);
             font-weight: 700;
             font-size: 17px;
             position: relative;
-            border: 3px solid var(--border-gray);
-            box-shadow: var(--shadow-sm);
+            border: 2px solid var(--border-gray);
         }
 
         .user-avatar::after {
             content: '';
             position: absolute;
-            bottom: -2px;
-            right: -2px;
-            width: 14px;
-            height: 14px;
-            background: #10b981;
-            border: 3px solid var(--primary-white);
+            bottom: 0;
+            right: 0;
+            width: 12px;
+            height: 12px;
+            background: #4ade80;
+            border: 2px solid var(--primary-black);
             border-radius: 50%;
-            box-shadow: var(--shadow-sm);
         }
 
         .user-email-wrapper {
@@ -366,14 +343,14 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            margin-bottom: 3px;
-            font-weight: 700;
+            margin-bottom: 2px;
+            font-weight: 600;
         }
 
         .user-email {
             font-size: 13px;
             color: var(--text-primary);
-            font-weight: 600;
+            font-weight: 500;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -393,23 +370,18 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
             color: var(--text-secondary);
             text-decoration: none;
             padding: 12px 16px;
-            border-radius: 12px;
+            border-radius: 10px;
             transition: var(--transition);
-            font-weight: 600;
+            font-weight: 500;
             font-size: 14px;
-            border: 2px solid var(--border-gray);
-            background: var(--primary-white);
+            border: 1px solid var(--border-gray);
+            background: var(--primary-black);
         }
 
         .logout-link:hover {
-            background: #fef2f2;
-            border-color: #ef4444;
-            color: #dc2626;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .logout-link:active {
-            transform: scale(0.98);
+            background: #1a0000;
+            border-color: #ff4444;
+            color: #ff4444;
         }
 
         .logout-link .material-icons {
@@ -441,49 +413,32 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
         .sidebar.collapsed .logout-link::after {
             content: attr(data-tooltip);
             position: absolute;
-            left: calc(100% + 12px);
+            left: 100%;
             top: 50%;
-            transform: translateY(-50%) translateX(-8px);
-            background: var(--accent-black);
-            color: var(--primary-white);
-            padding: 8px 14px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 600;
+            transform: translateY(-50%);
+            background: var(--accent-white);
+            color: var(--primary-black);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
             white-space: nowrap;
             opacity: 0;
             pointer-events: none;
             transition: var(--transition);
-            box-shadow: var(--shadow-md);
-            z-index: 1000;
-        }
-
-        .sidebar.collapsed .nav-item::after::before,
-        .sidebar.collapsed .logout-link::after::before {
-            content: '';
-            position: absolute;
-            right: 100%;
-            top: 50%;
-            transform: translateY(-50%);
-            border: 6px solid transparent;
-            border-right-color: var(--accent-black);
+            margin-left: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
 
         .sidebar.collapsed .nav-item:hover::after,
         .sidebar.collapsed .logout-link:hover::after {
             opacity: 1;
-            transform: translateY(-50%) translateX(0);
-        }
-
-        /* Collapsed state visual indicator */
-        .sidebar.collapsed .toggle-sidebar {
-            background: var(--active-bg);
         }
 
         /* Responsive adjustments */
         @media (max-height: 600px) {
             .sidebar-header {
-                padding: 16px;
+                padding: 16px 20px;
             }
 
             .nav-section {
@@ -493,33 +448,6 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
             .user-info {
                 padding: 16px;
             }
-        }
-
-        /* Smooth animations */
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(-10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        .nav-item,
-        .user-details,
-        .logout-link {
-            animation: slideIn 0.3s ease-out;
-        }
-
-        /* Focus states for accessibility */
-        .toggle-sidebar:focus,
-        .nav-item:focus,
-        .logout-link:focus {
-            outline: 2px solid var(--accent-black);
-            outline-offset: 2px;
         }
     </style>
 </head>
@@ -535,25 +463,25 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
                 </div>
                 <div class="logo-text">
                     <span class="logo-title">St. Xavier's</span>
-                    <span class="logo-subtitle">Mail System</span>
+                    <!-- <span class="logo-subtitle">Mail System</span> -->
                 </div>
             </a>
-            <button class="toggle-sidebar" id="toggleSidebar" aria-label="Toggle Sidebar" type="button">
+            <button class="toggle-sidebar" id="toggleSidebar" aria-label="Toggle Sidebar">
                 <span class="material-icons">chevron_left</span>
             </button>
         </div>
 
         <nav class="nav-section">
-            <div class="nav-label">Navigation</div>
+            <div class="nav-label">Main</div>
 
             <a href="index.php" class="nav-item <?= ($current_page == 'index') ? 'active' : ''; ?>"
-                data-tooltip="Compose Email">
+                data-tooltip="Compose">
                 <span class="material-icons">edit</span>
                 <span>Compose</span>
             </a>
 
             <a href="settings.php" class="nav-item <?= ($current_page == 'settings') ? 'active' : ''; ?>"
-                data-tooltip="Preferences">
+                data-tooltip="Preference">
                 <span class="material-icons">settings</span>
                 <span>Preference</span>
             </a>
@@ -561,18 +489,18 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
 
         <div class="user-info">
             <div class="user-details">
-                <div class="user-avatar" title="<?= htmlspecialchars($userEmail) ?>">
+                <div class="user-avatar">
                     <?= $userInitial ?>
                 </div>
                 <div class="user-email-wrapper">
-                    <div class="user-label">Signed in as</div>
+                    <div class="user-label">Logged in as</div>
                     <div class="user-email" title="<?= htmlspecialchars($userEmail) ?>">
                         <?= htmlspecialchars($userEmail) ?>
                     </div>
                 </div>
             </div>
 
-            <a href="logout.php" class="logout-link" data-tooltip="Sign Out">
+            <a href="logout.php" class="logout-link" data-tooltip="Logout">
                 <span class="material-icons">logout</span>
                 <span>Logout</span>
             </a>
@@ -580,82 +508,30 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
     </div>
 
     <script>
-        (function () {
-            'use strict';
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('toggleSidebar');
 
-            const sidebar = document.getElementById('sidebar');
-            const toggleBtn = document.getElementById('toggleSidebar');
+        // Toggle sidebar
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
 
-            if (!sidebar || !toggleBtn) {
-                console.error('Sidebar elements not found');
-                return;
+            // Save state to localStorage
+            const isCollapsed = sidebar.classList.contains('collapsed');
+            localStorage.setItem('sidebarCollapsed', isCollapsed);
+        });
+
+        // Restore sidebar state on load
+        window.addEventListener('DOMContentLoaded', () => {
+            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (isCollapsed) {
+                sidebar.classList.add('collapsed');
             }
+        });
 
-            // Toggle sidebar function
-            function toggleSidebar(event) {
-                // Prevent default button behavior and stop propagation
-                if (event) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-
-                sidebar.classList.toggle('collapsed');
-
-                // Save state to localStorage
-                const isCollapsed = sidebar.classList.contains('collapsed');
-                try {
-                    localStorage.setItem('sidebarCollapsed', isCollapsed.toString());
-                } catch (e) {
-                    console.warn('Could not save sidebar state:', e);
-                }
-
-                // Update aria-expanded for accessibility
-                toggleBtn.setAttribute('aria-expanded', (!isCollapsed).toString());
-            }
-
-            // Add click event listener to toggle button
-            toggleBtn.addEventListener('click', toggleSidebar);
-
-            // Restore sidebar state on load
-            function restoreSidebarState() {
-                try {
-                    const savedState = localStorage.getItem('sidebarCollapsed');
-                    if (savedState === 'true') {
-                        sidebar.classList.add('collapsed');
-                        toggleBtn.setAttribute('aria-expanded', 'false');
-                    } else {
-                        toggleBtn.setAttribute('aria-expanded', 'true');
-                    }
-                } catch (e) {
-                    console.warn('Could not restore sidebar state:', e);
-                }
-            }
-
-            // Restore state when DOM is ready
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', restoreSidebarState);
-            } else {
-                restoreSidebarState();
-            }
-
-            // Optional: Keyboard shortcut to toggle sidebar (Ctrl/Cmd + B)
-            document.addEventListener('keydown', function (event) {
-                if ((event.ctrlKey || event.metaKey) && event.key === 'b') {
-                    event.preventDefault();
-                    toggleSidebar();
-                }
-            });
-
-            // Prevent any accidental form submissions
-            const navItems = sidebar.querySelectorAll('.nav-item');
-            navItems.forEach(item => {
-                item.addEventListener('click', function (e) {
-                    // Allow normal navigation, just ensure it doesn't cause issues
-                    e.stopPropagation();
-                });
-            });
-
-        })();
+        // Add smooth transitions after page load
+        window.addEventListener('load', () => {
+            sidebar.style.transition = 'var(--transition)';
+        });
     </script>
 
 </body>
