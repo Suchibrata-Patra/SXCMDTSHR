@@ -3,9 +3,9 @@
 
 function getDatabaseConnection() {
     $host = env("DB_HOST", "localhost");
-    $dbname = env("DB_NAME", "mailer_db");
-    $username = env("DB_USER", "root");
-    $password = env("DB_PASS", "");
+    $dbname = env("DB_NAME", "u955994755_SXC_MDTS");
+    $username = env("DB_USER", "u955994755_DB_supremacy");
+    $password = env("DB_PASS", "sxccal.edu#MDTS@2026");
     
     try {
         $pdo = new PDO(
