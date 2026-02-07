@@ -756,17 +756,6 @@ $hasActiveFilters = !empty(array_filter($filters));
     <div id="main-wrapper">
         <!-- Page Header -->
         <div class="page-header">
-            <div class="header-left">
-                <h1 class="page-title">
-                    Email Archive
-                    <span class="email-count-badge">
-                        <span class="material-icons-round">mail</span>
-                        <?= number_format($totalEmails) ?>
-                    </span>
-                </h1>
-                <p class="page-subtitle">View and manage all sent correspondence</p>
-            </div>
-            
             <div class="header-actions">
                 <div class="search-container">
                     <span class="material-icons-round search-icon">search</span>
