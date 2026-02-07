@@ -1,5 +1,6 @@
 <?php
 // manage_labels.php - Label Management Interface
+// Labels are global/shared across all users
 session_start();
 
 if (file_exists('config.php')) {
@@ -31,7 +32,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 exit;
             }
             
-            $result = createLabel($userEmail, $labelName, $labelColor);
+            // createLabel now only takes labelName and labelColor (no userEmail)
+            $result = createLabel($labelName, $labelColor);
             
             if (is_array($result) && isset($result['error'])) {
                 echo json_encode(['success' => false, 'message' => $result['error']]);
@@ -52,7 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 exit;
             }
             
-            $result = updateLabel($labelId, $userEmail, $labelName, $labelColor);
+            // updateLabel now only takes labelId, labelName, labelColor (no userEmail)
+            $result = updateLabel($labelId, $labelName, $labelColor);
             echo json_encode([
                 'success' => $result, 
                 'message' => $result ? 'Label updated successfully' : 'Failed to update label'
@@ -67,7 +70,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 exit;
             }
             
-            $result = deleteLabel($labelId, $userEmail);
+            // deleteLabel now only takes labelId (no userEmail)
+            $result = deleteLabel($labelId);
             echo json_encode([
                 'success' => $result, 
                 'message' => $result ? 'Label deleted successfully' : 'Failed to delete label'
@@ -79,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     exit;
 }
 
-// Get all labels for display
+// Get all labels with counts for this user
 $labels = getLabelCounts($userEmail);
 ?>
 <!DOCTYPE html>
@@ -468,7 +472,7 @@ $labels = getLabelCounts($userEmail);
 
         <div class="content-card">
             <div class="card-header">
-                <h2 class="card-title">Your Labels</h2>
+                <h2 class="card-title">All Labels</h2>
                 <button class="btn btn-primary" onclick="openCreateModal()">
                     <span class="material-icons" style="font-size: 18px;">add</span>
                     Create Label
@@ -486,7 +490,7 @@ $labels = getLabelCounts($userEmail);
                     <thead>
                         <tr>
                             <th>Label</th>
-                            <th>Emails</th>
+                            <th>Your Emails</th>
                             <th>Created</th>
                             <th style="text-align: right;">Actions</th>
                         </tr>
@@ -637,7 +641,7 @@ $labels = getLabelCounts($userEmail);
         });
         
         async function deleteLabel(id, name) {
-            if (!confirm(`Are you sure you want to delete the label "${name}"?`)) {
+            if (!confirm(`Are you sure you want to delete the label "${name}"? This will remove it from all emails.`)) {
                 return;
             }
             
