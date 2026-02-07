@@ -11,22 +11,21 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
     <link
         href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@700&family=Inter:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
-
+        rel="stylesheet" />
     <style>
         :root {
             --sidebar-width: 280px;
             --nature-red: #a10420;
-            --inst-black: #1a1a1a;
-            --inst-gray: #555555;
-            --inst-border: #d1d1d1;
+            --inst-black: #121212;
+            --inst-gray: #464646;
+            --inst-border: #d6d6d6;
             --inst-bg: #ffffff;
-            --hover-bg: #f8f8f8;
+            --hover-bg: #f2f2f2;
             --z-index-sidebar: 1000;
         }
 
@@ -36,53 +35,64 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             box-sizing: border-box;
         }
 
-        /* Mobile Toggle Button - Hidden on Desktop */
+        body {
+            background: #fafafa;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Mobile Toggle Button */
         .mobile-toggle {
             display: none;
             position: fixed;
-            top: 15px;
-            left: 15px;
-            z-index: 1001;
+            top: 16px;
+            left: 16px;
+            z-index: 1100;
             background: var(--inst-black);
-            color: white;
+            color: #fff;
             border: none;
             padding: 10px;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: background 0.2s ease;
         }
 
+        .mobile-toggle:hover {
+            background: #000;
+        }
+
+        /* Sidebar */
         .sidebar {
             width: var(--sidebar-width);
             background: var(--inst-bg);
-            border-right: 2px solid var(--inst-border);
+            height: 100vh;
+            border-right: 1px solid #e6e6e6;
             display: flex;
             flex-direction: column;
-            height: 100vh;
-            font-family: 'Inter', sans-serif;
-            color: var(--inst-black);
-            transition: transform 0.3s ease;
             position: sticky;
             top: 0;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
         .sidebar-header {
             padding: 32px 24px;
-            border-bottom: 2px solid var(--inst-border);
-            background-color: #fcfcfc;
+            background: #fcfcfc;
+            border-bottom: 1px solid #e5e5e5;
         }
 
         .logo {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 14px;
             text-decoration: none;
         }
 
         .logo-image {
-            width: 52px;
-            height: 52px;
+            width: 54px;
+            height: 54px;
             object-fit: contain;
+            border-radius: 6px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
         }
 
         .logo-title {
@@ -90,7 +100,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             font-size: 22px;
             font-weight: 700;
             color: var(--inst-black);
-            line-height: 1.1;
+            letter-spacing: -0.5px;
         }
 
         .nav-section {
@@ -104,18 +114,18 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             align-items: center;
             gap: 14px;
             padding: 12px 16px;
+            border-radius: 8px;
             text-decoration: none;
-            color: var(--inst-black);
             font-size: 15px;
-            font-weight: 700;
-            border-radius: 6px;
-            margin-bottom: 4px;
-            transition: all 0.2s ease;
+            font-weight: 600;
+            color: var(--inst-black);
+            transition: all 0.18s ease;
         }
 
         .nav-item .material-icons {
             font-size: 22px;
-            color: var(--inst-gray);
+            opacity: 0.8;
+            transition: opacity 0.18s;
         }
 
         .nav-item:hover {
@@ -124,62 +134,75 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
 
         .nav-item.active {
             background: #f4f4f4;
-            color: black;
             border-left: 4px solid var(--nature-red);
+            padding-left: 12px;
+            font-weight: 700;
         }
 
         .nav-item.active .material-icons {
             color: var(--nature-red);
+            opacity: 1;
         }
 
         .nav-section-title {
-            font-size: 12px;
-            font-weight: 800;
-            text-transform: uppercase;
-            color: var(--inst-gray);
-            padding: 20px 16px 10px;
+            margin-top: 20px;
+            margin-bottom: 12px;
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            padding: 0 16px;
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--inst-gray);
+            letter-spacing: 0.5px;
         }
 
         .manage-labels-btn {
-            color: var(--nature-red);
             text-decoration: none;
-            display: flex;
-            align-items: center;
+            color: var(--nature-red);
             transition: opacity 0.2s;
+        }
+
+        .manage-labels-btn:hover {
+            opacity: 0.75;
         }
 
         .label-item {
             display: flex;
             align-items: center;
             padding: 10px 16px;
+            cursor: pointer;
             text-decoration: none;
             color: var(--inst-gray);
             font-size: 14px;
             font-weight: 600;
+            transition: background 0.18s ease;
+        }
+
+        .label-item:hover {
+            background: #f3f3f3;
+            border-radius: 8px;
         }
 
         .label-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 2px;
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
             margin-right: 12px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
         }
 
         .user-footer {
-            padding: 24px;
-            border-top: 2px solid var(--inst-border);
-            background: #f9f9f9;
+            padding: 22px;
+            border-top: 1px solid #e6e6e6;
+            background: #fbfbfb;
         }
 
         .user-email {
             font-size: 14px;
             font-weight: 700;
+            color: var(--inst-black);
+            margin: 6px 0 14px;
             word-break: break-all;
-            margin-bottom: 12px;
-            display: block;
         }
 
         .footer-actions {
@@ -189,16 +212,22 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         }
 
         .logout-btn {
+            text-decoration: none;
             color: var(--nature-red);
-            border: 2px solid var(--nature-red);
-            padding: 6px 12px;
-            border-radius: 4px;
+            border: 1px solid var(--nature-red);
+            padding: 7px 12px;
             font-size: 12px;
             font-weight: 800;
-            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.25s ease, color 0.25s ease;
         }
 
-        /* Responsive Breakpoints */
+        .logout-btn:hover {
+            background: var(--nature-red);
+            color: #fff;
+        }
+
+        /* Mobile Screen */
         @media (max-width: 768px) {
             .mobile-toggle {
                 display: block;
@@ -208,15 +237,15 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
                 position: fixed;
                 left: 0;
                 transform: translateX(-100%);
-                z-index: var(--z-index-sidebar);
-                box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
+                width: var(--sidebar-width);
+                box-shadow: 10px 0 40px rgba(0, 0, 0, 0.15);
+                z-index: 1000;
             }
 
             .sidebar.open {
                 transform: translateX(0);
             }
 
-            /* Overlay when sidebar is open */
             .sidebar-overlay {
                 display: none;
                 position: fixed;
@@ -224,7 +253,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
                 left: 0;
                 width: 100vw;
                 height: 100vh;
-                background: rgba(0, 0, 0, 0.5);
+                background: rgba(0, 0, 0, 0.45);
                 z-index: 999;
             }
 
@@ -245,63 +274,60 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
 
     <div class="sidebar" id="mainSidebar">
         <div class="sidebar-header">
-            <a href="index.php" class="logo">
+            <a href="#" class="logo">
                 <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg"
-                    alt="Institutional Logo" class="logo-image">
+                    class="logo-image" />
                 <div class="logo-text">
-                    <span class="logo-title">SXC MDTS</span>
-                    <span class="logo-subtitle"
-                        style="font-size: 10px; font-weight: 700; color: var(--inst-gray);">OFFICIAL PORTAL</span>
+                    <span class="logo-title">SXC MDTS</span><br />
+                    <span style="font-size: 10px; font-weight: 700; color: var(--inst-gray);">OFFICIAL PORTAL</span>
                 </div>
             </a>
         </div>
 
         <nav class="nav-section">
-            <a href="index.php" class="nav-item <?= ($current_page == 'index') ? 'active' : ''; ?>">
+            <a href="#" class="nav-item active">
                 <span class="material-icons">edit_note</span>
                 <span>COMPOSE</span>
             </a>
 
-            <a href="sent_history.php" class="nav-item <?= ($current_page == 'sent_history') ? 'active' : ''; ?>">
+            <a href="#" class="nav-item">
                 <span class="material-icons">history</span>
                 <span>ALL MAIL</span>
             </a>
 
-            <a href="send.php" class="nav-item <?= ($current_page == 'send') ? 'active' : ''; ?>">
+            <a href="#" class="nav-item">
                 <span class="material-icons">analytics</span>
                 <span>ANALYTICS</span>
             </a>
 
             <div class="nav-section-title">
                 LABELS
-                <a href="manage_labels.php" class="manage-labels-btn" title="Manage Labels">
-                    <span class="material-icons" style="font-size: 18px;">settings</span>
-                </a>
+                <a href="#" class="manage-labels-btn"><span class="material-icons"
+                        style="font-size: 18px;">settings</span></a>
             </div>
 
-            <?php foreach ($sidebarLabels as $label): ?>
-            <a href="sent_history.php?label_id=<?= $label['id'] ?>" class="label-item">
-                <div class="label-dot" style="background-color: <?= htmlspecialchars($label['label_color']) ?>;"></div>
-                <span>
-                    <?= htmlspecialchars($label['label_name']) ?>
-                </span>
+            <a href="#" class="label-item">
+                <div class="label-dot" style="background:#a10420"></div>Important
             </a>
-            <?php endforeach; ?>
+            <a href="#" class="label-item">
+                <div class="label-dot" style="background:#1976d2"></div>Academic
+            </a>
+            <a href="#" class="label-item">
+                <div class="label-dot" style="background:#2e7d32"></div>Personal
+            </a>
+
         </nav>
 
         <div class="user-footer">
-            <span
-                style="font-size: 10px; font-weight: 800; color: var(--inst-gray); text-transform: uppercase;">Authenticated</span>
-            <span class="user-email">
-                <?= htmlspecialchars($userEmail) ?>
-            </span>
+            <div style="font-size: 10px; font-weight: 800; color: var(--inst-gray); text-transform: uppercase;">
+                Authenticated</div>
+            <div class="user-email">user@example.com</div>
 
             <div class="footer-actions">
-                <a href="settings.php" class="action-link"
-                    style="text-decoration:none; color: var(--inst-gray); font-size: 12px; font-weight:700;">
+                <a href="#" style="font-size:12px; text-decoration:none; color:var(--inst-gray); font-weight:700;">
                     <span class="material-icons" style="font-size:16px; vertical-align:middle;">tune</span> CONFIG
                 </a>
-                <a href="logout.php" class="logout-btn">SIGN OUT</a>
+                <a href="#" class="logout-btn">SIGN OUT</a>
             </div>
         </div>
     </div>
