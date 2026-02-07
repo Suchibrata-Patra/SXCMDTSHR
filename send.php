@@ -522,7 +522,7 @@ function showResultPage($subject, $successEmails, $failedEmails) {
         <div class="main-content">
             <div class="content-area">
                 <!-- Nature.com style header -->
-                <div class="page-header">
+                <!-- <div class="page-header">
                     <div class="header-container">
                         <div class="breadcrumb">
                             <a href="index.php">Home</a>
@@ -531,7 +531,7 @@ function showResultPage($subject, $successEmails, $failedEmails) {
                         </div>
                         <span class="article-type">Delivery Confirmation</span>
                     </div>
-                </div>
+                </div> -->
 
                 <!-- Article-style content -->
                 <article class="article-container">
