@@ -86,7 +86,7 @@ $defaultSignature = json_encode($settings['signature']);
         /* Nature.com style header */
         .page-header {
             background: #fff;
-            border-bottom: 1px solid #e0e0e0;
+            /* border-bottom: 1px solid #e0e0e0; */
             padding: 0;
             position: sticky;
             top: 0;
@@ -142,7 +142,7 @@ $defaultSignature = json_encode($settings['signature']);
         .compose-header {
             margin-bottom: 40px;
             padding-bottom: 32px;
-            border-bottom: 1px solid #e0e0e0;
+            /* border-bottom: 1px solid #e0e0e0; */
         }
 
         .compose-title {
