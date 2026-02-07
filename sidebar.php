@@ -338,13 +338,14 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
                 <span>Compose</span>
             </a>
 
-            <a href="settings.php" class="nav-item <?= ($current_page == 'settings') ? 'active' : ''; ?>">
-                <span class="material-icons">settings</span>
-                <span>Preference</span>
-            </a>
+            
             <a href="send.php" class="nav-item <?= ($current_page == 'send') ? 'active' : ''; ?>">
                 <span class="material-icons">send</span>
                 <span>Sent</span>
+            </a>
+            <a href="settings.php" class="nav-item <?= ($current_page == 'settings') ? 'active' : ''; ?>">
+                <span class="material-icons">settings</span>
+                <span>Preference</span>
             </a>
         </nav>
 
