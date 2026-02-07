@@ -381,8 +381,8 @@ $defaultSignature = json_encode($settings['signature']);
         }
 
         .file-input-label:hover {
-            background: #0973dc;
-            border-color: #0973dc;
+            background: #000000;
+            border-color: #000000;
             color: #fff;
         }
 
@@ -490,9 +490,9 @@ $defaultSignature = json_encode($settings['signature']);
         }
 
         .btn-send {
-            background: #0973dc;
+            background: #000000;
             color: #fff;
-            border-color: #0973dc;
+            border-color: #000000;
             flex: 1;
         }
 
