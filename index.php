@@ -420,6 +420,7 @@ $_SESSION['user_settings'] = $settings;
     </style>
 </head>
 <body>
+    <?php include 'sidebar.php' ?>
     <a href="logout.php" class="logout-btn">
         <i class="fas fa-sign-out-alt"></i> Logout
     </a>
