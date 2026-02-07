@@ -266,7 +266,8 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
                     class="logo-image">
                 <div class="logo-text">
                     <span class="logo-title">SXC MDTS</span>
-                    <span class="logo-subtitle">Faculty Console</span>
+                    <br>
+                    <span class="logo-subtitle">V_1.2.15</span>
                 </div>
             </a>
         </div>
