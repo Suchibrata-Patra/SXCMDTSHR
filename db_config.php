@@ -1,16 +1,13 @@
 <?php
 // db_config.php - Enhanced Database configuration with label management
-
-function env($key, $default = null) {
-    return getenv($key) ?: $default;
-}
+// FIXED VERSION - No external dependencies
 
 function getDatabaseConnection() {
-    // Using your actual database credentials
-    $host = env("DB_HOST", "localhost");
-    $dbname = env("DB_NAME", "u955994755_SXC_MDTS");
-    $username = env("DB_USER", "u955994755_DB_supremacy");
-    $password = env("DB_PASS", "sxccal.edu#MDTS@2026");
+    // Direct database credentials (no env() function needed)
+    $host = "localhost";
+    $dbname = "u955994755_SXC_MDTS";
+    $username = "u955994755_DB_supremacy";
+    $password = "sxccal.edu#MDTS@2026";
     
     try {
         $pdo = new PDO(
@@ -53,12 +50,12 @@ function saveSentEmail($data) {
         $result = $stmt->execute([
             ':sender_email' => $data['sender_email'],
             ':recipient_email' => $data['recipient_email'],
-            ':cc_list' => $data['cc_list'],
-            ':bcc_list' => $data['bcc_list'],
+            ':cc_list' => $data['cc_list'] ?? '',
+            ':bcc_list' => $data['bcc_list'] ?? '',
             ':subject' => $data['subject'],
             ':article_title' => $data['article_title'],
             ':message_body' => $data['message_body'],
-            ':attachment_names' => $data['attachment_names'],
+            ':attachment_names' => $data['attachment_names'] ?? '',
             ':label_id' => $data['label_id'] ?? null
         ]);
         
@@ -267,11 +264,12 @@ function getLabelCounts($userEmail) {
                     el.id, 
                     el.label_name, 
                     el.label_color,
+                    el.created_at,
                     COUNT(se.id) as email_count
                 FROM email_labels el
                 LEFT JOIN sent_emails se ON el.id = se.label_id AND se.sender_email = :user_email
                 WHERE el.user_email = :user_email
-                GROUP BY el.id, el.label_name, el.label_color
+                GROUP BY el.id, el.label_name, el.label_color, el.created_at
                 ORDER BY el.label_name ASC";
         
         $stmt = $pdo->prepare($sql);

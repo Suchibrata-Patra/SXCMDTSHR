@@ -1,7 +1,12 @@
 <?php
-// manage_labels.php - Label Management Interface
+// manage_labels.php - Label Management Interface (FIXED)
 session_start();
-require 'config.php';
+
+// Try to include config.php if it exists, but don't fail if it doesn't
+if (file_exists('config.php')) {
+    require 'config.php';
+}
+
 require 'db_config.php';
 
 if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
@@ -421,7 +426,11 @@ $labels = getLabelCounts($userEmail);
     </style>
 </head>
 <body>
-    <?php include 'sidebar.php'; ?>
+    <?php 
+    if (file_exists('sidebar.php')) {
+        include 'sidebar.php'; 
+    }
+    ?>
 
     <div class="main-content">
         <div class="page-header">
