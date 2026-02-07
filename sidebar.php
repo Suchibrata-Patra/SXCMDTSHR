@@ -15,22 +15,26 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <link
-        href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@700&family=Inter:wght@400;500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
 
     <style>
         :root {
-            --sidebar-width: 320px;
-            --primary-color: #0e1d32;
-            --secondary-color: #f8f9fa;
-            --accent-color: #d63636;
-            --light-gray: #eaeef4;
-            --border-color: #d1d1d1;
-            --text-color: #40474f;
-            --hover-bg: rgba(255, 255, 255, 0.1);
-            --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.1);
-            --shadow-dark: 0 6px 20px rgba(0, 0, 0, 0.2);
-            --transition-speed: 0.3s ease;
+            --sidebar-width: 300px;
+            --nature-red: #000000;
+            --nature-red-hover: #e0cace;
+            --inst-black: #0f1419;
+            --inst-gray: #536471;
+            --inst-light-gray: #8b98a5;
+            --inst-border: #eff3f4;
+            --inst-bg: #ffffff;
+            --hover-bg: #f7f9fa;
+            --active-bg: #fef3f5;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+            --z-index-sidebar: 1000;
+            --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         * {
@@ -40,214 +44,359 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #fafafa;
-            color: var(--text-color);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #fafbfc;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
+        /* Mobile Toggle Button */
         .mobile-toggle {
             display: none;
             position: fixed;
             top: 20px;
             left: 20px;
-            background: var(--primary-color);
+            z-index: 1002;
+            background: var(--inst-black);
             color: white;
             border: none;
-            padding: 12px 16px;
-            border-radius: 8px;
-            box-shadow: var(--shadow-dark);
+            padding: 12px;
+            border-radius: 12px;
             cursor: pointer;
-            transition: background 0.3s;
+            box-shadow: var(--shadow-lg);
+            transition: all 0.3s var(--transition-smooth);
         }
 
-        .mobile-toggle:hover {
-            background: rgba(14, 29, 50, 0.8);
+
+        .mobile-toggle:active {
+            transform: scale(0.95);
         }
 
-        /* Sidebar Style */
+        /* Sidebar Container */
         .sidebar {
             width: var(--sidebar-width);
-            height: 100vh;
-            background: var(--secondary-color);
-            border-right: 1px solid var(--border-color);
+            background: var(--inst-bg);
+            border-right: 1px solid var(--inst-border);
             display: flex;
             flex-direction: column;
+            height: 100vh;
+            font-family: 'Inter', sans-serif;
+            color: var(--inst-black);
+            transition: transform 0.4s var(--transition-smooth);
             position: sticky;
             top: 0;
-            box-shadow: var(--shadow-dark);
-            transition: transform 0.4s ease;
+            box-shadow: var(--shadow-sm);
         }
 
         /* Header Section */
         .sidebar-header {
-            display: flex;
-            align-items: center;
-            padding: 20px 24px;
-            border-bottom: 1px solid var(--border-color);
-            background: var(--primary-color);
-            color: white;
-            box-shadow: var(--shadow-light);
+            padding: 28px 24px;
+            border-bottom: 1px solid var(--inst-border);
+            background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
         }
 
         .logo {
             display: flex;
             align-items: center;
+            gap: 16px;
             text-decoration: none;
-            transition: transform 0.3s;
+            transition: transform 0.3s var(--transition-smooth);
         }
 
-        .logo:hover {
-            transform: scale(1.05);
-        }
+
 
         .logo-image {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            box-shadow: var(--shadow-dark);
+            width: 56px;
+            height: 56px;
+            object-fit: contain;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s var(--transition-smooth);
         }
 
+
+
         .logo-text {
-            margin-left: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
         }
 
         .logo-title {
             font-family: 'Crimson Pro', serif;
             font-size: 24px;
             font-weight: 700;
+            color: var(--inst-black);
+            line-height: 1.2;
+            letter-spacing: -0.5px;
         }
 
         .logo-subtitle {
-            font-size: 12px;
-            font-weight: 500;
-            color: #f8f9fa;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--inst-light-gray);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
         }
 
         /* Navigation Section */
         .nav-section {
             flex: 1;
-            padding: 20px 16px;
+            padding: 16px 16px;
             overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--inst-border) transparent;
+        }
+
+        .nav-section::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .nav-section::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .nav-section::-webkit-scrollbar-thumb {
+            background: var(--inst-border);
+            border-radius: 3px;
+        }
+
+        .nav-section::-webkit-scrollbar-thumb:hover {
+            background: var(--inst-light-gray);
         }
 
         /* Navigation Items */
         .nav-item {
             display: flex;
             align-items: center;
+            gap: 14px;
             padding: 12px 16px;
             text-decoration: none;
-            color: var(--text-color);
-            font-size: 16px;
-            transition: all var(--transition-speed);
-            border-radius: 8px;
-            margin-bottom: 10px;
+            color: var(--inst-gray);
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 10px;
+            margin-bottom: 4px;
+            transition: all 0.25s var(--transition-smooth);
             position: relative;
+            overflow: hidden;
+        }
+
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background: var(--nature-red);
+            transform: scaleY(0);
+            transition: transform 0.25s var(--transition-smooth);
+        }
+
+        .nav-item .material-icons-round {
+            font-size: 22px;
+            transition: all 0.25s var(--transition-smooth);
         }
 
         .nav-item:hover {
             background: var(--hover-bg);
-            color: var(--accent-color);
+            color: var(--inst-black);
+        }
+
+        .nav-item:hover .material-icons-round {
+            transform: scale(1.1);
         }
 
         .nav-item.active {
-            border-left: 4px solid var(--accent-color);
-            font-weight: bold;
-            background: rgba(214, 54, 54, 0.1);
+            background: var(--active-bg);
+            color: var(--nature-red);
+            font-weight: 700;
         }
 
-        .nav-icon {
-            font-size: 26px;
-            margin-right: 8px;
-            transition: all var(--transition-speed);
+        .nav-item.active::before {
+            transform: scaleY(1);
         }
 
-        .nav-item:hover .nav-icon {
-            transform: scale(1.2);
+        .nav-item.active .material-icons-round {
+            color: var(--nature-red);
+            transform: scale(1.05);
         }
 
-        /* Labels Section */
+        /* Section Title */
         .nav-section-title {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 12px;
-            color: var(--text-color);
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: var(--inst-light-gray);
+            padding: 24px 16px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            letter-spacing: 0.8px;
         }
 
+        .manage-labels-btn {
+            color: var(--inst-gray);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            padding: 4px;
+            border-radius: 6px;
+            transition: all 0.2s var(--transition-smooth);
+        }
+
+        .manage-labels-btn:hover {
+            background: var(--hover-bg);
+            color: var(--nature-red);
+            transform: rotate(90deg);
+        }
+
+        /* Label Items */
         .label-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 10px;
+            padding: 10px 16px;
             text-decoration: none;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            margin-bottom: 8px;
-            transition: all var(--transition-speed);
+            color: var(--inst-gray);
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 8px;
+            margin-bottom: 2px;
+            transition: all 0.2s var(--transition-smooth);
         }
 
         .label-item:hover {
             background: var(--hover-bg);
-            transform: translateY(-2px);
+            color: var(--inst-black);
+        }
+
+        .label-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .label-dot {
             width: 12px;
             height: 12px;
-            border-radius: 50%;
-            margin-right: 10px;
+            border-radius: 3px;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.2s var(--transition-smooth);
         }
 
-        .label-title {
-            font-size: 14px;
-            color: var(--text-color);
+        .label-item:hover .label-dot {
+            transform: scale(1.2);
+        }
+
+        .label-count {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--inst-light-gray);
+            background: var(--inst-border);
+            padding: 2px 8px;
+            border-radius: 12px;
+            min-width: 24px;
+            text-align: center;
         }
 
         /* User Footer */
         .user-footer {
             padding: 20px;
-            border-top: 1px solid var(--border-color);
-            background: var(--primary-color);
-            color: white;
-            text-align: center;
+            border-top: 1px solid var(--inst-border);
+            background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
         }
 
-        .user-email {
-            font-size: 14px;
-            font-weight: bold;
-            word-break: break-all;
-            margin-bottom: 8px;
+        .user-card {
+            background: white;
+            border: 1px solid var(--inst-border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s var(--transition-smooth);
+        }
+
+        .user-card:hover {
+            box-shadow: var(--shadow-md);
         }
 
         .auth-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            font-size: 12px;
-        }
-
-        .footer-actions {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .footer-btn {
             display: inline-flex;
             align-items: center;
-            padding: 8px 12px;
-            background: var(--accent-color);
-            color: white;
+            gap: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #16a34a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            background: #f0fdf4;
+            padding: 4px 8px;
             border-radius: 6px;
-            font-size: 14px;
-            text-decoration: none;
-            transition: background var(--transition-speed);
         }
 
-        .footer-btn:hover {
-            background: rgba(214, 54, 54, 0.8);
+        .auth-badge::before {
+            content: '●';
+            font-size: 8px;
+        }
+
+        .user-email {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--inst-black);
+            word-break: break-all;
+            display: block;
+        }
+
+        /* Footer Actions */
+        .footer-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            flex: 1;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 700;
+            text-align: center;
+            padding: 10px 12px;
+            border-radius: 8px;
+            transition: all 0.25s var(--transition-smooth);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .config-btn {
+            color: var(--inst-gray);
+            background: var(--hover-bg);
+            border: 1px solid var(--inst-border);
+        }
+
+        .config-btn:hover {
+            background: var(--inst-black);
+            color: white;
+            border-color: var(--inst-black);
+            box-shadow: var(--shadow-md);
+        }
+
+        .logout-btn {
+            color: white;
+            background: var(--nature-red);
+            border: 1px solid var(--nature-red);
+        }
+
+        .logout-btn:hover {
+            background: var(--nature-red-hover);
+            box-shadow: 0 4px 12px rgba(161, 4, 32, 0.3);
+        }
+
+        .action-btn .material-icons-round {
+            font-size: 16px;
         }
 
         /* Sidebar Overlay */
@@ -258,10 +407,11 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(14, 29, 50, 0.7);
+            background: rgba(15, 20, 25, 0.6);
+            backdrop-filter: blur(4px);
             z-index: 999;
             opacity: 0;
-            transition: opacity var(--transition-speed);
+            transition: opacity 0.3s var(--transition-smooth);
         }
 
         .sidebar-overlay.active {
@@ -279,6 +429,8 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
                 position: fixed;
                 left: 0;
                 transform: translateX(-100%);
+                z-index: var(--z-index-sidebar);
+                box-shadow: var(--shadow-lg);
             }
 
             .sidebar.open {
@@ -288,6 +440,20 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             :root {
                 --sidebar-width: 280px;
             }
+        }
+
+        /* Smooth Scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Focus States for Accessibility */
+        .nav-item:focus,
+        .label-item:focus,
+        .action-btn:focus,
+        .manage-labels-btn:focus {
+            outline: 2px solid var(--nature-red);
+            outline-offset: 2px;
         }
     </style>
 </head>
@@ -301,6 +467,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
     <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
     <div class="sidebar" id="mainSidebar">
+        <!-- Header -->
         <div class="sidebar-header">
             <a href="index.php" class="logo">
                 <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg"
@@ -312,45 +479,66 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             </a>
         </div>
 
+        <!-- Navigation -->
         <nav class="nav-section">
             <a href="index.php" class="nav-item <?= ($current_page == 'index') ? 'active' : ''; ?>">
-                <span class="material-icons-round nav-icon">edit_note</span>
+                <span class="material-icons-round">edit_note</span>
                 <span>Compose</span>
             </a>
 
             <a href="sent_history.php" class="nav-item <?= ($current_page == 'sent_history') ? 'active' : ''; ?>">
-                <span class="material-icons-round nav-icon">history</span>
+                <span class="material-icons-round">history</span>
                 <span>All Mail</span>
             </a>
 
             <a href="send.php" class="nav-item <?= ($current_page == 'send') ? 'active' : ''; ?>">
-                <span class="material-icons-round nav-icon">analytics</span>
+                <span class="material-icons-round">analytics</span>
                 <span>Analytics</span>
             </a>
 
-            <div class="nav-section-title">Labels</div>
+            <!-- Labels Section -->
+            <div class="nav-section-title">
+                Labels
+                <a href="manage_labels.php" class="manage-labels-btn" title="Manage Labels">
+                    <span class="material-icons-round" style="font-size: 18px;">settings</span>
+                </a>
+            </div>
 
             <?php foreach ($sidebarLabels as $label): ?>
             <a href="sent_history.php?label_id=<?= $label['id'] ?>" class="label-item">
-                <div class="label-dot" style="background-color: <?= htmlspecialchars($label['label_color']) ?>;"></div>
-                <span class="label-title">
-                    <?= htmlspecialchars($label['label_name']) ?>
+                <div class="label-content">
+                    <div class="label-dot" style="background-color: <?= htmlspecialchars($label['label_color']) ?>;">
+                    </div>
+                    <span>
+                        <?= htmlspecialchars($label['label_name']) ?>
+                    </span>
+                </div>
+                <?php if (isset($label['count']) && $label['count'] > 0): ?>
+                <span class="label-count">
+                    <?= $label['count'] ?>
                 </span>
+                <?php endif; ?>
             </a>
             <?php endforeach; ?>
         </nav>
 
+        <!-- User Footer -->
         <div class="user-footer">
-            <span class="auth-badge">Authenticated</span>
-            <span class="user-email">
-                <?= htmlspecialchars($userEmail) ?>
-            </span>
+            <div class="user-card">
+                <span class="auth-badge">Authenticated</span>
+                <span class="user-email">
+                    <?= htmlspecialchars($userEmail) ?>
+                </span>
+            </div>
+
             <div class="footer-actions">
-                <a href="settings.php" class="footer-btn">
-                    <span class="material-icons-round">tune</span> Config
+                <a href="settings.php" class="action-btn config-btn">
+                    <span class="material-icons-round">tune</span>
+                    <span>Config</span>
                 </a>
-                <a href="logout.php" class="footer-btn">
-                    <span class="material-icons-round">logout</span> Sign Out
+                <a href="logout.php" class="action-btn logout-btn">
+                    <span class="material-icons-round">logout</span>
+                    <span>Sign Out</span>
                 </a>
             </div>
         </div>
@@ -360,14 +548,27 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         function toggleSidebar() {
             const sidebar = document.getElementById('mainSidebar');
             const overlay = document.querySelector('.sidebar-overlay');
+
             sidebar.classList.toggle('open');
             overlay.classList.toggle('active');
         }
 
+        // Close sidebar on escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && document.getElementById('mainSidebar').classList.contains('open')) {
                 toggleSidebar();
             }
+        });
+
+        // Smooth scroll behavior
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
         });
     </script>
 </body>
