@@ -44,7 +44,7 @@ $hasActiveFilters = !empty(array_filter($filters));
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SXC MDTS</title>
+    <title>Email Archive — SXC MDTS</title>
 
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap"
@@ -411,7 +411,7 @@ $hasActiveFilters = !empty(array_filter($filters));
         /* Email Item */
         .email-item {
             display: grid;
-            grid-template-columns: minmax(200px, 280px) 1fr auto 80px;
+            grid-template-columns: minmax(200px, 280px) 1fr auto 90px;
             gap: 20px;
             align-items: center;
             padding: 5px 32px;
