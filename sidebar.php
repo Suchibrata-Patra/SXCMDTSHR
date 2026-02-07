@@ -119,7 +119,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         .nav-item.active {
             background: #f4f4f4;
             color: black;
-            border-left: 2px solid var(--nature-red);
+            border-left: 3px solid var(--nature-red);
         }
 
         .nav-item.active .material-icons {
