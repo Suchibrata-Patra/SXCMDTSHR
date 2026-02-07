@@ -165,8 +165,10 @@ $defaultSignature = json_encode($settings['signature']);
         /* Form sections - Nature.com article sections */
         .form-section {
             margin-bottom: 48px;
-            background: rgb(243, 243, 243);
+            background: rgb(253, 253, 253);
+            padding:0px 10px;
             border-radius: 10px;
+;
         }
 
         .section-title {
