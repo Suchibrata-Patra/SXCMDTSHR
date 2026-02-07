@@ -618,6 +618,7 @@ $defaultSignature = json_encode($settings['signature']);
                             <input type="text" name="subject" required placeholder="Enter a clear, descriptive subject line">
                         </div>
                         </div>
+                        </div>
                     </section>
 
                     <!-- Email Details Section -->
