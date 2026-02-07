@@ -661,7 +661,6 @@ $defaultSignature = json_encode($settings['signature']);
                     <!-- Signature Section -->
                     <section class="form-section">
                         <h2 class="section-title">Email Signature</h2>
-                        <!-- <p class="section-description">Add or edit your email signature. This will be automatically appended to your message.</p> -->
                         
                         <div class="form-group">
                             <label>Signature <span class="label-optional">(optional)</span></label>
