@@ -2,6 +2,11 @@
 $current_page = basename($_SERVER['PHP_SELF'], '.php');
 $userEmail = $_SESSION['smtp_user'] ?? 'user@example.com';
 $userInitial = strtoupper(substr($userEmail, 0, 1));
+
+// Get labels and counts for sidebar
+require_once 'db_config.php';
+$sidebarLabels = getLabelCounts($userEmail);
+$unlabeledCount = getUnlabeledEmailCount($userEmail);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -169,6 +174,81 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
             border-radius: 0 4px 4px 0;
         }
 
+        /* Section Divider */
+        .nav-divider {
+            height: 1px;
+            background: var(--border-light);
+            margin: 16px 0;
+        }
+
+        .nav-section-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            padding: 8px 18px;
+            margin-top: 16px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .add-label-btn {
+            cursor: pointer;
+            color: var(--accent-primary);
+            font-size: 18px;
+            transition: transform 0.2s;
+        }
+
+        .add-label-btn:hover {
+            transform: scale(1.2);
+        }
+
+        /* Label Items */
+        .label-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 18px;
+            text-decoration: none;
+            color: var(--text-secondary);
+            transition: var(--transition);
+            border-radius: 8px;
+            margin-bottom: 4px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .label-item:hover {
+            background: var(--hover-bg);
+            color: var(--text-primary);
+        }
+
+        .label-color-indicator {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .label-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .label-count {
+            font-size: 12px;
+            color: var(--text-muted);
+            background: var(--background-gray);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
         /* User Info Section */
         .user-info {
             padding: 20px;
@@ -267,6 +347,20 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
             transition: var(--transition);
         }
 
+        /* Empty Labels State */
+        .empty-labels {
+            padding: 20px 18px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .empty-labels .material-icons {
+            font-size: 32px;
+            opacity: 0.3;
+            margin-bottom: 8px;
+        }
+
         /* Responsive adjustments */
         @media (max-height: 700px) {
             .sidebar-header {
@@ -295,7 +389,7 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
             }
         }
 
-        .nav-item {
+        .nav-item, .label-item {
             animation: fadeIn 0.3s ease-out backwards;
         }
 
@@ -333,20 +427,65 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
         </div>
 
         <nav class="nav-section">
+            <!-- Main Navigation -->
             <a href="index.php" class="nav-item <?= ($current_page == 'index') ? 'active' : ''; ?>">
                 <span class="material-icons">edit</span>
                 <span>Compose</span>
             </a>
 
-            
             <a href="send.php" class="nav-item <?= ($current_page == 'send') ? 'active' : ''; ?>">
                 <span class="material-icons">info</span>
                 <span>Sent Mail Info</span>
             </a>
+
             <a href="sent_history.php" class="nav-item <?= ($current_page == 'sent_history') ? 'active' : ''; ?>">
                 <span class="material-icons">mail</span>
                 <span>All Mail</span>
             </a>
+
+            <div class="nav-divider"></div>
+
+            <!-- Labels Section -->
+            <div class="nav-section-title">
+                Labels
+                <a href="manage_labels.php" class="add-label-btn" title="Manage Labels">
+                    <span class="material-icons">settings</span>
+                </a>
+            </div>
+
+            <?php if (empty($sidebarLabels)): ?>
+                <div class="empty-labels">
+                    <span class="material-icons">label_off</span>
+                    <p>No labels yet</p>
+                    <a href="manage_labels.php" style="color: var(--accent-primary); text-decoration: none; font-weight: 600; font-size: 12px;">
+                        Create your first label
+                    </a>
+                </div>
+            <?php else: ?>
+                <!-- Unlabeled emails -->
+                <?php if ($unlabeledCount > 0): ?>
+                    <a href="sent_history.php?label_id=unlabeled" class="label-item">
+                        <span class="material-icons" style="font-size: 18px; color: var(--text-muted);">label_off</span>
+                        <span class="label-name">Unlabeled</span>
+                        <span class="label-count"><?= $unlabeledCount ?></span>
+                    </a>
+                <?php endif; ?>
+
+                <!-- Dynamic Labels -->
+                <?php foreach ($sidebarLabels as $label): ?>
+                    <a href="sent_history.php?label_id=<?= $label['id'] ?>" class="label-item">
+                        <div class="label-color-indicator" style="background-color: <?= htmlspecialchars($label['label_color']) ?>;"></div>
+                        <span class="label-name"><?= htmlspecialchars($label['label_name']) ?></span>
+                        <?php if ($label['email_count'] > 0): ?>
+                            <span class="label-count"><?= $label['email_count'] ?></span>
+                        <?php endif; ?>
+                    </a>
+                <?php endforeach; ?>
+            <?php endif; ?>
+
+            <div class="nav-divider"></div>
+
+            <!-- Settings -->
             <a href="settings.php" class="nav-item <?= ($current_page == 'settings') ? 'active' : ''; ?>">
                 <span class="material-icons">settings</span>
                 <span>Preference</span>

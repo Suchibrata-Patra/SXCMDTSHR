@@ -1,5 +1,5 @@
 <?php
-// view_sent_email.php - Display individual sent email with exact template
+// view_sent_email.php - Enhanced with label display and editing
 session_start();
 require 'config.php';
 require 'db_config.php';
@@ -9,6 +9,8 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     header("Location: login.php");
     exit();
 }
+
+$userEmail = $_SESSION['smtp_user'];
 
 // Get email ID
 $emailId = isset($_GET['id']) ? intval($_GET['id']) : 0;
@@ -25,10 +27,15 @@ try {
         die("Database connection failed");
     }
     
-    $stmt = $pdo->prepare("SELECT * FROM sent_emails WHERE id = :id AND sender_email = :sender");
+    $stmt = $pdo->prepare("
+        SELECT se.*, el.label_name, el.label_color 
+        FROM sent_emails se 
+        LEFT JOIN email_labels el ON se.label_id = el.id 
+        WHERE se.id = :id AND se.sender_email = :sender
+    ");
     $stmt->execute([
         ':id' => $emailId,
-        ':sender' => $_SESSION['smtp_user']
+        ':sender' => $userEmail
     ]);
     
     $email = $stmt->fetch();
@@ -41,6 +48,9 @@ try {
     error_log("Error fetching email: " . $e->getMessage());
     die("Error loading email");
 }
+
+// Get all labels for the dropdown
+$allLabels = getUserLabels($userEmail);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -50,6 +60,7 @@ try {
     <title><?= htmlspecialchars($email['subject']) ?> - SXC MDTS</title>
     <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
     <style>
         * {
@@ -143,6 +154,71 @@ try {
             line-height: 1.3;
         }
 
+        /* Label Badge in Header */
+        .label-badge-large {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 12px;
+        }
+
+        .label-editor {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .label-select {
+            padding: 6px 12px;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: 'Roboto', sans-serif;
+            cursor: pointer;
+        }
+
+        .label-select:focus {
+            outline: none;
+            border-color: #1a73e8;
+        }
+
+        .btn-save-label {
+            padding: 6px 12px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-save-label:hover {
+            background: #1765cc;
+        }
+
+        .btn-edit-label {
+            background: transparent;
+            border: 1px solid #dadce0;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #5f6368;
+            transition: all 0.2s;
+        }
+
+        .btn-edit-label:hover {
+            background: #f8f9fa;
+        }
+
         .email-meta-grid {
             display: grid;
             gap: 12px;
@@ -182,7 +258,7 @@ try {
             margin-right: 6px;
         }
 
-        /* Email Body - Renders exact template */
+        /* Email Body */
         .email-body {
             padding: 0;
             background: #f6f8fc;
@@ -194,13 +270,6 @@ try {
             border: none;
             min-height: 600px;
             display: block;
-        }
-
-        /* Fallback for direct HTML rendering */
-        .email-body-direct {
-            padding: 32px;
-            line-height: 1.6;
-            color: #202124;
         }
 
         /* Info Notice */
@@ -218,9 +287,27 @@ try {
             margin-right: 8px;
         }
 
+        /* Success Message */
+        .success-message {
+            background: #e6f4ea;
+            border-left: 4px solid #34a853;
+            padding: 12px 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #137333;
+            display: none;
+        }
+
+        .success-message.active {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         /* Print Styles */
         @media print {
-            .top-nav {
+            .top-nav, .label-editor, .btn-edit-label {
                 display: none;
             }
 
@@ -278,6 +365,43 @@ try {
 
     <div class="email-container">
         <div class="email-header">
+            <div id="successMessage" class="success-message">
+                <span class="material-icons" style="font-size: 18px;">check_circle</span>
+                Label updated successfully!
+            </div>
+
+            <!-- Label Display/Editor -->
+            <div id="labelDisplay">
+                <?php if (!empty($email['label_name'])): ?>
+                    <div class="label-badge-large" style="background-color: <?= htmlspecialchars($email['label_color']) ?>;">
+                        <span class="material-icons" style="font-size: 16px;">label</span>
+                        <?= htmlspecialchars($email['label_name']) ?>
+                    </div>
+                    <button class="btn-edit-label" onclick="showLabelEditor()">
+                        <i class="fa-solid fa-edit"></i> Change Label
+                    </button>
+                <?php else: ?>
+                    <button class="btn-edit-label" onclick="showLabelEditor()">
+                        <span class="material-icons" style="font-size: 14px; vertical-align: middle;">add</span>
+                        Add Label
+                    </button>
+                <?php endif; ?>
+            </div>
+
+            <div id="labelEditor" class="label-editor" style="display: none;">
+                <select id="labelSelect" class="label-select">
+                    <option value="">No Label</option>
+                    <?php foreach ($allLabels as $label): ?>
+                        <option value="<?= $label['id'] ?>" 
+                                <?= ($email['label_id'] == $label['id']) ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($label['label_name']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <button class="btn-save-label" onclick="saveLabel()">Save</button>
+                <button class="btn-edit-label" onclick="hideLabelEditor()">Cancel</button>
+            </div>
+
             <h1 class="email-subject"><?= htmlspecialchars($email['subject']) ?></h1>
             
             <div class="email-meta-grid">
@@ -344,22 +468,65 @@ try {
         </div>
 
         <div class="email-body">
-            <!-- Render the exact email HTML in an iframe for isolation -->
             <iframe id="emailFrame" srcdoc="<?= htmlspecialchars($email['message_body']) ?>"></iframe>
         </div>
     </div>
 
     <script>
+        const emailId = <?= $emailId ?>;
+
+        function showLabelEditor() {
+            document.getElementById('labelDisplay').style.display = 'none';
+            document.getElementById('labelEditor').style.display = 'inline-flex';
+        }
+
+        function hideLabelEditor() {
+            document.getElementById('labelDisplay').style.display = 'block';
+            document.getElementById('labelEditor').style.display = 'none';
+        }
+
+        async function saveLabel() {
+            const labelId = document.getElementById('labelSelect').value;
+            
+            try {
+                const formData = new FormData();
+                formData.append('ajax', '1');
+                formData.append('email_id', emailId);
+                formData.append('label_id', labelId || '');
+                
+                const response = await fetch('update_email_label.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Show success message
+                    const successMsg = document.getElementById('successMessage');
+                    successMsg.classList.add('active');
+                    
+                    // Reload page after short delay
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    alert('Failed to update label');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred');
+            }
+        }
+
         // Auto-resize iframe to fit content
         const iframe = document.getElementById('emailFrame');
         
         iframe.addEventListener('load', function() {
             try {
-                // Add some padding for safety
                 const contentHeight = iframe.contentWindow.document.body.scrollHeight + 40;
                 iframe.style.height = contentHeight + 'px';
                 
-                // Add base styles to iframe content if needed
                 const iframeDoc = iframe.contentWindow.document;
                 const style = iframeDoc.createElement('style');
                 style.textContent = `
@@ -382,7 +549,6 @@ try {
                 iframeDoc.head.appendChild(style);
             } catch (e) {
                 console.error('Could not resize iframe:', e);
-                // Fallback height
                 iframe.style.height = '800px';
             }
         });

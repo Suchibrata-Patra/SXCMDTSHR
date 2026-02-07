@@ -1,0 +1,653 @@
+<?php
+// manage_labels.php - Label Management Interface
+session_start();
+require 'config.php';
+require 'db_config.php';
+
+if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
+    header("Location: login.php");
+    exit();
+}
+
+$userEmail = $_SESSION['smtp_user'];
+
+// Handle AJAX requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
+    header('Content-Type: application/json');
+    
+    $action = $_POST['action'] ?? '';
+    
+    switch ($action) {
+        case 'create':
+            $labelName = trim($_POST['label_name'] ?? '');
+            $labelColor = $_POST['label_color'] ?? '#0973dc';
+            
+            if (empty($labelName)) {
+                echo json_encode(['success' => false, 'message' => 'Label name is required']);
+                exit;
+            }
+            
+            $result = createLabel($userEmail, $labelName, $labelColor);
+            
+            if (is_array($result) && isset($result['error'])) {
+                echo json_encode(['success' => false, 'message' => $result['error']]);
+            } elseif ($result) {
+                echo json_encode(['success' => true, 'message' => 'Label created successfully']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Failed to create label']);
+            }
+            exit;
+            
+        case 'update':
+            $labelId = intval($_POST['label_id'] ?? 0);
+            $labelName = trim($_POST['label_name'] ?? '');
+            $labelColor = $_POST['label_color'] ?? '#0973dc';
+            
+            if (empty($labelName) || !$labelId) {
+                echo json_encode(['success' => false, 'message' => 'Invalid data']);
+                exit;
+            }
+            
+            $result = updateLabel($labelId, $userEmail, $labelName, $labelColor);
+            echo json_encode([
+                'success' => $result, 
+                'message' => $result ? 'Label updated successfully' : 'Failed to update label'
+            ]);
+            exit;
+            
+        case 'delete':
+            $labelId = intval($_POST['label_id'] ?? 0);
+            
+            if (!$labelId) {
+                echo json_encode(['success' => false, 'message' => 'Invalid label ID']);
+                exit;
+            }
+            
+            $result = deleteLabel($labelId, $userEmail);
+            echo json_encode([
+                'success' => $result, 
+                'message' => $result ? 'Label deleted successfully' : 'Failed to delete label'
+            ]);
+            exit;
+    }
+    
+    echo json_encode(['success' => false, 'message' => 'Invalid action']);
+    exit;
+}
+
+// Get all labels for display
+$labels = getLabelCounts($userEmail);
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Labels | SXC MDTS</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-white: #ffffff;
+            --background-gray: #f8f9fa;
+            --border-light: #e9ecef;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --accent-primary: #0d6efd;
+            --accent-success: #34a853;
+            --accent-danger: #dc3545;
+            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--background-gray);
+            color: var(--text-primary);
+            display: flex;
+            height: 100vh;
+        }
+
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
+        }
+
+        .page-header {
+            margin-bottom: 32px;
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .page-subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+
+        .content-card {
+            background: var(--primary-white);
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0a58ca;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(13, 110, 253, 0.2);
+        }
+
+        .btn-danger {
+            background: var(--accent-danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #bb2d3b;
+        }
+
+        .btn-secondary {
+            background: var(--background-gray);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-light);
+        }
+
+        /* Labels Table */
+        .labels-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+
+        .labels-table thead th {
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .labels-table tbody tr {
+            background: var(--background-gray);
+            transition: all 0.2s;
+        }
+
+        .labels-table tbody tr:hover {
+            background: #e9ecef;
+            transform: translateX(4px);
+        }
+
+        .labels-table tbody td {
+            padding: 16px;
+        }
+
+        .labels-table tbody td:first-child {
+            border-radius: 8px 0 0 8px;
+        }
+
+        .labels-table tbody td:last-child {
+            border-radius: 0 8px 8px 0;
+        }
+
+        .label-display {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .label-color-box {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .label-name {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .label-count {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-icon {
+            padding: 8px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 6px;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .btn-icon:hover {
+            background: var(--border-light);
+            color: var(--text-primary);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            margin-bottom: 24px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+        }
+
+        .color-picker-wrapper {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .color-picker {
+            width: 60px;
+            height: 40px;
+            border: 2px solid var(--border-light);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .color-presets {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .color-preset {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .color-preset:hover {
+            transform: scale(1.1);
+            border-color: var(--text-primary);
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        .alert {
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .alert.active {
+            display: flex;
+        }
+
+        .alert-success {
+            background: #d1f2dd;
+            color: #0f5132;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #842029;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state .material-icons {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+    <?php include 'sidebar.php'; ?>
+
+    <div class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">Label Management</h1>
+            <p class="page-subtitle">Organize your emails with custom labels</p>
+        </div>
+
+        <div id="alertContainer"></div>
+
+        <div class="content-card">
+            <div class="card-header">
+                <h2 class="card-title">Your Labels</h2>
+                <button class="btn btn-primary" onclick="openCreateModal()">
+                    <span class="material-icons" style="font-size: 18px;">add</span>
+                    Create Label
+                </button>
+            </div>
+
+            <?php if (empty($labels)): ?>
+                <div class="empty-state">
+                    <span class="material-icons">label_off</span>
+                    <h3>No labels yet</h3>
+                    <p>Create your first label to start organizing your emails</p>
+                </div>
+            <?php else: ?>
+                <table class="labels-table">
+                    <thead>
+                        <tr>
+                            <th>Label</th>
+                            <th>Emails</th>
+                            <th>Created</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($labels as $label): ?>
+                        <tr>
+                            <td>
+                                <div class="label-display">
+                                    <div class="label-color-box" style="background-color: <?= htmlspecialchars($label['label_color']) ?>;"></div>
+                                    <span class="label-name"><?= htmlspecialchars($label['label_name']) ?></span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="label-count"><?= $label['email_count'] ?> emails</span>
+                            </td>
+                            <td>
+                                <span class="label-count"><?= date('M j, Y', strtotime($label['created_at'])) ?></span>
+                            </td>
+                            <td style="text-align: right;">
+                                <div class="action-buttons">
+                                    <button class="btn-icon" onclick="openEditModal(<?= $label['id'] ?>, '<?= htmlspecialchars($label['label_name'], ENT_QUOTES) ?>', '<?= htmlspecialchars($label['label_color']) ?>')" title="Edit">
+                                        <span class="material-icons">edit</span>
+                                    </button>
+                                    <button class="btn-icon" onclick="deleteLabel(<?= $label['id'] ?>, '<?= htmlspecialchars($label['label_name'], ENT_QUOTES) ?>')" title="Delete">
+                                        <span class="material-icons">delete</span>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Create/Edit Modal -->
+    <div id="labelModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Create Label</h2>
+            </div>
+            
+            <form id="labelForm">
+                <input type="hidden" id="labelId" name="label_id">
+                <input type="hidden" id="formAction" name="action" value="create">
+                
+                <div class="form-group">
+                    <label class="form-label" for="labelName">Label Name</label>
+                    <input type="text" class="form-input" id="labelName" name="label_name" placeholder="e.g., Work, Personal, Urgent" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Label Color</label>
+                    <div class="color-picker-wrapper">
+                        <input type="color" class="color-picker" id="labelColor" name="label_color" value="#0973dc">
+                        <span id="colorHex">#0973dc</span>
+                    </div>
+                    <div class="color-presets">
+                        <div class="color-preset" style="background: #0973dc;" onclick="setColor('#0973dc')"></div>
+                        <div class="color-preset" style="background: #34a853;" onclick="setColor('#34a853')"></div>
+                        <div class="color-preset" style="background: #ea4335;" onclick="setColor('#ea4335')"></div>
+                        <div class="color-preset" style="background: #fbbc04;" onclick="setColor('#fbbc04')"></div>
+                        <div class="color-preset" style="background: #5f6368;" onclick="setColor('#5f6368')"></div>
+                        <div class="color-preset" style="background: #8e24aa;" onclick="setColor('#8e24aa')"></div>
+                        <div class="color-preset" style="background: #ff6d00;" onclick="setColor('#ff6d00')"></div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Label</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Color picker functionality
+        const colorPicker = document.getElementById('labelColor');
+        const colorHex = document.getElementById('colorHex');
+        
+        colorPicker.addEventListener('input', (e) => {
+            colorHex.textContent = e.target.value;
+        });
+        
+        function setColor(color) {
+            colorPicker.value = color;
+            colorHex.textContent = color;
+        }
+        
+        // Modal functions
+        function openCreateModal() {
+            document.getElementById('modalTitle').textContent = 'Create Label';
+            document.getElementById('formAction').value = 'create';
+            document.getElementById('labelId').value = '';
+            document.getElementById('labelName').value = '';
+            document.getElementById('labelColor').value = '#0973dc';
+            colorHex.textContent = '#0973dc';
+            document.getElementById('labelModal').classList.add('active');
+        }
+        
+        function openEditModal(id, name, color) {
+            document.getElementById('modalTitle').textContent = 'Edit Label';
+            document.getElementById('formAction').value = 'update';
+            document.getElementById('labelId').value = id;
+            document.getElementById('labelName').value = name;
+            document.getElementById('labelColor').value = color;
+            colorHex.textContent = color;
+            document.getElementById('labelModal').classList.add('active');
+        }
+        
+        function closeModal() {
+            document.getElementById('labelModal').classList.remove('active');
+        }
+        
+        // Close modal on outside click
+        document.getElementById('labelModal').addEventListener('click', (e) => {
+            if (e.target.id === 'labelModal') {
+                closeModal();
+            }
+        });
+        
+        // Form submission
+        document.getElementById('labelForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            formData.append('ajax', '1');
+            
+            try {
+                const response = await fetch('manage_labels.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert(result.message, 'success');
+                    closeModal();
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showAlert(result.message, 'error');
+                }
+            } catch (error) {
+                showAlert('An error occurred. Please try again.', 'error');
+            }
+        });
+        
+        // Delete label
+        async function deleteLabel(id, name) {
+            if (!confirm(`Are you sure you want to delete the label "${name}"? This will remove the label from all associated emails.`)) {
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('ajax', '1');
+            formData.append('action', 'delete');
+            formData.append('label_id', id);
+            
+            try {
+                const response = await fetch('manage_labels.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert(result.message, 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showAlert(result.message, 'error');
+                }
+            } catch (error) {
+                showAlert('An error occurred. Please try again.', 'error');
+            }
+        }
+        
+        // Show alert
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} active`;
+            alert.innerHTML = `
+                <span class="material-icons">${type === 'success' ? 'check_circle' : 'error'}</span>
+                <span>${message}</span>
+            `;
+            container.appendChild(alert);
+            
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
