@@ -326,7 +326,7 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
                     alt="St. Xavier's College" class="logo-image">
                 <div class="logo-text">
                     <span class="logo-title">St. Xavier's College</span>
-                    <span class="logo-subtitle">Mail System</span>
+                    <span class="logo-subtitle">10.57.28.277</span>
                 </div>
             </a>
         </div>
