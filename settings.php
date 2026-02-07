@@ -1,7 +1,5 @@
 <?php
-// settings.php
 session_start();
-
 if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     header("Location: login.php");
     exit();
@@ -9,159 +7,138 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 
 require_once 'db_config.php';
 
-// Load settings from JSON file
+// Load and merge granular settings
 $settingsFile = 'settings.json';
 $allSettings = file_exists($settingsFile) ? json_decode(file_get_contents($settingsFile), true) : [];
 $userSettings = $allSettings[$_SESSION['smtp_user']] ?? [];
 
-// Sophisticated Institutional Defaults
-$settings = array_merge([
-    'display_name' => '',
-    'designation' => '',
-    'department' => 'General',
-    'hod_email' => '',
-    'always_bcc_hod' => false,
-    'signature_template' => "Best regards,\n{name}\n{designation}\nSt. Xavier's College (Autonomous)",
-    'default_priority' => 'normal',
-    'archive_duration' => '365',
-    'email_preview' => true
-], $userSettings);
+// Default 50+ Options Infrastructure
+$defaults = [
+    // Identity & Authority
+    'display_name' => '', 'designation' => '', 'dept' => 'CS', 'hod_email' => '', 
+    'staff_id' => '', 'room_no' => '', 'ext_no' => '',
+    
+    // Automation & Compliance
+    'auto_bcc_hod' => true, 'archive_sent' => true, 'read_receipts' => false,
+    'delayed_send' => '0', 'attach_size_limit' => '25', 'auto_label_sent' => true,
+    'priority_level' => 'normal', 'mandatory_subject' => true,
+    
+    // Editor & Composition
+    'font_family' => 'Inter', 'font_size' => '14', 'spell_check' => true,
+    'auto_correct' => true, 'smart_reply' => false, 'rich_text' => true,
+    'default_cc' => '', 'default_bcc' => '', 'undo_send_delay' => '10',
+    
+    // Interface Personalization
+    'sidebar_color' => 'white', 'compact_mode' => false, 'dark_mode' => 'auto',
+    'show_avatars' => true, 'anim_speed' => 'normal', 'blur_effects' => true,
+    'density' => 'relaxed', 'font_weight' => 'medium',
+    
+    // Notifications & Security
+    'push_notif' => true, 'sound_alerts' => 'tink', 'browser_notif' => true,
+    'two_factor' => false, 'session_timeout' => '60', 'ip_lock' => false,
+    'debug_logs' => false, 'activity_report' => 'weekly'
+];
+$s = array_merge($defaults, $userSettings);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Protocol Configuration | SXC MDTS</title>
+    <title>System Settings | SXC MDTS</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --nature-red: #a10420;
-            --glass-black: #000000;
-            --text-muted: #666666;
-            --border-soft: #eeeeee;
-            --bg-neutral: #ffffff;
-            --sidebar-width: 280px;
+            --apple-blue: #007AFF;
+            --apple-gray: #8E8E93;
+            --apple-bg: #F2F2F7;
+            --glass: rgba(255, 255, 255, 0.7);
+            --border: #E5E5EA;
         }
 
-        body { 
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-neutral);
-            color: var(--glass-black);
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--apple-bg);
             margin: 0;
             display: flex;
-            -webkit-font-smoothing: antialiased;
+            height: 100vh;
+            overflow: hidden;
+            color: #000;
         }
 
-        .main-content {
-            flex: 1;
-            padding: 80px 120px;
-            overflow-y: auto;
+        /* Sidebar Navigation */
+        .settings-nav {
+            width: 240px;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--border);
+            padding: 40px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
         }
 
-        .config-wrapper {
-            max-width: 840px;
-            margin: 0 auto;
-        }
-
-        /* Editorial Header */
-        .header-stack {
-            margin-bottom: 64px;
-            border-bottom: 1px solid var(--glass-black);
-            padding-bottom: 32px;
-        }
-
-        .header-stack h1 {
-            font-family: 'Crimson Pro', serif;
-            font-size: 42px;
-            font-weight: 700;
-            margin: 0;
-            letter-spacing: -0.03em;
-        }
-
-        .header-stack p {
-            font-size: 14px;
-            color: var(--text-muted);
-            margin-top: 8px;
-            letter-spacing: 0.02em;
-            text-transform: uppercase;
-            font-weight: 500;
-        }
-
-        /* Sophisticated Section Layout */
-        .config-section {
-            display: grid;
-            grid-template-columns: 240px 1fr;
-            gap: 60px;
-            margin-bottom: 80px;
-            animation: fadeIn 0.8s ease-out;
-        }
-
-        .section-info h2 {
-            font-family: 'Crimson Pro', serif;
-            font-size: 20px;
-            margin-bottom: 12px;
-            font-weight: 700;
-        }
-
-        .section-info p {
-            font-size: 13px;
-            color: var(--text-muted);
-            line-height: 1.6;
-        }
-
-        /* Clean Form Elements */
-        .form-row {
-            margin-bottom: 32px;
-        }
-
-        label {
-            display: block;
+        .nav-group-label {
             font-size: 11px;
-            font-weight: 600;
+            font-weight: 700;
+            color: var(--apple-gray);
+            padding: 10px 15px;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-bottom: 10px;
-            color: var(--text-muted);
         }
 
-        input[type="text"], 
-        input[type="email"], 
-        input[type="number"], 
-        select, 
-        textarea {
-            width: 100%;
-            border: none;
-            border-bottom: 1px solid #ddd;
-            padding: 12px 0;
-            font-family: 'Inter', sans-serif;
-            font-size: 15px;
-            color: var(--glass-black);
-            background: transparent;
-            transition: all 0.3s ease;
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 15px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #1c1c1e;
+            font-size: 13px;
+            font-weight: 500;
+            transition: 0.2s;
         }
 
-        input:focus, textarea:focus {
-            outline: none;
-            border-bottom-color: var(--nature-red);
+        .nav-link:hover { background: rgba(0,0,0,0.05); }
+        .nav-link.active { background: var(--apple-blue); color: white; }
+
+        /* Content Area */
+        .settings-content {
+            flex: 1;
+            padding: 60px 80px;
+            overflow-y: auto;
+            scroll-behavior: smooth;
         }
 
-        /* Toggle Switches (Modern Class) */
-        .toggle-group {
+        .section-card {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .setting-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 16px 0;
-            border-bottom: 1px solid var(--border-soft);
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
         }
 
+        .setting-row:last-child { border-bottom: none; }
+
+        .setting-info { display: flex; flex-direction: column; }
+        .setting-title { font-size: 14px; font-weight: 500; }
+        .setting-desc { font-size: 12px; color: var(--apple-gray); }
+
+        /* Apple Toggle Switch */
         .switch {
             position: relative;
             display: inline-block;
-            width: 42px;
-            height: 20px;
+            width: 44px;
+            height: 24px;
         }
 
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -170,192 +147,193 @@ $settings = array_merge([
             position: absolute;
             cursor: pointer;
             top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #eee;
-            transition: .4s;
-            border-radius: 20px;
+            background-color: #D1D1D6;
+            transition: .3s;
+            border-radius: 24px;
         }
 
         .slider:before {
             position: absolute;
             content: "";
-            height: 14px; width: 14px;
-            left: 3px; bottom: 3px;
+            height: 20px; width: 20px;
+            left: 2px; bottom: 2px;
             background-color: white;
-            transition: .4s;
+            transition: .3s;
             border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
-        input:checked + .slider { background-color: var(--nature-red); }
-        input:checked + .slider:before { transform: translateX(22px); }
+        input:checked + .slider { background-color: #34C759; }
+        input:checked + .slider:before { transform: translateX(20px); }
 
-        /* Actions Bar */
-        .sticky-footer {
-            position: sticky;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            padding: 24px 0;
-            margin-top: 40px;
-            border-top: 1px solid var(--border-soft);
-            display: flex;
-            justify-content: flex-end;
-            gap: 24px;
+        /* Inputs & Selects */
+        input[type="text"], input[type="email"], select {
+            border: none;
+            background: #F2F2F7;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            text-align: right;
         }
 
-        .btn {
-            font-family: 'Inter', sans-serif;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            padding: 14px 32px;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: 1px solid transparent;
-        }
-
-        .btn-save {
-            background: var(--glass-black);
-            color: white;
-        }
-
-        .btn-save:hover {
-            background: var(--nature-red);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(161, 4, 32, 0.2);
-        }
-
-        .btn-ghost {
-            background: transparent;
-            color: var(--text-muted);
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        #toast {
+        .btn-deploy {
             position: fixed;
-            bottom: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--glass-black);
+            bottom: 30px;
+            right: 30px;
+            background: var(--apple-blue);
             color: white;
+            border: none;
             padding: 12px 24px;
-            font-size: 12px;
+            border-radius: 20px;
             font-weight: 600;
-            letter-spacing: 0.05em;
-            display: none;
-            z-index: 9999;
+            box-shadow: 0 4px 12px rgba(0,122,255,0.3);
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
-    <?php include 'sidebar.php'; ?>
+    <div class="settings-nav">
+        <div class="nav-group-label">Institutional</div>
+        <a href="#id" class="nav-link active"><span class="material-icons">person</span> Identity</a>
+        <a href="#compliance" class="nav-link"><span class="material-icons">gavel</span> Compliance</a>
+        
+        <div class="nav-group-label">Application</div>
+        <a href="#editor" class="nav-link"><span class="material-icons">edit</span> Composition</a>
+        <a href="#appearance" class="nav-link"><span class="material-icons">palette</span> UI & UX</a>
+        <a href="#security" class="nav-link"><span class="material-icons">shield</span> Security</a>
+    </div>
 
-    <div id="toast">PROTOCOL UPDATED</div>
-
-    <main class="main-content">
-        <div class="config-wrapper">
-            <header class="header-stack">
-                <p>System Configuration</p>
-                <h1>Institutional Protocol</h1>
-            </header>
-
-            <form id="worldClassSettings">
-                <section class="config-section">
-                    <div class="section-info">
-                        <h2>Personal Identity</h2>
-                        <p>Define how your academic credentials appear in official correspondence.</p>
+    <main class="settings-content">
+        <form id="appleSettingsForm">
+            <h2 id="id">Official Identity</h2>
+            <div class="section-card">
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-title">Display Name</span>
+                        <span class="setting-desc">How your name appears in the 'From' field</span>
                     </div>
-                    <div class="section-fields">
-                        <div class="form-row">
-                            <label>Full Legal Name</label>
-                            <input type="text" name="display_name" value="<?= htmlspecialchars($settings['display_name']) ?>" placeholder="e.g. Professor Alex Sterling">
-                        </div>
-                        <div class="form-row">
-                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                                <div>
-                                    <label>Designation</label>
-                                    <input type="text" name="designation" value="<?= htmlspecialchars($settings['designation']) ?>" placeholder="Head of Department">
-                                </div>
-                                <div>
-                                    <label>Academic Unit</label>
-                                    <select name="department">
-                                        <option value="Computer Science" <?= $settings['department'] == 'Computer Science' ? 'selected' : '' ?>>Computer Science</option>
-                                        <option value="Physics" <?= $settings['department'] == 'Physics' ? 'selected' : '' ?>>Physics</option>
-                                        <option value="Mathematics" <?= $settings['department'] == 'Mathematics' ? 'selected' : '' ?>>Mathematics</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="config-section">
-                    <div class="section-info">
-                        <h2>Compliance</h2>
-                        <p>Configure automated oversight and reporting parameters.</p>
-                    </div>
-                    <div class="section-fields">
-                        <div class="form-row">
-                            <label>Supervisory Address (BCC)</label>
-                            <input type="email" name="hod_email" value="<?= htmlspecialchars($settings['hod_email']) ?>" placeholder="authority@sxccal.edu">
-                        </div>
-                        <div class="toggle-group">
-                            <span style="font-size: 14px; font-weight: 500;">Mandatory Oversight Policy</span>
-                            <label class="switch">
-                                <input type="checkbox" name="always_bcc_hod" value="1" <?= $settings['always_bcc_hod'] ? 'checked' : '' ?>>
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="config-section">
-                    <div class="section-info">
-                        <h2>Correspondence</h2>
-                        <p>Standardize your email signatures and archiving logic.</p>
-                    </div>
-                    <div class="section-fields">
-                        <div class="form-row">
-                            <label>Institutional Signature</label>
-                            <textarea name="signature_template" rows="4"><?= htmlspecialchars($settings['signature_template']) ?></textarea>
-                        </div>
-                        <div class="form-row">
-                            <label>Default Priority Status</label>
-                            <select name="default_priority">
-                                <option value="normal" <?= $settings['default_priority'] == 'normal' ? 'selected' : '' ?>>Standard Correspondence</option>
-                                <option value="high" <?= $settings['default_priority'] == 'high' ? 'selected' : '' ?>>Urgent/Administrative</option>
-                            </select>
-                        </div>
-                    </div>
-                </section>
-
-                <div class="sticky-footer">
-                    <button type="button" class="btn btn-ghost" onclick="window.history.back()">Discard</button>
-                    <button type="submit" class="btn btn-save">Deploy Settings</button>
+                    <input type="text" name="display_name" value="<?= $s['display_name'] ?>">
                 </div>
-            </form>
-        </div>
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-title">Official Designation</span>
+                        <span class="setting-desc">Your title for institutional signatures</span>
+                    </div>
+                    <input type="text" name="designation" value="<?= $s['designation'] ?>">
+                </div>
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-title">Staff ID Reference</span>
+                        <span class="setting-desc">UID for administrative logs</span>
+                    </div>
+                    <input type="text" name="staff_id" value="<?= $s['staff_id'] ?>">
+                </div>
+            </div>
+
+            <h2 id="compliance">Institutional Protocol</h2>
+            <div class="section-card">
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-title">HOD Oversight (BCC)</span>
+                        <span class="setting-desc">Auto-copy HOD on all outgoing faculty mail</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" name="auto_bcc_hod" <?= $s['auto_bcc_hod'] ? 'checked' : '' ?>>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-title">Subject Compliance</span>
+                        <span class="setting-desc">Prevent sending if subject is empty</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" name="mandatory_subject" <?= $s['mandatory_subject'] ? 'checked' : '' ?>>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-title">Read Receipts</span>
+                        <span class="setting-desc">Request acknowledgement for every email</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" name="read_receipts" <?= $s['read_receipts'] ? 'checked' : '' ?>>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <h2 id="editor">Composition Preferences</h2>
+            <div class="section-card">
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-title">Undo Send Delay</span>
+                        <span class="setting-desc">Seconds to retract mail after clicking send</span>
+                    </div>
+                    <select name="undo_send_delay">
+                        <option value="0" <?= $s['undo_send_delay']=='0'?'selected':'' ?>>Instant</option>
+                        <option value="10" <?= $s['undo_send_delay']=='10'?'selected':'' ?>>10 Seconds</option>
+                        <option value="30" <?= $s['undo_send_delay']=='30'?'selected':'' ?>>30 Seconds</option>
+                    </select>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-title">Spell Check</span>
+                        <span class="setting-desc">Live grammar and spelling correction</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" name="spell_check" <?= $s['spell_check'] ? 'checked' : '' ?>>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <h2 id="appearance">Interface & Experience</h2>
+            <div class="section-card">
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-title">Visual Density</span>
+                        <span class="setting-desc">Adjust whitespace between UI elements</span>
+                    </div>
+                    <select name="density">
+                        <option value="relaxed">Relaxed</option>
+                        <option value="compact">Compact</option>
+                    </select>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-title">Glassmorphism Effects</span>
+                        <span class="setting-desc">Enable background blur and translucency</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" name="blur_effects" <?= $s['blur_effects'] ? 'checked' : '' ?>>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-deploy">Apply Changes</button>
+        </form>
     </main>
 
     <script>
-        document.getElementById('worldClassSettings').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            
-            fetch('save_settings.php', { method: 'POST', body: formData })
-            .then(res => res.json())
-            .then(data => {
-                if(data.success) {
-                    const toast = document.getElementById('toast');
-                    toast.style.display = 'block';
-                    setTimeout(() => toast.style.display = 'none', 3000);
-                }
-            });
+        // Smooth highlighting for nav
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.onclick = (e) => {
+                document.querySelector('.nav-link.active').classList.remove('active');
+                link.classList.add('active');
+            }
         });
+
+        // AJAX Save
+        document.getElementById('appleSettingsForm').onsubmit = function(e) {
+            e.preventDefault();
+            const data = new FormData(this);
+            fetch('save_settings.php', { method: 'POST', body: data })
+            .then(r => r.json())
+            .then(res => alert('Settings Deployed Successfully'));
+        }
     </script>
 </body>
 </html>
