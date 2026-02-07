@@ -110,7 +110,7 @@ $defaultSignature = json_encode($settings['signature']);
         }
 
         .breadcrumb a {
-            color: #000000;
+            color: #0973dc;
             text-decoration: none;
             transition: color 0.2s;
         }
@@ -129,7 +129,7 @@ $defaultSignature = json_encode($settings['signature']);
             display: inline-block;
             font-size: 13px;
             font-weight: 600;
-            color: #000000;
+            color: #0973dc;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 12px;
@@ -230,7 +230,7 @@ $defaultSignature = json_encode($settings['signature']);
         input[type="text"]:focus,
         select:focus {
             outline: none;
-            border-color: #000000;
+            border-color: #0973dc;
             box-shadow: 0 0 0 2px rgba(9, 115, 220, 0.1);
         }
 
@@ -264,7 +264,7 @@ $defaultSignature = json_encode($settings['signature']);
         }
 
         .editor-wrapper.focused {
-            border-color: #000000;
+            border-color: #0973dc;
             box-shadow: 0 0 0 2px rgba(9, 115, 220, 0.1);
         }
 
@@ -329,8 +329,8 @@ $defaultSignature = json_encode($settings['signature']);
 
         .btn-attach-list:hover {
             background: #fafafa;
-            border-color: #000000;
-            color: #000000;
+            border-color: #0973dc;
+            color: #0973dc;
         }
 
         .help-text {
@@ -381,8 +381,8 @@ $defaultSignature = json_encode($settings['signature']);
         }
 
         .file-input-label:hover {
-            background: #000000;
-            border-color: #000000;
+            background: #0973dc;
+            border-color: #0973dc;
             color: #fff;
         }
 
@@ -490,9 +490,9 @@ $defaultSignature = json_encode($settings['signature']);
         }
 
         .btn-send {
-            background: #000000;
+            background: #0973dc;
             color: #fff;
-            border-color: #000000;
+            border-color: #0973dc;
             flex: 1;
         }
 
@@ -578,6 +578,8 @@ $defaultSignature = json_encode($settings['signature']);
             <div class="compose-container">
                 <header class="compose-header">
                     <h1 class="compose-title">Compose New Mail</h1>
+                    <!-- <p class="compose-subtitle">Create and send professional emails with rich formatting, attachments,
+                        and custom signatures.</p> -->
                 </header>
 
                 <form action="send.php" method="POST" enctype="multipart/form-data" id="composeForm">
