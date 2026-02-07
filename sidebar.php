@@ -3,515 +3,244 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
 $userEmail = $_SESSION['smtp_user'] ?? 'user@example.com';
 $userInitial = strtoupper(substr($userEmail, 0, 1));
 
-// Get labels and counts for sidebar
 require_once 'db_config.php';
 $sidebarLabels = getLabelCounts($userEmail);
 $unlabeledCount = getUnlabeledEmailCount($userEmail);
 ?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <title>Sidebar</title>
-
-    <!-- Material Icons -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --primary-white: #ffffff;
-            --background-gray: #f8f9fa;
-            --border-light: #e9ecef;
-            --text-primary: #212529;
-            --text-secondary: #6c757d;
-            --text-muted: #adb5bd;
-            --hover-bg: #f1f3f5;
-            --active-bg: #e9ecef;
-            --accent-primary: #0d6efd;
-            --accent-dark: #0a58ca;
-            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-            --transition: all 0.2s ease;
+            --sidebar-width: 230px; /* Reduced width */
+            --nature-black: #222222;
+            --nature-gray: #757575;
+            --nature-border: #dcdcdc;
+            --nature-bg: #ffffff;
+            --hover-subtle: #f6f6f6;
+            --accent-red: #e4002b; /* Nature-inspired accent */
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-
-        /* Sidebar Container */
         .sidebar {
-            width: 260px;
-            background: var(--primary-white);
-            border-right: 1px solid var(--border-light);
+            width: var(--sidebar-width);
+            background: var(--nature-bg);
+            border-right: 1px solid var(--nature-border);
             display: flex;
             flex-direction: column;
             height: 100vh;
-            position: relative;
+            font-family: 'Inter', sans-serif;
         }
 
-        /* Header Section */
+        /* Compact Header */
         .sidebar-header {
-            padding: 28px 24px;
-            border-bottom: 1px solid var(--border-light);
+            padding: 20px 16px;
+            border-bottom: 1px solid var(--nature-border);
         }
 
         .logo {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
             text-decoration: none;
         }
 
         .logo-image {
-            width: 52px;
-            height: 52px;
-            border-radius: 10px;
-            object-fit: cover;
-        }
-
-        .logo-text {
-            display: flex;
-            flex-direction: column;
+            width: 36px; /* Smaller logo */
+            height: 36px;
+            border-radius: 4px;
         }
 
         .logo-title {
-            font-size: 17px;
+            font-family: 'Playfair Display', serif; /* Academic feel */
+            font-size: 15px;
             font-weight: 700;
-            color: var(--text-primary);
-            line-height: 1.3;
-            letter-spacing: -0.01em;
+            color: var(--nature-black);
+            letter-spacing: -0.02em;
         }
 
         .logo-subtitle {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-top: 2px;
-            font-weight: 500;
+            font-size: 10px;
+            color: var(--nature-gray);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
-        /* Navigation Section */
+        /* Refined Navigation */
         .nav-section {
             flex: 1;
-            padding: 24px 16px;
+            padding: 16px 12px;
             overflow-y: auto;
-        }
-
-        .nav-section::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .nav-section::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .nav-section::-webkit-scrollbar-thumb {
-            background: var(--border-light);
-            border-radius: 3px;
-        }
-
-        .nav-section::-webkit-scrollbar-thumb:hover {
-            background: var(--text-muted);
         }
 
         .nav-item {
             display: flex;
             align-items: center;
-            gap: 16px;
-            padding: 14px 18px;
+            gap: 12px;
+            padding: 8px 12px; /* Slimmer padding */
             text-decoration: none;
-            color: var(--text-secondary);
-            transition: var(--transition);
-            border-radius: 8px;
-            margin-bottom: 6px;
-            position: relative;
-            font-size: 15px;
-            font-weight: 500;
+            color: var(--nature-black);
+            border-radius: 4px;
+            margin-bottom: 2px;
+            font-size: 13.5px;
+            transition: background 0.2s ease;
         }
 
         .nav-item .material-icons {
-            font-size: 24px;
-            transition: var(--transition);
+            font-size: 18px;
+            color: var(--nature-gray);
         }
 
         .nav-item:hover {
-            background: var(--hover-bg);
-            color: var(--text-primary);
-        }
-
-        .nav-item:hover .material-icons {
-            transform: scale(1.1);
+            background: var(--hover-subtle);
         }
 
         .nav-item.active {
-            background: var(--active-bg);
-            color: var(--accent-primary);
+            background: var(--hover-subtle);
             font-weight: 600;
-        }
-
-        .nav-item.active .material-icons {
-            color: var(--accent-primary);
-        }
-
-        .nav-item.active::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 4px;
-            height: 24px;
-            background: var(--accent-primary);
-            border-radius: 0 4px 4px 0;
-        }
-
-        /* Section Divider */
-        .nav-divider {
-            height: 1px;
-            background: var(--border-light);
-            margin: 16px 0;
+            border-left: 3px solid var(--nature-black);
         }
 
         .nav-section-title {
             font-size: 11px;
-            font-weight: 700;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-muted);
-            padding: 8px 18px;
-            margin-top: 16px;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            color: var(--nature-gray);
+            padding: 16px 12px 8px;
         }
 
-        .add-label-btn {
-            cursor: pointer;
-            color: var(--accent-primary);
-            font-size: 18px;
-            transition: transform 0.2s;
-        }
-
-        .add-label-btn:hover {
-            transform: scale(1.2);
-        }
-
-        /* Label Items */
         .label-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 10px 18px;
+            gap: 10px;
+            padding: 6px 12px;
             text-decoration: none;
-            color: var(--text-secondary);
-            transition: var(--transition);
-            border-radius: 8px;
-            margin-bottom: 4px;
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .label-item:hover {
-            background: var(--hover-bg);
-            color: var(--text-primary);
+            color: var(--nature-gray);
+            font-size: 12.5px;
         }
 
         .label-color-indicator {
-            width: 16px;
-            height: 16px;
-            border-radius: 4px;
-            flex-shrink: 0;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
         }
 
-        .label-name {
-            flex: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .label-count {
-            font-size: 12px;
-            color: var(--text-muted);
-            background: var(--background-gray);
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-weight: 600;
-        }
-
-        /* User Info Section */
+        /* Elegant Bottom Section */
         .user-info {
-            padding: 20px;
-            border-top: 1px solid var(--border-light);
-            background: var(--background-gray);
+            padding: 16px;
+            border-top: 1px solid var(--nature-border);
+            background: #fafafa;
         }
 
         .user-details {
             display: flex;
             align-items: center;
-            gap: 14px;
-            padding: 14px;
-            background: var(--primary-white);
-            border-radius: 10px;
-            margin-bottom: 14px;
+            gap: 10px;
+            margin-bottom: 12px;
         }
 
         .user-avatar {
-            width: 48px;
-            height: 48px;
-            min-width: 48px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
-            background: var(--accent-primary);
+            background: var(--nature-black);
+            color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--primary-white);
-            font-weight: 700;
-            font-size: 18px;
-            position: relative;
-            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-        }
-
-        .user-avatar::after {
-            content: '';
-            position: absolute;
-            bottom: 2px;
-            right: 2px;
-            width: 12px;
-            height: 12px;
-            background: #17dd28;
-            border: 2px solid var(--primary-white);
-            border-radius: 50%;
-        }
-
-        .user-email-wrapper {
-            flex: 1;
-            overflow: hidden;
-        }
-
-        .user-label {
             font-size: 11px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
             font-weight: 600;
         }
 
         .user-email {
-            font-size: 14px;
-            color: var(--text-primary);
-            font-weight: 600;
+            font-size: 12px;
+            color: var(--nature-black);
+            white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            white-space: nowrap;
+            max-width: 140px;
         }
 
-        /* Logout Button */
+        .bottom-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
         .logout-link {
+            font-size: 12px;
+            color: var(--nature-gray);
+            text-decoration: none;
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 12px;
-            color: #dc3545;
-            text-decoration: none;
-            padding: 14px 18px;
-            border-radius: 8px;
-            transition: var(--transition);
-            font-weight: 600;
-            font-size: 15px;
-            background: var(--primary-white);
+            gap: 4px;
+            transition: color 0.2s;
         }
 
         .logout-link:hover {
-            background: #dc3545;
-            color: var(--primary-white);
-        }
-
-        .logout-link:hover .material-icons {
-            transform: translateX(2px);
+            color: var(--accent-red);
         }
 
         .logout-link .material-icons {
-            font-size: 22px;
-            transition: var(--transition);
-        }
-
-        /* Empty Labels State */
-        .empty-labels {
-            padding: 20px 18px;
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 13px;
-        }
-
-        .empty-labels .material-icons {
-            font-size: 32px;
-            opacity: 0.3;
-            margin-bottom: 8px;
-        }
-
-        /* Responsive adjustments */
-        @media (max-height: 700px) {
-            .sidebar-header {
-                padding: 20px 24px;
-            }
-
-            .nav-section {
-                padding: 16px;
-            }
-
-            .user-info {
-                padding: 16px;
-            }
-        }
-
-        /* Smooth entry animation */
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(-5px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .nav-item, .label-item {
-            animation: fadeIn 0.3s ease-out backwards;
-        }
-
-        .nav-item:nth-child(1) {
-            animation-delay: 0.05s;
-        }
-
-        .nav-item:nth-child(2) {
-            animation-delay: 0.1s;
-        }
-
-        .nav-item:nth-child(3) {
-            animation-delay: 0.15s;
-        }
-
-        .nav-item:nth-child(4) {
-            animation-delay: 0.2s;
+            font-size: 16px;
         }
     </style>
 </head>
-
 <body>
-
     <div class="sidebar">
         <div class="sidebar-header">
             <a href="index.php" class="logo">
-                <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg"
-                    alt="St. Xavier's College" class="logo-image">
+                <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg" alt="Logo" class="logo-image">
                 <div class="logo-text">
                     <span class="logo-title">SXC MDTS</span>
-                    <span class="logo-subtitle">Inhouse Mail SAAS</span>
-                    <span class="logo-subtitle">10.57.28.277</span>
+                    <span class="logo-subtitle">Research Portal</span>
                 </div>
             </a>
         </div>
 
         <nav class="nav-section">
-            <!-- Main Navigation -->
             <a href="index.php" class="nav-item <?= ($current_page == 'index') ? 'active' : ''; ?>">
                 <span class="material-icons">edit</span>
                 <span>Compose</span>
             </a>
-
             <a href="send.php" class="nav-item <?= ($current_page == 'send') ? 'active' : ''; ?>">
-                <span class="material-icons">info</span>
+                <span class="material-icons">analytics</span>
                 <span>Sent Mail Info</span>
             </a>
-
             <a href="sent_history.php" class="nav-item <?= ($current_page == 'sent_history') ? 'active' : ''; ?>">
-                <span class="material-icons">mail</span>
+                <span class="material-icons">archive</span>
                 <span>All Mail</span>
             </a>
 
-            <div class="nav-divider"></div>
-
-            <!-- Labels Section -->
-            <div class="nav-section-title">
-                Labels
-                <a href="manage_labels.php" class="add-label-btn" title="Manage Labels">
-                    <span class="material-icons">settings</span>
+            <div class="nav-section-title">Labels</div>
+            <?php foreach ($sidebarLabels as $label): ?>
+                <a href="sent_history.php?label_id=<?= $label['id'] ?>" class="label-item">
+                    <div class="label-color-indicator" style="background-color: <?= htmlspecialchars($label['label_color']) ?>;"></div>
+                    <span class="label-name"><?= htmlspecialchars($label['label_name']) ?></span>
                 </a>
-            </div>
-
-            <?php if (empty($sidebarLabels)): ?>
-                <div class="empty-labels">
-                    <span class="material-icons">label_off</span>
-                    <p>No labels yet</p>
-                    <a href="manage_labels.php" style="color: var(--accent-primary); text-decoration: none; font-weight: 600; font-size: 12px;">
-                        Create your first label
-                    </a>
-                </div>
-            <?php else: ?>
-                <!-- Unlabeled emails -->
-                <?php if ($unlabeledCount > 0): ?>
-                    <a href="sent_history.php?label_id=unlabeled" class="label-item">
-                        <span class="material-icons" style="font-size: 18px; color: var(--text-muted);">label_off</span>
-                        <span class="label-name">Unlabeled</span>
-                        <span class="label-count"><?= $unlabeledCount ?></span>
-                    </a>
-                <?php endif; ?>
-
-                <!-- Dynamic Labels -->
-                <?php foreach ($sidebarLabels as $label): ?>
-                    <a href="sent_history.php?label_id=<?= $label['id'] ?>" class="label-item">
-                        <div class="label-color-indicator" style="background-color: <?= htmlspecialchars($label['label_color']) ?>;"></div>
-                        <span class="label-name"><?= htmlspecialchars($label['label_name']) ?></span>
-                        <?php if ($label['email_count'] > 0): ?>
-                            <span class="label-count"><?= $label['email_count'] ?></span>
-                        <?php endif; ?>
-                    </a>
-                <?php endforeach; ?>
-            <?php endif; ?>
-
-            <div class="nav-divider"></div>
-
-            <!-- Settings -->
-            <a href="settings.php" class="nav-item <?= ($current_page == 'settings') ? 'active' : ''; ?>">
-                <span class="material-icons">settings</span>
-                <span>Preference</span>
-            </a>
+            <?php endforeach; ?>
         </nav>
 
         <div class="user-info">
             <div class="user-details">
-                <div class="user-avatar">
-                    <?= $userInitial ?>
-                </div>
-                <div class="user-email-wrapper">
-                    <div class="user-label">Signed in as</div>
-                    <div class="user-email" title="<?= htmlspecialchars($userEmail) ?>">
-                        <?= htmlspecialchars($userEmail) ?>
-                    </div>
-                </div>
+                <div class="user-avatar"><?= $userInitial ?></div>
+                <div class="user-email" title="<?= htmlspecialchars($userEmail) ?>"><?= htmlspecialchars($userEmail) ?></div>
             </div>
-
-            <a href="logout.php" class="logout-link">
-                <span class="material-icons">logout</span>
-                <span>Logout</span>
-            </a>
+            <div class="bottom-actions">
+                <a href="settings.php" class="logout-link">
+                    <span class="material-icons">settings</span>
+                    <span>Settings</span>
+                </a>
+                <a href="logout.php" class="logout-link">
+                    <span class="material-icons">logout</span>
+                    <span>Sign Out</span>
+                </a>
+            </div>
         </div>
     </div>
-
 </body>
-
 </html>
