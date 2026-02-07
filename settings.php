@@ -2,410 +2,326 @@
 // settings.php
 session_start();
 
-// Security check: Redirect to login if session credentials do not exist
+// Security check
 if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     header("Location: login.php");
     exit();
 }
 
+require_once 'db_config.php';
+
 // Load settings from JSON file
 $settingsFile = 'settings.json';
-$settings = [];
+$allSettings = file_exists($settingsFile) ? json_decode(file_get_contents($settingsFile), true) : [];
+$userSettings = $allSettings[$_SESSION['smtp_user']] ?? [];
 
-if (file_exists($settingsFile)) {
-    $jsonContent = file_get_contents($settingsFile);
-    $allSettings = json_decode($jsonContent, true);
-    
-    // Check if JSON is valid and is an array
-    if (is_array($allSettings)) {
-        // Get settings for current user
-        $settings = $allSettings[$_SESSION['smtp_user']] ?? [];
-    }
-}
-
-// Set defaults if not found - ensure all keys exist
+// Institutional Defaults
 $settings = array_merge([
     'display_name' => '',
-    'signature' => '',
-    'default_subject_prefix' => '',
-    'cc_yourself' => false,
-    'smtp_host' => 'smtp.gmail.com',
-    'smtp_port' => '587',
-    'theme' => 'light',
-    'auto_save_drafts' => true,
+    'designation' => '',
+    'department' => 'General',
+    'hod_email' => '',
+    'always_bcc_hod' => false,
+    'signature_template' => "Best regards,\n{name}\n{designation}\nSt. Xavier's College (Autonomous)",
+    'default_priority' => 'normal',
+    'archive_duration' => '365',
     'email_preview' => true
-], $settings);
+], $userSettings);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SXC MDTS</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Institutional Configuration | SXC MDTS</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+        :root {
+            --nature-red: #a10420;
+            --inst-black: #1a1a1a;
+            --inst-gray: #555555;
+            --inst-border: #d1d1d1;
+            --inst-bg: #fcfcfc;
+        }
+
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            font-family: 'Inter', sans-serif;
             background-color: #ffffff;
-            color: #1a1a1a;
+            color: var(--inst-black);
             display: flex;
             height: 100vh;
-            overflow: hidden;
+            margin: 0;
         }
 
-        /* Main Content */
         .main-content {
             flex: 1;
-            display: flex;
-            overflow: hidden;
-        }
-
-        .content-area {
-            flex: 1;
-            padding: 40px 60px;
             overflow-y: auto;
-            background-color: #fafafa;
+            background-color: var(--inst-bg);
+            padding: 60px;
         }
 
-        .settings-header {
-            margin-bottom: 32px;
+        .settings-wrapper {
+            max-width: 900px;
+            margin: 0 auto;
         }
 
-        .settings-header h1 {
-            font-size: 32px;
+        .page-header {
+            border-bottom: 2px solid var(--inst-black);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+
+        .page-header h1 {
+            font-family: 'Crimson Pro', serif;
+            font-size: 36px;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+        }
+
+        .page-header p {
+            color: var(--inst-gray);
             font-weight: 600;
-            margin-bottom: 8px;
-            color: #1a1a1a;
+            font-size: 14px;
+            margin-top: 5px;
         }
 
-        .settings-header p {
-            color: #666;
-            font-size: 15px;
-        }
-
-        .settings-container {
-            max-width: 800px;
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
         }
 
         .settings-card {
             background: white;
-            border: 1px solid #e5e5e5;
-            border-radius: 12px;
-            padding: 32px;
-            margin-bottom: 24px;
+            border: 1px solid var(--inst-border);
+            padding: 30px;
+            position: relative;
         }
 
-        .settings-section-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 20px;
-            color: #1a1a1a;
-            padding-bottom: 12px;
-            border-bottom: 2px solid #f0f0f0;
-        }
-
-        .setting-item {
-            margin-bottom: 24px;
-        }
-
-        .setting-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .setting-item label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: #1a1a1a;
-            font-size: 14px;
-        }
-
-        .setting-item input[type="text"],
-        .setting-item input[type="email"],
-        .setting-item input[type="number"],
-        .setting-item textarea,
-        .setting-item select {
-            width: 100%;
-            padding: 12px 16px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.2s;
-            font-family: inherit;
-        }
-
-        .setting-item input:focus,
-        .setting-item textarea:focus,
-        .setting-item select:focus {
-            outline: none;
-            border-color: #1a1a1a;
-            box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1);
-        }
-
-        .setting-item textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-
-        .checkbox-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .checkbox-wrapper input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-        }
-
-        .checkbox-wrapper label {
-            margin-bottom: 0;
-            cursor: pointer;
-        }
-
-        .setting-description {
-            font-size: 13px;
-            color: #666;
-            margin-top: 6px;
-        }
-
-        .settings-actions {
-            display: flex;
-            gap: 12px;
-            padding-top: 24px;
-            border-top: 1px solid #e5e5e5;
-        }
-
-        .btn-save {
-            padding: 12px 24px;
-            background-color: #1a1a1a;
+        .card-label {
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: var(--inst-black);
             color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            padding: 2px 12px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
         }
 
-        .btn-save:hover {
-            background-color: #000;
-            transform: translateY(-1px);
+        .form-group {
+            margin-bottom: 25px;
         }
 
-        .btn-cancel {
-            padding: 12px 24px;
-            background-color: #f5f5f5;
-            color: #1a1a1a;
-            border: 1px solid #e5e5e5;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
+        .form-group:last-child { margin-bottom: 0; }
 
-        .btn-cancel:hover {
-            background-color: #e5e5e5;
-        }
-
-        .success-message {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 24px;
-            display: none;
-        }
-
-        .success-message.show {
+        label {
             display: block;
+            font-weight: 700;
+            font-size: 13px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            color: var(--inst-black);
         }
 
-        .two-column {
+        input[type="text"], 
+        input[type="email"], 
+        select, 
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--inst-border);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--nature-red);
+            border-width: 1px;
+        }
+
+        .two-col {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
         }
 
-        @media (max-width: 768px) {
-            .two-column {
-                grid-template-columns: 1fr;
-            }
+        .instruction {
+            font-size: 12px;
+            color: var(--inst-gray);
+            margin-top: 6px;
+            font-style: italic;
+        }
+
+        /* Institutional Checkbox Styling */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            background: #f8f8f8;
+            border-left: 4px solid var(--nature-red);
+        }
+
+        .checkbox-group input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--nature-red);
+        }
+
+        .save-bar {
+            margin-top: 40px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            font-weight: 800;
+            text-transform: uppercase;
+            cursor: pointer;
+            border: none;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--inst-black);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--nature-red);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--inst-border);
+            color: var(--inst-gray);
+        }
+
+        #statusMessage {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: var(--nature-red);
+            color: white;
+            font-weight: 700;
+            display: none;
+            z-index: 2000;
         }
     </style>
 </head>
 <body>
     <?php include 'sidebar.php'; ?>
 
+    <div id="statusMessage">SETTINGS UPDATED SUCCESSFULLY</div>
+
     <div class="main-content">
-        <div class="content-area">
-            <div class="settings-header">
-                <h1>Settings</h1>
-                <p>Manage your email preferences and configuration</p>
-            </div>
+        <div class="settings-wrapper">
+            <header class="page-header">
+                <h1>System Preferences</h1>
+                <p>Configure institutional mailing protocols and personal identification.</p>
+            </header>
 
-            <div id="successMessage" class="success-message">
-                <i class="fa-solid fa-check-circle"></i> Settings saved successfully!
-            </div>
-
-            <div class="settings-container">
-                <form id="settingsForm" method="POST">
-                    <!-- Account Information -->
+            <form id="institutionalSettingsForm">
+                <div class="settings-grid">
+                    
                     <div class="settings-card">
-                        <div class="settings-section-title">
-                            <i class="fa-solid fa-user"></i> Account Information
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label for="display_name">Author Name</label>
-                            <input type="text" id="display_name" name="display_name" 
-                                   value="<?php echo htmlspecialchars($settings['display_name']); ?>" 
-                                   placeholder="Your Name">
-                            <div class="setting-description">This name will appear as the sender name in emails</div>
-                        </div>
-
-                        <div class="setting-item">
-                            <label for="signature">Email Signature</label>
-                            <textarea id="signature" name="signature" 
-                                      placeholder="Best regards,&#10;Your Name&#10;Your Title"><?php echo htmlspecialchars($settings['signature']); ?></textarea>
-                            <div class="setting-description">Automatically added to the end of your emails</div>
-                        </div>
-                    </div>
-
-                    <!-- Email Preferences -->
-                    <div class="settings-card">
-                        <div class="settings-section-title">
-                            <i class="fa-solid fa-envelope"></i> Email Preferences
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label for="default_subject_prefix">Default Subject Prefix</label>
-                            <input type="text" id="default_subject_prefix" name="default_subject_prefix" 
-                                   value="<?php echo htmlspecialchars($settings['default_subject_prefix']); ?>" 
-                                   placeholder="e.g., [Important]">
-                            <div class="setting-description">Prefix to be added to all email subjects</div>
-                        </div>
-
-                        <div class="setting-item">
-                            <div class="checkbox-wrapper">
-                                <input type="checkbox" id="cc_yourself" name="cc_yourself" value="1"
-                                       <?php echo $settings['cc_yourself'] ? 'checked' : ''; ?>>
-                                <label for="cc_yourself">Always CC yourself on sent emails</label>
+                        <div class="card-label">Official Identity</div>
+                        <div class="two-col">
+                            <div class="form-group">
+                                <label>Full Name (with Initials)</label>
+                                <input type="text" name="display_name" value="<?= htmlspecialchars($settings['display_name']) ?>" placeholder="Dr. John Doe">
+                            </div>
+                            <div class="form-group">
+                                <label>Designation</label>
+                                <input type="text" name="designation" value="<?= htmlspecialchars($settings['designation']) ?>" placeholder="Assistant Professor">
                             </div>
                         </div>
-
-                        <div class="setting-item">
-                            <div class="checkbox-wrapper">
-                                <input type="checkbox" id="email_preview" name="email_preview" value="1"
-                                       <?php echo $settings['email_preview'] ? 'checked' : ''; ?>>
-                                <label for="email_preview">Enable email preview before sending</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- SMTP Configuration -->
-                    <div class="settings-card">
-                        <div class="settings-section-title">
-                            <i class="fa-solid fa-server"></i> SMTP Configuration
-                        </div>
-                        
-                        <div class="two-column">
-                            <div class="setting-item">
-                                <label for="smtp_host">SMTP Host</label>
-                                <input type="text" id="smtp_host" name="smtp_host" 
-                                       value="<?php echo htmlspecialchars($settings['smtp_host']); ?>" 
-                                       placeholder="smtp.gmail.com">
-                            </div>
-
-                            <div class="setting-item">
-                                <label for="smtp_port">SMTP Port</label>
-                                <input type="text" id="smtp_port" name="smtp_port" 
-                                       value="<?php echo htmlspecialchars($settings['smtp_port']); ?>" 
-                                       placeholder="587">
-                            </div>
-                        </div>
-                        <div class="setting-description">Configure your SMTP server settings for email delivery</div>
-                    </div>
-
-                    <!-- Application Preferences -->
-                    <div class="settings-card">
-                        <div class="settings-section-title">
-                            <i class="fa-solid fa-sliders"></i> Application Preferences
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label for="theme">Theme</label>
-                            <select id="theme" name="theme">
-                                <option value="light" <?php echo $settings['theme'] == 'light' ? 'selected' : ''; ?>>Light</option>
-                                <option value="dark" <?php echo $settings['theme'] == 'dark' ? 'selected' : ''; ?>>Dark</option>
-                                <option value="auto" <?php echo $settings['theme'] == 'auto' ? 'selected' : ''; ?>>Auto</option>
+                        <div class="form-group">
+                            <label>Department</label>
+                            <select name="department">
+                                <option value="Computer Science" <?= $settings['department'] == 'Computer Science' ? 'selected' : '' ?>>Computer Science</option>
+                                <option value="Physics" <?= $settings['department'] == 'Physics' ? 'selected' : '' ?>>Physics</option>
+                                <option value="Mathematics" <?= $settings['department'] == 'Mathematics' ? 'selected' : '' ?>>Mathematics</option>
+                                <option value="Commerce" <?= $settings['department'] == 'Commerce' ? 'selected' : '' ?>>Commerce</option>
                             </select>
                         </div>
+                    </div>
 
-                        <div class="setting-item">
-                            <div class="checkbox-wrapper">
-                                <input type="checkbox" id="auto_save_drafts" name="auto_save_drafts" value="1"
-                                       <?php echo $settings['auto_save_drafts'] ? 'checked' : ''; ?>>
-                                <label for="auto_save_drafts">Auto-save drafts</label>
+                    <div class="settings-card">
+                        <div class="card-label">Compliance & Oversight</div>
+                        <div class="form-group">
+                            <label>HOD / Reporting Authority Email</label>
+                            <input type="email" name="hod_email" value="<?= htmlspecialchars($settings['hod_email']) ?>" placeholder="hod.cs@sxccal.edu">
+                            <p class="instruction">Official correspondence oversight address.</p>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" name="always_bcc_hod" id="bcc_hod" value="1" <?= $settings['always_bcc_hod'] ? 'checked' : '' ?>>
+                            <label for="bcc_hod" style="margin-bottom:0">Mandatory BCC to HOD for all outgoing mail</label>
+                        </div>
+                    </div>
+
+                    <div class="settings-card">
+                        <div class="card-label">Signature & Templates</div>
+                        <div class="form-group">
+                            <label>Official Correspondence Signature</label>
+                            <textarea name="signature_template" rows="4"><?= htmlspecialchars($settings['signature_template']) ?></textarea>
+                            <p class="instruction">Use {name} and {designation} for automatic placeholders.</p>
+                        </div>
+                        <div class="two-col">
+                            <div class="form-group">
+                                <label>Default Mail Priority</label>
+                                <select name="default_priority">
+                                    <option value="normal" <?= $settings['default_priority'] == 'normal' ? 'selected' : '' ?>>Normal Correspondence</option>
+                                    <option value="high" <?= $settings['default_priority'] == 'high' ? 'selected' : '' ?>>Urgent / Official</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Archive Duration (Days)</label>
+                                <input type="number" name="archive_duration" value="<?= htmlspecialchars($settings['archive_duration']) ?>">
                             </div>
                         </div>
                     </div>
 
-                    <!-- Save Actions -->
-                    <div class="settings-card">
-                        <div class="settings-actions">
-                            <button type="submit" class="btn-save">
-                                <i class="fa-solid fa-save"></i> Save Settings
-                            </button>
-                            <button type="button" class="btn-cancel" onclick="window.location.href='index.php'">
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
+                </div>
+
+                <div class="save-bar">
+                    <button type="button" class="btn btn-secondary" onclick="window.history.back()">Discard Changes</button>
+                    <button type="submit" class="btn btn-primary">Authorize & Save Settings</button>
+                </div>
+            </form>
         </div>
     </div>
 
     <script>
-        document.getElementById('settingsForm').addEventListener('submit', function(e) {
+        document.getElementById('institutionalSettingsForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            
             const formData = new FormData(this);
             
             fetch('save_settings.php', {
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    const successMsg = document.getElementById('successMessage');
-                    successMsg.classList.add('show');
-                    
-                    // Scroll to top to show message
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    
-                    // Hide message after 3 seconds
-                    setTimeout(() => {
-                        successMsg.classList.remove('show');
-                    }, 3000);
-                } else {
-                    alert('Error saving settings: ' + (data.message || 'Unknown error'));
+                if(data.success) {
+                    const msg = document.getElementById('statusMessage');
+                    msg.style.display = 'block';
+                    setTimeout(() => msg.style.display = 'none', 3000);
                 }
             })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error saving settings. Please try again.');
-            });
+            .catch(err => console.error('Error:', err));
         });
     </script>
 </body>
