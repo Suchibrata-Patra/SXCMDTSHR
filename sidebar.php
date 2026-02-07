@@ -209,7 +209,7 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
             right: 2px;
             width: 12px;
             height: 12px;
-            background: #10b981;
+            background: #17dd28;
             border: 2px solid var(--primary-white);
             border-radius: 50%;
         }
