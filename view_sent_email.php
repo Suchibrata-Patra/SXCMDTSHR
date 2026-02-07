@@ -27,10 +27,11 @@ try {
         die("Database connection failed");
     }
     
+    // FIXED: Changed 'email_labels' to 'labels'
     $stmt = $pdo->prepare("
-        SELECT se.*, el.label_name, el.label_color 
+        SELECT se.*, l.label_name, l.label_color 
         FROM sent_emails se 
-        LEFT JOIN email_labels el ON se.label_id = el.id 
+        LEFT JOIN labels l ON se.label_id = l.id 
         WHERE se.id = :id AND se.sender_email = :sender
     ");
     $stmt->execute([
@@ -251,68 +252,63 @@ $allLabels = getUserLabels($userEmail);
             gap: 4px;
             padding: 4px 10px;
             background: #e8f0fe;
-            color: #1967d2;
+            color: #1a73e8;
             border-radius: 12px;
             font-size: 12px;
-            font-weight: 500;
             margin-right: 6px;
         }
 
         /* Email Body */
         .email-body {
-            padding: 0;
-            background: #f6f8fc;
-            min-height: 400px;
+            padding: 24px;
         }
 
         .email-body iframe {
             width: 100%;
             border: none;
-            min-height: 600px;
-            display: block;
+            min-height: 400px;
         }
 
         /* Info Notice */
         .info-notice {
             background: #e8f0fe;
-            border-left: 4px solid #1a73e8;
-            padding: 16px 20px;
-            margin: 24px;
-            border-radius: 4px;
+            color: #1967d2;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
             font-size: 13px;
-            color: #185abc;
-        }
-
-        .info-notice i {
-            margin-right: 8px;
         }
 
         /* Success Message */
         .success-message {
-            background: #e6f4ea;
-            border-left: 4px solid #34a853;
-            padding: 12px 16px;
-            margin: 16px 0;
-            border-radius: 4px;
-            font-size: 13px;
-            color: #137333;
             display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: #e6f4ea;
+            color: #137333;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            font-size: 14px;
         }
 
         .success-message.active {
             display: flex;
-            align-items: center;
-            gap: 8px;
         }
 
         /* Print Styles */
         @media print {
-            .top-nav, .label-editor, .btn-edit-label {
-                display: none;
+            .top-nav,
+            .back-button,
+            .btn-edit-label,
+            .info-notice {
+                display: none !important;
             }
 
             .email-container {
                 box-shadow: none;
+                max-width: 100%;
                 margin: 0;
             }
 
