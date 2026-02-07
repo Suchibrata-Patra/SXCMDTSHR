@@ -342,6 +342,10 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
                 <span class="material-icons">settings</span>
                 <span>Preference</span>
             </a>
+            <a href="send.php" class="nav-item <?= ($current_page == 'settings') ? 'active' : ''; ?>">
+                <span class="material-icons">sent</span>
+                <span>Sent</span>
+            </a>
         </nav>
 
         <div class="user-info">
