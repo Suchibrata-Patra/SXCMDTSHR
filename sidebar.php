@@ -11,169 +11,170 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Sidebar</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --sidebar-width: 230px; /* Reduced width */
-            --nature-black: #222222;
-            --nature-gray: #757575;
-            --nature-border: #dcdcdc;
-            --nature-bg: #ffffff;
-            --hover-subtle: #f6f6f6;
-            --accent-red: #e4002b; /* Nature-inspired accent */
+            --sidebar-width: 240px;
+            --n-black: #000000;
+            --n-mid-gray: #444444;
+            --n-light-gray: #767676;
+            --n-border: #e6e6e6;
+            --n-bg: #ffffff;
+            --n-accent: #005a8d; /* Professional Research Blue */
+            --n-selection: #f3f3f3;
         }
 
         .sidebar {
             width: var(--sidebar-width);
-            background: var(--nature-bg);
-            border-right: 1px solid var(--nature-border);
+            background: var(--n-bg);
+            border-right: 1px solid var(--n-border);
             display: flex;
             flex-direction: column;
             height: 100vh;
             font-family: 'Inter', sans-serif;
+            color: var(--n-black);
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* Compact Header */
+        /* Branding Section: Clean and Typographic */
         .sidebar-header {
-            padding: 20px 16px;
-            border-bottom: 1px solid var(--nature-border);
+            padding: 32px 24px;
+            border-bottom: 1px solid var(--n-border);
         }
 
         .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
             text-decoration: none;
-        }
-
-        .logo-image {
-            width: 36px; /* Smaller logo */
-            height: 36px;
-            border-radius: 4px;
+            display: block;
         }
 
         .logo-title {
-            font-family: 'Playfair Display', serif; /* Academic feel */
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--nature-black);
-            letter-spacing: -0.02em;
+            font-family: 'Crimson Pro', serif;
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--n-black);
+            letter-spacing: -0.01em;
+            line-height: 1;
+            margin-bottom: 4px;
+            display: block;
         }
 
         .logo-subtitle {
-            font-size: 10px;
-            color: var(--nature-gray);
+            font-size: 11px;
+            color: var(--n-light-gray);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.12em;
+            font-weight: 500;
         }
 
-        /* Refined Navigation */
+        /* Navigation: Focused on White Space and Thin Lines */
         .nav-section {
             flex: 1;
-            padding: 16px 12px;
+            padding: 24px 0;
             overflow-y: auto;
         }
 
         .nav-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 8px 12px; /* Slimmer padding */
+            padding: 10px 24px;
             text-decoration: none;
-            color: var(--nature-black);
-            border-radius: 4px;
-            margin-bottom: 2px;
-            font-size: 13.5px;
-            transition: background 0.2s ease;
+            color: var(--n-mid-gray);
+            font-size: 14px;
+            font-weight: 400;
+            transition: all 0.15s ease;
+            border-left: 2px solid transparent;
         }
 
         .nav-item .material-icons {
             font-size: 18px;
-            color: var(--nature-gray);
+            margin-right: 12px;
+            color: var(--n-light-gray);
+            font-weight: 300;
         }
 
         .nav-item:hover {
-            background: var(--hover-subtle);
+            color: var(--n-black);
+            background-color: var(--n-selection);
         }
 
         .nav-item.active {
-            background: var(--hover-subtle);
+            color: var(--n-black);
             font-weight: 600;
-            border-left: 3px solid var(--nature-black);
+            border-left: 2px solid var(--n-black);
         }
 
+        .nav-item.active .material-icons {
+            color: var(--n-black);
+        }
+
+        /* Labels Section */
         .nav-section-title {
             font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
-            color: var(--nature-gray);
-            padding: 16px 12px 8px;
-        }
-
-        .label-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 6px 12px;
-            text-decoration: none;
-            color: var(--nature-gray);
-            font-size: 12.5px;
-        }
-
-        .label-color-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
-
-        /* Elegant Bottom Section */
-        .user-info {
-            padding: 16px;
-            border-top: 1px solid var(--nature-border);
-            background: #fafafa;
-        }
-
-        .user-details {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-
-        .user-avatar {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: var(--nature-black);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .user-email {
-            font-size: 12px;
-            color: var(--nature-black);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 140px;
-        }
-
-        .bottom-actions {
+            letter-spacing: 0.1em;
+            color: var(--n-light-gray);
+            padding: 24px 24px 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .logout-link {
+        .label-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 24px;
+            text-decoration: none;
+            color: var(--n-mid-gray);
+            font-size: 13px;
+        }
+
+        .label-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            margin-right: 12px;
+        }
+
+        /* Footer: Elegant User Profile */
+        .user-footer {
+            padding: 24px;
+            border-top: 1px solid var(--n-border);
+        }
+
+        .user-profile {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 16px;
+        }
+
+        .signed-in-as {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--n-light-gray);
+        }
+
+        .user-email {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--n-black);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 16px;
+        }
+
+        .footer-link {
             font-size: 12px;
-            color: var(--nature-gray);
+            color: var(--n-light-gray);
             text-decoration: none;
             display: flex;
             align-items: center;
@@ -181,67 +182,78 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             transition: color 0.2s;
         }
 
-        .logout-link:hover {
-            color: var(--accent-red);
+        .footer-link:hover {
+            color: var(--n-black);
+            text-decoration: underline;
         }
 
-        .logout-link .material-icons {
-            font-size: 16px;
+        .footer-link .material-icons {
+            font-size: 14px;
         }
+
+        /* Remove scrollbar clutter */
+        .nav-section::-webkit-scrollbar { width: 4px; }
+        .nav-section::-webkit-scrollbar-thumb { background: var(--n-border); }
     </style>
 </head>
 <body>
+
     <div class="sidebar">
         <div class="sidebar-header">
             <a href="index.php" class="logo">
-                <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg" alt="Logo" class="logo-image">
-                <div class="logo-text">
-                    <span class="logo-title">SXC MDTS</span>
-                    <br>
-                    <span class="logo-subtitle">10.57.20.282</span>
-                </div>
+                <span class="logo-title">SXC MDTS</span>
+                <span class="logo-subtitle">Research Correspondence</span>
             </a>
         </div>
 
         <nav class="nav-section">
             <a href="index.php" class="nav-item <?= ($current_page == 'index') ? 'active' : ''; ?>">
-                <span class="material-icons">edit</span>
+                <span class="material-icons">add</span>
                 <span>Compose</span>
             </a>
-            <a href="send.php" class="nav-item <?= ($current_page == 'send') ? 'active' : ''; ?>">
-                <span class="material-icons">analytics</span>
-                <span>Sent Mail Info</span>
-            </a>
+
             <a href="sent_history.php" class="nav-item <?= ($current_page == 'sent_history') ? 'active' : ''; ?>">
-                <span class="material-icons">archive</span>
-                <span>All Mail</span>
+                <span class="material-icons">history</span>
+                <span>Correspondence</span>
             </a>
 
-            <div class="nav-section-title">Labels</div>
+            <a href="send.php" class="nav-item <?= ($current_page == 'send') ? 'active' : ''; ?>">
+                <span class="material-icons">bar_chart</span>
+                <span>Analytics</span>
+            </a>
+
+            <div class="nav-section-title">
+                Classification
+                <a href="manage_labels.php" style="color: inherit;"><span class="material-icons" style="font-size: 14px;">settings</span></a>
+            </div>
+
             <?php foreach ($sidebarLabels as $label): ?>
                 <a href="sent_history.php?label_id=<?= $label['id'] ?>" class="label-item">
-                    <div class="label-color-indicator" style="background-color: <?= htmlspecialchars($label['label_color']) ?>;"></div>
-                    <span class="label-name"><?= htmlspecialchars($label['label_name']) ?></span>
+                    <div class="label-dot" style="background-color: <?= htmlspecialchars($label['label_color']) ?>;"></div>
+                    <span><?= htmlspecialchars($label['label_name']) ?></span>
                 </a>
             <?php endforeach; ?>
         </nav>
 
-        <div class="user-info">
-            <div class="user-details">
-                <div class="user-avatar"><?= $userInitial ?></div>
-                <div class="user-email" title="<?= htmlspecialchars($userEmail) ?>"><?= htmlspecialchars($userEmail) ?></div>
+        <div class="user-footer">
+            <div class="user-profile">
+                <span class="signed-in-as">Authenticated Session</span>
+                <span class="user-email" title="<?= htmlspecialchars($userEmail) ?>">
+                    <?= htmlspecialchars($userEmail) ?>
+                </span>
             </div>
-            <div class="bottom-actions">
-                <a href="settings.php" class="logout-link">
-                    <span class="material-icons">settings</span>
-                    <span>Settings</span>
+
+            <div class="footer-links">
+                <a href="settings.php" class="footer-link">
+                    <span class="material-icons">tune</span>
+                    <span>Preferences</span>
                 </a>
-                <a href="logout.php" class="logout-link">
-                    <span class="material-icons">logout</span>
-                    <span>Sign Out</span>
+                <a href="logout.php" class="footer-link" style="color: #c00;">
+                    <span>Sign out</span>
                 </a>
             </div>
         </div>
     </div>
+
 </body>
 </html>
