@@ -1,1 +1,1 @@
-This is the Deletd Mail
+<?php require('sidebar.php') ?>
