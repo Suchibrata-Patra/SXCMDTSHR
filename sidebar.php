@@ -203,13 +203,13 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
 
         .auth-badge {
             display: inline-block;
-            background: #34C759;
-            color: white;
-            padding: 1px 7px;
+            /* background: #34C759; */
+            /* color: white; */
+            /* padding: 1px 7px;
             border-radius: 5px;
             font-size: 9px;
             font-weight: 800;
-            margin-bottom: 6px;
+            margin-bottom: 6px; */
             /* text-transform: uppercase; */
         }
 
@@ -311,7 +311,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
 
         <div class="user-footer">
             <div class="user-card">
-                <span class="auth-badge"><img src="/SXCMDTSHR/Assets/image/Verified_badge.png" alt=""></span>
+                <span class="auth-badge"><img src="SXCMDTSHR/Assets/image/Verified_badge.png" alt=""></span>
                 <!-- <span class="auth-badge">Verified Account</span> -->
                 <span class="user-email"><?= htmlspecialchars($userEmail) ?></span>
             </div>
