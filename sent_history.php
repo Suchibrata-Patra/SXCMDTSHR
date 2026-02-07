@@ -473,7 +473,7 @@ $hasActiveFilters = !empty(array_filter($filters));
             grid-template-columns: 48px 240px 1fr auto 140px;
             gap: 16px;
             align-items: center;
-            padding: 8px 32px;
+            padding: 5px 32px;
             background: var(--background);
             border-bottom: 1px solid var(--border);
             text-decoration: none;
