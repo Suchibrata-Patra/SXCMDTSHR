@@ -577,9 +577,9 @@ $defaultSignature = json_encode($settings['signature']);
             <!-- Article-style compose form -->
             <div class="compose-container">
                 <header class="compose-header">
-                    <h1 class="compose-title">Compose New Mail</h1>
-                    <!-- <p class="compose-subtitle">Create and send professional emails with rich formatting, attachments,
-                        and custom signatures.</p> -->
+                    <h1 class="compose-title">Compose New Message</h1>
+                    <p class="compose-subtitle">Create and send professional emails with rich formatting, attachments,
+                        and custom signatures.</p>
                 </header>
 
                 <form action="send.php" method="POST" enctype="multipart/form-data" id="composeForm">
@@ -587,7 +587,8 @@ $defaultSignature = json_encode($settings['signature']);
                     <!-- Recipients Section -->
                     <section class="form-section">
                         <h2 class="section-title">Recipients</h2>
-                        <!-- <p class="section-description">Specify the primary and additional recipients for your message.</p> -->
+                        <p class="section-description">Specify the primary and additional recipients for your message.
+                        </p>
 
                         <div class="form-group">
                             <label>To <span style="color: #d32f2f;">*</span></label>
@@ -673,7 +674,7 @@ $defaultSignature = json_encode($settings['signature']);
                         <h2 class="section-title">Email Signature</h2>
 
                         <div class="form-group">
-                            <!-- <label>Signature <span class="label-optional">(optional)</span></label> -->
+                            <label>Signature <span class="label-optional">(optional)</span></label>
                             <div class="editor-wrapper" id="signatureContainer">
                                 <div id="signatureToolbar">
                                     <button class="ql-bold"></button>
