@@ -84,7 +84,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             font-size: 9px;
             font-weight: 600;
             color: var(--text-secondary);
-            text-transform: uppercase;
+            /* text-transform: uppercase; */
             letter-spacing: 1.2px;
         }
 
@@ -114,7 +114,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
 
         .nav-item:hover {
             background: rgba(0, 0, 0, 0.04);
-            transform: translateX(3px);
+            /* transform: translateX(3px); */
         }
 
         .nav-item.active {
@@ -138,7 +138,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             font-weight: 700;
             color: var(--text-secondary);
             padding: 24px 14px 10px;
-            text-transform: uppercase;
+            /* text-transform: uppercase; */
             letter-spacing: 1px;
             display: flex;
             justify-content: space-between;
@@ -210,7 +210,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             font-size: 9px;
             font-weight: 800;
             margin-bottom: 6px;
-            text-transform: uppercase;
+            /* text-transform: uppercase; */
         }
 
         .user-email {
