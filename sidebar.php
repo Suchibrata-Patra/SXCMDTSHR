@@ -345,7 +345,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
                     Settings
                 </a>
                 <a href="logout.php" class="action-btn logout-btn"
-                    style="flex: 1; padding: 10px; border-radius: 10px; text-decoration: none; font-size: 12px; font-weight: 600; text-align: center; background: #1d1d1f; color: #ffffff; transition: 0.2s;">
+                    style="flex: 1; padding: 10px; border-radius: 10px; text-decoration: none; font-size: 12px; font-weight: 600; text-align: center; background: #000000; color: #ffffff; transition: 0.2s;">
                     Sign Out
                 </a>
             </div>
