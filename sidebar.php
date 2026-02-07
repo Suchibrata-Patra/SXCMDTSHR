@@ -530,7 +530,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
                 </a>
                 <a href="logout.php" class="action-btn logout-btn">
                     <span class="material-icons-round">logout</span>
-                    <span>Sign Out</span>
+                    <span>Log Out</span>
                 </a>
             </div>
         </div>
