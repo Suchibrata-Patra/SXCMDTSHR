@@ -634,11 +634,11 @@ $defaultSignature = json_encode($settings['signature']);
 
                     <!-- Message Composition Section -->
                     <section class="form-section">
-                        <h2 class="section-title">Message Content</h2>
-                        <p class="section-description">Compose your message using the rich text editor with formatting options.</p>
+                        <h2 class="section-title">Message Content<span style="color: #d32f2f;">*</span></h2>
+                        <!-- <p class="section-description">Compose your message using the rich text editor with formatting options.</p> -->
                         
                         <div class="form-group">
-                            <label>Message Body <span style="color: #d32f2f;">*</span></label>
+                            <!-- <label>Message Body <span style="color: #d32f2f;">*</span></label> -->
                             <div class="editor-wrapper" id="editorContainer">
                                 <div id="toolbar">
                                     <button class="ql-bold"></button>
