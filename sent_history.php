@@ -1,5 +1,5 @@
 <?php
-// sent_history.php - Nature Journal Inspired UI
+// sent_history.php - Minimalist Nature-Inspired UI
 session_start();
 require 'config.php';
 require 'db_config.php';
@@ -10,7 +10,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 }
 
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
-$perPage = 25; // Academic lists are usually cleaner with fewer items
+$perPage = 50; 
 $offset = ($page - 1) * $perPage;
 
 $userEmail = $_SESSION['smtp_user'];
@@ -23,26 +23,26 @@ $totalPages = ceil($totalEmails / $perPage);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sent Archive | SXC MDTS</title>
+    <title>Archive | SXC MDTS</title>
     
-    <link rel="stylesheet" href="https://use.typekit.net/ovm6vst.css"> <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
         :root {
             --nature-red: #e4002b;
-            --nature-black: #222222;
-            --nature-grey: #666666;
-            --nature-light-grey: #f3f3f3;
-            --nature-border: #e6e6e6;
+            --text-main: #222222;
+            --text-muted: #555555;
+            --border-color: #eeeeee;
+            --hover-bg: #f9f9f9;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            background-color: #fff;
-            color: var(--nature-black);
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: #ffffff;
+            color: var(--text-main);
             display: flex;
             height: 100vh;
         }
@@ -50,129 +50,136 @@ $totalPages = ceil($totalEmails / $perPage);
         #main-wrapper {
             flex: 1;
             overflow-y: auto;
-            padding: 40px 5%;
+            padding: 20px 40px;
         }
 
-        /* Header Section */
-        .journal-header {
-            border-bottom: 3px solid var(--nature-black);
-            padding-bottom: 20px;
-            margin-bottom: 30px;
+        /* Header Area */
+        .page-header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-end;
-        }
-
-        .journal-title-section h1 {
-            font-family: 'Libre Baskerville', serif;
-            font-size: 36px;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-
-        .journal-subtitle {
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--nature-red);
-        }
-
-        /* List Styling */
-        .article-list {
-            list-style: none;
-            max-width: 1000px; /* Aligned to Nature's readable line length */
-        }
-
-        .article-item {
-            padding: 25px 0;
-            border-bottom: 1px solid var(--nature-border);
-            transition: background 0.2s;
-        }
-
-        .article-item:hover .article-link-title {
-            color: var(--nature-red);
-            text-decoration: underline;
-        }
-
-        .article-meta {
-            font-size: 13px;
-            color: var(--nature-grey);
-            margin-bottom: 10px;
-            display: flex;
-            gap: 15px;
             align-items: center;
-        }
-
-        .article-type {
-            font-weight: 700;
-            color: var(--nature-black);
-            text-transform: capitalize;
-        }
-
-        .article-link-title {
-            font-family: 'Libre Baskerville', serif;
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--nature-black);
-            text-decoration: none;
-            display: block;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--text-main);
             margin-bottom: 10px;
-            line-height: 1.3;
         }
 
-        .article-description {
-            font-size: 15px;
-            line-height: 1.6;
-            color: #444;
-            margin-bottom: 15px;
-        }
-
-        .article-footer {
-            display: flex;
-            gap: 20px;
-            font-size: 13px;
-        }
-
-        .author-name {
+        .header-left h1 {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 24px;
             font-weight: 700;
         }
 
-        /* Pagination */
-        .pagination-nature {
-            margin-top: 50px;
+        .count-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--nature-red);
+            font-weight: 600;
+        }
+
+        /* Minimalist List */
+        .email-list {
+            list-style: none;
+            width: 100%;
+        }
+
+        .email-item {
             display: flex;
+            align-items: center;
+            padding: 12px 10px;
+            border-bottom: 1px solid var(--border-color);
+            text-decoration: none;
+            color: inherit;
+            transition: background 0.1s ease;
+        }
+
+        .email-item:hover {
+            background-color: var(--hover-bg);
+        }
+
+        /* Column Controls */
+        .col-recipient {
+            flex: 0 0 220px;
+            font-weight: 600;
+            font-size: 13.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 15px;
+        }
+
+        .col-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            min-width: 0; /* Important for ellipsis */
             gap: 10px;
         }
 
-        .page-btn {
-            padding: 8px 16px;
-            border: 1px solid var(--nature-border);
-            text-decoration: none;
-            color: var(--nature-black);
+        .subject-text {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 14.5px;
             font-weight: 700;
-            font-size: 14px;
+            white-space: nowrap;
+            flex-shrink: 0; /* Keep subject visible */
         }
 
-        .page-btn.active {
-            background: var(--nature-black);
-            color: white;
-            border-color: var(--nature-black);
+        .snippet-text {
+            color: var(--text-muted);
+            font-size: 13.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .compose-btn {
-            background-color: var(--nature-red);
-            color: white;
-            padding: 12px 24px;
-            text-decoration: none;
-            font-weight: 700;
-            text-transform: uppercase;
+        .col-date {
+            flex: 0 0 100px;
+            text-align: right;
             font-size: 12px;
-            letter-spacing: 1px;
+            color: var(--text-muted);
+            font-weight: 500;
         }
 
-        @media (max-width: 768px) {
-            .journal-header { flex-direction: column; align-items: flex-start; gap: 20px; }
+        /* Buttons */
+        .btn-minimal {
+            border: 1px solid var(--text-main);
+            padding: 6px 14px;
+            text-decoration: none;
+            color: var(--text-main);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+
+        .btn-minimal:hover {
+            background: var(--text-main);
+            color: #fff;
+        }
+
+        .pagination {
+            margin-top: 20px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .page-link {
+            padding: 5px 10px;
+            border: 1px solid var(--border-color);
+            text-decoration: none;
+            font-size: 12px;
+            color: var(--text-main);
+        }
+
+        .page-link.active {
+            background: var(--nature-red);
+            color: #fff;
+            border-color: var(--nature-red);
+        }
+
+        @media (max-width: 900px) {
+            .col-recipient { flex: 0 0 150px; }
+            .snippet-text { display: none; }
         }
     </style>
 </head>
@@ -180,69 +187,49 @@ $totalPages = ceil($totalEmails / $perPage);
     <?php include 'sidebar.php'; ?>
 
     <div id="main-wrapper">
-        <header class="journal-header">
-            <div class="journal-title-section">
-                <p class="journal-subtitle">Archive & Sent Communication</p>
-                <h1>Sent Emails</h1>
-                <p style="color: var(--nature-grey); font-size: 14px;">
-                    Showing <?= count($sentEmails) ?> of <?= $totalEmails ?> records
-                </p>
+        <header class="page-header">
+            <div class="header-left">
+                <p class="count-label">Sent Archive / <?= $totalEmails ?> total</p>
+                <h1>Correspondence</h1>
             </div>
-            <a href="index.php" class="compose-btn">New Correspondence</a>
+            <a href="index.php" class="btn-minimal">New Draft</a>
         </header>
 
-        <main class="article-list">
+        <div class="email-list">
             <?php if (empty($sentEmails)): ?>
-                <div style="padding: 50px 0; text-align: center; border: 1px dashed #ccc;">
-                    <p>No records found in the current archive.</p>
-                </div>
+                <p style="padding: 20px; color: var(--text-muted);">Archive is empty.</p>
             <?php else: ?>
                 <?php foreach ($sentEmails as $email): ?>
-                <article class="article-item">
-                    <div class="article-meta">
-                        <span class="article-type">Sent Log</span>
-                        <span class="article-date">
-                            <i class="fa-regular fa-calendar"></i> 
-                            <?= date('d F Y', strtotime($email['sent_at'])) ?>
+                <a href="view_sent_email.php?id=<?= $email['id'] ?>" class="email-item" target="_blank">
+                    <div class="col-recipient">
+                        <?= htmlspecialchars($email['recipient_email']) ?>
+                    </div>
+                    
+                    <div class="col-content">
+                        <span class="subject-text"><?= htmlspecialchars($email['subject']) ?></span>
+                        <span class="snippet-text">
+                            — <?= htmlspecialchars(strip_tags($email['message_body'])) ?>
                         </span>
+                    </div>
+
+                    <div class="col-date">
                         <?php if (!empty($email['attachment_names'])): ?>
-                            <span><i class="fa-solid fa-paperclip"></i> Supplement</span>
+                            <i class="fa-solid fa-paperclip" style="font-size: 10px; margin-right: 8px;"></i>
                         <?php endif; ?>
+                        <?= date('M j', strtotime($email['sent_at'])) ?>
                     </div>
-
-                    <a href="view_sent_email.php?id=<?= $email['id'] ?>" class="article-link-title" target="_blank">
-                        <?= htmlspecialchars($email['subject']) ?>
-                    </a>
-
-                    <div class="article-description">
-                        <?php 
-                            $snippet = strip_tags($email['message_body']);
-                            echo htmlspecialchars(substr($snippet, 0, 180)) . '...';
-                        ?>
-                    </div>
-
-                    <div class="article-footer">
-                        <span>Recipient: <span class="author-name"><?= htmlspecialchars($email['recipient_email']) ?></span></span>
-                        <?php if (!empty($email['article_title'])): ?>
-                            <span style="font-style: italic; color: var(--nature-grey);">
-                                Ref: <?= htmlspecialchars($email['article_title']) ?>
-                            </span>
-                        <?php endif; ?>
-                    </div>
-                </article>
+                </a>
                 <?php endforeach; ?>
-
-                <?php if ($totalPages > 1): ?>
-                <nav class="pagination-nature">
-                    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                        <a href="?page=<?= $i ?>" class="page-btn <?= $i == $page ? 'active' : '' ?>">
-                            <?= $i ?>
-                        </a>
-                    <?php endfor; ?>
-                </nav>
-                <?php endif; ?>
             <?php endif; ?>
-        </main>
+        </div>
+
+        <?php if ($totalPages > 1): ?>
+        <div class="pagination">
+            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                <a href="?page=<?= $i ?>" class="page-link <?= $i == $page ? 'active' : '' ?>"><?= $i ?></a>
+            <?php endfor; ?>
+        </div>
+        <?php endif; ?>
     </div>
 </body>
 </html>
