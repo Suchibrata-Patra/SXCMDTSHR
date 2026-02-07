@@ -1,378 +1,294 @@
 <?php
 $current_page = basename($_SERVER['PHP_SELF'], '.php');
 $userEmail = $_SESSION['smtp_user'] ?? 'user@example.com';
-$userInitial = strtoupper(substr($userEmail, 0, 1));
-
-require_once 'db_config.php';
-$sidebarLabels = getLabelCounts($userEmail);
-$unlabeledCount = getUnlabeledEmailCount($userEmail);
 ?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
     <style>
         :root {
-            --sidebar-width: 260px;
-            /* Apple Color Palette Mapping */
-            --nature-red: #007AFF; /* Apple Blue */
-            --nature-red-hover: #0056b3;
-            --nature-dark: #1c1c1e;
-            --nature-gray: #3a3a3c;
-            --nature-medium-gray: #8e8e93;
-            --nature-light-gray: #c7c7cc;
-            --nature-border: rgba(0, 0, 0, 0.08);
-            --nature-border-light: rgba(0, 0, 0, 0.04);
-            --nature-bg: rgba(242, 242, 247, 0.8); /* Glass effect */
-            --nature-bg-hover: rgba(0, 0, 0, 0.04);
-            --nature-bg-active: rgba(0, 122, 255, 0.1);
-            --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.05);
-            --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.04);
-            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-            --transition: cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+            --sidebar-width: 280px;
+            /* Apple Ultra-Premium Palette */
+            --apple-blue: #007AFF;
+            --apple-bg: #ffffff;
+            /* Silicon-style translucency */
+            --glass-sidebar: rgba(255, 255, 255, 0.4); 
+            --glass-border: rgba(0, 0, 0, 0.06);
+            --text-main: #1d1d1f;
+            --text-secondary: #86868b;
+            --active-item-bg: rgba(0, 122, 255, 0.08);
+            --transition-smooth: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #ffffff;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
+            font-family: 'SF Pro Display', 'Inter', -apple-system, sans-serif;
+            background: #f5f5f7; /* Classic Apple Product Background */
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
         }
 
-        /* Mobile Toggle */
-        .mobile-toggle {
-            display: none;
-            position: fixed;
-            top: 16px;
-            left: 16px;
-            z-index: 1002;
-            background: #fff;
-            border: 1px solid var(--nature-border);
-            color: var(--nature-dark);
-            padding: 10px;
-            border-radius: 10px;
-            cursor: pointer;
-            box-shadow: var(--shadow-sm);
-            transition: all 0.2s var(--transition);
-        }
-
-        .mobile-toggle:hover {
-            background: var(--nature-red);
-            color: white;
-            border-color: var(--nature-red);
-        }
-
-        /* Sidebar with Glassmorphism */
+        /* The Ultra-Premium Sidebar */
         .sidebar {
             width: var(--sidebar-width);
-            background: var(--nature-bg);
-            backdrop-filter: blur(30px) saturate(180%);
-            -webkit-backdrop-filter: blur(30px) saturate(180%);
-            border-right: 1px solid var(--nature-border);
+            height: 100vh;
+            background: var(--glass-sidebar);
+            backdrop-filter: blur(40px) saturate(200%);
+            -webkit-backdrop-filter: blur(40px) saturate(200%);
+            border-right: 1px solid var(--glass-border);
             display: flex;
             flex-direction: column;
-            height: 100vh;
-            color: var(--nature-dark);
-            transition: transform 0.3s var(--transition);
             position: sticky;
             top: 0;
+            z-index: 1000;
         }
 
-        /* Header */
+        /* Refined Header */
         .sidebar-header {
-            padding: 30px 18px 20px;
-            border-bottom: 1px solid var(--nature-border-light);
+            padding: 40px 24px 20px;
         }
 
         .logo {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
             text-decoration: none;
         }
 
         .logo-image {
-            width: 36px;
-            height: 36px;
-            object-fit: contain;
-            border-radius: 8px;
-            filter: grayscale(1) contrast(1.1); /* Minimalist look */
-        }
-
-        .logo-text {
-            display: flex;
-            flex-direction: column;
-            gap: 1px;
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            filter: saturate(1.1);
         }
 
         .logo-title {
-            font-size: 15px;
+            font-size: 18px;
             font-weight: 700;
-            color: #000;
-            letter-spacing: -0.3px;
+            letter-spacing: -0.5px;
+            color: var(--text-main);
         }
 
         .logo-subtitle {
-            font-size: 9px;
+            font-size: 10px;
             font-weight: 600;
-            color: var(--nature-medium-gray);
+            color: var(--text-secondary);
             text-transform: uppercase;
-            letter-spacing: 0.8px;
+            letter-spacing: 1px;
+            margin-top: 2px;
         }
 
-        /* Navigation */
+        /* Premium Navigation */
         .nav-section {
             flex: 1;
-            padding: 12px;
+            padding: 16px 12px;
             overflow-y: auto;
         }
 
-        /* Navigation Items */
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
-            text-decoration: none;
-            color: var(--nature-gray);
-            font-size: 14px;
-            font-weight: 500;
-            border-radius: 8px;
-            margin-bottom: 2px;
-            transition: all 0.2s var(--transition);
-            position: relative;
-        }
-
-        .nav-item:hover {
-            background: var(--nature-bg-hover);
-            color: #000;
-        }
-
-        .nav-item.active {
-            background: var(--nature-bg-active);
-            color: var(--nature-red);
-            font-weight: 600;
-        }
-
-        .nav-item.active::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            height: 16px;
-            width: 3px;
-            background: var(--nature-red);
-            border-radius: 0 4px 4px 0;
-        }
-
-        /* Section Title */
         .nav-section-title {
             font-size: 11px;
             font-weight: 600;
-            color: var(--nature-medium-gray);
-            padding: 20px 12px 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            color: var(--text-secondary);
+            padding: 24px 16px 8px;
+            text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
-        .manage-labels-btn {
-            color: var(--nature-light-gray);
-            padding: 4px;
-            border-radius: 6px;
-            transition: 0.2s;
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            text-decoration: none;
+            color: var(--text-main);
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 12px;
+            margin-bottom: 4px;
+            transition: var(--transition-smooth);
         }
 
-        .manage-labels-btn:hover {
-            background: var(--nature-bg-hover);
-            color: var(--nature-red);
+        .nav-item:hover {
+            background: rgba(0, 0, 0, 0.03);
+            transform: translateX(2px);
         }
 
-        /* Label Items */
+        .nav-item.active {
+            background: var(--active-item-bg);
+            color: var(--apple-blue);
+            font-weight: 600;
+        }
+
+        .material-icons-round {
+            font-size: 22px;
+            color: var(--text-secondary);
+            transition: var(--transition-smooth);
+        }
+
+        .nav-item.active .material-icons-round {
+            color: var(--apple-blue);
+        }
+
+        /* Label Pills */
         .label-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 7px 12px;
+            padding: 8px 16px;
             text-decoration: none;
-            color: var(--nature-gray);
-            font-size: 13px;
-            border-radius: 8px;
-            margin-bottom: 1px;
-            transition: 0.2s;
-        }
-
-        .label-item:hover {
-            background: var(--nature-bg-hover);
+            color: var(--text-main);
+            font-size: 13.5px;
+            border-radius: 10px;
+            margin-bottom: 2px;
+            transition: var(--transition-smooth);
         }
 
         .label-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.8);
         }
 
         .label-count {
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 600;
-            color: var(--nature-medium-gray);
-            background: rgba(0, 0, 0, 0.05);
-            padding: 2px 6px;
-            border-radius: 6px;
+            background: rgba(0,0,0,0.05);
+            color: var(--text-secondary);
+            padding: 2px 8px;
+            border-radius: 20px;
         }
 
-        /* User Footer */
+        /* The "Card" Footer */
         .user-footer {
-            padding: 16px;
-            border-top: 1px solid var(--nature-border-light);
+            padding: 24px;
+            background: rgba(255, 255, 255, 0.2);
+            border-top: 1px solid var(--glass-border);
         }
 
         .user-card {
-            background: rgba(255, 255, 255, 0.5);
-            border: 1px solid var(--nature-border-light);
-            border-radius: 10px;
-            padding: 12px;
-            margin-bottom: 12px;
+            background: white;
+            padding: 16px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.04);
+            margin-bottom: 16px;
+            border: 1px solid rgba(255,255,255,0.8);
         }
 
         .auth-badge {
-            font-size: 9px;
-            font-weight: 700;
-            color: #34C759; /* Apple Green */
-            text-transform: uppercase;
-            margin-bottom: 4px;
-        }
-
-        .auth-badge::before {
+            display: inline-block;
             background: #34C759;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 9px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            text-transform: uppercase;
         }
 
         .user-email {
             font-size: 12px;
-            color: var(--nature-dark);
-            font-weight: 500;
+            font-weight: 600;
+            color: var(--text-main);
+            display: block;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        /* Footer Actions */
+        /* High-Gloss Action Buttons */
         .footer-actions {
             display: flex;
-            gap: 8px;
+            gap: 10px;
         }
 
         .action-btn {
             flex: 1;
+            padding: 12px;
+            border-radius: 12px;
             text-decoration: none;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 600;
-            padding: 9px;
-            border-radius: 8px;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
+            text-align: center;
+            transition: var(--transition-smooth);
         }
 
         .config-btn {
-            color: var(--nature-dark);
-            background: white;
-            border: 1px solid var(--nature-border);
+            background: #fff;
+            color: var(--text-main);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .config-btn:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transform: translateY(-1px);
         }
 
         .logout-btn {
-            color: #FF3B30;
-            background: rgba(255, 59, 48, 0.1);
-        }
-
-        .logout-btn:hover {
-            background: #FF3B30;
+            background: #1d1d1f;
             color: white;
         }
 
-        /* Sidebar Overlay */
-        .sidebar-overlay {
-            background: rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(4px);
+        .logout-btn:hover {
+            background: #000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
 
+        /* Smooth scrollbars */
+        .nav-section::-webkit-scrollbar { width: 4px; }
+        .nav-section::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+
         @media (max-width: 768px) {
-            .mobile-toggle { display: flex; }
-            .sidebar { position: fixed; transform: translateX(-100%); z-index: 1000; }
-            .sidebar.open { transform: translateX(0); }
+            .sidebar { transform: translateX(-100%); position: fixed; }
+            .sidebar.open { transform: translateX(0); box-shadow: 20px 0 50px rgba(0,0,0,0.1); }
         }
     </style>
 </head>
 
 <body>
-
-    <button class="mobile-toggle" onclick="toggleSidebar()" aria-label="Toggle Menu">
-        <span class="material-icons-round">menu</span>
-    </button>
-
-    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
-
     <div class="sidebar" id="mainSidebar">
         <div class="sidebar-header">
             <a href="index.php" class="logo">
-                <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg"
-                    alt="SXC Logo" class="logo-image">
+                <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg" class="logo-image">
                 <div class="logo-text">
                     <span class="logo-title">SXC MDTS</span>
-                    <span class="logo-subtitle">10.28.73.474</span>
+                    <span class="logo-subtitle">Faculty Console</span>
                 </div>
             </a>
         </div>
 
         <nav class="nav-section">
+            <div class="nav-group-label" style="padding-left:16px; font-size:10px; color:#86868b; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Workspace</div>
+            
             <a href="index.php" class="nav-item <?= ($current_page == 'index') ? 'active' : ''; ?>">
                 <span class="material-icons-round">edit_note</span>
                 <span>Compose</span>
             </a>
-
             <a href="sent_history.php" class="nav-item <?= ($current_page == 'sent_history') ? 'active' : ''; ?>">
-                <span class="material-icons-round">send</span>
-                <span>Sent</span>
+                <span class="material-icons-round">auto_graph</span>
+                <span>Dispatch Log</span>
             </a>
             <a href="deleted_items.php" class="nav-item <?= ($current_page == 'deleted_items') ? 'active' : ''; ?>">
-                <span class="material-icons-round">delete</span>
-                <span>Deleted</span>
+                <span class="material-icons-round">delete_outline</span>
+                <span>Bin</span>
             </a>
 
-            <a href="send.php" class="nav-item <?= ($current_page == 'send') ? 'active' : ''; ?>">
-                <span class="material-icons-round">analytics</span>
-                <span>Analytics</span>
-            </a>
-
-            <div class="nav-section-title">
-                Labels
-                <a href="manage_labels.php" class="manage-labels-btn" title="Manage Labels">
-                    <span class="material-icons-round" style="font-size: 16px;">settings</span>
-                </a>
-            </div>
+            <div class="nav-section-title">Institutional Labels</div>
 
             <?php foreach ($sidebarLabels as $label): ?>
             <a href="sent_history.php?label_id=<?= $label['id'] ?>" class="label-item">
-                <div class="label-content">
-                    <div class="label-dot" style="background-color: <?= htmlspecialchars($label['label_color']) ?>;">
-                    </div>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div class="label-dot" style="background-color: <?= $label['label_color'] ?>;"></div>
                     <span><?= htmlspecialchars($label['label_name']) ?></span>
                 </div>
-                <?php if (isset($label['count']) && $label['count'] > 0): ?>
-                <span class="label-count"><?= $label['count'] ?></span>
+                <?php if ($label['count'] > 0): ?>
+                    <span class="label-count"><?= $label['count'] ?></span>
                 <?php endif; ?>
             </a>
             <?php endforeach; ?>
@@ -380,30 +296,14 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
 
         <div class="user-footer">
             <div class="user-card">
-                <span class="auth-badge">Verified</span>
+                <span class="auth-badge">Verified Faculty</span>
                 <span class="user-email"><?= htmlspecialchars($userEmail) ?></span>
             </div>
-
             <div class="footer-actions">
-                <a href="settings.php" class="action-btn config-btn">
-                    <span class="material-icons-round">tune</span>
-                    <span>Settings</span>
-                </a>
-                <a href="logout.php" class="action-btn logout-btn">
-                    <span class="material-icons-round">logout</span>
-                    <span>Log Out</span>
-                </a>
+                <a href="settings.php" class="action-btn config-btn">Settings</a>
+                <a href="logout.php" class="action-btn logout-btn">Sign Out</a>
             </div>
         </div>
     </div>
-
-    <script>
-        function toggleSidebar() {
-            const sidebar = document.getElementById('mainSidebar');
-            const overlay = document.querySelector('.sidebar-overlay');
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('active');
-        }
-    </script>
 </body>
 </html>
