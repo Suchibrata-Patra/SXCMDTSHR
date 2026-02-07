@@ -18,7 +18,6 @@ function getDatabaseConnection() {
                 PDO::ATTR_EMULATE_PREPARES => false
             ]
         );
-        echo "✅ Database connected successfully!";
         return $pdo;
     } catch (PDOException $e) {
         error_log("Database connection failed: " . $e->getMessage());
