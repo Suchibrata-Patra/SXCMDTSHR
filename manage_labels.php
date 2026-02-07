@@ -1,8 +1,7 @@
 <?php
-// manage_labels.php - Label Management Interface (FIXED)
+// manage_labels.php - Label Management Interface
 session_start();
 
-// Try to include config.php if it exists, but don't fail if it doesn't
 if (file_exists('config.php')) {
     require 'config.php';
 }
@@ -184,15 +183,6 @@ $labels = getLabelCounts($userEmail);
             box-shadow: 0 4px 8px rgba(13, 110, 253, 0.2);
         }
 
-        .btn-danger {
-            background: var(--accent-danger);
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #bb2d3b;
-        }
-
         .btn-secondary {
             background: var(--background-gray);
             color: var(--text-primary);
@@ -214,35 +204,29 @@ $labels = getLabelCounts($userEmail);
             padding: 12px 16px;
             font-size: 13px;
             font-weight: 600;
-            color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border-light);
         }
 
         .labels-table tbody tr {
-            background: var(--background-gray);
+            background: #ffffff;
+            border: 1px solid var(--border-light);
             transition: all 0.2s;
         }
 
         .labels-table tbody tr:hover {
-            background: #e9ecef;
-            transform: translateX(4px);
+            background: #f8f9fa;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
         .labels-table tbody td {
             padding: 16px;
         }
 
-        .labels-table tbody td:first-child {
-            border-radius: 8px 0 0 8px;
-        }
-
-        .labels-table tbody td:last-child {
-            border-radius: 0 8px 8px 0;
-        }
-
         .label-display {
-            display: inline-flex;
+            display: flex;
             align-items: center;
             gap: 12px;
         }
@@ -251,7 +235,7 @@ $labels = getLabelCounts($userEmail);
             width: 24px;
             height: 24px;
             border-radius: 6px;
-            border: 2px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .label-name {
@@ -267,21 +251,56 @@ $labels = getLabelCounts($userEmail);
         .action-buttons {
             display: flex;
             gap: 8px;
+            justify-content: flex-end;
         }
 
         .btn-icon {
-            padding: 8px;
+            background: none;
             border: none;
-            background: transparent;
+            padding: 8px;
             cursor: pointer;
             border-radius: 6px;
-            color: var(--text-secondary);
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .btn-icon:hover {
-            background: var(--border-light);
+            background: var(--background-gray);
+        }
+
+        .btn-icon .material-icons {
+            font-size: 20px;
+            color: var(--text-secondary);
+        }
+
+        .btn-icon:hover .material-icons {
             color: var(--text-primary);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-state .material-icons {
+            font-size: 64px;
+            color: var(--border-light);
+            margin-bottom: 16px;
+        }
+
+        .empty-state h3 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .empty-state p {
+            color: var(--text-secondary);
+            font-size: 14px;
         }
 
         /* Modal */
@@ -304,21 +323,31 @@ $labels = getLabelCounts($userEmail);
 
         .modal-content {
             background: white;
-            border-radius: 16px;
-            padding: 32px;
-            max-width: 500px;
+            border-radius: 12px;
             width: 90%;
+            max-width: 500px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
 
         .modal-header {
-            margin-bottom: 24px;
+            padding: 24px 24px 16px;
+            border-bottom: 1px solid var(--border-light);
         }
 
         .modal-title {
             font-size: 24px;
             font-weight: 700;
-            margin-bottom: 8px;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .modal-footer {
+            padding: 16px 24px 24px;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
         }
 
         .form-group {
@@ -327,19 +356,19 @@ $labels = getLabelCounts($userEmail);
 
         .form-label {
             display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
             font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
         }
 
         .form-input {
             width: 100%;
-            padding: 12px 16px;
+            padding: 12px;
             border: 1px solid var(--border-light);
             border-radius: 8px;
-            font-size: 15px;
+            font-size: 14px;
             font-family: 'Inter', sans-serif;
-            transition: all 0.2s;
+            transition: border-color 0.2s;
         }
 
         .form-input:focus {
@@ -348,24 +377,31 @@ $labels = getLabelCounts($userEmail);
             box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
         }
 
+        /* Color Picker */
         .color-picker-wrapper {
             display: flex;
-            gap: 12px;
             align-items: center;
+            gap: 12px;
         }
 
         .color-picker {
             width: 60px;
             height: 40px;
-            border: 2px solid var(--border-light);
+            border: 1px solid var(--border-light);
             border-radius: 8px;
             cursor: pointer;
+        }
+
+        .color-hex {
+            font-family: monospace;
+            font-size: 14px;
+            color: var(--text-secondary);
         }
 
         .color-presets {
             display: flex;
             gap: 8px;
-            margin-top: 8px;
+            margin-top: 12px;
         }
 
         .color-preset {
@@ -382,63 +418,53 @@ $labels = getLabelCounts($userEmail);
             border-color: var(--text-primary);
         }
 
-        .modal-footer {
+        /* Alert */
+        #alertContainer {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
             display: flex;
+            flex-direction: column;
             gap: 12px;
-            justify-content: flex-end;
-            margin-top: 24px;
         }
 
         .alert {
-            padding: 16px 20px;
+            background: white;
             border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
+            padding: 16px 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
             align-items: center;
             gap: 12px;
-        }
-
-        .alert.active {
-            display: flex;
+            min-width: 300px;
         }
 
         .alert-success {
-            background: #d1f2dd;
-            color: #0f5132;
+            border-left: 4px solid var(--accent-success);
+        }
+
+        .alert-success .material-icons {
+            color: var(--accent-success);
         }
 
         .alert-error {
-            background: #f8d7da;
-            color: #842029;
+            border-left: 4px solid var(--accent-danger);
         }
 
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-secondary);
-        }
-
-        .empty-state .material-icons {
-            font-size: 64px;
-            margin-bottom: 16px;
-            opacity: 0.3;
+        .alert-error .material-icons {
+            color: var(--accent-danger);
         }
     </style>
 </head>
 <body>
-    <?php 
-    if (file_exists('sidebar.php')) {
-        include 'sidebar.php'; 
-    }
-    ?>
+    <div id="alertContainer"></div>
 
     <div class="main-content">
         <div class="page-header">
-            <h1 class="page-title">Label Management</h1>
-            <p class="page-subtitle">Organize your emails with custom labels</p>
+            <h1 class="page-title">Manage Labels</h1>
+            <p class="page-subtitle">Create and organize labels to categorize your emails</p>
         </div>
-
-        <div id="alertContainer"></div>
 
         <div class="content-card">
             <div class="card-header">
@@ -498,7 +524,7 @@ $labels = getLabelCounts($userEmail);
         </div>
     </div>
 
-    <!-- Create/Edit Modal -->
+    <!-- Modal -->
     <div id="labelModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -506,28 +532,30 @@ $labels = getLabelCounts($userEmail);
             </div>
             
             <form id="labelForm">
-                <input type="hidden" id="labelId" name="label_id">
-                <input type="hidden" id="formAction" name="action" value="create">
-                
-                <div class="form-group">
-                    <label class="form-label" for="labelName">Label Name</label>
-                    <input type="text" class="form-input" id="labelName" name="label_name" placeholder="e.g., Work, Personal, Urgent" required>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Label Color</label>
-                    <div class="color-picker-wrapper">
-                        <input type="color" class="color-picker" id="labelColor" name="label_color" value="#0973dc">
-                        <span id="colorHex">#0973dc</span>
+                <div class="modal-body">
+                    <input type="hidden" id="labelId" name="label_id">
+                    <input type="hidden" id="formAction" name="action" value="create">
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="labelName">Label Name</label>
+                        <input type="text" class="form-input" id="labelName" name="label_name" placeholder="e.g., Work, Personal, Urgent" required>
                     </div>
-                    <div class="color-presets">
-                        <div class="color-preset" style="background: #0973dc;" onclick="setColor('#0973dc')"></div>
-                        <div class="color-preset" style="background: #34a853;" onclick="setColor('#34a853')"></div>
-                        <div class="color-preset" style="background: #ea4335;" onclick="setColor('#ea4335')"></div>
-                        <div class="color-preset" style="background: #fbbc04;" onclick="setColor('#fbbc04')"></div>
-                        <div class="color-preset" style="background: #5f6368;" onclick="setColor('#5f6368')"></div>
-                        <div class="color-preset" style="background: #8e24aa;" onclick="setColor('#8e24aa')"></div>
-                        <div class="color-preset" style="background: #ff6d00;" onclick="setColor('#ff6d00')"></div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Label Color</label>
+                        <div class="color-picker-wrapper">
+                            <input type="color" class="color-picker" id="labelColor" name="label_color" value="#0973dc">
+                            <span class="color-hex" id="colorHex">#0973dc</span>
+                        </div>
+                        <div class="color-presets">
+                            <div class="color-preset" style="background: #0973dc;" onclick="setColor('#0973dc')"></div>
+                            <div class="color-preset" style="background: #34a853;" onclick="setColor('#34a853')"></div>
+                            <div class="color-preset" style="background: #ea4335;" onclick="setColor('#ea4335')"></div>
+                            <div class="color-preset" style="background: #fbbc04;" onclick="setColor('#fbbc04')"></div>
+                            <div class="color-preset" style="background: #5f6368;" onclick="setColor('#5f6368')"></div>
+                            <div class="color-preset" style="background: #8e24aa;" onclick="setColor('#8e24aa')"></div>
+                            <div class="color-preset" style="background: #ff6d00;" onclick="setColor('#ff6d00')"></div>
+                        </div>
                     </div>
                 </div>
                 
@@ -540,7 +568,6 @@ $labels = getLabelCounts($userEmail);
     </div>
 
     <script>
-        // Color picker functionality
         const colorPicker = document.getElementById('labelColor');
         const colorHex = document.getElementById('colorHex');
         
@@ -553,7 +580,6 @@ $labels = getLabelCounts($userEmail);
             colorHex.textContent = color;
         }
         
-        // Modal functions
         function openCreateModal() {
             document.getElementById('modalTitle').textContent = 'Create Label';
             document.getElementById('formAction').value = 'create';
@@ -578,14 +604,12 @@ $labels = getLabelCounts($userEmail);
             document.getElementById('labelModal').classList.remove('active');
         }
         
-        // Close modal on outside click
         document.getElementById('labelModal').addEventListener('click', (e) => {
             if (e.target.id === 'labelModal') {
                 closeModal();
             }
         });
         
-        // Form submission
         document.getElementById('labelForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -612,9 +636,8 @@ $labels = getLabelCounts($userEmail);
             }
         });
         
-        // Delete label
         async function deleteLabel(id, name) {
-            if (!confirm(`Are you sure you want to delete the label "${name}"? This will remove the label from all associated emails.`)) {
+            if (!confirm(`Are you sure you want to delete the label "${name}"?`)) {
                 return;
             }
             
@@ -642,20 +665,17 @@ $labels = getLabelCounts($userEmail);
             }
         }
         
-        // Show alert
         function showAlert(message, type) {
             const container = document.getElementById('alertContainer');
             const alert = document.createElement('div');
-            alert.className = `alert alert-${type} active`;
+            alert.className = `alert alert-${type}`;
             alert.innerHTML = `
                 <span class="material-icons">${type === 'success' ? 'check_circle' : 'error'}</span>
                 <span>${message}</span>
             `;
             container.appendChild(alert);
             
-            setTimeout(() => {
-                alert.remove();
-            }, 5000);
+            setTimeout(() => alert.remove(), 5000);
         }
     </script>
 </body>

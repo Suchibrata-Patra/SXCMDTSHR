@@ -1,9 +1,10 @@
 <?php
-// db_config.php - Enhanced Database configuration with label management
-// FIXED VERSION - No external dependencies
+// db_config.php - Simplified Database configuration
+// Labels table stores: id, user_email, label_name, label_color, created_at
+// Sent_emails table only stores: label_id (reference)
 
 function getDatabaseConnection() {
-    // Direct database credentials (no env() function needed)
+    // Direct database credentials
     $host = "localhost";
     $dbname = "u955994755_SXC_MDTS";
     $username = "u955994755_DB_supremacy";
@@ -74,6 +75,7 @@ function saveSentEmail($data) {
 
 /**
  * Get all sent emails for current user with optional filters
+ * Joins with labels table to get label_name and label_color
  */
 function getSentEmails($userEmail, $limit = 100, $offset = 0, $filters = []) {
     try {
@@ -82,10 +84,10 @@ function getSentEmails($userEmail, $limit = 100, $offset = 0, $filters = []) {
             return [];
         }
         
-        // Build the base query
-        $sql = "SELECT se.*, el.label_name, el.label_color 
+        // Join with labels table to fetch label_name and label_color
+        $sql = "SELECT se.*, l.label_name, l.label_color 
                 FROM sent_emails se 
-                LEFT JOIN email_labels el ON se.label_id = el.id 
+                LEFT JOIN labels l ON se.label_id = l.id 
                 WHERE se.sender_email = :sender_email";
         
         $params = [':sender_email' => $userEmail];
@@ -235,7 +237,7 @@ function getUserLabels($userEmail) {
             return [];
         }
         
-        $sql = "SELECT * FROM email_labels 
+        $sql = "SELECT * FROM labels 
                 WHERE user_email = :user_email 
                 ORDER BY label_name ASC";
         
@@ -261,16 +263,16 @@ function getLabelCounts($userEmail) {
         }
         
         $sql = "SELECT 
-                    el.id, 
-                    el.label_name, 
-                    el.label_color,
-                    el.created_at,
+                    l.id, 
+                    l.label_name, 
+                    l.label_color,
+                    l.created_at,
                     COUNT(se.id) as email_count
-                FROM email_labels el
-                LEFT JOIN sent_emails se ON el.id = se.label_id AND se.sender_email = :user_email
-                WHERE el.user_email = :user_email
-                GROUP BY el.id, el.label_name, el.label_color, el.created_at
-                ORDER BY el.label_name ASC";
+                FROM labels l
+                LEFT JOIN sent_emails se ON l.id = se.label_id AND se.sender_email = :user_email
+                WHERE l.user_email = :user_email
+                GROUP BY l.id, l.label_name, l.label_color, l.created_at
+                ORDER BY l.label_name ASC";
         
         $stmt = $pdo->prepare($sql);
         $stmt->execute([':user_email' => $userEmail]);
@@ -294,7 +296,7 @@ function createLabel($userEmail, $labelName, $labelColor = '#0973dc') {
         }
         
         // Check if label already exists
-        $stmt = $pdo->prepare("SELECT id FROM email_labels WHERE user_email = :user_email AND label_name = :label_name");
+        $stmt = $pdo->prepare("SELECT id FROM labels WHERE user_email = :user_email AND label_name = :label_name");
         $stmt->execute([
             ':user_email' => $userEmail,
             ':label_name' => $labelName
@@ -304,8 +306,8 @@ function createLabel($userEmail, $labelName, $labelColor = '#0973dc') {
             return ['error' => 'Label already exists'];
         }
         
-        $sql = "INSERT INTO email_labels (user_email, label_name, label_color) 
-                VALUES (:user_email, :label_name, :label_color)";
+        $sql = "INSERT INTO labels (user_email, label_name, label_color, created_at) 
+                VALUES (:user_email, :label_name, :label_color, NOW())";
         
         $stmt = $pdo->prepare($sql);
         $result = $stmt->execute([
@@ -332,7 +334,7 @@ function updateLabel($labelId, $userEmail, $labelName, $labelColor) {
             return false;
         }
         
-        $sql = "UPDATE email_labels 
+        $sql = "UPDATE labels 
                 SET label_name = :label_name, label_color = :label_color 
                 WHERE id = :id AND user_email = :user_email";
         
@@ -365,7 +367,7 @@ function deleteLabel($labelId, $userEmail) {
         $stmt->execute([':label_id' => $labelId]);
         
         // Then delete the label
-        $sql = "DELETE FROM email_labels WHERE id = :id AND user_email = :user_email";
+        $sql = "DELETE FROM labels WHERE id = :id AND user_email = :user_email";
         $stmt = $pdo->prepare($sql);
         return $stmt->execute([
             ':id' => $labelId,
