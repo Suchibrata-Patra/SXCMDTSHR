@@ -435,9 +435,9 @@ $hasActiveFilters = !empty(array_filter($filters));
 
         /* Recipient Column */
         .col-recipient {
-            font-size: 8px;
+            font-size: 10px;
             font-weight: 600;
-            color: var(--gray-300);
+            color: var(--gray-400);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
