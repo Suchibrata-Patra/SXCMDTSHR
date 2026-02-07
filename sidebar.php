@@ -173,7 +173,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             height: 8px;
             border-radius: 50%;
             border: 2px solid rgba(255,255,255,0.8);
-            box-shadow: 0 0 0 1px rgba(0,0,0,0.05);
+            /* box-shadow: 0 0 0 1px rgba(0,0,0,0.05); */
         }
 
         .label-count {
