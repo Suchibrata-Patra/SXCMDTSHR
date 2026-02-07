@@ -136,7 +136,7 @@ $defaultSignature = json_encode($settings['signature']);
         .compose-container {
             max-width: 1000px;
             margin: 0 auto;
-            padding: 48px 40px 80px;
+            padding: 20px 40px 80px;
         }
 
         .compose-header {
