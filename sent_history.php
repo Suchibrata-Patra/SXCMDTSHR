@@ -411,7 +411,7 @@ $hasActiveFilters = !empty(array_filter($filters));
         /* Email Item */
         .email-item {
             display: grid;
-            grid-template-columns: minmax(200px, 280px) 1fr auto 100px;
+            grid-template-columns: minmax(200px, 280px) 1fr auto 80px;
             gap: 20px;
             align-items: center;
             padding: 5px 32px;
@@ -419,7 +419,7 @@ $hasActiveFilters = !empty(array_filter($filters));
             border-bottom: 1px solid var(--border);
             text-decoration: none;
             color: var(--text-primary);
-            transition: all 0.2s var(--transition);
+            /* transition: all 0.2s var(--transition); */
             position: relative;
         }
 
@@ -870,9 +870,9 @@ $hasActiveFilters = !empty(array_filter($filters));
                         <label class="filter-label">Label</label>
                         <select name="label_id" class="filter-select">
                             <option value="">All Labels</option>
-                            <option value="unlabeled" <?=$filters['label_id']==='unlabeled' ? 'selected' : '' ?>>
-                                Unlabeled (
-                                <?= $unlabeledCount ?>)
+                            <!-- <option value="unlabeled" <?=$filters['label_id']==='unlabeled' ? 'selected' : '' ?>> -->
+                            Unlabeled (
+                            <?= $unlabeledCount ?>)
                             </option>
                             <?php foreach ($labels as $label): ?>
                             <option value="<?= $label['id'] ?>" <?=$filters['label_id']==$label['id'] ? 'selected' : ''
