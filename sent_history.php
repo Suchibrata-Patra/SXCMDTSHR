@@ -40,15 +40,18 @@ $hasActiveFilters = !empty(array_filter($filters));
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Email Archive — SXC MDTS</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-    
+
     <style>
         :root {
             /* Color Palette */
@@ -57,7 +60,7 @@ $hasActiveFilters = !empty(array_filter($filters));
             --accent: #c41e3a;
             --accent-hover: #a01629;
             --accent-light: #fef2f4;
-            
+
             /* Grays */
             --gray-50: #fafafa;
             --gray-100: #f4f4f5;
@@ -69,7 +72,7 @@ $hasActiveFilters = !empty(array_filter($filters));
             --gray-700: #3f3f46;
             --gray-800: #27272a;
             --gray-900: #18181b;
-            
+
             /* Semantic Colors */
             --background: #ffffff;
             --surface: #fafafa;
@@ -77,19 +80,19 @@ $hasActiveFilters = !empty(array_filter($filters));
             --text-primary: #0a0a0a;
             --text-secondary: #52525b;
             --text-tertiary: #a1a1aa;
-            
+
             /* Effects */
             --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
             --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
             --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-            
+
             --radius-sm: 6px;
             --radius: 8px;
             --radius-lg: 12px;
             --radius-xl: 16px;
-            
+
             --transition: cubic-bezier(0.4, 0, 0.2, 1);
         }
 
@@ -261,6 +264,7 @@ $hasActiveFilters = !empty(array_filter($filters));
                 opacity: 0;
                 transform: translateY(-10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -431,9 +435,9 @@ $hasActiveFilters = !empty(array_filter($filters));
 
         /* Recipient Column */
         .col-recipient {
-            font-size: 14px;
+            font-size: 8px;
             font-weight: 600;
-            color: var(--text-primary);
+            color: var(--gray-300);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -530,6 +534,7 @@ $hasActiveFilters = !empty(array_filter($filters));
                 opacity: 0;
                 transform: translateY(-5px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -750,6 +755,7 @@ $hasActiveFilters = !empty(array_filter($filters));
         }
     </style>
 </head>
+
 <body>
     <?php include 'sidebar.php'; ?>
 
@@ -759,19 +765,14 @@ $hasActiveFilters = !empty(array_filter($filters));
             <div class="header-left">
                 <p class="page-subtitle">View and manage all sent correspondence</p>
             </div>
-            
+
             <div class="header-actions">
                 <div class="search-container">
                     <span class="material-icons-round search-icon">search</span>
-                    <input 
-                        type="text" 
-                        class="search-input" 
-                        placeholder="Search emails..." 
-                        value="<?= htmlspecialchars($filters['search']) ?>"
-                        onchange="handleSearch(this.value)"
-                    >
+                    <input type="text" class="search-input" placeholder="Search emails..."
+                        value="<?= htmlspecialchars($filters['search']) ?>" onchange="handleSearch(this.value)">
                 </div>
-                
+
                 <button class="btn-filter-toggle <?= $hasActiveFilters ? 'active' : '' ?>" onclick="toggleFilters()">
                     <span class="material-icons-round">tune</span>
                     <span>Filters</span>
@@ -783,32 +784,35 @@ $hasActiveFilters = !empty(array_filter($filters));
         <?php if ($hasActiveFilters): ?>
         <div class="active-filters">
             <span class="active-filters-label">Active Filters:</span>
-            
+
             <?php if (!empty($filters['search'])): ?>
-                <span class="filter-tag">
-                    Search: "<?= htmlspecialchars($filters['search']) ?>"
-                    <span class="remove" onclick="removeFilter('search')">×</span>
-                </span>
+            <span class="filter-tag">
+                Search: "
+                <?= htmlspecialchars($filters['search']) ?>"
+                <span class="remove" onclick="removeFilter('search')">×</span>
+            </span>
             <?php endif; ?>
-            
+
             <?php if (!empty($filters['recipient'])): ?>
-                <span class="filter-tag">
-                    Recipient: <?= htmlspecialchars($filters['recipient']) ?>
-                    <span class="remove" onclick="removeFilter('recipient')">×</span>
-                </span>
+            <span class="filter-tag">
+                Recipient:
+                <?= htmlspecialchars($filters['recipient']) ?>
+                <span class="remove" onclick="removeFilter('recipient')">×</span>
+            </span>
             <?php endif; ?>
-            
+
             <?php if (!empty($filters['subject'])): ?>
-                <span class="filter-tag">
-                    Subject: <?= htmlspecialchars($filters['subject']) ?>
-                    <span class="remove" onclick="removeFilter('subject')">×</span>
-                </span>
+            <span class="filter-tag">
+                Subject:
+                <?= htmlspecialchars($filters['subject']) ?>
+                <span class="remove" onclick="removeFilter('subject')">×</span>
+            </span>
             <?php endif; ?>
-            
+
             <?php if (!empty($filters['label_id'])): ?>
-                <span class="filter-tag">
-                    Label: 
-                    <?php
+            <span class="filter-tag">
+                Label:
+                <?php
                     if ($filters['label_id'] === 'unlabeled') {
                         echo 'Unlabeled';
                     } else {
@@ -820,18 +824,20 @@ $hasActiveFilters = !empty(array_filter($filters));
                         }
                     }
                     ?>
-                    <span class="remove" onclick="removeFilter('label_id')">×</span>
-                </span>
+                <span class="remove" onclick="removeFilter('label_id')">×</span>
+            </span>
             <?php endif; ?>
-            
+
             <?php if (!empty($filters['date_from']) || !empty($filters['date_to'])): ?>
-                <span class="filter-tag">
-                    Date: <?= !empty($filters['date_from']) ? date('M j, Y', strtotime($filters['date_from'])) : 'Any' ?> 
-                    — <?= !empty($filters['date_to']) ? date('M j, Y', strtotime($filters['date_to'])) : 'Any' ?>
-                    <span class="remove" onclick="clearDateFilters()">×</span>
-                </span>
+            <span class="filter-tag">
+                Date:
+                <?= !empty($filters['date_from']) ? date('M j, Y', strtotime($filters['date_from'])) : 'Any' ?>
+                —
+                <?= !empty($filters['date_to']) ? date('M j, Y', strtotime($filters['date_to'])) : 'Any' ?>
+                <span class="remove" onclick="clearDateFilters()">×</span>
+            </span>
             <?php endif; ?>
-            
+
             <button class="btn-clear" onclick="clearAllFilters()">
                 Clear All
             </button>
@@ -844,74 +850,53 @@ $hasActiveFilters = !empty(array_filter($filters));
                 <div class="filter-grid">
                     <div class="filter-group">
                         <label class="filter-label">Global Search</label>
-                        <input 
-                            type="text" 
-                            name="search" 
-                            class="filter-input" 
-                            placeholder="Search everywhere..." 
-                            value="<?= htmlspecialchars($filters['search']) ?>"
-                        >
+                        <input type="text" name="search" class="filter-input" placeholder="Search everywhere..."
+                            value="<?= htmlspecialchars($filters['search']) ?>">
                     </div>
-                    
+
                     <div class="filter-group">
                         <label class="filter-label">Recipient</label>
-                        <input 
-                            type="text" 
-                            name="recipient" 
-                            class="filter-input" 
-                            placeholder="email@example.com" 
-                            value="<?= htmlspecialchars($filters['recipient']) ?>"
-                        >
+                        <input type="text" name="recipient" class="filter-input" placeholder="email@example.com"
+                            value="<?= htmlspecialchars($filters['recipient']) ?>">
                     </div>
-                    
+
                     <div class="filter-group">
                         <label class="filter-label">Subject</label>
-                        <input 
-                            type="text" 
-                            name="subject" 
-                            class="filter-input" 
-                            placeholder="Subject keywords..." 
-                            value="<?= htmlspecialchars($filters['subject']) ?>"
-                        >
+                        <input type="text" name="subject" class="filter-input" placeholder="Subject keywords..."
+                            value="<?= htmlspecialchars($filters['subject']) ?>">
                     </div>
-                    
+
                     <div class="filter-group">
                         <label class="filter-label">Label</label>
                         <select name="label_id" class="filter-select">
                             <option value="">All Labels</option>
-                            <option value="unlabeled" <?= $filters['label_id'] === 'unlabeled' ? 'selected' : '' ?>>
-                                Unlabeled (<?= $unlabeledCount ?>)
+                            <option value="unlabeled" <?=$filters['label_id']==='unlabeled' ? 'selected' : '' ?>>
+                                Unlabeled (
+                                <?= $unlabeledCount ?>)
                             </option>
                             <?php foreach ($labels as $label): ?>
-                                <option value="<?= $label['id'] ?>" 
-                                        <?= $filters['label_id'] == $label['id'] ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($label['label_name']) ?> (<?= $label['email_count'] ?>)
-                                </option>
+                            <option value="<?= $label['id'] ?>" <?=$filters['label_id']==$label['id'] ? 'selected' : ''
+                                ?>>
+                                <?= htmlspecialchars($label['label_name']) ?> (
+                                <?= $label['email_count'] ?>)
+                            </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    
+
                     <div class="filter-group">
                         <label class="filter-label">Date From</label>
-                        <input 
-                            type="date" 
-                            name="date_from" 
-                            class="filter-input" 
-                            value="<?= htmlspecialchars($filters['date_from']) ?>"
-                        >
+                        <input type="date" name="date_from" class="filter-input"
+                            value="<?= htmlspecialchars($filters['date_from']) ?>">
                     </div>
-                    
+
                     <div class="filter-group">
                         <label class="filter-label">Date To</label>
-                        <input 
-                            type="date" 
-                            name="date_to" 
-                            class="filter-input" 
-                            value="<?= htmlspecialchars($filters['date_to']) ?>"
-                        >
+                        <input type="date" name="date_to" class="filter-input"
+                            value="<?= htmlspecialchars($filters['date_to']) ?>">
                     </div>
                 </div>
-                
+
                 <div class="filter-actions">
                     <button type="button" class="btn-filter btn-clear" onclick="clearForm()">
                         <span class="material-icons-round" style="font-size: 18px;">clear</span>
@@ -929,59 +914,69 @@ $hasActiveFilters = !empty(array_filter($filters));
         <div class="email-list-container">
             <div class="email-list">
                 <?php if (empty($sentEmails)): ?>
-                    <div class="empty-state">
-                        <span class="material-icons-round">inbox</span>
-                        <h3><?= $hasActiveFilters ? 'No emails match your filters' : 'Archive is empty' ?></h3>
-                        <p><?= $hasActiveFilters ? 'Try adjusting your search criteria' : 'Start by composing your first email' ?></p>
-                    </div>
+                <div class="empty-state">
+                    <span class="material-icons-round">inbox</span>
+                    <h3>
+                        <?= $hasActiveFilters ? 'No emails match your filters' : 'Archive is empty' ?>
+                    </h3>
+                    <p>
+                        <?= $hasActiveFilters ? 'Try adjusting your search criteria' : 'Start by composing your first email' ?>
+                    </p>
+                </div>
                 <?php else: ?>
-                    <?php foreach ($sentEmails as $email): ?>
-                    <a href="view_sent_email.php?id=<?= $email['id'] ?>" class="email-item" target="_blank">
-                        <div class="col-recipient">
-                            <?= htmlspecialchars($email['recipient_email']) ?>
-                        </div>
-                        
-                        <div class="col-content">
-                            <?php if (!empty($email['label_name'])): ?>
-                                <span class="label-badge" style="background-color: <?= htmlspecialchars($email['label_color']) ?>;">
-                                    <?= htmlspecialchars($email['label_name']) ?>
-                                </span>
-                            <?php endif; ?>
-                            
-                            <span class="subject-text"><?= htmlspecialchars($email['subject']) ?></span>
-                            <span class="snippet-text">
-                                — <?= htmlspecialchars(mb_substr(strip_tags($email['message_body']), 0, 100)) ?>
-                            </span>
-                        </div>
+                <?php foreach ($sentEmails as $email): ?>
+                <a href="view_sent_email.php?id=<?= $email['id'] ?>" class="email-item" target="_blank">
+                    <div class="col-recipient">
+                        <?= htmlspecialchars($email['recipient_email']) ?>
+                    </div>
 
-                        <div class="quick-label">
-                            <div class="label-dropdown" onclick="event.preventDefault(); event.stopPropagation();">
-                                <button class="label-dropdown-btn">
-                                    <span class="material-icons-round" style="font-size: 16px;">label</span>
-                                </button>
-                                <div class="label-dropdown-content">
-                                    <div class="label-option" onclick="updateLabel(<?= $email['id'] ?>, null)">
-                                        <span class="material-icons-round" style="font-size: 18px;">label_off</span>
-                                        Remove Label
-                                    </div>
-                                    <?php foreach ($labels as $label): ?>
-                                        <div class="label-option" onclick="updateLabel(<?= $email['id'] ?>, <?= $label['id'] ?>)">
-                                            <span class="label-color-dot" style="background: <?= htmlspecialchars($label['label_color']) ?>;"></span>
-                                            <?= htmlspecialchars($label['label_name']) ?>
-                                        </div>
-                                    <?php endforeach; ?>
+                    <div class="col-content">
+                        <?php if (!empty($email['label_name'])): ?>
+                        <span class="label-badge"
+                            style="background-color: <?= htmlspecialchars($email['label_color']) ?>;">
+                            <?= htmlspecialchars($email['label_name']) ?>
+                        </span>
+                        <?php endif; ?>
+
+                        <span class="subject-text">
+                            <?= htmlspecialchars($email['subject']) ?>
+                        </span>
+                        <span class="snippet-text">
+                            —
+                            <?= htmlspecialchars(mb_substr(strip_tags($email['message_body']), 0, 100)) ?>
+                        </span>
+                    </div>
+
+                    <div class="quick-label">
+                        <div class="label-dropdown" onclick="event.preventDefault(); event.stopPropagation();">
+                            <button class="label-dropdown-btn">
+                                <span class="material-icons-round" style="font-size: 16px;">label</span>
+                            </button>
+                            <div class="label-dropdown-content">
+                                <div class="label-option" onclick="updateLabel(<?= $email['id'] ?>, null)">
+                                    <span class="material-icons-round" style="font-size: 18px;">label_off</span>
+                                    Remove Label
                                 </div>
+                                <?php foreach ($labels as $label): ?>
+                                <div class="label-option"
+                                    onclick="updateLabel(<?= $email['id'] ?>, <?= $label['id'] ?>)">
+                                    <span class="label-color-dot"
+                                        style="background: <?= htmlspecialchars($label['label_color']) ?>;"></span>
+                                    <?= htmlspecialchars($label['label_name']) ?>
+                                </div>
+                                <?php endforeach; ?>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="col-date">
-                            <?php if (!empty($email['attachment_names'])): ?>
-                                <i class="fa-solid fa-paperclip attachment-icon"></i>
-                            <?php endif; ?>
-                            <?= date('M j, Y', strtotime($email['sent_at'])) ?>
-                        </div>
-                    </a>
-                    <?php endforeach; ?>
+                    <div class="col-date">
+                        <?php if (!empty($email['attachment_names'])): ?>
+                        <i class="fa-solid fa-paperclip attachment-icon"></i>
+                        <?php endif; ?>
+                        <?= date('M j, Y', strtotime($email['sent_at'])) ?>
+                    </div>
+                </a>
+                <?php endforeach; ?>
                 <?php endif; ?>
             </div>
         </div>
@@ -1070,14 +1065,14 @@ $hasActiveFilters = !empty(array_filter($filters));
                 formData.append('ajax', '1');
                 formData.append('email_id', emailId);
                 formData.append('label_id', labelId || '');
-                
+
                 const response = await fetch('update_email_label.php', {
                     method: 'POST',
                     body: formData
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     location.reload();
                 } else {
@@ -1096,7 +1091,7 @@ $hasActiveFilters = !empty(array_filter($filters));
                 e.preventDefault();
                 document.querySelector('.search-input').focus();
             }
-            
+
             // Ctrl/Cmd + F to toggle filters
             if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
                 e.preventDefault();
@@ -1105,4 +1100,5 @@ $hasActiveFilters = !empty(array_filter($filters));
         });
     </script>
 </body>
+
 </html>
