@@ -479,7 +479,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
                 <span>Sent</span>
             </a>
             <a href="deleted_items.php" class="nav-item <?= ($current_page == 'deleted_items') ? 'active' : ''; ?>">
-                <span class="material-icons-round">Delete</span>
+                <span class="material-icons-round">delete</span>
                 <span>Deleted</span>
             </a>
 
