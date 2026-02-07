@@ -201,16 +201,11 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             border: 1px solid rgba(255,255,255,0.7);
         }
 
-        .auth-badge {
+        .auth-badge img {
             display: inline-block;
-            /* background: #34C759; */
-            /* color: white; */
-            /* padding: 1px 7px;
-            border-radius: 5px;
-            font-size: 9px;
-            font-weight: 800;
-            margin-bottom: 6px; */
-            /* text-transform: uppercase; */
+            width:10px;
+            height:auto;
+        
         }
 
         .user-email {
