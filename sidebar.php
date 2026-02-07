@@ -344,7 +344,7 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
             </a>
             <a href="send.php" class="nav-item <?= ($current_page == 'send') ? 'active' : ''; ?>">
                 <span class="material-icons">send</span>
-                <span>Send</span>
+                <span>Sent</span>
             </a>
         </nav>
 
