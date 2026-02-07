@@ -435,12 +435,12 @@ $hasActiveFilters = !empty(array_filter($filters));
 
         /* Recipient Column */
         .col-recipient {
-            font-size: 10px;
-            font-weight: 600;
-            color: var(--gray-400);
+            font-size: 13px;
+            color: var(--text-tertiary);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            font-weight: 400;
         }
 
         /* Content Column */
