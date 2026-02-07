@@ -67,10 +67,6 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             transition: all 0.3s var(--transition-smooth);
         }
 
-        .mobile-toggle:hover {
-            transform: scale(1.05);
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
-        }
 
         .mobile-toggle:active {
             transform: scale(0.95);
@@ -107,9 +103,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             transition: transform 0.3s var(--transition-smooth);
         }
 
-        .logo:hover {
-            transform: translateX(2px);
-        }
+
 
         .logo-image {
             width: 56px;
@@ -120,9 +114,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             transition: all 0.3s var(--transition-smooth);
         }
 
-        .logo:hover .logo-image {
-            box-shadow: var(--shadow-md);
-        }
+
 
         .logo-text {
             display: flex;
@@ -210,7 +202,6 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         .nav-item:hover {
             background: var(--hover-bg);
             color: var(--inst-black);
-            transform: translateX(2px);
         }
 
         .nav-item:hover .material-icons-round {
@@ -279,7 +270,6 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         .label-item:hover {
             background: var(--hover-bg);
             color: var(--inst-black);
-            transform: translateX(2px);
         }
 
         .label-content {
@@ -330,7 +320,6 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
 
         .user-card:hover {
             box-shadow: var(--shadow-md);
-            transform: translateY(-2px);
         }
 
         .auth-badge {
@@ -392,7 +381,6 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             background: var(--inst-black);
             color: white;
             border-color: var(--inst-black);
-            transform: translateY(-2px);
             box-shadow: var(--shadow-md);
         }
 
@@ -404,7 +392,6 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
 
         .logout-btn:hover {
             background: var(--nature-red-hover);
-            transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(161, 4, 32, 0.3);
         }
 
