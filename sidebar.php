@@ -21,8 +21,8 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
     <style>
         :root {
             --sidebar-width: 300px;
-            --nature-red: #a10420;
-            --nature-red-hover: #8a0318;
+            --nature-red: #ead5d9;
+            --nature-red-hover: #e0cace;
             --inst-black: #0f1419;
             --inst-gray: #536471;
             --inst-light-gray: #8b98a5;
