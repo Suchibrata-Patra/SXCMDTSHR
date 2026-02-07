@@ -40,7 +40,7 @@ $defaultSignature = json_encode($settings['signature']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Compose Email – SXC MDTS</title>
+    <title>SXC MDTS</title>
     
     <!-- Google Fonts - Nature.com uses Harding and Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
