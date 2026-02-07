@@ -462,7 +462,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
                     alt="SXC Logo" class="logo-image">
                 <div class="logo-text">
                     <span class="logo-title">SXC MDTS</span>
-                    <span class="logo-subtitle">Mail Distribution</span>
+                    <span class="logo-subtitle">10.28.73.474</span>
                 </div>
             </a>
         </div>
