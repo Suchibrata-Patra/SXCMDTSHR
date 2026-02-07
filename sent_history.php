@@ -755,7 +755,7 @@ $hasActiveFilters = !empty(array_filter($filters));
 
     <div id="main-wrapper">
         <!-- Page Header -->
-        <!-- <div class="page-header">
+        <div class="page-header">
             <div class="header-left">
                 <h1 class="page-title">
                     Email Archive
@@ -784,7 +784,7 @@ $hasActiveFilters = !empty(array_filter($filters));
                     <span>Filters</span>
                 </button>
             </div>
-        </div> -->
+        </div>
 
         <!-- Active Filters -->
         <?php if ($hasActiveFilters): ?>
