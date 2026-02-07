@@ -613,13 +613,6 @@ $defaultSignature = json_encode($settings['signature']);
                                 </div>
                                 <small class="help-text">Hidden recipients for privacy</small>
                             </div>
-                            <div class="form-group">
-                            <label>Subject <span style="color: #d32f2f;">*</span></label>
-                            <input type="text" name="subject" required placeholder="Enter a clear, descriptive subject line">
-                        </div>
-                        </div>
-                        </div>
-                        </div>
                         </div>
                     </section>
 
@@ -627,10 +620,10 @@ $defaultSignature = json_encode($settings['signature']);
                     <section class="form-section">
                         <h2 class="section-title">Email Details</h2>
                         
-                        <!-- <div class="form-group">
+                        <div class="form-group">
                             <label>Subject <span style="color: #d32f2f;">*</span></label>
                             <input type="text" name="subject" required placeholder="Enter a clear, descriptive subject line">
-                        </div> -->
+                        </div>
 
                         <div class="form-group">
                             <label>Article Title <span style="color: #d32f2f;">*</span></label>
