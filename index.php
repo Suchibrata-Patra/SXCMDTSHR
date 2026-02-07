@@ -37,29 +37,32 @@ $defaultSignature = json_encode($settings['signature']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Compose Email – SXC MDTS</title>
-    
+
     <!-- Google Fonts - Nature.com uses Harding and Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Harding:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    
+    <link
+        href="https://fonts.googleapis.com/css2?family=Harding:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+
     <!-- Quill Rich Text Editor CSS -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-    
+
     <style>
-        * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        
-        body { 
+
+        body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
             background-color: #fff;
             color: #191919;
@@ -107,7 +110,7 @@ $defaultSignature = json_encode($settings['signature']);
         }
 
         .breadcrumb a {
-            color: #0973dc;
+            color: #000000;
             text-decoration: none;
             transition: color 0.2s;
         }
@@ -126,7 +129,7 @@ $defaultSignature = json_encode($settings['signature']);
             display: inline-block;
             font-size: 13px;
             font-weight: 600;
-            color: #0973dc;
+            color: #000000;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 12px;
@@ -209,8 +212,8 @@ $defaultSignature = json_encode($settings['signature']);
         }
 
         /* Input fields with Nature.com aesthetic */
-        input[type="email"], 
-        input[type="text"], 
+        input[type="email"],
+        input[type="text"],
         select {
             width: 100%;
             padding: 12px 14px;
@@ -223,15 +226,15 @@ $defaultSignature = json_encode($settings['signature']);
             color: #191919;
         }
 
-        input[type="email"]:focus, 
-        input[type="text"]:focus, 
+        input[type="email"]:focus,
+        input[type="text"]:focus,
         select:focus {
             outline: none;
-            border-color: #0973dc;
+            border-color: #000000;
             box-shadow: 0 0 0 2px rgba(9, 115, 220, 0.1);
         }
 
-        input[type="email"]:hover:not(:focus), 
+        input[type="email"]:hover:not(:focus),
         input[type="text"]:hover:not(:focus) {
             border-color: #999;
         }
@@ -261,7 +264,7 @@ $defaultSignature = json_encode($settings['signature']);
         }
 
         .editor-wrapper.focused {
-            border-color: #0973dc;
+            border-color: #000000;
             box-shadow: 0 0 0 2px rgba(9, 115, 220, 0.1);
         }
 
@@ -326,8 +329,8 @@ $defaultSignature = json_encode($settings['signature']);
 
         .btn-attach-list:hover {
             background: #fafafa;
-            border-color: #0973dc;
-            color: #0973dc;
+            border-color: #000000;
+            color: #000000;
         }
 
         .help-text {
@@ -411,7 +414,7 @@ $defaultSignature = json_encode($settings['signature']);
 
         .file-preview-item:hover {
             border-color: #999;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
         .file-preview-icon {
@@ -552,6 +555,7 @@ $defaultSignature = json_encode($settings['signature']);
         }
     </style>
 </head>
+
 <body>
     <?php include 'sidebar.php'; ?>
 
@@ -577,12 +581,12 @@ $defaultSignature = json_encode($settings['signature']);
                 </header>
 
                 <form action="send.php" method="POST" enctype="multipart/form-data" id="composeForm">
-                    
+
                     <!-- Recipients Section -->
                     <section class="form-section">
                         <h2 class="section-title">Recipients</h2>
                         <!-- <p class="section-description">Specify the primary and additional recipients for your message.</p> -->
-                        
+
                         <div class="form-group">
                             <label>To <span style="color: #d32f2f;">*</span></label>
                             <input type="email" name="email" required placeholder="recipient@example.com">
@@ -593,10 +597,12 @@ $defaultSignature = json_encode($settings['signature']);
                                 <label>Cc <span class="label-optional">(optional)</span></label>
                                 <div class="input-with-button">
                                     <input type="text" name="cc" id="ccInput" placeholder="cc@example.com">
-                                    <button type="button" class="btn-attach-list" onclick="document.getElementById('ccFile').click()">
+                                    <button type="button" class="btn-attach-list"
+                                        onclick="document.getElementById('ccFile').click()">
                                         <i class="fa-solid fa-paperclip"></i> List
                                     </button>
-                                    <input type="file" name="cc_file" id="ccFile" accept=".txt,.csv" onchange="handleEmailListUpload(this, 'ccInput')">
+                                    <input type="file" name="cc_file" id="ccFile" accept=".txt,.csv"
+                                        onchange="handleEmailListUpload(this, 'ccInput')">
                                 </div>
                                 <small class="help-text">Separate multiple emails with commas</small>
                             </div>
@@ -605,10 +611,12 @@ $defaultSignature = json_encode($settings['signature']);
                                 <label>Bcc <span class="label-optional">(optional)</span></label>
                                 <div class="input-with-button">
                                     <input type="text" name="bcc" id="bccInput" placeholder="bcc@example.com">
-                                    <button type="button" class="btn-attach-list" onclick="document.getElementById('bccFile').click()">
+                                    <button type="button" class="btn-attach-list"
+                                        onclick="document.getElementById('bccFile').click()">
                                         <i class="fa-solid fa-paperclip"></i> List
                                     </button>
-                                    <input type="file" name="bcc_file" id="bccFile" accept=".txt,.csv" onchange="handleEmailListUpload(this, 'bccInput')">
+                                    <input type="file" name="bcc_file" id="bccFile" accept=".txt,.csv"
+                                        onchange="handleEmailListUpload(this, 'bccInput')">
                                 </div>
                                 <small class="help-text">Hidden recipients for privacy</small>
                             </div>
@@ -618,10 +626,11 @@ $defaultSignature = json_encode($settings['signature']);
                     <!-- Email Details Section -->
                     <section class="form-section">
                         <h2 class="section-title">Email Details</h2>
-                        
+
                         <div class="form-group">
                             <label>Subject <span style="color: #d32f2f;">*</span></label>
-                            <input type="text" name="subject" required placeholder="Enter a clear, descriptive subject line">
+                            <input type="text" name="subject" required
+                                placeholder="Enter a clear, descriptive subject line">
                         </div>
 
                         <div class="form-group">
@@ -635,7 +644,7 @@ $defaultSignature = json_encode($settings['signature']);
                     <section class="form-section">
                         <h2 class="section-title">Message Content <span style="color: #d32f2f;">*</span></h2>
                         <!-- <p class="section-description">Compose your message using the rich text editor with formatting options.</p> -->
-                        
+
                         <div class="form-group">
                             <!-- <label>Message Body <span style="color: #d32f2f;">*</span></label> -->
                             <div class="editor-wrapper" id="editorContainer">
@@ -660,7 +669,7 @@ $defaultSignature = json_encode($settings['signature']);
                     <!-- Signature Section -->
                     <section class="form-section">
                         <h2 class="section-title">Email Signature</h2>
-                        
+
                         <div class="form-group">
                             <!-- <label>Signature <span class="label-optional">(optional)</span></label> -->
                             <div class="editor-wrapper" id="signatureContainer">
@@ -687,10 +696,12 @@ $defaultSignature = json_encode($settings['signature']);
                                 <i class="fa-solid fa-upload"></i>
                                 <span>Choose Files</span>
                             </label>
-                            <input type="file" name="attachments[]" id="attachments" multiple onchange="handleFileSelect(event)">
+                            <input type="file" name="attachments[]" id="attachments" multiple
+                                onchange="handleFileSelect(event)">
                         </div>
-                        <small class="help-text">You can select multiple files. Supported formats: PDF, DOC, DOCX, XLS, XLSX, images, and more.</small>
-                        
+                        <small class="help-text">You can select multiple files. Supported formats: PDF, DOC, DOCX, XLS,
+                            XLSX, images, and more.</small>
+
                         <!-- File Preview Grid -->
                         <div class="file-preview-grid" id="filePreviewGrid"></div>
                     </div>
@@ -731,7 +742,7 @@ $defaultSignature = json_encode($settings['signature']);
         });
 
         // Load default signature from settings
-        const defaultSignature = <?php echo $defaultSignature; ?>;
+        const defaultSignature = <? php echo $defaultSignature; ?>;
         if (defaultSignature) {
             quillSignature.root.innerHTML = defaultSignature;
         }
@@ -740,7 +751,7 @@ $defaultSignature = json_encode($settings['signature']);
         const editorContainer = document.getElementById('editorContainer');
         const signatureContainer = document.getElementById('signatureContainer');
 
-        quillMessage.on('selection-change', function(range) {
+        quillMessage.on('selection-change', function (range) {
             if (range) {
                 editorContainer.classList.add('focused');
             } else {
@@ -748,7 +759,7 @@ $defaultSignature = json_encode($settings['signature']);
             }
         });
 
-        quillSignature.on('selection-change', function(range) {
+        quillSignature.on('selection-change', function (range) {
             if (range) {
                 signatureContainer.classList.add('focused');
             } else {
@@ -853,9 +864,9 @@ $defaultSignature = json_encode($settings['signature']);
             if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 const content = e.target.result;
-                
+
                 // Parse emails from file
                 let emails = content
                     .split(/[,;\n\r]+/)
@@ -865,7 +876,7 @@ $defaultSignature = json_encode($settings['signature']);
                 // Set the emails in the target input
                 const targetInput = document.getElementById(targetInputId);
                 const currentValue = targetInput.value.trim();
-                
+
                 if (currentValue) {
                     targetInput.value = currentValue + ', ' + emails.join(', ');
                 } else {
@@ -879,21 +890,21 @@ $defaultSignature = json_encode($settings['signature']);
         }
 
         // Form submission - combine message + signature
-        document.getElementById('composeForm').addEventListener('submit', function(e) {
+        document.getElementById('composeForm').addEventListener('submit', function (e) {
             // Get message content
             const messageHtml = quillMessage.root.innerHTML;
-            
+
             // Get signature content
             const signatureHtml = quillSignature.root.innerHTML;
-            
+
             // Combine message and signature
             let finalHtml = messageHtml;
-            
+
             // Only add signature if it's not empty
             if (signatureHtml.trim() && signatureHtml !== '<p><br></p>') {
                 finalHtml += '<br><br>' + signatureHtml;
             }
-            
+
             // Set the combined HTML to hidden input
             document.getElementById('messageInput').value = finalHtml;
         });
@@ -912,10 +923,10 @@ $defaultSignature = json_encode($settings['signature']);
 
             // Get message content
             const messageHtml = quillMessage.root.innerHTML;
-            
+
             // Get signature content
             const signatureHtml = quillSignature.root.innerHTML;
-            
+
             // Combine message and signature
             let finalHtml = messageHtml;
             if (signatureHtml.trim() && signatureHtml !== '<p><br></p>') {
@@ -951,4 +962,5 @@ $defaultSignature = json_encode($settings['signature']);
         });
     </script>
 </body>
+
 </html>
