@@ -258,9 +258,10 @@ function getUserLabels($userEmail) {
 function getLabelCounts($userEmail) {
     try {
         $pdo = getDatabaseConnection();
-        if (!$pdo) { return []; }
+        if (!$pdo) {
+            return [];
+        }
         
-        // Removed "WHERE l.user_email = :user_email"
         $sql = "SELECT 
                     l.id, 
                     l.label_name, 
@@ -268,14 +269,16 @@ function getLabelCounts($userEmail) {
                     l.created_at,
                     COUNT(se.id) as email_count
                 FROM labels l
-                LEFT JOIN sent_emails se ON l.id = se.label_id 
+                LEFT JOIN sent_emails se ON l.id = se.label_id AND se.sender_email = :user_email
+                WHERE l.user_email = :user_email
                 GROUP BY l.id, l.label_name, l.label_color, l.created_at
                 ORDER BY l.label_name ASC";
         
         $stmt = $pdo->prepare($sql);
-        $stmt->execute(); // No parameters needed if global
+        $stmt->execute([':user_email' => $userEmail]);
         
         return $stmt->fetchAll();
+        
     } catch (PDOException $e) {
         error_log("Error fetching label counts: " . $e->getMessage());
         return [];
