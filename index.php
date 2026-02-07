@@ -582,7 +582,6 @@ $defaultSignature = json_encode($settings['signature']);
                     <!-- Recipients Section -->
                     <section class="form-section">
                         <h2 class="section-title">Recipients</h2>
-                        <p class="section-description">Specify the primary and additional recipients for your message.</p>
                         
                         <div class="form-group">
                             <label>To <span style="color: #d32f2f;">*</span></label>
@@ -635,7 +634,6 @@ $defaultSignature = json_encode($settings['signature']);
                     <!-- Message Composition Section -->
                     <section class="form-section">
                         <h2 class="section-title">Message Content</h2>
-                        <p class="section-description">Compose your message using the rich text editor with formatting options.</p>
                         
                         <div class="form-group">
                             <label>Message Body <span style="color: #d32f2f;">*</span></label>
@@ -661,7 +659,6 @@ $defaultSignature = json_encode($settings['signature']);
                     <!-- Signature Section -->
                     <section class="form-section">
                         <h2 class="section-title">Email Signature</h2>
-                        <p class="section-description">Add or edit your email signature. This will be automatically appended to your message.</p>
                         
                         <div class="form-group">
                             <label>Signature <span class="label-optional">(optional)</span></label>
