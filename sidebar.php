@@ -15,35 +15,26 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <link
-        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
 
     <style>
         :root {
-            --sidebar-width: 340px;
-            --nature-primary: #c41e3a;
-            --nature-primary-light: #d63651;
-            --nature-dark: #0a0e13;
-            --nature-charcoal: #151a21;
-            --nature-slate: #1e2530;
-            --nature-gray: #4a5568;
-            --nature-muted: #6b7280;
-            --nature-border: #2d3748;
-            --nature-border-light: #374151;
-            --nature-bg: #0f141a;
-            --nature-surface: #161b22;
-            --nature-hover: #1f2937;
-            --nature-active: rgba(196, 30, 58, 0.08);
-            --nature-gold: #d4af37;
-            --nature-platinum: #e5e7eb;
-            --nature-glass: rgba(22, 27, 34, 0.7);
-            --glow-primary: rgba(196, 30, 58, 0.3);
-            --glow-gold: rgba(212, 175, 55, 0.2);
-            --shadow-premium: 0 20px 60px rgba(0, 0, 0, 0.4);
-            --shadow-glow: 0 0 40px var(--glow-primary);
-            --shadow-subtle: 0 4px 16px rgba(0, 0, 0, 0.2);
+            --sidebar-width: 300px;
+            --nature-red: #000000;
+            --nature-red-hover: #e0cace;
+            --inst-black: #0f1419;
+            --inst-gray: #536471;
+            --inst-light-gray: #8b98a5;
+            --inst-border: #eff3f4;
+            --inst-bg: #ffffff;
+            --hover-bg: #f7f9fa;
+            --active-bg: #fef3f5;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+            --z-index-sidebar: 1000;
             --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
-            --transition-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
         }
 
         * {
@@ -53,201 +44,108 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, #0a0e13 0%, #151a21 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #fafbfc;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            overflow-x: hidden;
         }
 
-        /* Animated Background Particles */
-        @keyframes float {
-
-            0%,
-            100% {
-                transform: translateY(0) translateX(0);
-                opacity: 0.3;
-            }
-
-            50% {
-                transform: translateY(-20px) translateX(10px);
-                opacity: 0.6;
-            }
-        }
-
-        .particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        .particle {
-            position: absolute;
-            width: 2px;
-            height: 2px;
-            background: var(--nature-gold);
-            border-radius: 50%;
-            opacity: 0.3;
-            animation: float 6s infinite;
-        }
-
-        /* Mobile Toggle */
+        /* Mobile Toggle Button */
         .mobile-toggle {
             display: none;
             position: fixed;
-            top: 24px;
-            left: 24px;
-            z-index: 10002;
-            background: var(--nature-surface);
-            border: 1px solid var(--nature-border);
-            color: var(--nature-platinum);
-            padding: 14px;
-            border-radius: 16px;
+            top: 20px;
+            left: 20px;
+            z-index: 1002;
+            background: var(--inst-black);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 12px;
             cursor: pointer;
-            backdrop-filter: blur(20px);
-            box-shadow: var(--shadow-premium);
-            transition: all 0.4s var(--transition-smooth);
+            box-shadow: var(--shadow-lg);
+            transition: all 0.3s var(--transition-smooth);
         }
 
-        .mobile-toggle:hover {
-            background: var(--nature-primary);
-            border-color: var(--nature-primary);
-            box-shadow: var(--shadow-glow);
-            transform: scale(1.05);
+
+        .mobile-toggle:active {
+            transform: scale(0.95);
         }
 
         /* Sidebar Container */
         .sidebar {
             width: var(--sidebar-width);
-            background: var(--nature-bg);
-            background: linear-gradient(180deg, var(--nature-charcoal) 0%, var(--nature-bg) 100%);
-            border-right: 1px solid var(--nature-border);
+            background: var(--inst-bg);
+            border-right: 1px solid var(--inst-border);
             display: flex;
             flex-direction: column;
             height: 100vh;
-            color: var(--nature-platinum);
-            transition: transform 0.5s var(--transition-smooth);
+            font-family: 'Inter', sans-serif;
+            color: var(--inst-black);
+            transition: transform 0.4s var(--transition-smooth);
             position: sticky;
             top: 0;
-            box-shadow: var(--shadow-premium);
-            z-index: 10000;
-            overflow: hidden;
-        }
-
-        /* Elegant Gradient Overlay */
-        .sidebar::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 300px;
-            background: radial-gradient(ellipse at top, rgba(196, 30, 58, 0.1) 0%, transparent 70%);
-            pointer-events: none;
-            z-index: 0;
+            box-shadow: var(--shadow-sm);
         }
 
         /* Header Section */
         .sidebar-header {
-            padding: 36px 28px;
-            border-bottom: 1px solid var(--nature-border);
-            background: var(--nature-glass);
-            backdrop-filter: blur(20px);
-            position: relative;
-            z-index: 1;
+            padding: 28px 24px;
+            border-bottom: 1px solid var(--inst-border);
+            background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
         }
 
         .logo {
             display: flex;
             align-items: center;
-            gap: 18px;
+            gap: 16px;
             text-decoration: none;
-            transition: all 0.5s var(--transition-smooth);
-            position: relative;
+            transition: transform 0.3s var(--transition-smooth);
         }
 
-        .logo:hover {
-            transform: translateX(4px);
-        }
 
-        .logo-image-wrapper {
-            position: relative;
-            width: 64px;
-            height: 64px;
-        }
-
-        .logo-image-wrapper::before {
-            content: '';
-            position: absolute;
-            inset: -4px;
-            background: linear-gradient(135deg, var(--nature-primary), var(--nature-gold));
-            border-radius: 18px;
-            opacity: 0;
-            transition: opacity 0.4s var(--transition-smooth);
-            z-index: -1;
-            filter: blur(12px);
-        }
-
-        .logo:hover .logo-image-wrapper::before {
-            opacity: 0.6;
-        }
 
         .logo-image {
-            width: 64px;
-            height: 64px;
+            width: 56px;
+            height: 56px;
             object-fit: contain;
-            border-radius: 16px;
-            border: 2px solid var(--nature-border-light);
-            box-shadow: var(--shadow-subtle);
-            transition: all 0.4s var(--transition-smooth);
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s var(--transition-smooth);
         }
 
-        .logo:hover .logo-image {
-            border-color: var(--nature-primary);
-            box-shadow: 0 8px 24px rgba(196, 30, 58, 0.3);
-        }
+
 
         .logo-text {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
         }
 
         .logo-title {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 28px;
-            font-weight: 600;
-            color: var(--nature-platinum);
-            line-height: 1;
+            font-family: 'Crimson Pro', serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--inst-black);
+            line-height: 1.2;
             letter-spacing: -0.5px;
-            background: linear-gradient(135deg, #ffffff 0%, #e5e7eb 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
         }
 
         .logo-subtitle {
-            font-family: 'Space Grotesk', sans-serif;
             font-size: 10px;
-            font-weight: 600;
-            color: var(--nature-muted);
+            font-weight: 700;
+            color: var(--inst-light-gray);
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 0.8px;
         }
 
         /* Navigation Section */
         .nav-section {
             flex: 1;
-            padding: 20px 20px;
+            padding: 16px 16px;
             overflow-y: auto;
             scrollbar-width: thin;
-            scrollbar-color: var(--nature-border) transparent;
-            position: relative;
-            z-index: 1;
+            scrollbar-color: var(--inst-border) transparent;
         }
 
         .nav-section::-webkit-scrollbar {
@@ -259,31 +157,29 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         }
 
         .nav-section::-webkit-scrollbar-thumb {
-            background: var(--nature-border);
+            background: var(--inst-border);
             border-radius: 3px;
-            transition: background 0.3s;
         }
 
         .nav-section::-webkit-scrollbar-thumb:hover {
-            background: var(--nature-primary);
+            background: var(--inst-light-gray);
         }
 
         /* Navigation Items */
         .nav-item {
             display: flex;
             align-items: center;
-            gap: 16px;
-            padding: 14px 18px;
+            gap: 14px;
+            padding: 12px 16px;
             text-decoration: none;
-            color: var(--nature-muted);
+            color: var(--inst-gray);
             font-size: 15px;
             font-weight: 600;
-            border-radius: 14px;
-            margin-bottom: 6px;
-            transition: all 0.3s var(--transition-smooth);
+            border-radius: 10px;
+            margin-bottom: 4px;
+            transition: all 0.25s var(--transition-smooth);
             position: relative;
             overflow: hidden;
-            border: 1px solid transparent;
         }
 
         .nav-item::before {
@@ -293,106 +189,66 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             top: 0;
             height: 100%;
             width: 3px;
-            background: linear-gradient(180deg, var(--nature-primary), var(--nature-gold));
+            background: var(--nature-red);
             transform: scaleY(0);
-            transition: transform 0.3s var(--transition-smooth);
-        }
-
-        .nav-item::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(196, 30, 58, 0.05), rgba(212, 175, 55, 0.05));
-            opacity: 0;
-            transition: opacity 0.3s var(--transition-smooth);
-            z-index: -1;
+            transition: transform 0.25s var(--transition-smooth);
         }
 
         .nav-item .material-icons-round {
             font-size: 22px;
-            transition: all 0.4s var(--transition-bounce);
-            position: relative;
-            z-index: 1;
+            transition: all 0.25s var(--transition-smooth);
         }
 
         .nav-item:hover {
-            background: var(--nature-hover);
-            color: var(--nature-platinum);
-            border-color: var(--nature-border-light);
-            transform: translateX(4px);
-        }
-
-        .nav-item:hover::after {
-            opacity: 1;
+            background: var(--hover-bg);
+            color: var(--inst-black);
         }
 
         .nav-item:hover .material-icons-round {
-            transform: scale(1.15) rotate(5deg);
-            color: var(--nature-primary);
+            transform: scale(1.1);
         }
 
         .nav-item.active {
-            background: var(--nature-active);
-            color: var(--nature-primary);
+            background: var(--active-bg);
+            color: var(--nature-red);
             font-weight: 700;
-            border-color: rgba(196, 30, 58, 0.3);
-            box-shadow: 0 4px 16px rgba(196, 30, 58, 0.15);
         }
 
         .nav-item.active::before {
             transform: scaleY(1);
         }
 
-        .nav-item.active::after {
-            opacity: 1;
-        }
-
         .nav-item.active .material-icons-round {
-            color: var(--nature-primary);
-            transform: scale(1.1);
-            filter: drop-shadow(0 0 8px var(--glow-primary));
+            color: var(--nature-red);
+            transform: scale(1.05);
         }
 
         /* Section Title */
         .nav-section-title {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 13px;
-            font-weight: 600;
+            font-size: 11px;
+            font-weight: 800;
             text-transform: uppercase;
-            color: var(--nature-gold);
-            padding: 28px 18px 14px;
+            color: var(--inst-light-gray);
+            padding: 24px 16px 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            letter-spacing: 2px;
-            position: relative;
-        }
-
-        .nav-section-title::after {
-            content: '';
-            position: absolute;
-            bottom: 6px;
-            left: 18px;
-            width: 40px;
-            height: 2px;
-            background: linear-gradient(90deg, var(--nature-gold), transparent);
+            letter-spacing: 0.8px;
         }
 
         .manage-labels-btn {
-            color: var(--nature-muted);
+            color: var(--inst-gray);
             text-decoration: none;
             display: flex;
             align-items: center;
-            padding: 6px;
-            border-radius: 10px;
-            transition: all 0.3s var(--transition-smooth);
-            border: 1px solid transparent;
+            padding: 4px;
+            border-radius: 6px;
+            transition: all 0.2s var(--transition-smooth);
         }
 
         .manage-labels-btn:hover {
-            background: var(--nature-hover);
-            color: var(--nature-gold);
-            border-color: var(--nature-border-light);
+            background: var(--hover-bg);
+            color: var(--nature-red);
             transform: rotate(90deg);
         }
 
@@ -401,258 +257,146 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 12px 18px;
+            padding: 10px 16px;
             text-decoration: none;
-            color: var(--nature-muted);
+            color: var(--inst-gray);
             font-size: 14px;
             font-weight: 500;
-            border-radius: 12px;
-            margin-bottom: 4px;
-            transition: all 0.3s var(--transition-smooth);
-            border: 1px solid transparent;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .label-item::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at left, rgba(255, 255, 255, 0.03), transparent);
-            opacity: 0;
-            transition: opacity 0.3s var(--transition-smooth);
+            border-radius: 8px;
+            margin-bottom: 2px;
+            transition: all 0.2s var(--transition-smooth);
         }
 
         .label-item:hover {
-            background: var(--nature-hover);
-            color: var(--nature-platinum);
-            border-color: var(--nature-border-light);
-            transform: translateX(4px);
-        }
-
-        .label-item:hover::before {
-            opacity: 1;
+            background: var(--hover-bg);
+            color: var(--inst-black);
         }
 
         .label-content {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
         }
 
         .label-dot {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             border-radius: 3px;
-            box-shadow: 0 0 12px currentColor;
-            transition: all 0.3s var(--transition-bounce);
-            position: relative;
-        }
-
-        .label-dot::after {
-            content: '';
-            position: absolute;
-            inset: -3px;
-            border-radius: 4px;
-            border: 1px solid currentColor;
-            opacity: 0;
-            transition: opacity 0.3s var(--transition-smooth);
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.2s var(--transition-smooth);
         }
 
         .label-item:hover .label-dot {
-            transform: scale(1.3) rotate(45deg);
-        }
-
-        .label-item:hover .label-dot::after {
-            opacity: 0.5;
+            transform: scale(1.2);
         }
 
         .label-count {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 700;
-            color: var(--nature-muted);
-            background: var(--nature-slate);
-            padding: 4px 10px;
-            border-radius: 20px;
-            min-width: 28px;
+            color: var(--inst-light-gray);
+            background: var(--inst-border);
+            padding: 2px 8px;
+            border-radius: 12px;
+            min-width: 24px;
             text-align: center;
-            border: 1px solid var(--nature-border);
-            transition: all 0.3s var(--transition-smooth);
-        }
-
-        .label-item:hover .label-count {
-            background: var(--nature-primary);
-            color: white;
-            border-color: var(--nature-primary);
-            transform: scale(1.05);
         }
 
         /* User Footer */
         .user-footer {
-            padding: 24px;
-            border-top: 1px solid var(--nature-border);
-            background: var(--nature-glass);
-            backdrop-filter: blur(20px);
-            position: relative;
-            z-index: 1;
+            padding: 20px;
+            border-top: 1px solid var(--inst-border);
+            background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
         }
 
         .user-card {
-            background: var(--nature-surface);
-            border: 1px solid var(--nature-border-light);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 16px;
-            box-shadow: var(--shadow-subtle);
-            transition: all 0.4s var(--transition-smooth);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .user-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, var(--nature-primary), var(--nature-gold), transparent);
-            opacity: 0;
-            transition: opacity 0.3s var(--transition-smooth);
+            background: white;
+            border: 1px solid var(--inst-border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s var(--transition-smooth);
         }
 
         .user-card:hover {
-            border-color: var(--nature-primary);
-            box-shadow: 0 8px 32px rgba(196, 30, 58, 0.2);
-            transform: translateY(-2px);
-        }
-
-        .user-card:hover::before {
-            opacity: 1;
+            box-shadow: var(--shadow-md);
         }
 
         .auth-badge {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 9px;
+            gap: 4px;
+            font-size: 10px;
             font-weight: 700;
-            color: #10b981;
+            color: #16a34a;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-            background: rgba(16, 185, 129, 0.1);
-            padding: 6px 12px;
-            border-radius: 20px;
-            border: 1px solid rgba(16, 185, 129, 0.3);
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            background: #f0fdf4;
+            padding: 4px 8px;
+            border-radius: 6px;
         }
 
         .auth-badge::before {
-            content: '';
-            width: 6px;
-            height: 6px;
-            background: #10b981;
-            border-radius: 50%;
-            box-shadow: 0 0 8px #10b981;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-
-            0%,
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-
-            50% {
-                opacity: 0.6;
-                transform: scale(0.8);
-            }
+            content: '●';
+            font-size: 8px;
         }
 
         .user-email {
             font-size: 13px;
             font-weight: 600;
-            color: var(--nature-platinum);
+            color: var(--inst-black);
             word-break: break-all;
             display: block;
-            font-family: 'Space Grotesk', sans-serif;
         }
 
         /* Footer Actions */
         .footer-actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
         }
 
         .action-btn {
             flex: 1;
             text-decoration: none;
-            font-family: 'Space Grotesk', sans-serif;
             font-size: 12px;
             font-weight: 700;
             text-align: center;
-            padding: 12px 14px;
-            border-radius: 12px;
-            transition: all 0.4s var(--transition-smooth);
+            padding: 10px 12px;
+            border-radius: 8px;
+            transition: all 0.25s var(--transition-smooth);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            position: relative;
-            overflow: hidden;
-            border: 1px solid;
-        }
-
-        .action-btn::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent);
-            opacity: 0;
-            transition: opacity 0.3s var(--transition-smooth);
-        }
-
-        .action-btn:hover::before {
-            opacity: 1;
+            gap: 6px;
         }
 
         .config-btn {
-            color: var(--nature-platinum);
-            background: var(--nature-slate);
-            border-color: var(--nature-border-light);
+            color: var(--inst-gray);
+            background: var(--hover-bg);
+            border: 1px solid var(--inst-border);
         }
 
         .config-btn:hover {
-            background: var(--nature-charcoal);
-            border-color: var(--nature-gold);
-            color: var(--nature-gold);
-            box-shadow: 0 4px 20px var(--glow-gold);
-            transform: translateY(-2px);
+            background: var(--inst-black);
+            color: white;
+            border-color: var(--inst-black);
+            box-shadow: var(--shadow-md);
         }
 
         .logout-btn {
             color: white;
-            background: linear-gradient(135deg, var(--nature-primary), var(--nature-primary-light));
-            border-color: var(--nature-primary);
+            background: var(--nature-red);
+            border: 1px solid var(--nature-red);
         }
 
         .logout-btn:hover {
-            background: linear-gradient(135deg, var(--nature-primary-light), var(--nature-primary));
-            box-shadow: var(--shadow-glow);
-            transform: translateY(-2px);
+            background: var(--nature-red-hover);
+            box-shadow: 0 4px 12px rgba(161, 4, 32, 0.3);
         }
 
         .action-btn .material-icons-round {
             font-size: 16px;
-            transition: transform 0.3s var(--transition-bounce);
-        }
-
-        .action-btn:hover .material-icons-round {
-            transform: scale(1.2) rotate(5deg);
         }
 
         /* Sidebar Overlay */
@@ -663,11 +407,11 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(10, 14, 19, 0.8);
-            backdrop-filter: blur(8px);
-            z-index: 9999;
+            background: rgba(15, 20, 25, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 999;
             opacity: 0;
-            transition: opacity 0.4s var(--transition-smooth);
+            transition: opacity 0.3s var(--transition-smooth);
         }
 
         .sidebar-overlay.active {
@@ -678,14 +422,15 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         /* Responsive Design */
         @media (max-width: 768px) {
             .mobile-toggle {
-                display: flex;
+                display: block;
             }
 
             .sidebar {
                 position: fixed;
                 left: 0;
                 transform: translateX(-100%);
-                z-index: 10000;
+                z-index: var(--z-index-sidebar);
+                box-shadow: var(--shadow-lg);
             }
 
             .sidebar.open {
@@ -693,7 +438,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             }
 
             :root {
-                --sidebar-width: 300px;
+                --sidebar-width: 280px;
             }
         }
 
@@ -702,41 +447,18 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             scroll-behavior: smooth;
         }
 
-        /* Focus States */
+        /* Focus States for Accessibility */
         .nav-item:focus,
         .label-item:focus,
         .action-btn:focus,
         .manage-labels-btn:focus {
-            outline: 2px solid var(--nature-primary);
-            outline-offset: 3px;
-        }
-
-        /* Micro Interactions */
-        @keyframes shimmer {
-            0% {
-                background-position: -200% 0;
-            }
-
-            100% {
-                background-position: 200% 0;
-            }
-        }
-
-        .logo-title:hover {
-            background: linear-gradient(90deg, #ffffff 25%, var(--nature-gold) 50%, #ffffff 75%);
-            background-size: 200% 100%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: shimmer 3s infinite;
+            outline: 2px solid var(--nature-red);
+            outline-offset: 2px;
         }
     </style>
 </head>
 
 <body>
-
-    <!-- Animated Particles Background -->
-    <div class="particles" id="particles"></div>
 
     <button class="mobile-toggle" onclick="toggleSidebar()" aria-label="Toggle Menu">
         <span class="material-icons-round">menu</span>
@@ -748,10 +470,8 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         <!-- Header -->
         <div class="sidebar-header">
             <a href="index.php" class="logo">
-                <div class="logo-image-wrapper">
-                    <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg"
-                        alt="Institutional Logo" class="logo-image">
-                </div>
+                <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg"
+                    alt="Institutional Logo" class="logo-image">
                 <div class="logo-text">
                     <span class="logo-title">SXC MDTS</span>
                     <span class="logo-subtitle">Official Portal</span>
@@ -787,8 +507,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             <?php foreach ($sidebarLabels as $label): ?>
             <a href="sent_history.php?label_id=<?= $label['id'] ?>" class="label-item">
                 <div class="label-content">
-                    <div class="label-dot"
-                        style="background-color: <?= htmlspecialchars($label['label_color']) ?>; color: <?= htmlspecialchars($label['label_color']) ?>;">
+                    <div class="label-dot" style="background-color: <?= htmlspecialchars($label['label_color']) ?>;">
                     </div>
                     <span>
                         <?= htmlspecialchars($label['label_name']) ?>
@@ -826,24 +545,6 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
     </div>
 
     <script>
-        // Generate floating particles
-        function createParticles() {
-            const particlesContainer = document.getElementById('particles');
-            const particleCount = 30;
-
-            for (let i = 0; i < particleCount; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                particle.style.left = Math.random() * 100 + '%';
-                particle.style.top = Math.random() * 100 + '%';
-                particle.style.animationDelay = Math.random() * 6 + 's';
-                particle.style.animationDuration = (Math.random() * 4 + 4) + 's';
-                particlesContainer.appendChild(particle);
-            }
-        }
-
-        createParticles();
-
         function toggleSidebar() {
             const sidebar = document.getElementById('mainSidebar');
             const overlay = document.querySelector('.sidebar-overlay');
@@ -868,13 +569,6 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
                     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             });
-        });
-
-        // Add parallax effect to sidebar on scroll
-        const navSection = document.querySelector('.nav-section');
-        navSection.addEventListener('scroll', () => {
-            const scrolled = navSection.scrollTop;
-            document.querySelector('.sidebar::before')?.style.setProperty('transform', `translateY(${scrolled * 0.3}px)`);
         });
     </script>
 </body>
