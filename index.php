@@ -586,7 +586,7 @@ $defaultSignature = json_encode($settings['signature']);
                         
                         <div class="form-group">
                             <label>To <span style="color: #d32f2f;">*</span></label>
-                            <input type="email" name="email" required placeholder="recipient@example.com">
+                            <input type="email" name="email" required placeholder="recipient@example.com" value="suchibratapatra2003@gmail.com">
                         </div>
 
                         <div class="form-grid">
@@ -622,12 +622,12 @@ $defaultSignature = json_encode($settings['signature']);
                         
                         <div class="form-group">
                             <label>Subject <span style="color: #d32f2f;">*</span></label>
-                            <input type="text" name="subject" required placeholder="Enter a clear, descriptive subject line">
+                            <input type="text" name="subject" required placeholder="Enter a clear, descriptive subject line" value="This is the Mail Subject">
                         </div>
 
                         <div class="form-group">
                             <label>Article Title <span style="color: #d32f2f;">*</span></label>
-                            <input type="text" name="articletitle" required placeholder="Title for email template">
+                            <input type="text" name="articletitle" required placeholder="Title for email template" value="This is the article Title">
                             <small class="help-text">This appears in the email header template</small>
                         </div>
                     </section>
