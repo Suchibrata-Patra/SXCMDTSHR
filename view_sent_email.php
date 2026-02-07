@@ -55,14 +55,19 @@ $allLabels = getUserLabels($userEmail);
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($email['subject']) ?> - SXC MDTS</title>
-    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <title>
+        <?= htmlspecialchars($email['subject']) ?> - SXC MDTS
+    </title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    
+
     <style>
         * {
             margin: 0;
@@ -88,7 +93,7 @@ $allLabels = getUserLabels($userEmail);
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
 
         .nav-left {
@@ -136,7 +141,7 @@ $allLabels = getUserLabels($userEmail);
             margin: 24px auto;
             background: white;
             border-radius: 8px;
-            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+            box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
             overflow: hidden;
         }
 
@@ -299,6 +304,7 @@ $allLabels = getUserLabels($userEmail);
 
         /* Print Styles */
         @media print {
+
             .top-nav,
             .back-button,
             .btn-edit-label,
@@ -342,6 +348,7 @@ $allLabels = getUserLabels($userEmail);
         }
     </style>
 </head>
+
 <body>
     <div class="top-nav">
         <div class="nav-left">
@@ -349,7 +356,9 @@ $allLabels = getUserLabels($userEmail);
                 <i class="fa-solid fa-arrow-left"></i>
                 Back to Sent
             </a>
-            <span class="email-subject-nav"><?= htmlspecialchars($email['subject']) ?></span>
+            <span class="email-subject-nav">
+                <?= htmlspecialchars($email['subject']) ?>
+            </span>
         </div>
         <div class="nav-actions">
             <button class="back-button" onclick="window.print()">
@@ -369,18 +378,19 @@ $allLabels = getUserLabels($userEmail);
             <!-- Label Display/Editor -->
             <div id="labelDisplay">
                 <?php if (!empty($email['label_name'])): ?>
-                    <div class="label-badge-large" style="background-color: <?= htmlspecialchars($email['label_color']) ?>;">
-                        <span class="material-icons" style="font-size: 16px;">label</span>
-                        <?= htmlspecialchars($email['label_name']) ?>
-                    </div>
-                    <button class="btn-edit-label" onclick="showLabelEditor()">
-                        <i class="fa-solid fa-edit"></i> Change Label
-                    </button>
+                <div class="label-badge-large"
+                    style="background-color: <?= htmlspecialchars($email['label_color']) ?>;">
+                    <span class="material-icons" style="font-size: 16px;">label</span>
+                    <?= htmlspecialchars($email['label_name']) ?>
+                </div>
+                <button class="btn-edit-label" onclick="showLabelEditor()">
+                    <i class="fa-solid fa-edit"></i> Change Label
+                </button>
                 <?php else: ?>
-                    <button class="btn-edit-label" onclick="showLabelEditor()">
-                        <span class="material-icons" style="font-size: 14px; vertical-align: middle;">add</span>
-                        Add Label
-                    </button>
+                <button class="btn-edit-label" onclick="showLabelEditor()">
+                    <span class="material-icons" style="font-size: 14px; vertical-align: middle;">add</span>
+                    Add Label
+                </button>
                 <?php endif; ?>
             </div>
 
@@ -388,57 +398,68 @@ $allLabels = getUserLabels($userEmail);
                 <select id="labelSelect" class="label-select">
                     <option value="">No Label</option>
                     <?php foreach ($allLabels as $label): ?>
-                        <option value="<?= $label['id'] ?>" 
-                                <?= ($email['label_id'] == $label['id']) ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($label['label_name']) ?>
-                        </option>
+                    <option value="<?= $label['id'] ?>" <?=($email['label_id']==$label['id']) ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($label['label_name']) ?>
+                    </option>
                     <?php endforeach; ?>
                 </select>
                 <button class="btn-save-label" onclick="saveLabel()">Save</button>
                 <button class="btn-edit-label" onclick="hideLabelEditor()">Cancel</button>
             </div>
 
-            <h1 class="email-subject"><?= htmlspecialchars($email['subject']) ?></h1>
-            
+            <h1 class="email-subject">
+                <?= htmlspecialchars($email['subject']) ?>
+            </h1>
+
             <div class="email-meta-grid">
                 <div class="meta-row">
                     <span class="meta-label">From:</span>
-                    <span class="meta-value"><?= htmlspecialchars($email['sender_email']) ?></span>
+                    <span class="meta-value">
+                        <?= htmlspecialchars($email['sender_email']) ?>
+                    </span>
                 </div>
-                
+
                 <div class="meta-row">
                     <span class="meta-label">To:</span>
-                    <span class="meta-value"><?= htmlspecialchars($email['recipient_email']) ?></span>
+                    <span class="meta-value">
+                        <?= htmlspecialchars($email['recipient_email']) ?>
+                    </span>
                 </div>
-                
+
                 <?php if (!empty($email['cc_list'])): ?>
                 <div class="meta-row">
                     <span class="meta-label">CC:</span>
-                    <span class="meta-value"><?= htmlspecialchars($email['cc_list']) ?></span>
+                    <span class="meta-value">
+                        <?= htmlspecialchars($email['cc_list']) ?>
+                    </span>
                 </div>
                 <?php endif; ?>
-                
+
                 <?php if (!empty($email['bcc_list'])): ?>
                 <div class="meta-row">
                     <span class="meta-label">BCC:</span>
-                    <span class="meta-value"><?= htmlspecialchars($email['bcc_list']) ?></span>
+                    <span class="meta-value">
+                        <?= htmlspecialchars($email['bcc_list']) ?>
+                    </span>
                 </div>
                 <?php endif; ?>
-                
+
                 <div class="meta-row">
                     <span class="meta-label">Date:</span>
                     <span class="meta-value-muted">
                         <?= date('l, F j, Y \a\t g:i A', strtotime($email['sent_at'])) ?>
                     </span>
                 </div>
-                
+
                 <?php if (!empty($email['article_title'])): ?>
                 <div class="meta-row">
                     <span class="meta-label">Article:</span>
-                    <span class="meta-value"><?= htmlspecialchars($email['article_title']) ?></span>
+                    <span class="meta-value">
+                        <?= htmlspecialchars($email['article_title']) ?>
+                    </span>
                 </div>
                 <?php endif; ?>
-                
+
                 <?php if (!empty($email['attachment_names'])): ?>
                 <div class="meta-row">
                     <span class="meta-label">Attachments:</span>
@@ -447,10 +468,10 @@ $allLabels = getUserLabels($userEmail);
                         $attachments = explode(', ', $email['attachment_names']);
                         foreach ($attachments as $attachment):
                         ?>
-                            <span class="badge">
-                                <i class="fa-solid fa-paperclip"></i>
-                                <?= htmlspecialchars($attachment) ?>
-                            </span>
+                        <span class="badge">
+                            <i class="fa-solid fa-paperclip"></i>
+                            <?= htmlspecialchars($attachment) ?>
+                        </span>
                         <?php endforeach; ?>
                     </span>
                 </div>
@@ -483,25 +504,25 @@ $allLabels = getUserLabels($userEmail);
 
         async function saveLabel() {
             const labelId = document.getElementById('labelSelect').value;
-            
+
             try {
                 const formData = new FormData();
                 formData.append('ajax', '1');
                 formData.append('email_id', emailId);
                 formData.append('label_id', labelId || '');
-                
+
                 const response = await fetch('update_email_label.php', {
                     method: 'POST',
                     body: formData
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     // Show success message
                     const successMsg = document.getElementById('successMessage');
                     successMsg.classList.add('active');
-                    
+
                     // Reload page after short delay
                     setTimeout(() => {
                         location.reload();
@@ -517,12 +538,12 @@ $allLabels = getUserLabels($userEmail);
 
         // Auto-resize iframe to fit content
         const iframe = document.getElementById('emailFrame');
-        
-        iframe.addEventListener('load', function() {
+
+        iframe.addEventListener('load', function () {
             try {
                 const contentHeight = iframe.contentWindow.document.body.scrollHeight + 40;
                 iframe.style.height = contentHeight + 'px';
-                
+
                 const iframeDoc = iframe.contentWindow.document;
                 const style = iframeDoc.createElement('style');
                 style.textContent = `
@@ -550,9 +571,10 @@ $allLabels = getUserLabels($userEmail);
         });
 
         // Handle back button with history
-        window.addEventListener('popstate', function() {
+        window.addEventListener('popstate', function () {
             window.location.href = 'sent_history.php';
         });
     </script>
 </body>
+
 </html>
