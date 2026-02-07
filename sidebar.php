@@ -45,7 +45,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         .sidebar {
             width: var(--sidebar-width);
             height: 100vh;
-            /* background: var(--glass-sidebar); */
+            background: var(--glass-sidebar);
             backdrop-filter: blur(50px) saturate(210%);
             -webkit-backdrop-filter: blur(50px) saturate(210%);
             border-right: 1px solid var(--glass-border);
@@ -71,6 +71,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         .logo-image {
             width: 60px;
             height: auto;
+            background: none !important;
         }
 
         .logo-title {
