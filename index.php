@@ -37,30 +37,42 @@ $_SESSION['user_settings'] = $settings;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SXC MDTS - Compose Email</title>
+    <title>SXC MDTS</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-            background-color: #fafafa;
+            background-color: #ffffff;
             color: #1a1a1a;
-            padding: 20px;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
         }
 
         .content-area {
-            max-width: 1200px;
-            margin: 0 auto;
+            flex: 1;
+            padding: 40px 60px;
+            overflow-y: auto;
+            background-color: #fafafa;
         }
 
+        /* Compose Card */
         .compose-card {
             background: white;
             padding: 40px;
             border-radius: 10px;
             border: 1px solid #e5e5e5;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            max-width: 800px;
+            margin: 0 auto;
         }
 
         .compose-card h3 {
@@ -89,19 +101,17 @@ $_SESSION['user_settings'] = $settings;
             font-weight: 500;
             color: #1a1a1a;
             font-size: 14px;
-        }
-
-        label .required {
-            color: #e53935;
-            margin-left: 2px;
+            letter-spacing: 0.2px;
         }
 
         input[type="email"], 
-        input[type="text"] {
+        input[type="text"], 
+        textarea, 
+        select {
             width: 100%;
             padding: 12px 16px;
             border: 1px solid #d0d0d0;
-            border-radius: 7px;
+            border-radius:7px;
             font-size: 15px;
             font-family: inherit;
             transition: all 0.2s;
@@ -109,789 +119,455 @@ $_SESSION['user_settings'] = $settings;
         }
 
         input[type="email"]:focus, 
-        input[type="text"]:focus {
+        input[type="text"]:focus, 
+        textarea:focus, 
+        select:focus {
             outline: none;
-            border-color: #1a73e8;
-            box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
+            border-color: #1a1a1a;
+            box-shadow: 0 0 0 1px #1a1a1a;
         }
 
-        /* Rich Text Editor */
-        .rte-container {
-            border: 1px solid #d0d0d0;
-            border-radius: 7px;
-            background: white;
-            overflow: hidden;
-            transition: all 0.2s;
+        textarea {
+            min-height: 200px;
+            resize: vertical;
+            line-height: 1.6;
         }
 
-        .rte-container:focus-within {
-            border-color: #1a73e8;
-            box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
-        }
-
-        .rte-toolbar {
-            border-bottom: 1px solid #e5e5e5;
-            background: #fafafa;
-            padding: 10px 12px;
-            display: flex;
-            gap: 4px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .rte-btn {
-            background: white;
-            border: 1px solid transparent;
-            padding: 6px 10px;
-            border-radius: 4px;
-            cursor: pointer;
+        input[type="file"] {
+            padding: 8px 0;
             font-size: 14px;
-            color: #444;
-            transition: all 0.15s;
+        }
+
+        .btn-send {
+            background-color: #1a1a1a;
+            color: white;
+            padding: 14px 32px;
+            border: none;
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            flex: 1;
+            transition: all 0.2s;
+            letter-spacing: 0.3px;
+        }
+
+        .btn-send:hover {
+            background-color: #000000;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .btn-send:active {
+            transform: translateY(0);
+        }
+
+        .btn-preview {
+            background-color: #ffffff;
+            color: #1a1a1a;
+            padding: 14px 32px;
+            border: 1px solid #d0d0d0;
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            flex: 1;
+            transition: all 0.2s;
+            letter-spacing: 0.3px;
+        }
+
+        .btn-preview:hover {
+            background-color: #f5f5f5;
+            border-color: #1a1a1a;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .btn-preview:active {
+            transform: translateY(0);
+        }
+
+        .btn-preview i {
+            margin-right: 6px;
+        }
+
+        .btn-send i {
+            margin-right: 6px;
+        }
+
+        /* Input with file attachment */
+        .input-with-file {
             display: flex;
+            gap: 8px;
+            align-items: stretch;
+        }
+
+        .input-with-file input[type="text"] {
+            flex: 1;
+        }
+
+        .btn-attach-list {
+            background: white;
+            border: 1px solid #d0d0d0;
+            padding: 12px 16px;
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            color: #666;
+            white-space: nowrap;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-attach-list:hover {
+            background: #f5f5f5;
+            border-color: #1a1a1a;
+            color: #1a1a1a;
+        }
+
+        .btn-attach-list i {
+            font-size: 12px;
+        }
+
+        .help-text {
+            display: block;
+            margin-top: 6px;
+            font-size: 12px;
+            color: #999;
+            font-style: italic;
+        }
+
+        /* Error Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
             align-items: center;
             justify-content: center;
-            min-width: 32px;
-            height: 32px;
         }
 
-        .rte-btn:hover {
-            background: #e8f0fe;
-            border-color: #d2e3fc;
+        .modal-overlay.active {
+            display: flex;
         }
 
-        .rte-btn.active {
-            background: #d2e3fc;
-            border-color: #1a73e8;
-            color: #1a73e8;
-        }
-
-        .rte-separator {
-            width: 1px;
-            background: #e5e5e5;
-            height: 24px;
-            margin: 0 4px;
-        }
-
-        .rte-editor {
-            min-height: 350px;
-            max-height: 500px;
-            overflow-y: auto;
-            padding: 16px;
-            font-size: 15px;
-            line-height: 1.6;
-            outline: none;
-        }
-
-        .rte-editor:empty:before {
-            content: attr(data-placeholder);
-            color: #999;
-            pointer-events: none;
-        }
-
-        /* Signature Editor */
-        .signature-editor {
-            min-height: 120px;
-            max-height: 200px;
-        }
-
-        /* Color Picker */
-        .color-picker-wrapper {
-            position: relative;
-            display: inline-block;
-        }
-
-        .color-palette {
-            display: none;
-            position: absolute;
-            top: 100%;
-            left: 0;
+        .modal-content {
             background: white;
-            border: 1px solid #d0d0d0;
-            border-radius: 6px;
-            padding: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 1000;
-            grid-template-columns: repeat(8, 1fr);
-            gap: 4px;
-            width: 200px;
-            margin-top: 4px;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease-out;
         }
 
-        .color-palette.active {
-            display: grid;
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
 
-        .color-option {
-            width: 20px;
-            height: 20px;
-            border-radius: 3px;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: all 0.15s;
-        }
-
-        .color-option:hover {
-            border-color: #1a73e8;
-            transform: scale(1.1);
-        }
-
-        /* File Attachments */
-        .attachment-area {
-            border: 2px dashed #d0d0d0;
-            border-radius: 7px;
-            padding: 24px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            background: #fafafa;
-        }
-
-        .attachment-area:hover {
-            border-color: #1a73e8;
-            background: #f0f7ff;
-        }
-
-        .attachment-area.dragover {
-            border-color: #1a73e8;
-            background: #e8f0fe;
-        }
-
-        .attachment-icon {
-            font-size: 32px;
-            color: #666;
-            margin-bottom: 12px;
-        }
-
-        .attachment-text {
-            color: #666;
-            font-size: 14px;
-        }
-
-        .attachment-subtext {
-            color: #999;
-            font-size: 12px;
-            margin-top: 4px;
-        }
-
-        /* File Preview Grid */
-        .file-preview-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e5e5e5;
+            display: flex;
+            align-items: center;
             gap: 12px;
+        }
+
+        .modal-header.error {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+        .modal-header.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .modal-header.warning {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .modal-header i {
+            font-size: 24px;
+        }
+
+        .modal-title {
+            flex: 1;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-body {
+            padding: 24px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .failed-emails-list {
+            background: #f5f5f5;
+            border-radius: 4px;
+            padding: 16px;
             margin-top: 16px;
         }
 
-        .file-card {
-            background: white;
-            border: 1px solid #e5e5e5;
-            border-radius: 8px;
-            padding: 12px;
-            position: relative;
-            transition: all 0.2s;
-        }
-
-        .file-card:hover {
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .file-card-remove {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            background: #f44336;
-            color: white;
-            border: none;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            transition: all 0.2s;
-        }
-
-        .file-card-remove:hover {
-            background: #d32f2f;
-        }
-
-        .file-card-icon {
-            font-size: 32px;
-            color: #1a73e8;
-            text-align: center;
-            margin-bottom: 8px;
-        }
-
-        .file-card-name {
-            font-size: 12px;
+        .failed-emails-list h4 {
+            font-size: 14px;
+            font-weight: 600;
             color: #1a1a1a;
-            font-weight: 500;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            margin-bottom: 4px;
+            margin-bottom: 12px;
         }
 
-        .file-card-size {
-            font-size: 11px;
-            color: #666;
-        }
-
-        /* Buttons */
-        .button-row {
-            display: flex;
-            gap: 12px;
-            margin-top: 32px;
-            padding-top: 24px;
-            border-top: 1px solid #e5e5e5;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            border-radius: 7px;
-            cursor: pointer;
-            font-weight: 500;
-            font-size: 15px;
-            border: none;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-primary {
-            background: #1a73e8;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #1557b0;
-        }
-
-        .btn-secondary {
+        .failed-email-item {
+            padding: 8px 12px;
             background: white;
-            color: #1a73e8;
-            border: 1px solid #1a73e8;
-        }
-
-        .btn-secondary:hover {
-            background: #f0f7ff;
-        }
-
-        .btn-outline {
-            background: white;
-            color: #666;
-            border: 1px solid #d0d0d0;
-        }
-
-        .btn-outline:hover {
-            background: #fafafa;
-        }
-
-        /* Helper text */
-        .helper-text {
+            border-radius: 4px;
+            margin-bottom: 8px;
+            border-left: 3px solid #d32f2f;
             font-size: 13px;
             color: #666;
-            margin-top: 6px;
         }
 
-        /* Logout button */
-        .logout-btn {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: white;
-            color: #666;
-            border: 1px solid #d0d0d0;
-            padding: 8px 16px;
-            border-radius: 6px;
-            text-decoration: none;
+        .failed-email-item .email {
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .failed-email-item .reason {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #e5e5e5;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .btn-modal {
+            padding: 10px 20px;
+            border-radius: 4px;
+            border: none;
             font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
             transition: all 0.2s;
         }
 
-        .logout-btn:hover {
-            background: #f44336;
+        .btn-modal-primary {
+            background: #1a1a1a;
             color: white;
-            border-color: #f44336;
+        }
+
+        .btn-modal-primary:hover {
+            background: #000;
+        }
+
+        .btn-modal-secondary {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .btn-modal-secondary:hover {
+            background: #e5e5e5;
+            color: #1a1a1a;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .content-area {
+                padding: 20px;
+            }
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f5f5f5;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #d0d0d0;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #b0b0b0;
         }
     </style>
 </head>
 <body>
-    <a href="logout.php" class="logout-btn">
-        <i class="fas fa-sign-out-alt"></i> Logout
-    </a>
+    <?php include 'sidebar.php'; ?>
 
-    <div class="content-area">
-        <div class="compose-card">
-            <h3>Compose New Email</h3>
-            <p class="compose-subtitle">Create and send professional emails with rich formatting</p>
-
-            <form id="emailForm">
-                <!-- Recipient Email -->
-                <div class="form-group">
-                    <label>
-                        Recipient Email <span class="required">*</span>
-                    </label>
-                    <input type="email" id="recipientEmail" name="email" required placeholder="recipient@example.com">
-                    <p class="helper-text">Separate multiple emails with commas</p>
-                </div>
-
-                <!-- CC -->
-                <div class="form-group">
-                    <label>CC (Optional)</label>
-                    <input type="text" id="ccInput" name="cc" placeholder="cc@example.com">
-                </div>
-
-                <!-- BCC -->
-                <div class="form-group">
-                    <label>BCC (Optional)</label>
-                    <input type="text" id="bccInput" name="bcc" placeholder="bcc@example.com">
-                </div>
-
-                <!-- Subject -->
-                <div class="form-group">
-                    <label>
-                        Subject <span class="required">*</span>
-                    </label>
-                    <input type="text" id="subject" name="subject" required placeholder="Email subject">
-                </div>
-
-                <!-- Article Title -->
-                <div class="form-group">
-                    <label>
-                        Article Title <span class="required">*</span>
-                    </label>
-                    <input type="text" id="articletitle" name="articletitle" required placeholder="Main article heading">
-                </div>
-
-                <!-- Message Body -->
-                <div class="form-group">
-                    <label>
-                        Message <span class="required">*</span>
-                    </label>
-                    <div class="rte-container">
-                        <div class="rte-toolbar">
-                            <button type="button" class="rte-btn" data-command="bold" title="Bold (Ctrl+B)">
-                                <i class="fas fa-bold"></i>
-                            </button>
-                            <button type="button" class="rte-btn" data-command="italic" title="Italic (Ctrl+I)">
-                                <i class="fas fa-italic"></i>
-                            </button>
-                            <button type="button" class="rte-btn" data-command="underline" title="Underline (Ctrl+U)">
-                                <i class="fas fa-underline"></i>
-                            </button>
-                            <div class="rte-separator"></div>
-                            <div class="color-picker-wrapper">
-                                <button type="button" class="rte-btn" id="colorPickerBtn" title="Text Color">
-                                    <i class="fas fa-palette"></i>
-                                </button>
-                                <div class="color-palette" id="colorPalette">
-                                    <!-- Colors will be generated by JS -->
-                                </div>
-                            </div>
-                            <button type="button" class="rte-btn" data-command="removeFormat" title="Clear Formatting">
-                                <i class="fas fa-remove-format"></i>
-                            </button>
-                        </div>
-                        <div class="rte-editor" id="messageEditor" contenteditable="true" data-placeholder="Type your message here..."></div>
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="content-area" id="contentArea">
+            <div class="compose-card">
+                <h3>Draft Mail</h3>
+                <p class="compose-subtitle">Send professional emails with attachments</p>
+                
+                <form action="send.php" method="POST" enctype="multipart/form-data" id="composeForm">
+                    <div class="form-group">
+                        <label>Recipient Email</label>
+                        <input type="email" name="email" required placeholder="recipient@example.com">
                     </div>
-                </div>
 
-                <!-- Signature -->
-                <div class="form-group">
-                    <label>Signature (Optional)</label>
-                    <div class="rte-container">
-                        <div class="rte-toolbar">
-                            <button type="button" class="rte-btn" data-command="bold" data-target="signature">
-                                <i class="fas fa-bold"></i>
+                    <!-- CC Field -->
+                    <div class="form-group">
+                        <label>CC ( if any)</label>
+                        <div class="input-with-file">
+                            <input type="text" name="cc" id="ccInput" placeholder="cc1@example.com, cc2@example.com">
+                            <button type="button" class="btn-attach-list" onclick="document.getElementById('ccFile').click()">
+                                <i class="fa-solid fa-paperclip"></i> Attach List
                             </button>
-                            <button type="button" class="rte-btn" data-command="italic" data-target="signature">
-                                <i class="fas fa-italic"></i>
-                            </button>
-                            <button type="button" class="rte-btn" data-command="underline" data-target="signature">
-                                <i class="fas fa-underline"></i>
-                            </button>
-                            <div class="rte-separator"></div>
-                            <div class="color-picker-wrapper">
-                                <button type="button" class="rte-btn" id="signatureColorBtn" title="Text Color">
-                                    <i class="fas fa-palette"></i>
-                                </button>
-                                <div class="color-palette" id="signatureColorPalette">
-                                    <!-- Colors will be generated by JS -->
-                                </div>
-                            </div>
+                            <input type="file" name="cc_file" id="ccFile" accept=".txt,.csv" style="display: none;" onchange="handleEmailListUpload(this, 'ccInput')">
                         </div>
-                        <div class="rte-editor signature-editor" id="signatureEditor" contenteditable="true" data-placeholder="Add your signature..."></div>
+                        <small class="help-text">Separate bulk emails as text file</small>
                     </div>
-                    <p class="helper-text">Your signature will be automatically appended to all emails</p>
-                </div>
 
-                <!-- File Attachments -->
-                <div class="form-group">
-                    <label>Attachments (Optional)</label>
-                    <div class="attachment-area" id="attachmentArea">
-                        <div class="attachment-icon">
-                            <i class="fas fa-cloud-upload-alt"></i>
+                    <!-- BCC Field -->
+                    <div class="form-group">
+                        <label>BCC (if any)</label>
+                        <div class="input-with-file">
+                            <input type="text" name="bcc" id="bccInput" placeholder="bcc1@example.com, bcc2@example.com">
+                            <button type="button" class="btn-attach-list" onclick="document.getElementById('bccFile').click()">
+                                <i class="fa-solid fa-paperclip"></i> Attach List
+                            </button>
+                            <input type="file" name="bcc_file" id="bccFile" accept=".txt,.csv" style="display: none;" onchange="handleEmailListUpload(this, 'bccInput')">
                         </div>
-                        <div class="attachment-text">
-                            <strong>Click to upload</strong> or drag and drop files here
-                        </div>
-                        <div class="attachment-subtext">
-                            Multiple files supported
-                        </div>
-                        <input type="file" id="attachmentInput" multiple style="display: none;">
+                        <small class="help-text">Separate bulk emails as text file</small>
                     </div>
-                    <div class="file-preview-grid" id="filePreviewGrid"></div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="button-row">
-                    <button type="button" class="btn btn-primary" id="sendBtn">
-                        <i class="fas fa-paper-plane"></i>
-                        Send Email
-                    </button>
-                    <button type="button" class="btn btn-secondary" id="previewBtn">
-                        <i class="fas fa-eye"></i>
-                        Preview
-                    </button>
-                    <button type="button" class="btn btn-outline" id="clearBtn">
-                        <i class="fas fa-eraser"></i>
-                        Clear Form
-                    </button>
-                </div>
-            </form>
+                    
+                    <div class="form-group">
+                        <label>Subject</label>
+                        <input type="text" name="subject" required placeholder="Enter Your Mail Subject">
+                    </div>
+                    <div class="form-group">
+                        <label>articletitle</label>
+                        <input type="text" name="articletitle" required placeholder="Enter Your Mail Subject">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Message</label>
+                        <textarea name="message" required placeholder="Compose your message..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Attachment (Optional)</label>
+                        <input type="file" name="attachment" id="attachment">
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px;">
+                        <button type="button" class="btn-preview" id="previewBtn">
+                            <i class="fa-solid fa-eye"></i> Preview Email
+                        </button>
+                        <button type="submit" class="btn-send">
+                            <i class="fa-solid fa-paper-plane"></i> Send Email
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
     <script>
-        // Rich Text Editor Class
-        class RichTextEditor {
-            constructor(editorId) {
-                this.editor = document.getElementById(editorId);
-                this.initializeEditor();
-            }
-
-            initializeEditor() {
-                // Track active formats
-                this.editor.addEventListener('keyup', () => this.updateToolbarState());
-                this.editor.addEventListener('mouseup', () => this.updateToolbarState());
-            }
-
-            execCommand(command, value = null) {
-                document.execCommand(command, false, value);
-                this.editor.focus();
-                this.updateToolbarState();
-            }
-
-            updateToolbarState() {
-                const commands = ['bold', 'italic', 'underline'];
-                commands.forEach(cmd => {
-                    const btn = document.querySelector(`.rte-btn[data-command="${cmd}"]`);
-                    if (btn && document.queryCommandState(cmd)) {
-                        btn.classList.add('active');
-                    } else if (btn) {
-                        btn.classList.remove('active');
-                    }
-                });
-            }
-
-            getHTML() {
-                return this.editor.innerHTML;
-            }
-
-            setHTML(html) {
-                this.editor.innerHTML = html;
-            }
-
-            insertHTML(html) {
-                this.editor.focus();
-                document.execCommand('insertHTML', false, html);
-            }
-        }
-
-        // Initialize editors
-        const messageEditor = new RichTextEditor('messageEditor');
-        const signatureEditor = new RichTextEditor('signatureEditor');
-
-        // Load signature from settings
-        const defaultSignature = <?php echo json_encode($settings['signature']); ?>;
-        if (defaultSignature) {
-            signatureEditor.setHTML(defaultSignature);
-        }
-
-        // Toolbar button handlers
-        document.querySelectorAll('.rte-btn[data-command]').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const command = btn.getAttribute('data-command');
-                const target = btn.getAttribute('data-target');
-                
-                if (target === 'signature') {
-                    signatureEditor.execCommand(command);
-                } else {
-                    messageEditor.execCommand(command);
-                }
-            });
-        });
-
-        // Color picker setup
-        const colors = [
-            '#000000', '#434343', '#666666', '#999999', '#b7b7b7', '#cccccc', '#d9d9d9', '#efefef',
-            '#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4',
-            '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722',
-            '#795548', '#9e9e9e', '#607d8b', '#ffffff'
-        ];
-
-        function createColorPalette(paletteId, editor) {
-            const palette = document.getElementById(paletteId);
-            colors.forEach(color => {
-                const colorOption = document.createElement('div');
-                colorOption.className = 'color-option';
-                colorOption.style.backgroundColor = color;
-                colorOption.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    editor.execCommand('foreColor', color);
-                    palette.classList.remove('active');
-                });
-                palette.appendChild(colorOption);
-            });
-        }
-
-        createColorPalette('colorPalette', messageEditor);
-        createColorPalette('signatureColorPalette', signatureEditor);
-
-        // Color picker toggle
-        document.getElementById('colorPickerBtn').addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            document.getElementById('colorPalette').classList.toggle('active');
-        });
-
-        document.getElementById('signatureColorBtn').addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            document.getElementById('signatureColorPalette').classList.toggle('active');
-        });
-
-        // Close color palettes when clicking outside
-        document.addEventListener('click', () => {
-            document.querySelectorAll('.color-palette').forEach(p => p.classList.remove('active'));
-        });
-
-        // File attachment handling
-        const attachedFiles = [];
-        const attachmentArea = document.getElementById('attachmentArea');
-        const attachmentInput = document.getElementById('attachmentInput');
-        const filePreviewGrid = document.getElementById('filePreviewGrid');
-
-        attachmentArea.addEventListener('click', () => {
-            attachmentInput.click();
-        });
-
-        attachmentInput.addEventListener('change', (e) => {
-            handleFiles(e.target.files);
-        });
-
-        // Drag and drop
-        attachmentArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            attachmentArea.classList.add('dragover');
-        });
-
-        attachmentArea.addEventListener('dragleave', () => {
-            attachmentArea.classList.remove('dragover');
-        });
-
-        attachmentArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            attachmentArea.classList.remove('dragover');
-            handleFiles(e.dataTransfer.files);
-        });
-
-        function handleFiles(files) {
-            Array.from(files).forEach(file => {
-                attachedFiles.push(file);
-            });
-            renderFilePreview();
-        }
-
-        function renderFilePreview() {
-            filePreviewGrid.innerHTML = '';
-            attachedFiles.forEach((file, index) => {
-                const card = document.createElement('div');
-                card.className = 'file-card';
-                
-                const icon = getFileIcon(file.name);
-                
-                card.innerHTML = `
-                    <button type="button" class="file-card-remove" onclick="removeFile(${index})">
-                        <i class="fas fa-times"></i>
-                    </button>
-                    <div class="file-card-icon">
-                        <i class="${icon}"></i>
-                    </div>
-                    <div class="file-card-name" title="${file.name}">${file.name}</div>
-                    <div class="file-card-size">${formatFileSize(file.size)}</div>
-                `;
-                filePreviewGrid.appendChild(card);
-            });
-        }
-
-        function removeFile(index) {
-            attachedFiles.splice(index, 1);
-            renderFilePreview();
-        }
-
-        function getFileIcon(filename) {
-            const ext = filename.split('.').pop().toLowerCase();
-            const iconMap = {
-                'pdf': 'fas fa-file-pdf',
-                'doc': 'fas fa-file-word',
-                'docx': 'fas fa-file-word',
-                'xls': 'fas fa-file-excel',
-                'xlsx': 'fas fa-file-excel',
-                'ppt': 'fas fa-file-powerpoint',
-                'pptx': 'fas fa-file-powerpoint',
-                'jpg': 'fas fa-file-image',
-                'jpeg': 'fas fa-file-image',
-                'png': 'fas fa-file-image',
-                'gif': 'fas fa-file-image',
-                'zip': 'fas fa-file-archive',
-                'rar': 'fas fa-file-archive',
-                'txt': 'fas fa-file-alt'
-            };
-            return iconMap[ext] || 'fas fa-file';
-        }
-
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-        }
-
-        // Preview button
+        // Preview Email Functionality
         document.getElementById('previewBtn').addEventListener('click', () => {
-            const recipientEmail = document.getElementById('recipientEmail').value;
-            const subject = document.getElementById('subject').value;
-            const articletitle = document.getElementById('articletitle').value;
+            const recipientEmail = document.querySelector('input[name="email"]').value;
+            const subject = document.querySelector('input[name="subject"]').value;
+            const articletitle = document.querySelector('input[name="articletitle"]').value;
+            const message = document.querySelector('textarea[name="message"]').value;
+            const attachment = document.querySelector('input[name="attachment"]').files[0];
 
-            if (!recipientEmail || !subject || !articletitle) {
-                alert('Please fill in all required fields before previewing.');
+            // Validate required fields
+            if (!recipientEmail || !subject || !message) {
+                alert('Please fill in all required fields (Recipient, Subject, and Message) before previewing.');
                 return;
             }
 
-            // Combine message and signature
-            const messageHTML = messageEditor.getHTML();
-            const signatureHTML = signatureEditor.getHTML();
-            
-            let fullMessage = messageHTML;
-            if (signatureHTML.trim() && signatureHTML !== '<br>') {
-                fullMessage += '<br><br><div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e5e5;">' + signatureHTML + '</div>';
-            }
-
-            // Create form and submit to preview.php in new tab
+            // Create a form to submit to preview.php
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = 'preview.php';
             form.target = '_blank';
 
+            // Add form fields
             const fields = {
                 'email': recipientEmail,
                 'subject': subject,
-                'articletitle': articletitle,
-                'message': fullMessage
+                'articletitle':articletitle,
+                'message': message,
+                'attachment_name': attachment ? attachment.name : ''
             };
 
-            Object.keys(fields).forEach(key => {
+            for (const [key, value] of Object.entries(fields)) {
                 const input = document.createElement('input');
                 input.type = 'hidden';
                 input.name = key;
-                input.value = fields[key];
+                input.value = value;
                 form.appendChild(input);
-            });
+            }
 
+            // Add form to body and submit
             document.body.appendChild(form);
             form.submit();
             document.body.removeChild(form);
         });
 
-        // Send button
-        document.getElementById('sendBtn').addEventListener('click', () => {
-            const recipientEmail = document.getElementById('recipientEmail').value;
-            const subject = document.getElementById('subject').value;
-            const articletitle = document.getElementById('articletitle').value;
+        // Handle Email List File Upload
+        function handleEmailListUpload(fileInput, targetInputId) {
+            const file = fileInput.files[0];
+            if (!file) return;
 
-            if (!recipientEmail || !subject || !articletitle) {
-                alert('Please fill in all required fields.');
-                return;
-            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                
+                // Parse emails from file (supports comma, semicolon, newline separated)
+                let emails = content
+                    .split(/[,;\n\r]+/)
+                    .map(email => email.trim())
+                    .filter(email => email.length > 0);
 
-            if (!confirm('Are you sure you want to send this email?')) {
-                return;
-            }
+                // Set the emails in the target input
+                const targetInput = document.getElementById(targetInputId);
+                const currentValue = targetInput.value.trim();
+                
+                if (currentValue) {
+                    // Append to existing emails
+                    targetInput.value = currentValue + ', ' + emails.join(', ');
+                } else {
+                    targetInput.value = emails.join(', ');
+                }
 
-            // Combine message and signature
-            const messageHTML = messageEditor.getHTML();
-            const signatureHTML = signatureEditor.getHTML();
-            
-            let fullMessage = messageHTML;
-            if (signatureHTML.trim() && signatureHTML !== '<br>') {
-                fullMessage += '<br><br>' + signatureHTML;
-            }
+                // Show success message
+                alert(`✓ Loaded ${emails.length} email(s) from file`);
+            };
 
-            const formData = new FormData();
-            formData.append('email', recipientEmail);
-            formData.append('cc', document.getElementById('ccInput').value);
-            formData.append('bcc', document.getElementById('bccInput').value);
-            formData.append('subject', subject);
-            formData.append('articletitle', articletitle);
-            formData.append('message', fullMessage);
-            formData.append('message_is_html', 'true');
-
-            // Add attachments
-            attachedFiles.forEach((file, index) => {
-                formData.append('attachments[]', file);
-            });
-
-            // Show loading state
-            const sendBtn = document.getElementById('sendBtn');
-            const originalText = sendBtn.innerHTML;
-            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
-            sendBtn.disabled = true;
-
-            fetch('send.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.text())
-            .then(html => {
-                // Display send.php response
-                document.open();
-                document.write(html);
-                document.close();
-            })
-            .catch(error => {
-                alert('Error sending email: ' + error);
-                sendBtn.innerHTML = originalText;
-                sendBtn.disabled = false;
-            });
-        });
-
-        // Clear button
-        document.getElementById('clearBtn').addEventListener('click', () => {
-            if (confirm('Are you sure you want to clear all fields?')) {
-                document.getElementById('emailForm').reset();
-                messageEditor.setHTML('');
-                signatureEditor.setHTML(defaultSignature);
-                attachedFiles.length = 0;
-                renderFilePreview();
-            }
-        });
+            reader.readAsText(file);
+        }
     </script>
 </body>
 </html>
