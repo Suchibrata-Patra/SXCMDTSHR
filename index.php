@@ -559,7 +559,7 @@ $defaultSignature = json_encode($settings['signature']);
     <div class="main-content">
         <div class="content-area">
             <!-- Nature.com style header -->
-            <div class="page-header">
+            <!-- <div class="page-header">
                 <div class="header-container">
                     <div class="breadcrumb">
                         <a href="index.php">Dashboard</a>
@@ -568,12 +568,12 @@ $defaultSignature = json_encode($settings['signature']);
                     </div>
                     <span class="page-type">Email Composer</span>
                 </div>
-            </div>
+            </div> -->
 
             <!-- Article-style compose form -->
             <div class="compose-container">
                 <header class="compose-header">
-                    <h1 class="compose-title">Compose New Message</h1>
+                    <h1 class="compose-title">Compose New Mail</h1>
                     <p class="compose-subtitle">Create and send professional emails with rich formatting, attachments, and custom signatures.</p>
                 </header>
 
