@@ -118,7 +118,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         /* Active Tab with Nature Red */
         .nav-item.active {
             background: #f4f4f4;
-            color: var(--nature-red);
+            color: black;
             border-left: 2px solid var(--nature-red);
         }
 
