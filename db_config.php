@@ -85,10 +85,12 @@ function getSentEmails($userEmail, $limit = 100, $offset = 0, $filters = []) {
         }
         
         // Join with labels table to fetch label_name and label_color
+        // Only show non-deleted emails (current_status = 1 or NULL for backward compatibility)
         $sql = "SELECT se.*, l.label_name, l.label_color 
                 FROM sent_emails se 
                 LEFT JOIN labels l ON se.label_id = l.id 
-                WHERE se.sender_email = :sender_email";
+                WHERE se.sender_email = :sender_email 
+                AND (se.current_status = 1 OR se.current_status IS NULL)";
         
         $params = [':sender_email' => $userEmail];
         
@@ -169,7 +171,8 @@ function getSentEmailCount($userEmail, $filters = []) {
         }
         
         $sql = "SELECT COUNT(*) as count FROM sent_emails se 
-                WHERE se.sender_email = :sender_email";
+                WHERE se.sender_email = :sender_email 
+                AND (se.current_status = 1 OR se.current_status IS NULL)";
         
         $params = [':sender_email' => $userEmail];
         
@@ -261,6 +264,7 @@ function getLabelCounts($userEmail) {
         if (!$pdo) { return []; }
         
         // Removed "WHERE l.user_email = :user_email"
+        // Only count non-deleted emails
         $sql = "SELECT 
                     l.id, 
                     l.label_name, 
@@ -269,6 +273,7 @@ function getLabelCounts($userEmail) {
                     COUNT(se.id) as email_count
                 FROM labels l
                 LEFT JOIN sent_emails se ON l.id = se.label_id 
+                    AND (se.current_status = 1 OR se.current_status IS NULL)
                 GROUP BY l.id, l.label_name, l.label_color, l.created_at
                 ORDER BY l.label_name ASC";
         
@@ -415,7 +420,9 @@ function getUnlabeledEmailCount($userEmail) {
         }
         
         $sql = "SELECT COUNT(*) as count FROM sent_emails 
-                WHERE sender_email = :sender_email AND label_id IS NULL";
+                WHERE sender_email = :sender_email 
+                AND label_id IS NULL 
+                AND (current_status = 1 OR current_status IS NULL)";
         
         $stmt = $pdo->prepare($sql);
         $stmt->execute([':sender_email' => $userEmail]);
