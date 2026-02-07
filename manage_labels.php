@@ -426,6 +426,7 @@ $labels = getLabelCounts($userEmail);
     </style>
 </head>
 <body>
+    <?php include ('sidebar.php') ?>
     <div id="alertContainer"></div>
 
     <div class="main-content">
