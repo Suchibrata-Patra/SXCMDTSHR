@@ -140,8 +140,8 @@ $defaultSignature = json_encode($settings['signature']);
         }
 
         .compose-header {
-            margin-bottom: 40px;
-            padding-bottom: 32px;
+            margin-bottom: 5px;
+            /* padding-bottom: 32px; */
             /* border-bottom: 1px solid #e0e0e0; */
         }
 
