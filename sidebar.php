@@ -15,26 +15,27 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <link
-        href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Harding:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Merriweather:wght@300;400;700&display=swap"
         rel="stylesheet">
 
     <style>
         :root {
-            --sidebar-width: 300px;
-            --nature-red: #000000;
-            --nature-red-hover: #e0cace;
-            --inst-black: #0f1419;
-            --inst-gray: #536471;
-            --inst-light-gray: #8b98a5;
-            --inst-border: #eff3f4;
-            --inst-bg: #ffffff;
-            --hover-bg: #f7f9fa;
-            --active-bg: #fef3f5;
-            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
-            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
-            --z-index-sidebar: 1000;
-            --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+            --sidebar-width: 260px;
+            --nature-red: #c41e3a;
+            --nature-red-hover: #a01629;
+            --nature-dark: #1a1a1a;
+            --nature-gray: #3d3d3d;
+            --nature-medium-gray: #666666;
+            --nature-light-gray: #8c8c8c;
+            --nature-border: #d4d4d4;
+            --nature-border-light: #e5e5e5;
+            --nature-bg: #ffffff;
+            --nature-bg-hover: #f8f8f8;
+            --nature-bg-active: #fef2f4;
+            --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.05);
+            --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --transition: cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         * {
@@ -44,112 +45,110 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #fafbfc;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #fafafa;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
 
-        /* Mobile Toggle Button */
+        /* Mobile Toggle */
         .mobile-toggle {
             display: none;
             position: fixed;
-            top: 20px;
-            left: 20px;
+            top: 16px;
+            left: 16px;
             z-index: 1002;
-            background: var(--inst-black);
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 12px;
+            background: var(--nature-bg);
+            border: 1px solid var(--nature-border);
+            color: var(--nature-dark);
+            padding: 10px;
+            border-radius: 8px;
             cursor: pointer;
-            box-shadow: var(--shadow-lg);
-            transition: all 0.3s var(--transition-smooth);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s var(--transition);
         }
 
-
-        .mobile-toggle:active {
-            transform: scale(0.95);
+        .mobile-toggle:hover {
+            background: var(--nature-red);
+            color: white;
+            border-color: var(--nature-red);
         }
 
-        /* Sidebar Container */
+        /* Sidebar */
         .sidebar {
             width: var(--sidebar-width);
-            background: var(--inst-bg);
-            border-right: 1px solid var(--inst-border);
+            background: var(--nature-bg);
+            border-right: 1px solid var(--nature-border);
             display: flex;
             flex-direction: column;
             height: 100vh;
-            font-family: 'Inter', sans-serif;
-            color: var(--inst-black);
-            transition: transform 0.4s var(--transition-smooth);
+            color: var(--nature-dark);
+            transition: transform 0.3s var(--transition);
             position: sticky;
             top: 0;
-            box-shadow: var(--shadow-sm);
+            box-shadow: var(--shadow-subtle);
         }
 
-        /* Header Section */
+        /* Header */
         .sidebar-header {
-            padding: 28px 24px;
-            border-bottom: 1px solid var(--inst-border);
-            background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+            padding: 20px 18px 16px;
+            border-bottom: 1px solid var(--nature-border-light);
         }
 
         .logo {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
             text-decoration: none;
-            transition: transform 0.3s var(--transition-smooth);
+            transition: opacity 0.2s;
         }
 
-
+        .logo:hover {
+            opacity: 0.8;
+        }
 
         .logo-image {
-            width: 56px;
-            height: 56px;
+            width: 44px;
+            height: 44px;
             object-fit: contain;
-            border-radius: 12px;
-            box-shadow: var(--shadow-sm);
-            transition: all 0.3s var(--transition-smooth);
+            border-radius: 4px;
+            border: 1px solid var(--nature-border-light);
         }
-
-
 
         .logo-text {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 2px;
         }
 
         .logo-title {
-            font-family: 'Crimson Pro', serif;
-            font-size: 24px;
+            font-family: 'Merriweather', serif;
+            font-size: 18px;
             font-weight: 700;
-            color: var(--inst-black);
+            color: var(--nature-dark);
             line-height: 1.2;
-            letter-spacing: -0.5px;
+            letter-spacing: -0.3px;
         }
 
         .logo-subtitle {
-            font-size: 10px;
-            font-weight: 700;
-            color: var(--inst-light-gray);
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--nature-medium-gray);
             text-transform: uppercase;
             letter-spacing: 0.8px;
         }
 
-        /* Navigation Section */
+        /* Navigation */
         .nav-section {
             flex: 1;
-            padding: 16px 16px;
+            padding: 8px 12px;
             overflow-y: auto;
             scrollbar-width: thin;
-            scrollbar-color: var(--inst-border) transparent;
+            scrollbar-color: var(--nature-border) transparent;
         }
 
         .nav-section::-webkit-scrollbar {
-            width: 6px;
+            width: 5px;
         }
 
         .nav-section::-webkit-scrollbar-track {
@@ -157,99 +156,92 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         }
 
         .nav-section::-webkit-scrollbar-thumb {
-            background: var(--inst-border);
+            background: var(--nature-border);
             border-radius: 3px;
         }
 
         .nav-section::-webkit-scrollbar-thumb:hover {
-            background: var(--inst-light-gray);
+            background: var(--nature-red);
         }
 
         /* Navigation Items */
         .nav-item {
             display: flex;
             align-items: center;
-            gap: 14px;
-            padding: 12px 16px;
+            gap: 10px;
+            padding: 8px 12px;
             text-decoration: none;
-            color: var(--inst-gray);
-            font-size: 15px;
-            font-weight: 600;
-            border-radius: 10px;
-            margin-bottom: 4px;
-            transition: all 0.25s var(--transition-smooth);
+            color: var(--nature-gray);
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 6px;
+            margin-bottom: 2px;
+            transition: all 0.2s var(--transition);
             position: relative;
-            overflow: hidden;
-        }
-
-        .nav-item::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            height: 100%;
-            width: 3px;
-            background: var(--nature-red);
-            transform: scaleY(0);
-            transition: transform 0.25s var(--transition-smooth);
         }
 
         .nav-item .material-icons-round {
-            font-size: 22px;
-            transition: all 0.25s var(--transition-smooth);
+            font-size: 20px;
+            transition: transform 0.2s;
         }
 
         .nav-item:hover {
-            background: var(--hover-bg);
-            color: var(--inst-black);
+            background: var(--nature-bg-hover);
+            color: var(--nature-dark);
         }
 
         .nav-item:hover .material-icons-round {
-            transform: scale(1.1);
+            transform: scale(1.08);
         }
 
         .nav-item.active {
-            background: var(--active-bg);
+            background: var(--nature-bg-active);
             color: var(--nature-red);
-            font-weight: 700;
-        }
-
-        .nav-item.active::before {
-            transform: scaleY(1);
+            font-weight: 600;
         }
 
         .nav-item.active .material-icons-round {
             color: var(--nature-red);
-            transform: scale(1.05);
+        }
+
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 18px;
+            width: 3px;
+            background: var(--nature-red);
+            border-radius: 0 2px 2px 0;
         }
 
         /* Section Title */
         .nav-section-title {
-            font-size: 11px;
-            font-weight: 800;
+            font-size: 10px;
+            font-weight: 700;
             text-transform: uppercase;
-            color: var(--inst-light-gray);
-            padding: 24px 16px 12px;
+            color: var(--nature-medium-gray);
+            padding: 16px 12px 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            letter-spacing: 0.8px;
+            letter-spacing: 1px;
         }
 
         .manage-labels-btn {
-            color: var(--inst-gray);
+            color: var(--nature-light-gray);
             text-decoration: none;
             display: flex;
             align-items: center;
             padding: 4px;
-            border-radius: 6px;
-            transition: all 0.2s var(--transition-smooth);
+            border-radius: 4px;
+            transition: all 0.2s;
         }
 
         .manage-labels-btn:hover {
-            background: var(--hover-bg);
+            background: var(--nature-bg-hover);
             color: var(--nature-red);
-            transform: rotate(90deg);
         }
 
         /* Label Items */
@@ -257,33 +249,32 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 10px 16px;
+            padding: 7px 12px;
             text-decoration: none;
-            color: var(--inst-gray);
-            font-size: 14px;
+            color: var(--nature-gray);
+            font-size: 13px;
             font-weight: 500;
-            border-radius: 8px;
-            margin-bottom: 2px;
-            transition: all 0.2s var(--transition-smooth);
+            border-radius: 6px;
+            margin-bottom: 1px;
+            transition: all 0.2s var(--transition);
         }
 
         .label-item:hover {
-            background: var(--hover-bg);
-            color: var(--inst-black);
+            background: var(--nature-bg-hover);
+            color: var(--nature-dark);
         }
 
         .label-content {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         .label-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 3px;
-            box-shadow: var(--shadow-sm);
-            transition: transform 0.2s var(--transition-smooth);
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+            transition: transform 0.2s;
         }
 
         .label-item:hover .label-dot {
@@ -291,63 +282,68 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         }
 
         .label-count {
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--inst-light-gray);
-            background: var(--inst-border);
-            padding: 2px 8px;
-            border-radius: 12px;
-            min-width: 24px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--nature-medium-gray);
+            background: var(--nature-border-light);
+            padding: 2px 7px;
+            border-radius: 10px;
+            min-width: 20px;
             text-align: center;
+        }
+
+        .label-item:hover .label-count {
+            background: var(--nature-red);
+            color: white;
         }
 
         /* User Footer */
         .user-footer {
-            padding: 20px;
-            border-top: 1px solid var(--inst-border);
-            background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+            padding: 14px;
+            border-top: 1px solid var(--nature-border-light);
+            background: #fafafa;
         }
 
         .user-card {
             background: white;
-            border: 1px solid var(--inst-border);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
-            box-shadow: var(--shadow-sm);
-            transition: all 0.3s var(--transition-smooth);
+            border: 1px solid var(--nature-border-light);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            transition: all 0.2s;
         }
 
         .user-card:hover {
-            box-shadow: var(--shadow-md);
+            border-color: var(--nature-border);
+            box-shadow: var(--shadow-sm);
         }
 
         .auth-badge {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            font-size: 10px;
-            font-weight: 700;
-            color: #16a34a;
+            gap: 5px;
+            font-size: 9px;
+            font-weight: 600;
+            color: #059669;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 8px;
-            background: #f0fdf4;
-            padding: 4px 8px;
-            border-radius: 6px;
+            margin-bottom: 6px;
         }
 
         .auth-badge::before {
-            content: '●';
-            font-size: 8px;
+            content: '';
+            width: 5px;
+            height: 5px;
+            background: #059669;
+            border-radius: 50%;
         }
 
         .user-email {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--inst-black);
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--nature-gray);
             word-break: break-all;
-            display: block;
+            line-height: 1.4;
         }
 
         /* Footer Actions */
@@ -359,44 +355,44 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         .action-btn {
             flex: 1;
             text-decoration: none;
-            font-size: 12px;
-            font-weight: 700;
+            font-size: 11px;
+            font-weight: 600;
             text-align: center;
-            padding: 10px 12px;
-            border-radius: 8px;
-            transition: all 0.25s var(--transition-smooth);
+            padding: 9px 10px;
+            border-radius: 6px;
+            transition: all 0.2s var(--transition);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 5px;
+            border: 1px solid;
         }
 
         .config-btn {
-            color: var(--inst-gray);
-            background: var(--hover-bg);
-            border: 1px solid var(--inst-border);
+            color: var(--nature-gray);
+            background: white;
+            border-color: var(--nature-border);
         }
 
         .config-btn:hover {
-            background: var(--inst-black);
+            background: var(--nature-dark);
             color: white;
-            border-color: var(--inst-black);
-            box-shadow: var(--shadow-md);
+            border-color: var(--nature-dark);
         }
 
         .logout-btn {
             color: white;
             background: var(--nature-red);
-            border: 1px solid var(--nature-red);
+            border-color: var(--nature-red);
         }
 
         .logout-btn:hover {
             background: var(--nature-red-hover);
-            box-shadow: 0 4px 12px rgba(161, 4, 32, 0.3);
+            border-color: var(--nature-red-hover);
         }
 
         .action-btn .material-icons-round {
-            font-size: 16px;
+            font-size: 15px;
         }
 
         /* Sidebar Overlay */
@@ -407,11 +403,10 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(15, 20, 25, 0.6);
-            backdrop-filter: blur(4px);
+            background: rgba(0, 0, 0, 0.4);
             z-index: 999;
             opacity: 0;
-            transition: opacity 0.3s var(--transition-smooth);
+            transition: opacity 0.3s;
         }
 
         .sidebar-overlay.active {
@@ -419,18 +414,17 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             opacity: 1;
         }
 
-        /* Responsive Design */
+        /* Responsive */
         @media (max-width: 768px) {
             .mobile-toggle {
-                display: block;
+                display: flex;
             }
 
             .sidebar {
                 position: fixed;
                 left: 0;
                 transform: translateX(-100%);
-                z-index: var(--z-index-sidebar);
-                box-shadow: var(--shadow-lg);
+                z-index: 1000;
             }
 
             .sidebar.open {
@@ -442,16 +436,10 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             }
         }
 
-        /* Smooth Scroll */
-        html {
-            scroll-behavior: smooth;
-        }
-
-        /* Focus States for Accessibility */
+        /* Focus States */
         .nav-item:focus,
         .label-item:focus,
-        .action-btn:focus,
-        .manage-labels-btn:focus {
+        .action-btn:focus {
             outline: 2px solid var(--nature-red);
             outline-offset: 2px;
         }
@@ -471,10 +459,10 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         <div class="sidebar-header">
             <a href="index.php" class="logo">
                 <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg"
-                    alt="Institutional Logo" class="logo-image">
+                    alt="SXC Logo" class="logo-image">
                 <div class="logo-text">
                     <span class="logo-title">SXC MDTS</span>
-                    <span class="logo-subtitle">Official Portal</span>
+                    <span class="logo-subtitle">Mail Distribution</span>
                 </div>
             </a>
         </div>
@@ -500,7 +488,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             <div class="nav-section-title">
                 Labels
                 <a href="manage_labels.php" class="manage-labels-btn" title="Manage Labels">
-                    <span class="material-icons-round" style="font-size: 18px;">settings</span>
+                    <span class="material-icons-round" style="font-size: 16px;">settings</span>
                 </a>
             </div>
 
@@ -525,7 +513,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         <!-- User Footer -->
         <div class="user-footer">
             <div class="user-card">
-                <span class="auth-badge">Authenticated</span>
+                <span class="auth-badge">Verified</span>
                 <span class="user-email">
                     <?= htmlspecialchars($userEmail) ?>
                 </span>
@@ -534,7 +522,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             <div class="footer-actions">
                 <a href="settings.php" class="action-btn config-btn">
                     <span class="material-icons-round">tune</span>
-                    <span>Config</span>
+                    <span>Settings</span>
                 </a>
                 <a href="logout.php" class="action-btn logout-btn">
                     <span class="material-icons-round">logout</span>
@@ -548,27 +536,14 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         function toggleSidebar() {
             const sidebar = document.getElementById('mainSidebar');
             const overlay = document.querySelector('.sidebar-overlay');
-
             sidebar.classList.toggle('open');
             overlay.classList.toggle('active');
         }
 
-        // Close sidebar on escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && document.getElementById('mainSidebar').classList.contains('open')) {
                 toggleSidebar();
             }
-        });
-
-        // Smooth scroll behavior
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            });
         });
     </script>
 </body>
