@@ -22,61 +22,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     
     $action = $_POST['action'] ?? '';
     
-    switch ($action) {
-        case 'create':
-            $labelName = trim($_POST['label_name'] ?? '');
-            $labelColor = $_POST['label_color'] ?? '#0973dc';
-            
-            if (empty($labelName)) {
-                echo json_encode(['success' => false, 'message' => 'Label name is required']);
-                exit;
-            }
-            
-            // createLabel now only takes labelName and labelColor (no userEmail)
-            $result = createLabel($labelName, $labelColor);
-            
-            if (is_array($result) && isset($result['error'])) {
-                echo json_encode(['success' => false, 'message' => $result['error']]);
-            } elseif ($result) {
-                echo json_encode(['success' => true, 'message' => 'Label created successfully']);
-            } else {
-                echo json_encode(['success' => false, 'message' => 'Failed to create label']);
-            }
+    if ($action === 'create') {
+        $labelName = trim($_POST['label_name'] ?? '');
+        $labelColor = $_POST['label_color'] ?? '#0973dc';
+        
+        if (empty($labelName)) {
+            echo json_encode(['success' => false, 'message' => 'Label name is required']);
             exit;
-            
-        case 'update':
-            $labelId = intval($_POST['label_id'] ?? 0);
-            $labelName = trim($_POST['label_name'] ?? '');
-            $labelColor = $_POST['label_color'] ?? '#0973dc';
-            
-            if (empty($labelName) || !$labelId) {
-                echo json_encode(['success' => false, 'message' => 'Invalid data']);
-                exit;
-            }
-            
-            // updateLabel now only takes labelId, labelName, labelColor (no userEmail)
-            $result = updateLabel($labelId, $labelName, $labelColor);
-            echo json_encode([
-                'success' => $result, 
-                'message' => $result ? 'Label updated successfully' : 'Failed to update label'
-            ]);
-            exit;
-            
-        case 'delete':
-            $labelId = intval($_POST['label_id'] ?? 0);
-            
-            if (!$labelId) {
-                echo json_encode(['success' => false, 'message' => 'Invalid label ID']);
-                exit;
-            }
-            
-            // deleteLabel now only takes labelId (no userEmail)
-            $result = deleteLabel($labelId);
-            echo json_encode([
-                'success' => $result, 
-                'message' => $result ? 'Label deleted successfully' : 'Failed to delete label'
-            ]);
-            exit;
+        }
+        
+        $result = createLabel($userEmail, $labelName, $labelColor);
+        
+        if (is_array($result) && isset($result['error'])) {
+            echo json_encode(['success' => false, 'message' => $result['error']]);
+        } elseif ($result) {
+            echo json_encode(['success' => true, 'message' => 'Label created successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to create label']);
+        }
+        exit;
     }
     
     echo json_encode(['success' => false, 'message' => 'Invalid action']);
@@ -492,7 +456,6 @@ $labels = getLabelCounts($userEmail);
                             <th>Label</th>
                             <th>Your Emails</th>
                             <th>Created</th>
-                            <th style="text-align: right;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -509,16 +472,6 @@ $labels = getLabelCounts($userEmail);
                             </td>
                             <td>
                                 <span class="label-count"><?= date('M j, Y', strtotime($label['created_at'])) ?></span>
-                            </td>
-                            <td style="text-align: right;">
-                                <div class="action-buttons">
-                                    <button class="btn-icon" onclick="openEditModal(<?= $label['id'] ?>, '<?= htmlspecialchars($label['label_name'], ENT_QUOTES) ?>', '<?= htmlspecialchars($label['label_color']) ?>')" title="Edit">
-                                        <span class="material-icons">edit</span>
-                                    </button>
-                                    <button class="btn-icon" onclick="deleteLabel(<?= $label['id'] ?>, '<?= htmlspecialchars($label['label_name'], ENT_QUOTES) ?>')" title="Delete">
-                                        <span class="material-icons">delete</span>
-                                    </button>
-                                </div>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -594,16 +547,6 @@ $labels = getLabelCounts($userEmail);
             document.getElementById('labelModal').classList.add('active');
         }
         
-        function openEditModal(id, name, color) {
-            document.getElementById('modalTitle').textContent = 'Edit Label';
-            document.getElementById('formAction').value = 'update';
-            document.getElementById('labelId').value = id;
-            document.getElementById('labelName').value = name;
-            document.getElementById('labelColor').value = color;
-            colorHex.textContent = color;
-            document.getElementById('labelModal').classList.add('active');
-        }
-        
         function closeModal() {
             document.getElementById('labelModal').classList.remove('active');
         }
@@ -639,35 +582,6 @@ $labels = getLabelCounts($userEmail);
                 showAlert('An error occurred. Please try again.', 'error');
             }
         });
-        
-        async function deleteLabel(id, name) {
-            if (!confirm(`Are you sure you want to delete the label "${name}"? This will remove it from all emails.`)) {
-                return;
-            }
-            
-            const formData = new FormData();
-            formData.append('ajax', '1');
-            formData.append('action', 'delete');
-            formData.append('label_id', id);
-            
-            try {
-                const response = await fetch('manage_labels.php', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showAlert(result.message, 'success');
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    showAlert(result.message, 'error');
-                }
-            } catch (error) {
-                showAlert('An error occurred. Please try again.', 'error');
-            }
-        }
         
         function showAlert(message, type) {
             const container = document.getElementById('alertContainer');
