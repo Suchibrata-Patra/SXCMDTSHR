@@ -663,7 +663,7 @@ $defaultSignature = json_encode($settings['signature']);
                         <h2 class="section-title">Email Signature</h2>
                         
                         <div class="form-group">
-                            <label>Signature <span class="label-optional">(optional)</span></label>
+                            <!-- <label>Signature <span class="label-optional">(optional)</span></label> -->
                             <div class="editor-wrapper" id="signatureContainer">
                                 <div id="signatureToolbar">
                                     <button class="ql-bold"></button>
