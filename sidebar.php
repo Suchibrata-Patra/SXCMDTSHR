@@ -20,7 +20,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
     <style>
         :root {
             --sidebar-width: 260px;
-            --nature-red: #6b0215;
+            --nature-red: #a10420;
             /* Signature Nature Active Color */
             --inst-black: #1a1a1a;
             --inst-gray: #555555;
@@ -117,9 +117,9 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
 
         /* Active Tab with Nature Red */
         .nav-item.active {
-            background: #fffafa;
+            background: #f4f4f4;
             color: var(--nature-red);
-            border-left: 1px solid var(--nature-red);
+            border-left: 2px solid var(--nature-red);
         }
 
         .nav-item.active .material-icons {
