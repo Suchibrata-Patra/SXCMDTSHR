@@ -19,127 +19,218 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         rel="stylesheet">
 
     <style>
-        /* === Glassmorphism Sidebar Redesign === */
-
         :root {
-            --sidebar-glass-bg: rgba(255, 255, 255, 0.22);
-            --sidebar-glass-border: rgba(255, 255, 255, 0.35);
-            --sidebar-blur: 18px;
-
-            --accent-primary: #c81445;
-            --accent-primary-hover: #e21c52;
-
-            --text-strong: #1a1a1a;
-            --text-soft: #4d4d4d;
-            --btn-bg: rgba(255, 255, 255, 0.18);
-            --btn-bg-hover: rgba(255, 255, 255, 0.30);
+            --sidebar-width: 280px;
+            --nature-red: #a10420;
+            --inst-black: #1a1a1a;
+            --inst-gray: #555555;
+            --inst-border: #d1d1d1;
+            --inst-bg: #ffffff;
+            --hover-bg: #f8f8f8;
+            --z-index-sidebar: 1000;
         }
 
-        /* Sidebar Glass Base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Mobile Toggle Button - Hidden on Desktop */
+        .mobile-toggle {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1001;
+            background: var(--inst-black);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
         .sidebar {
-            background: var(--sidebar-glass-bg);
-            backdrop-filter: blur(var(--sidebar-blur));
-            -webkit-backdrop-filter: blur(var(--sidebar-blur));
-            border-right: 1px solid var(--sidebar-glass-border);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            width: var(--sidebar-width);
+            background: var(--inst-bg);
+            border-right: 2px solid var(--inst-border);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            font-family: 'Inter', sans-serif;
+            color: var(--inst-black);
+            transition: transform 0.3s ease;
+            position: sticky;
+            top: 0;
         }
 
-        /* Header */
         .sidebar-header {
-            background: rgba(255, 255, 255, 0.28);
-            border-bottom: 1px solid var(--sidebar-glass-border);
+            padding: 32px 24px;
+            border-bottom: 2px solid var(--inst-border);
+            background-color: #fcfcfc;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            text-decoration: none;
+        }
+
+        .logo-image {
+            width: 52px;
+            height: 52px;
+            object-fit: contain;
         }
 
         .logo-title {
-            color: var(--text-strong);
+            font-family: 'Crimson Pro', serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--inst-black);
+            line-height: 1.1;
         }
 
-        /* Nav Items */
+        .nav-section {
+            flex: 1;
+            padding: 24px 12px;
+            overflow-y: auto;
+        }
+
         .nav-item {
-            background: transparent;
-            border-radius: 10px;
-            color: var(--text-soft);
-            transition: background 0.25s ease, transform 0.15s ease;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+            text-decoration: none;
+            color: var(--inst-black);
+            font-size: 15px;
+            font-weight: 700;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-item .material-icons {
+            font-size: 22px;
+            color: var(--inst-gray);
         }
 
         .nav-item:hover {
-            background: var(--btn-bg-hover);
-            transform: translateX(4px);
+            background: var(--hover-bg);
         }
 
-        /* Active Nav Item */
         .nav-item.active {
-            background: var(--btn-bg);
-            border-left: 4px solid var(--accent-primary);
-            color: var(--text-strong);
+            background: #f4f4f4;
+            color: black;
+            border-left: 4px solid var(--nature-red);
         }
 
         .nav-item.active .material-icons {
-            color: var(--accent-primary);
+            color: var(--nature-red);
         }
 
-        /* Labels Section */
         .nav-section-title {
-            color: var(--text-soft);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: var(--inst-gray);
+            padding: 20px 16px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .manage-labels-btn {
+            color: var(--nature-red);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            transition: opacity 0.2s;
         }
 
         .label-item {
-            border-radius: 8px;
-            transition: background 0.25s ease, transform 0.15s ease;
+            display: flex;
+            align-items: center;
+            padding: 10px 16px;
+            text-decoration: none;
+            color: var(--inst-gray);
+            font-size: 14px;
+            font-weight: 600;
         }
 
-        .label-item:hover {
-            background: var(--btn-bg-hover);
-            transform: translateX(4px);
+        .label-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            margin-right: 12px;
         }
 
-        /* User Footer */
         .user-footer {
-            background: rgba(255, 255, 255, 0.22);
-            border-top: 1px solid var(--sidebar-glass-border);
+            padding: 24px;
+            border-top: 2px solid var(--inst-border);
+            background: #f9f9f9;
         }
 
-        /* Buttons */
+        .user-email {
+            font-size: 14px;
+            font-weight: 700;
+            word-break: break-all;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .footer-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
         .logout-btn {
-            background: var(--accent-primary);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            padding: 8px 16px;
-            transition: background 0.25s ease, transform 0.15s ease;
+            color: var(--nature-red);
+            border: 2px solid var(--nature-red);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 800;
+            text-decoration: none;
         }
 
-        .logout-btn:hover {
-            background: var(--accent-primary-hover);
-            transform: scale(1.05);
-        }
+        /* Responsive Breakpoints */
+        @media (max-width: 768px) {
+            .mobile-toggle {
+                display: block;
+            }
 
-        .action-link {
-            color: var(--text-soft);
-            opacity: 0.8;
-            transition: opacity 0.25s ease;
-        }
+            .sidebar {
+                position: fixed;
+                left: 0;
+                transform: translateX(-100%);
+                z-index: var(--z-index-sidebar);
+                box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
+            }
 
-        .action-link:hover {
-            opacity: 1;
-        }
+            .sidebar.open {
+                transform: translateX(0);
+            }
 
-        /* Mobile Toggle Button */
-        .mobile-toggle {
-            background: rgba(0, 0, 0, 0.45);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-        }
+            /* Overlay when sidebar is open */
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 999;
+            }
 
-        .mobile-toggle:hover {
-            transform: scale(1.05);
-        }
-
-        /* Overlay */
-        .sidebar-overlay.active {
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
+            .sidebar-overlay.active {
+                display: block;
+            }
         }
     </style>
 </head>
