@@ -17,16 +17,18 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
 
     <style>
         :root {
-            --primary-black: #c6c6c6;
-            --secondary-black: #1a1a1a;
-            --border-gray: #2a2a2a;
-            --text-primary: #ffffff;
-            --text-secondary: #a0a0a0;
-            --text-muted: #6b6b6b;
-            --hover-bg: #222222;
-            --active-bg: #2d2d2d;
-            --accent-white: #ffffff;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --primary-white: #ffffff;
+            --background-gray: #f8f9fa;
+            --border-light: #e9ecef;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --text-muted: #adb5bd;
+            --hover-bg: #f1f3f5;
+            --active-bg: #e9ecef;
+            --accent-primary: #0d6efd;
+            --accent-dark: #0a58ca;
+            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --transition: all 0.2s ease;
         }
 
         * {
@@ -43,135 +45,60 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
 
         /* Sidebar Container */
         .sidebar {
-            width: 280px;
-            background: var(--primary-black);
-            border-right: 1px solid var(--border-gray);
+            width: 260px;
+            background: var(--primary-white);
+            border-right: 1px solid var(--border-light);
             display: flex;
             flex-direction: column;
-            transition: var(--transition);
-            position: relative;
             height: 100vh;
-            overflow: hidden;
-        }
-
-        .sidebar.collapsed {
-            width: 72px;
-        }
-
-        /* Decorative top bar */
-        .sidebar::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, var(--accent-white) 0%, transparent 100%);
-            opacity: 0.3;
+            position: relative;
         }
 
         /* Header Section */
         .sidebar-header {
-            padding: 24px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid var(--border-gray);
-            position: relative;
+            padding: 28px 24px;
+            border-bottom: 1px solid var(--border-light);
         }
 
         .logo {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 16px;
             text-decoration: none;
-            transition: var(--transition);
         }
 
-        .logo:hover {
-            transform: translateX(2px);
-        }
-
-        .logo-wrapper {
-            position: relative;
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            overflow: hidden;
-            background: var(--secondary-black);
-            border: 1px solid var(--border-gray);
-            padding: 2px;
-        }
-
-        .logo img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+        .logo-image {
+            width: 52px;
+            height: 52px;
             border-radius: 10px;
+            object-fit: cover;
         }
 
         .logo-text {
             display: flex;
             flex-direction: column;
-            opacity: 1;
-            transition: var(--transition);
         }
 
         .logo-title {
-            font-size: 15px;
-            font-weight: 600;
+            font-size: 17px;
+            font-weight: 700;
             color: var(--text-primary);
-            letter-spacing: -0.02em;
+            line-height: 1.3;
+            letter-spacing: -0.01em;
         }
 
         .logo-subtitle {
-            font-size: 11px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-top: 2px;
-        }
-
-        .sidebar.collapsed .logo-text {
-            opacity: 0;
-            width: 0;
-            overflow: hidden;
-        }
-
-        /* Toggle Button */
-        .toggle-sidebar {
-            background: var(--secondary-black);
-            border: 1px solid var(--border-gray);
-            cursor: pointer;
+            font-size: 12px;
             color: var(--text-secondary);
-            padding: 8px;
-            border-radius: 8px;
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .toggle-sidebar:hover {
-            background: var(--hover-bg);
-            color: var(--text-primary);
-            border-color: var(--text-muted);
-        }
-
-        .toggle-sidebar .material-icons {
-            font-size: 20px;
-        }
-
-        .sidebar.collapsed .toggle-sidebar {
-            transform: rotate(180deg);
+            margin-top: 2px;
+            font-weight: 500;
         }
 
         /* Navigation Section */
         .nav-section {
             flex: 1;
-            padding: 20px 12px;
+            padding: 24px 16px;
             overflow-y: auto;
-            overflow-x: hidden;
         }
 
         .nav-section::-webkit-scrollbar {
@@ -183,7 +110,7 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
         }
 
         .nav-section::-webkit-scrollbar-thumb {
-            background: var(--border-gray);
+            background: var(--border-light);
             border-radius: 3px;
         }
 
@@ -191,50 +118,24 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
             background: var(--text-muted);
         }
 
-        .nav-label {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            padding: 0 16px 8px 16px;
-            margin-top: 16px;
-            opacity: 1;
-            transition: var(--transition);
-        }
-
-        .sidebar.collapsed .nav-label {
-            opacity: 0;
-            height: 0;
-            padding: 0;
-            margin: 0;
-        }
-
         .nav-item {
             display: flex;
             align-items: center;
-            gap: 14px;
-            padding: 12px 16px;
+            gap: 16px;
+            padding: 14px 18px;
             text-decoration: none;
             color: var(--text-secondary);
             transition: var(--transition);
-            border-radius: 10px;
-            margin-bottom: 4px;
+            border-radius: 8px;
+            margin-bottom: 6px;
             position: relative;
-            overflow: hidden;
+            font-size: 15px;
+            font-weight: 500;
         }
 
-        .nav-item::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 3px;
-            height: 0;
-            background: var(--accent-white);
+        .nav-item .material-icons {
+            font-size: 24px;
             transition: var(--transition);
-            border-radius: 0 2px 2px 0;
         }
 
         .nav-item:hover {
@@ -242,123 +143,98 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
             color: var(--text-primary);
         }
 
-        .nav-item:hover::before {
-            height: 60%;
+        .nav-item:hover .material-icons {
+            transform: scale(1.1);
         }
 
         .nav-item.active {
             background: var(--active-bg);
-            color: var(--text-primary);
-            font-weight: 500;
+            color: var(--accent-primary);
+            font-weight: 600;
+        }
+
+        .nav-item.active .material-icons {
+            color: var(--accent-primary);
         }
 
         .nav-item.active::before {
-            height: 100%;
-        }
-
-        .nav-item .material-icons {
-            font-size: 22px;
-            min-width: 22px;
-        }
-
-        .nav-item span:not(.material-icons) {
-            font-size: 14px;
-            font-weight: 500;
-            white-space: nowrap;
-            opacity: 1;
-            transition: var(--transition);
-        }
-
-        .sidebar.collapsed .nav-item span:not(.material-icons) {
-            opacity: 0;
-            width: 0;
-            overflow: hidden;
-        }
-
-        .sidebar.collapsed .nav-item {
-            justify-content: center;
-            padding: 12px;
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 24px;
+            background: var(--accent-primary);
+            border-radius: 0 4px 4px 0;
         }
 
         /* User Info Section */
         .user-info {
             padding: 20px;
-            border-top: 1px solid var(--border-gray);
-            background: var(--secondary-black);
+            border-top: 1px solid var(--border-light);
+            background: var(--background-gray);
         }
 
         .user-details {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 16px;
-            padding: 12px;
-            background: var(--primary-black);
-            border-radius: 12px;
-            border: 1px solid var(--border-gray);
-            transition: var(--transition);
-        }
-
-        .user-details:hover {
-            border-color: var(--text-muted);
+            gap: 14px;
+            padding: 14px;
+            background: var(--primary-white);
+            border-radius: 10px;
+            margin-bottom: 14px;
         }
 
         .user-avatar {
-            width: 44px;
-            height: 44px;
-            min-width: 44px;
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #ffffff 0%, #d0d0d0 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--primary-black);
+            color: var(--primary-white);
             font-weight: 700;
-            font-size: 17px;
+            font-size: 18px;
             position: relative;
-            border: 2px solid var(--border-gray);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
         }
 
         .user-avatar::after {
             content: '';
             position: absolute;
-            bottom: 0;
-            right: 0;
+            bottom: 2px;
+            right: 2px;
             width: 12px;
             height: 12px;
-            background: #4ade80;
-            border: 2px solid var(--primary-black);
+            background: #10b981;
+            border: 2px solid var(--primary-white);
             border-radius: 50%;
         }
 
         .user-email-wrapper {
             flex: 1;
             overflow: hidden;
-            opacity: 1;
-            transition: var(--transition);
         }
 
         .user-label {
-            font-size: 10px;
+            font-size: 11px;
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 2px;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
             font-weight: 600;
         }
 
         .user-email {
-            font-size: 13px;
+            font-size: 14px;
             color: var(--text-primary);
-            font-weight: 500;
+            font-weight: 600;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-        }
-
-        .sidebar.collapsed .user-email-wrapper {
-            opacity: 0;
-            width: 0;
         }
 
         /* Logout Button */
@@ -366,122 +242,102 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            color: var(--text-secondary);
+            gap: 12px;
+            color: #dc3545;
             text-decoration: none;
-            padding: 12px 16px;
-            border-radius: 10px;
+            padding: 14px 18px;
+            border-radius: 8px;
             transition: var(--transition);
-            font-weight: 500;
-            font-size: 14px;
-            border: 1px solid var(--border-gray);
-            background: var(--primary-black);
+            font-weight: 600;
+            font-size: 15px;
+            background: var(--primary-white);
         }
 
         .logout-link:hover {
-            background: #1a0000;
-            border-color: #ff4444;
-            color: #ff4444;
+            background: #dc3545;
+            color: var(--primary-white);
+        }
+
+        .logout-link:hover .material-icons {
+            transform: translateX(2px);
         }
 
         .logout-link .material-icons {
-            font-size: 20px;
-        }
-
-        .logout-link span:not(.material-icons) {
-            opacity: 1;
+            font-size: 22px;
             transition: var(--transition);
-        }
-
-        .sidebar.collapsed .logout-link span:not(.material-icons) {
-            opacity: 0;
-            width: 0;
-            overflow: hidden;
-        }
-
-        .sidebar.collapsed .logout-link {
-            padding: 12px;
-        }
-
-        /* Tooltip for collapsed state */
-        .sidebar.collapsed .nav-item,
-        .sidebar.collapsed .logout-link {
-            position: relative;
-        }
-
-        .sidebar.collapsed .nav-item::after,
-        .sidebar.collapsed .logout-link::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            left: 100%;
-            top: 50%;
-            transform: translateY(-50%);
-            background: var(--accent-white);
-            color: var(--primary-black);
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 500;
-            white-space: nowrap;
-            opacity: 0;
-            pointer-events: none;
-            transition: var(--transition);
-            margin-left: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
-
-        .sidebar.collapsed .nav-item:hover::after,
-        .sidebar.collapsed .logout-link:hover::after {
-            opacity: 1;
         }
 
         /* Responsive adjustments */
-        @media (max-height: 600px) {
+        @media (max-height: 700px) {
             .sidebar-header {
-                padding: 16px 20px;
+                padding: 20px 24px;
             }
 
             .nav-section {
-                padding: 12px;
+                padding: 16px;
             }
 
             .user-info {
                 padding: 16px;
             }
         }
+
+        /* Smooth entry animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .nav-item {
+            animation: fadeIn 0.3s ease-out backwards;
+        }
+
+        .nav-item:nth-child(1) {
+            animation-delay: 0.05s;
+        }
+
+        .nav-item:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .nav-item:nth-child(3) {
+            animation-delay: 0.15s;
+        }
+
+        .nav-item:nth-child(4) {
+            animation-delay: 0.2s;
+        }
     </style>
 </head>
 
 <body>
 
-    <div class="sidebar" id="sidebar">
+    <div class="sidebar">
         <div class="sidebar-header">
             <a href="index.php" class="logo">
-                <div class="logo-wrapper">
-                    <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg"
-                        alt="St. Xavier's College">
-                </div>
+                <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg"
+                    alt="St. Xavier's College" class="logo-image">
                 <div class="logo-text">
-                    <span class="logo-title">St. Xavier's</span>
-                    <!-- <span class="logo-subtitle">Mail System</span> -->
+                    <span class="logo-title">St. Xavier's College</span>
+                    <span class="logo-subtitle">Mail System</span>
                 </div>
             </a>
-            <button class="toggle-sidebar" id="toggleSidebar" aria-label="Toggle Sidebar">
-                <span class="material-icons">chevron_left</span>
-            </button>
         </div>
 
         <nav class="nav-section">
-            <div class="nav-label">Main</div>
-
-            <a href="index.php" class="nav-item <?= ($current_page == 'index') ? 'active' : ''; ?>"
-                data-tooltip="Compose">
+            <a href="index.php" class="nav-item <?= ($current_page == 'index') ? 'active' : ''; ?>">
                 <span class="material-icons">edit</span>
                 <span>Compose</span>
             </a>
 
-            <a href="settings.php" class="nav-item <?= ($current_page == 'settings') ? 'active' : ''; ?>"
-                data-tooltip="Preference">
+            <a href="settings.php" class="nav-item <?= ($current_page == 'settings') ? 'active' : ''; ?>">
                 <span class="material-icons">settings</span>
                 <span>Preference</span>
             </a>
@@ -493,46 +349,19 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
                     <?= $userInitial ?>
                 </div>
                 <div class="user-email-wrapper">
-                    <div class="user-label">Logged in as</div>
+                    <div class="user-label">Signed in as</div>
                     <div class="user-email" title="<?= htmlspecialchars($userEmail) ?>">
                         <?= htmlspecialchars($userEmail) ?>
                     </div>
                 </div>
             </div>
 
-            <a href="logout.php" class="logout-link" data-tooltip="Logout">
+            <a href="logout.php" class="logout-link">
                 <span class="material-icons">logout</span>
                 <span>Logout</span>
             </a>
         </div>
     </div>
-
-    <script>
-        const sidebar = document.getElementById('sidebar');
-        const toggleBtn = document.getElementById('toggleSidebar');
-
-        // Toggle sidebar
-        toggleBtn.addEventListener('click', () => {
-            sidebar.classList.toggle('collapsed');
-
-            // Save state to localStorage
-            const isCollapsed = sidebar.classList.contains('collapsed');
-            localStorage.setItem('sidebarCollapsed', isCollapsed);
-        });
-
-        // Restore sidebar state on load
-        window.addEventListener('DOMContentLoaded', () => {
-            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-            if (isCollapsed) {
-                sidebar.classList.add('collapsed');
-            }
-        });
-
-        // Add smooth transitions after page load
-        window.addEventListener('load', () => {
-            sidebar.style.transition = 'var(--transition)';
-        });
-    </script>
 
 </body>
 
