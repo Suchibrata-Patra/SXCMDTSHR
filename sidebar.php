@@ -17,7 +17,7 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
 
     <style>
         :root {
-            --primary-black: #0a0a0a;
+            --primary-black: #c6c6c6;
             --secondary-black: #1a1a1a;
             --border-gray: #2a2a2a;
             --text-primary: #ffffff;
