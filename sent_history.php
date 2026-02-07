@@ -144,7 +144,7 @@ $hasActiveFilters = !empty(array_filter($filters));
             font-size: 28px;
             font-weight: 400;
             color: var(--text-primary);
-            letter-spacing: 1rem;
+            letter-spacing: 0.7rem;
             display: flex;
             align-items: center;
             gap: 12px;
