@@ -619,6 +619,8 @@ $defaultSignature = json_encode($settings['signature']);
                         </div>
                         </div>
                         </div>
+                        </div>
+                        </div>
                     </section>
 
                     <!-- Email Details Section -->
