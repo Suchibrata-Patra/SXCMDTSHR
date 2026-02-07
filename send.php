@@ -3,6 +3,7 @@
 session_start();
 require 'vendor/autoload.php';
 require 'config.php';
+require 'db_config.php'; // Include database configuration
 
 if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     header("Location: login.php");
@@ -44,6 +45,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         // --- Handle CC Recipients ---
+        $ccEmailsList = [];
         if (!empty($_POST['cc'])) {
             $ccEmails = parseEmailList($_POST['cc']);
             foreach ($ccEmails as $ccEmail) {
@@ -51,6 +53,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     try {
                         $mail->addCC($ccEmail);
                         $successEmails[] = ['email' => $ccEmail, 'type' => 'CC'];
+                        $ccEmailsList[] = $ccEmail;
                     } catch (Exception $e) {
                         $failedEmails[] = ['email' => $ccEmail, 'type' => 'CC', 'reason' => $e->getMessage()];
                     }
@@ -61,6 +64,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         // --- Handle BCC Recipients ---
+        $bccEmailsList = [];
         if (!empty($_POST['bcc'])) {
             $bccEmails = parseEmailList($_POST['bcc']);
             foreach ($bccEmails as $bccEmail) {
@@ -68,6 +72,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     try {
                         $mail->addBCC($bccEmail);
                         $successEmails[] = ['email' => $bccEmail, 'type' => 'BCC'];
+                        $bccEmailsList[] = $bccEmail;
                     } catch (Exception $e) {
                         $failedEmails[] = ['email' => $bccEmail, 'type' => 'BCC', 'reason' => $e->getMessage()];
                     }
@@ -78,6 +83,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         // --- Handle Multiple File Attachments ---
+        $attachmentNames = [];
         if (isset($_FILES['attachments']) && is_array($_FILES['attachments']['name'])) {
             $fileCount = count($_FILES['attachments']['name']);
             for ($i = 0; $i < $fileCount; $i++) {
@@ -86,6 +92,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         $_FILES['attachments']['tmp_name'][$i],
                         $_FILES['attachments']['name'][$i]
                     );
+                    $attachmentNames[] = $_FILES['attachments']['name'][$i];
                 }
             }
         }
@@ -135,18 +142,39 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         } else {
             // Fallback if template doesn't exist
             if ($isHtml) {
+                $finalHtml = $messageBody;
                 $mail->Body = $messageBody;
                 $mail->AltBody = strip_tags($messageBody);
             } else {
-                $mail->Body = nl2br(htmlspecialchars($messageBody));
+                $finalHtml = nl2br(htmlspecialchars($messageBody));
+                $mail->Body = $finalHtml;
                 $mail->AltBody = $messageBody;
             }
         }
         
+        // Send the email
         $mail->send();
         
+        // --- DATABASE LOGGING: Save sent email to database ---
+        $emailData = [
+            'sender_email' => $_SESSION['smtp_user'],
+            'recipient_email' => $recipient,
+            'cc_list' => !empty($ccEmailsList) ? implode(', ', $ccEmailsList) : '',
+            'bcc_list' => !empty($bccEmailsList) ? implode(', ', $bccEmailsList) : '',
+            'subject' => $subject,
+            'article_title' => $articleTitle,
+            'message_body' => $finalHtml,
+            'attachment_names' => !empty($attachmentNames) ? implode(', ', $attachmentNames) : ''
+        ];
+        
+        // Attempt to save to database (non-blocking - email already sent)
+        $dbSaved = saveSentEmail($emailData);
+        if (!$dbSaved) {
+            error_log("Warning: Email sent successfully but failed to save to database");
+        }
+        
         // Generate response HTML
-        showResultPage($subject, $successEmails, $failedEmails);
+        showResultPage($subject, $successEmails, $failedEmails, $dbSaved);
 
     } catch (Exception $e) {
         showErrorPage("Message could not be sent. Mailer Error: {$mail->ErrorInfo}");
@@ -171,7 +199,7 @@ function parseEmailList($emailString) {
 /**
  * Show result page with Nature.com-inspired design
  */
-function showResultPage($subject, $successEmails, $failedEmails) {
+function showResultPage($subject, $successEmails, $failedEmails, $dbSaved = true) {
     $totalEmails = count($successEmails) + count($failedEmails);
     $successCount = count($successEmails);
     $failureCount = count($failedEmails);
@@ -234,20 +262,17 @@ function showResultPage($subject, $successEmails, $failedEmails) {
             }
 
             .breadcrumb {
-                font-size: 13px;
+                font-size: 14px;
                 color: #666;
-                margin-bottom: 8px;
-                font-weight: 400;
+                margin-bottom: 12px;
             }
 
             .breadcrumb a {
                 color: #0973dc;
                 text-decoration: none;
-                transition: color 0.2s;
             }
 
             .breadcrumb a:hover {
-                color: #006bb3;
                 text-decoration: underline;
             }
 
@@ -260,13 +285,12 @@ function showResultPage($subject, $successEmails, $failedEmails) {
                 display: inline-block;
                 font-size: 13px;
                 font-weight: 600;
-                color: #0973dc;
+                color: #0c7b93;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
                 margin-bottom: 16px;
             }
 
-            /* Main content article style */
             .article-container {
                 max-width: 860px;
                 margin: 0 auto;
@@ -305,7 +329,7 @@ function showResultPage($subject, $successEmails, $failedEmails) {
             }
 
             .meta-item i {
-                color: #0973dc;
+                color: #0c7b93;
                 font-size: 13px;
             }
 
@@ -313,8 +337,8 @@ function showResultPage($subject, $successEmails, $failedEmails) {
                 display: inline-flex;
                 align-items: center;
                 gap: 6px;
-                background: #e8f5e9;
-                color: #2e7d32;
+                background: #e8f4f8;
+                color: #0c7b93;
                 padding: 4px 12px;
                 border-radius: 12px;
                 font-size: 13px;
@@ -322,10 +346,18 @@ function showResultPage($subject, $successEmails, $failedEmails) {
             }
 
             .status-badge i {
-                color: #2e7d32;
+                color: #0c7b93;
             }
 
-            /* Article body sections */
+            .status-badge.warning {
+                background: #fff3e0;
+                color: #f57c00;
+            }
+
+            .status-badge.warning i {
+                color: #f57c00;
+            }
+
             .article-section {
                 margin-bottom: 40px;
             }
@@ -339,99 +371,91 @@ function showResultPage($subject, $successEmails, $failedEmails) {
                 letter-spacing: -0.3px;
             }
 
-            .info-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 20px;
-                margin-bottom: 24px;
-            }
-
-            .info-card {
-                background: #fafafa;
+            .email-list {
+                background: #f9fafb;
                 border: 1px solid #e0e0e0;
                 border-radius: 4px;
-                padding: 20px;
-                transition: all 0.2s;
+                padding: 0;
             }
 
-            .info-card:hover {
-                background: #f5f5f5;
-                border-color: #d0d0d0;
-            }
-
-            .info-label {
-                font-size: 13px;
-                font-weight: 600;
-                color: #666;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                margin-bottom: 8px;
-            }
-
-            .info-value {
-                font-size: 16px;
-                color: #191919;
-                font-weight: 400;
-            }
-
-            /* Recipient list - Nature.com table style */
-            .recipients-table {
-                width: 100%;
-                border-collapse: separate;
-                border-spacing: 0;
-                border: 1px solid #e0e0e0;
-                border-radius: 4px;
-                overflow: hidden;
-                font-size: 14px;
-            }
-
-            .recipients-table thead {
-                background: #fafafa;
-            }
-
-            .recipients-table th {
-                text-align: left;
-                padding: 12px 16px;
-                font-weight: 600;
-                color: #666;
-                font-size: 13px;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
+            .email-item {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 16px 20px;
                 border-bottom: 1px solid #e0e0e0;
             }
 
-            .recipients-table td {
-                padding: 14px 16px;
-                border-bottom: 1px solid #f0f0f0;
-                color: #191919;
-            }
-
-            .recipients-table tbody tr:last-child td {
+            .email-item:last-child {
                 border-bottom: none;
             }
 
-            .recipients-table tbody tr:hover {
-                background: #fafafa;
+            .email-address {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                font-size: 14px;
+                color: #191919;
             }
 
-            .type-label {
-                display: inline-block;
-                padding: 3px 8px;
-                background: #e3f2fd;
-                color: #1565c0;
-                border-radius: 3px;
-                font-size: 11px;
+            .email-address i {
+                color: #0c7b93;
+                font-size: 16px;
+            }
+
+            .email-type {
+                font-size: 12px;
+                font-weight: 500;
+                padding: 2px 8px;
+                border-radius: 4px;
+                background: #e8f4f8;
+                color: #0c7b93;
+            }
+
+            .error-box {
+                background: #fff3e0;
+                border-left: 4px solid #f57c00;
+                padding: 20px 24px;
+                border-radius: 4px;
+                margin-bottom: 24px;
+            }
+
+            .error-title {
+                font-size: 15px;
                 font-weight: 600;
-                text-transform: uppercase;
-                letter-spacing: 0.3px;
+                color: #e65100;
+                margin-bottom: 8px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
             }
 
-            .check-icon {
-                color: #2e7d32;
+            .error-message {
+                color: #191919;
+                line-height: 1.6;
                 font-size: 14px;
             }
 
-            /* Action buttons - Nature.com style */
+            .info-box {
+                background: #e3f2fd;
+                border-left: 4px solid #1976d2;
+                padding: 16px 20px;
+                border-radius: 4px;
+                margin-bottom: 24px;
+            }
+
+            .info-box p {
+                font-size: 14px;
+                color: #191919;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .info-box i {
+                color: #1976d2;
+            }
+
             .article-actions {
                 margin-top: 48px;
                 padding-top: 32px;
@@ -470,15 +494,14 @@ function showResultPage($subject, $successEmails, $failedEmails) {
             .btn-secondary {
                 background: white;
                 color: #191919;
-                border-color: #d0d0d0;
+                border-color: #e0e0e0;
             }
 
             .btn-secondary:hover {
-                background: #fafafa;
-                border-color: #b0b0b0;
+                background: #f9fafb;
+                border-color: #c0c0c0;
             }
 
-            /* Scrollbar styling */
             ::-webkit-scrollbar {
                 width: 10px;
             }
@@ -496,7 +519,6 @@ function showResultPage($subject, $successEmails, $failedEmails) {
                 background: #a0a0a0;
             }
 
-            /* Responsive */
             @media (max-width: 768px) {
                 .article-container {
                     padding: 32px 24px 60px;
@@ -509,10 +531,6 @@ function showResultPage($subject, $successEmails, $failedEmails) {
                 .section-title {
                     font-size: 20px;
                 }
-
-                .info-grid {
-                    grid-template-columns: 1fr;
-                }
             }
         </style>
     </head>
@@ -521,8 +539,7 @@ function showResultPage($subject, $successEmails, $failedEmails) {
 
         <div class="main-content">
             <div class="content-area">
-                <!-- Nature.com style header -->
-                <!-- <div class="page-header">
+                <div class="page-header">
                     <div class="header-container">
                         <div class="breadcrumb">
                             <a href="index.php">Home</a>
@@ -531,89 +548,96 @@ function showResultPage($subject, $successEmails, $failedEmails) {
                         </div>
                         <span class="article-type">Delivery Confirmation</span>
                     </div>
-                </div> -->
+                </div>
 
-                <!-- Article-style content -->
                 <article class="article-container">
                     <header class="article-header">
-                        <h1>Email Successfully Delivered</h1>
+                        <h1>Email Sent Successfully</h1>
                         <div class="article-meta">
                             <div class="meta-item">
                                 <i class="fa-regular fa-clock"></i>
                                 <span><?= $timestamp ?></span>
                             </div>
                             <div class="meta-item">
-                                <i class="fa-regular fa-envelope"></i>
-                                <span><?= $successCount ?> recipient<?= $successCount !== 1 ? 's' : '' ?></span>
+                                <i class="fa-solid fa-envelope"></i>
+                                <span><?= $successCount ?> recipient<?= $successCount > 1 ? 's' : '' ?></span>
                             </div>
                             <span class="status-badge">
                                 <i class="fa-solid fa-circle-check"></i>
                                 Delivered
                             </span>
+                            <?php if (!$dbSaved): ?>
+                            <span class="status-badge warning">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                Not Logged
+                            </span>
+                            <?php endif; ?>
                         </div>
                     </header>
 
-                    <!-- Email details section -->
+                    <?php if (!$dbSaved): ?>
+                    <div class="info-box">
+                        <p>
+                            <i class="fa-solid fa-info-circle"></i>
+                            Email was sent successfully, but could not be saved to sent history. Check your database configuration.
+                        </p>
+                    </div>
+                    <?php endif; ?>
+
                     <section class="article-section">
-                        <h2 class="section-title">Delivery Summary</h2>
-                        <div class="info-grid">
-                            <div class="info-card">
-                                <div class="info-label">Subject Line</div>
-                                <div class="info-value"><?= htmlspecialchars($subject) ?></div>
-                            </div>
-                            <div class="info-card">
-                                <div class="info-label">Recipients</div>
-                                <div class="info-value"><?= $successCount ?></div>
-                            </div>
-                            <div class="info-card">
-                                <div class="info-label">Delivery Status</div>
-                                <div class="info-value" style="color: #2e7d32;">Successful</div>
-                            </div>
-                            <div class="info-card">
-                                <div class="info-label">Sent From</div>
-                                <div class="info-value"><?= htmlspecialchars($_SESSION['smtp_user']) ?></div>
+                        <h2 class="section-title">Email Details</h2>
+                        <div class="email-list">
+                            <div class="email-item">
+                                <div class="email-address">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                    <span><strong>Subject:</strong> <?= htmlspecialchars($subject) ?></span>
+                                </div>
                             </div>
                         </div>
                     </section>
 
-                    <!-- Recipients table -->
                     <?php if (!empty($successEmails)): ?>
                     <section class="article-section">
-                        <h2 class="section-title">Recipient Details</h2>
-                        <table class="recipients-table">
-                            <thead>
-                                <tr>
-                                    <th>Type</th>
-                                    <th>Email Address</th>
-                                    <th style="text-align: center;">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($successEmails as $email): ?>
-                                <tr>
-                                    <td>
-                                        <span class="type-label"><?= $email['type'] ?></span>
-                                    </td>
-                                    <td><?= htmlspecialchars($email['email']) ?></td>
-                                    <td style="text-align: center;">
-                                        <i class="fa-solid fa-circle-check check-icon"></i>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
+                        <h2 class="section-title">Recipients (<?= $successCount ?>)</h2>
+                        <div class="email-list">
+                            <?php foreach ($successEmails as $email): ?>
+                            <div class="email-item">
+                                <div class="email-address">
+                                    <i class="fa-solid fa-user"></i>
+                                    <span><?= htmlspecialchars($email['email']) ?></span>
+                                </div>
+                                <span class="email-type"><?= $email['type'] ?></span>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
                     </section>
                     <?php endif; ?>
 
-                    <!-- Action buttons -->
+                    <?php if (!empty($failedEmails)): ?>
+                    <section class="article-section">
+                        <h2 class="section-title">Failed Recipients (<?= $failureCount ?>)</h2>
+                        <div class="error-box">
+                            <div class="error-title">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                The following recipients could not be added:
+                            </div>
+                            <?php foreach ($failedEmails as $failed): ?>
+                            <div class="error-message">
+                                <strong><?= htmlspecialchars($failed['email']) ?></strong> (<?= $failed['type'] ?>): <?= htmlspecialchars($failed['reason']) ?>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </section>
+                    <?php endif; ?>
+
                     <div class="article-actions">
                         <a href="index.php" class="btn btn-primary">
-                            <i class="fa-solid fa-paper-plane"></i>
+                            <i class="fa-solid fa-plus"></i>
                             Compose New Email
                         </a>
-                        <a href="index.php" class="btn btn-secondary">
-                            <i class="fa-solid fa-house"></i>
-                            Return to Dashboard
+                        <a href="sent_history.php" class="btn btn-secondary">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                            View Sent History
                         </a>
                     </div>
                 </article>
@@ -625,7 +649,7 @@ function showResultPage($subject, $successEmails, $failedEmails) {
 }
 
 /**
- * Show error page with Nature.com-inspired design
+ * Show error page
  */
 function showErrorPage($errorMessage) {
     $userEmail = $_SESSION['smtp_user'];
@@ -636,7 +660,7 @@ function showErrorPage($errorMessage) {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Email Delivery Error</title>
+        <title>Email Delivery Failed</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Harding:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -684,20 +708,17 @@ function showErrorPage($errorMessage) {
             }
 
             .breadcrumb {
-                font-size: 13px;
+                font-size: 14px;
                 color: #666;
-                margin-bottom: 8px;
-                font-weight: 400;
+                margin-bottom: 12px;
             }
 
             .breadcrumb a {
                 color: #0973dc;
                 text-decoration: none;
-                transition: color 0.2s;
             }
 
             .breadcrumb a:hover {
-                color: #006bb3;
                 text-decoration: underline;
             }
 
