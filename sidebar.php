@@ -123,7 +123,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         }
 
         .nav-item.active .material-icons {
-            color: var(--nature-red);
+            color: black;
         }
 
         .nav-section-title {
