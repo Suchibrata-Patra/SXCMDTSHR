@@ -1,317 +1,271 @@
 <?php
 $current_page = basename($_SERVER['PHP_SELF'], '.php');
 $userEmail = $_SESSION['smtp_user'] ?? 'user@example.com';
-$userInitial = strtoupper(substr($userEmail, 0, 1));
 
-require_once 'db_config.php';
+require_once __DIR__ . '/../db_config.php';
 $sidebarLabels = getLabelCounts($userEmail);
 $unlabeledCount = getUnlabeledEmailCount($userEmail);
 ?>
-<!DOCTYPE html>
-<html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@700&family=Inter:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
+<!-- Sidebar Styles -->
+<style>
+    :root {
+        --sidebar-width: 280px;
+        --nature-red: #a1021c;
+        --nature-ink: #111;
+        --glass-bg: rgba(255, 255, 255, 0.7);
+        --glass-border: rgba(255, 255, 255, 0.3);
+        --hover-bg: rgba(255, 255, 255, 0.35);
+    }
 
-    <style>
-        :root {
-            --sidebar-width: 280px;
-            --nature-red: #a10420;
-            --inst-black: #1a1a1a;
-            --inst-gray: #555555;
-            --inst-border: #d1d1d1;
-            --inst-bg: #ffffff;
-            --hover-bg: #f8f8f8;
-            --z-index-sidebar: 1000;
+    /* Global page offset for when sidebar is included */
+    body {
+        margin-left: var(--sidebar-width);
+        font-family: "Inter", sans-serif;
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+        body {
+            margin-left: 0;
         }
+    }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    /* Sidebar Container */
+    .sidebar {
+        width: var(--sidebar-width);
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        backdrop-filter: blur(16px);
+        background: var(--glass-bg);
+        border-right: 1px solid var(--glass-border);
+        z-index: 1000;
+        transition: transform .3s ease;
+    }
 
-        /* Mobile Toggle Button - Hidden on Desktop */
-        .mobile-toggle {
-            display: none;
-            position: fixed;
-            top: 15px;
-            left: 15px;
-            z-index: 1001;
-            background: var(--inst-black);
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-        }
-
+    /* Mobile hidden by default */
+    @media (max-width: 768px) {
         .sidebar {
-            width: var(--sidebar-width);
-            background: var(--inst-bg);
-            border-right: 2px solid var(--inst-border);
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            font-family: 'Inter', sans-serif;
-            color: var(--inst-black);
-            transition: transform 0.3s ease;
-            position: sticky;
+            transform: translateX(-100%);
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+    }
+
+    /* Logo Section */
+    .sidebar-header {
+        padding: 28px 22px;
+        border-bottom: 1px solid var(--glass-border);
+    }
+
+    .logo {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        text-decoration: none;
+    }
+
+    .logo-image {
+        width: 52px;
+        height: 52px;
+        border-radius: 4px;
+    }
+
+    .logo-title {
+        font-size: 22px;
+        font-family: "Crimson Pro", serif;
+        font-weight: 700;
+        color: var(--nature-ink);
+    }
+
+    /* Navigation Section */
+    .nav-section {
+        flex: 1;
+        padding: 20px 10px;
+        overflow-y: auto;
+    }
+
+    .nav-item,
+    .label-item {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 12px 16px;
+        font-weight: 600;
+        font-size: 15px;
+        color: var(--nature-ink);
+        border-radius: 8px;
+        text-decoration: none;
+        transition: background .25s ease, padding-left .25s ease;
+    }
+
+    .nav-item:hover,
+    .label-item:hover {
+        background: var(--hover-bg);
+        padding-left: 20px;
+    }
+
+    .nav-item.active {
+        border-left: 4px solid var(--nature-red);
+        background: rgba(161, 2, 28, 0.08);
+    }
+
+    .material-icons {
+        font-size: 22px;
+        color: #444;
+    }
+
+    .nav-item.active .material-icons {
+        color: var(--nature-red);
+    }
+
+    .nav-section-title {
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        color: #444;
+        margin: 20px 16px 6px;
+    }
+
+    .label-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+    }
+
+    /* User Footer */
+    .user-footer {
+        padding: 18px;
+        border-top: 1px solid var(--glass-border);
+        background: rgba(255, 255, 255, 0.35);
+        backdrop-filter: blur(12px);
+    }
+
+    .logout-btn {
+        color: var(--nature-red);
+        border: 2px solid var(--nature-red);
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: 700;
+        text-decoration: none;
+        font-size: 12px;
+    }
+
+    .footer-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 12px;
+    }
+
+    /* Mobile Toggle */
+    .mobile-toggle {
+        display: none;
+    }
+
+    @media (max-width: 768px) {
+        .mobile-toggle {
+            display: block;
+            position: fixed;
+            top: 14px;
+            left: 14px;
+            z-index: 1100;
+            padding: 10px 12px;
+            background: var(--nature-ink);
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .sidebar-overlay {
+            position: fixed;
             top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: none;
         }
 
-        .sidebar-header {
-            padding: 32px 24px;
-            border-bottom: 2px solid var(--inst-border);
-            background-color: #fcfcfc;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            text-decoration: none;
-        }
-
-        .logo-image {
-            width: 52px;
-            height: 52px;
-            object-fit: contain;
-        }
-
-        .logo-title {
-            font-family: 'Crimson Pro', serif;
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--inst-black);
-            line-height: 1.1;
-        }
-
-        .nav-section {
-            flex: 1;
-            padding: 24px 12px;
-            overflow-y: auto;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 12px 16px;
-            text-decoration: none;
-            color: var(--inst-black);
-            font-size: 15px;
-            font-weight: 700;
-            border-radius: 6px;
-            margin-bottom: 4px;
-            transition: all 0.2s ease;
-        }
-
-        .nav-item .material-icons {
-            font-size: 22px;
-            color: var(--inst-gray);
-        }
-
-        .nav-item:hover {
-            background: var(--hover-bg);
-        }
-
-        .nav-item.active {
-            background: #f4f4f4;
-            color: black;
-            border-left: 4px solid var(--nature-red);
-        }
-
-        .nav-item.active .material-icons {
-            color: var(--nature-red);
-        }
-
-        .nav-section-title {
-            font-size: 12px;
-            font-weight: 800;
-            text-transform: uppercase;
-            color: var(--inst-gray);
-            padding: 20px 16px 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .manage-labels-btn {
-            color: var(--nature-red);
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            transition: opacity 0.2s;
-        }
-
-        .label-item {
-            display: flex;
-            align-items: center;
-            padding: 10px 16px;
-            text-decoration: none;
-            color: var(--inst-gray);
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .label-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 2px;
-            margin-right: 12px;
-        }
-
-        .user-footer {
-            padding: 24px;
-            border-top: 2px solid var(--inst-border);
-            background: #f9f9f9;
-        }
-
-        .user-email {
-            font-size: 14px;
-            font-weight: 700;
-            word-break: break-all;
-            margin-bottom: 12px;
+        .sidebar-overlay.active {
             display: block;
         }
+    }
+</style>
 
-        .footer-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+<!-- Mobile Toggle Button -->
+<button class="mobile-toggle" onclick="toggleSidebar()">
+    <span class="material-icons">menu</span>
+</button>
 
-        .logout-btn {
-            color: var(--nature-red);
-            border: 2px solid var(--nature-red);
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 800;
-            text-decoration: none;
-        }
+<div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
-        /* Responsive Breakpoints */
-        @media (max-width: 768px) {
-            .mobile-toggle {
-                display: block;
-            }
+<!-- Sidebar Start -->
+<div class="sidebar" id="globalSidebar">
 
-            .sidebar {
-                position: fixed;
-                left: 0;
-                transform: translateX(-100%);
-                z-index: var(--z-index-sidebar);
-                box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
-            }
+    <div class="sidebar-header">
+        <a href="/index.php" class="logo">
+            <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg"
+                class="logo-image">
+            <div>
+                <div class="logo-title">SXC MDTS</div>
+                <div style="font-size:10px; color:#777;">OFFICIAL PORTAL</div>
+            </div>
+        </a>
+    </div>
 
-            .sidebar.open {
-                transform: translateX(0);
-            }
+    <nav class="nav-section">
 
-            /* Overlay when sidebar is open */
-            .sidebar-overlay {
-                display: none;
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100vw;
-                height: 100vh;
-                background: rgba(0, 0, 0, 0.5);
-                z-index: 999;
-            }
+        <a href="/index.php" class="nav-item <?= ($current_page=='index')?'active':'' ?>">
+            <span class="material-icons">edit_note</span> COMPOSE
+        </a>
 
-            .sidebar-overlay.active {
-                display: block;
-            }
-        }
-    </style>
-</head>
+        <a href="/sent_history.php" class="nav-item <?= ($current_page=='sent_history')?'active':'' ?>">
+            <span class="material-icons">history</span> ALL MAIL
+        </a>
 
-<body>
+        <a href="/send.php" class="nav-item <?= ($current_page=='send')?'active':'' ?>">
+            <span class="material-icons">analytics</span> ANALYTICS
+        </a>
 
-    <button class="mobile-toggle" onclick="toggleSidebar()">
-        <span class="material-icons">menu</span>
-    </button>
+        <div class="nav-section-title">LABELS</div>
 
-    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+        <?php foreach ($sidebarLabels as $label): ?>
+        <a href="/sent_history.php?label_id=<?= $label['id'] ?>" class="label-item">
+            <div class="label-dot" style="background: <?= htmlspecialchars($label['label_color']) ?>"></div>
+            <?= htmlspecialchars($label['label_name']) ?>
+        </a>
+        <?php endforeach; ?>
 
-    <div class="sidebar" id="mainSidebar">
-        <div class="sidebar-header">
-            <a href="index.php" class="logo">
-                <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg"
-                    alt="Institutional Logo" class="logo-image">
-                <div class="logo-text">
-                    <span class="logo-title">SXC MDTS</span>
-                    <span class="logo-subtitle"
-                        style="font-size: 10px; font-weight: 700; color: var(--inst-gray);">OFFICIAL PORTAL</span>
-                </div>
-            </a>
+    </nav>
+
+    <div class="user-footer">
+        <div style="font-size:11px; font-weight:800; color:#666;">Authenticated</div>
+        <div style="font-weight:700; margin:10px 0;">
+            <?= htmlspecialchars($userEmail) ?>
         </div>
 
-        <nav class="nav-section">
-            <a href="index.php" class="nav-item <?= ($current_page == 'index') ? 'active' : ''; ?>">
-                <span class="material-icons">edit_note</span>
-                <span>COMPOSE</span>
+        <div class="footer-actions">
+            <a href="/settings.php" style="text-decoration:none; color:#444; font-size:12px; font-weight:700;">
+                <span class="material-icons" style="font-size:16px;">tune</span> CONFIG
             </a>
-
-            <a href="sent_history.php" class="nav-item <?= ($current_page == 'sent_history') ? 'active' : ''; ?>">
-                <span class="material-icons">history</span>
-                <span>ALL MAIL</span>
-            </a>
-
-            <a href="send.php" class="nav-item <?= ($current_page == 'send') ? 'active' : ''; ?>">
-                <span class="material-icons">analytics</span>
-                <span>ANALYTICS</span>
-            </a>
-
-            <div class="nav-section-title">
-                LABELS
-                <a href="manage_labels.php" class="manage-labels-btn" title="Manage Labels">
-                    <span class="material-icons" style="font-size: 18px;">settings</span>
-                </a>
-            </div>
-
-            <?php foreach ($sidebarLabels as $label): ?>
-            <a href="sent_history.php?label_id=<?= $label['id'] ?>" class="label-item">
-                <div class="label-dot" style="background-color: <?= htmlspecialchars($label['label_color']) ?>;"></div>
-                <span>
-                    <?= htmlspecialchars($label['label_name']) ?>
-                </span>
-            </a>
-            <?php endforeach; ?>
-        </nav>
-
-        <div class="user-footer">
-            <span
-                style="font-size: 10px; font-weight: 800; color: var(--inst-gray); text-transform: uppercase;">Authenticated</span>
-            <span class="user-email">
-                <?= htmlspecialchars($userEmail) ?>
-            </span>
-
-            <div class="footer-actions">
-                <a href="settings.php" class="action-link"
-                    style="text-decoration:none; color: var(--inst-gray); font-size: 12px; font-weight:700;">
-                    <span class="material-icons" style="font-size:16px; vertical-align:middle;">tune</span> CONFIG
-                </a>
-                <a href="logout.php" class="logout-btn">SIGN OUT</a>
-            </div>
+            <a href="/logout.php" class="logout-btn">SIGN OUT</a>
         </div>
     </div>
 
-    <script>
-        function toggleSidebar() {
-            document.getElementById('mainSidebar').classList.toggle('open');
-            document.querySelector('.sidebar-overlay').classList.toggle('active');
-        }
-    </script>
-</body>
+</div>
 
-</html>
+<!-- Sidebar JS -->
+<script>
+    function toggleSidebar() {
+        document.getElementById("globalSidebar").classList.toggle("open");
+        document.querySelector(".sidebar-overlay").classList.toggle("active");
+    }
+</script>
