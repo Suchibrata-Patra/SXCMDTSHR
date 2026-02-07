@@ -333,7 +333,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
                 </div>
 
                 <span class="user-email"
-                    style="display: block; font-size: 12px; font-weight: 600; color: #1d1d1f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 2px;">
+                    style="display: block; font-size: 12px; font-weight: 600; color: #6e6e6e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 2px;">
                     <?= htmlspecialchars($userEmail) ?>
                 </span>
             </div>
