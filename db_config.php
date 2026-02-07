@@ -2,6 +2,7 @@
 // db_config.php - Database configuration for sent emails tracking
 
 function getDatabaseConnection() {
+    // Using your actual database credentials
     $host = env("DB_HOST", "localhost");
     $dbname = env("DB_NAME", "u955994755_SXC_MDTS");
     $username = env("DB_USER", "u955994755_DB_supremacy");
@@ -45,7 +46,7 @@ function saveSentEmail($data) {
         
         $stmt = $pdo->prepare($sql);
         
-        return $stmt->execute([
+        $result = $stmt->execute([
             ':sender_email' => $data['sender_email'],
             ':recipient_email' => $data['recipient_email'],
             ':cc_list' => $data['cc_list'],
@@ -56,8 +57,15 @@ function saveSentEmail($data) {
             ':attachment_names' => $data['attachment_names']
         ]);
         
+        if ($result) {
+            error_log("Email saved to database successfully. ID: " . $pdo->lastInsertId());
+        }
+        
+        return $result;
+        
     } catch (PDOException $e) {
         error_log("Error saving sent email: " . $e->getMessage());
+        error_log("SQL State: " . $e->getCode());
         return false;
     }
 }

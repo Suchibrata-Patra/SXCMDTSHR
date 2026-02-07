@@ -113,6 +113,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         // Load template
         $templatePath = 'templates/template1.html';
+        $finalHtml = '';
 
         if (file_exists($templatePath)) {
             $htmlStructure = file_get_contents($templatePath);
@@ -156,6 +157,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $mail->send();
         
         // --- DATABASE LOGGING: Save sent email to database ---
+        error_log("=== ATTEMPTING TO SAVE EMAIL TO DATABASE ===");
+        error_log("Sender: " . $_SESSION['smtp_user']);
+        error_log("Recipient: " . $recipient);
+        error_log("Subject: " . $subject);
+        
         $emailData = [
             'sender_email' => $_SESSION['smtp_user'],
             'recipient_email' => $recipient,
@@ -169,14 +175,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         // Attempt to save to database (non-blocking - email already sent)
         $dbSaved = saveSentEmail($emailData);
+        
         if (!$dbSaved) {
+            error_log("=== DATABASE SAVE FAILED ===");
             error_log("Warning: Email sent successfully but failed to save to database");
+        } else {
+            error_log("=== DATABASE SAVE SUCCESS ===");
+            error_log("Email successfully saved to database");
         }
         
         // Generate response HTML
         showResultPage($subject, $successEmails, $failedEmails, $dbSaved);
 
     } catch (Exception $e) {
+        error_log("=== EMAIL SEND FAILED ===");
+        error_log("Error: " . $e->getMessage());
         showErrorPage("Message could not be sent. Mailer Error: {$mail->ErrorInfo}");
     }
 } else {
