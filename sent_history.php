@@ -1,21 +1,18 @@
 <?php
-// sent_history.php - Gmail-style list with option to open in same or new tab
+// sent_history.php - Nature Journal Inspired UI
 session_start();
 require 'config.php';
 require 'db_config.php';
 
-// Security check
 if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     header("Location: login.php");
     exit();
 }
 
-// Pagination
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
-$perPage = 50;
+$perPage = 25; // Academic lists are usually cleaner with fewer items
 $offset = ($page - 1) * $perPage;
 
-// Get sent emails
 $userEmail = $_SESSION['smtp_user'];
 $sentEmails = getSentEmails($userEmail, $perPage, $offset);
 $totalEmails = getSentEmailCount($userEmail);
@@ -26,459 +23,226 @@ $totalPages = ceil($totalEmails / $perPage);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sent - SXC MDTS</title>
+    <title>Sent Archive | SXC MDTS</title>
     
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.typekit.net/ovm6vst.css"> <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
-        /* Scoped styles to avoid sidebar conflicts */
-        #sent-history-content * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
+        :root {
+            --nature-red: #e4002b;
+            --nature-black: #222222;
+            --nature-grey: #666666;
+            --nature-light-grey: #f3f3f3;
+            --nature-border: #e6e6e6;
         }
-        
-        #sent-history-content { 
-            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            background-color: #f6f8fc;
-            color: #202124;
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #fff;
+            color: var(--nature-black);
             display: flex;
-            flex-direction: column;
             height: 100vh;
-            line-height: 1.5;
-            font-size: 14px;
         }
 
-        #sent-history-content .top-bar {
-            background: #ffffff;
-            border-bottom: 1px solid #e0e0e0;
-            padding: 12px 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            min-height: 64px;
-        }
-
-        #sent-history-content .top-bar-left {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        #sent-history-content .page-title {
-            font-family: 'Google Sans', sans-serif;
-            font-size: 22px;
-            font-weight: 400;
-            color: #202124;
-        }
-
-        #sent-history-content .email-count {
-            font-size: 13px;
-            color: #5f6368;
-        }
-
-        #sent-history-content .top-bar-right {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        #sent-history-content .content-area {
+        #main-wrapper {
             flex: 1;
             overflow-y: auto;
-            background: #f6f8fc;
+            padding: 40px 5%;
         }
 
-        #sent-history-content .emails-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0;
-        }
-
-        #sent-history-content .email-list {
-            background: white;
-            margin: 0;
-            box-shadow: inset 0 -1px 0 0 #e0e0e0;
-        }
-
-        #sent-history-content .email-row {
+        /* Header Section */
+        .journal-header {
+            border-bottom: 3px solid var(--nature-black);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
             display: flex;
-            align-items: center;
-            padding: 12px 24px;
-            border-bottom: 1px solid #e0e0e0;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            text-decoration: none;
-            color: inherit;
-            min-height: 56px;
+            justify-content: space-between;
+            align-items: flex-end;
         }
 
-        #sent-history-content .email-row:hover {
-            box-shadow: inset 1px 0 0 #dadce0, inset -1px 0 0 #dadce0, 
-                        0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
-            z-index: 1;
+        .journal-title-section h1 {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 5px;
         }
 
-        #sent-history-content .email-row:active {
-            background: #f8f9fa;
-        }
-
-        #sent-history-content .email-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex: 0 0 200px;
-            min-width: 0;
-        }
-
-        #sent-history-content .email-recipient {
-            font-weight: 500;
-            color: #202124;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            font-size: 14px;
-        }
-
-        #sent-history-content .email-middle {
-            flex: 1;
-            min-width: 0;
-            padding: 0 16px;
-        }
-
-        #sent-history-content .email-subject {
-            font-weight: 500;
-            color: #202124;
-            margin-bottom: 2px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        #sent-history-content .email-preview {
-            font-size: 13px;
-            color: #5f6368;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        #sent-history-content .email-right {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            flex: 0 0 auto;
-        }
-
-        #sent-history-content .email-meta {
-            display: flex;
-            align-items: center;
-            gap: 12px;
+        .journal-subtitle {
+            text-transform: uppercase;
+            letter-spacing: 1px;
             font-size: 12px;
-            color: #5f6368;
+            font-weight: 700;
+            color: var(--nature-red);
         }
 
-        #sent-history-content .email-date {
-            min-width: 100px;
-            text-align: right;
-            font-size: 12px;
-            color: #5f6368;
-            white-space: nowrap;
+        /* List Styling */
+        .article-list {
+            list-style: none;
+            max-width: 1000px; /* Aligned to Nature's readable line length */
         }
 
-        #sent-history-content .email-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 2px 8px;
-            background: #e8f0fe;
-            color: #1967d2;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 500;
+        .article-item {
+            padding: 25px 0;
+            border-bottom: 1px solid var(--nature-border);
+            transition: background 0.2s;
         }
 
-        #sent-history-content .empty-state {
-            text-align: center;
-            padding: 120px 20px;
-            background: white;
-            margin: 24px;
-            border-radius: 8px;
+        .article-item:hover .article-link-title {
+            color: var(--nature-red);
+            text-decoration: underline;
         }
 
-        #sent-history-content .empty-state i {
-            font-size: 72px;
-            color: #dadce0;
-            margin-bottom: 24px;
-        }
-
-        #sent-history-content .empty-state h2 {
-            font-family: 'Google Sans', sans-serif;
-            font-size: 22px;
-            font-weight: 400;
-            color: #202124;
-            margin-bottom: 12px;
-        }
-
-        #sent-history-content .empty-state p {
-            font-size: 14px;
-            color: #5f6368;
-            margin-bottom: 24px;
-        }
-
-        #sent-history-content .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            padding: 24px;
-            background: white;
-            margin-top: 1px;
-        }
-
-        #sent-history-content .page-link {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 36px;
-            height: 36px;
-            padding: 0 12px;
-            background: white;
-            border: 1px solid #dadce0;
-            border-radius: 4px;
-            color: #202124;
-            text-decoration: none;
+        .article-meta {
             font-size: 13px;
-            font-weight: 500;
-            transition: all 0.15s;
-        }
-
-        #sent-history-content .page-link:hover {
-            background: #f8f9fa;
-            border-color: #bdc1c6;
-        }
-
-        #sent-history-content .page-link.active {
-            background: #1a73e8;
-            border-color: #1a73e8;
-            color: white;
-        }
-
-        #sent-history-content .page-link.disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            pointer-events: none;
-        }
-
-        #sent-history-content .btn {
-            display: inline-flex;
+            color: var(--nature-grey);
+            margin-bottom: 10px;
+            display: flex;
+            gap: 15px;
             align-items: center;
-            gap: 8px;
+        }
+
+        .article-type {
+            font-weight: 700;
+            color: var(--nature-black);
+            text-transform: capitalize;
+        }
+
+        .article-link-title {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--nature-black);
+            text-decoration: none;
+            display: block;
+            margin-bottom: 10px;
+            line-height: 1.3;
+        }
+
+        .article-description {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #444;
+            margin-bottom: 15px;
+        }
+
+        .article-footer {
+            display: flex;
+            gap: 20px;
+            font-size: 13px;
+        }
+
+        .author-name {
+            font-weight: 700;
+        }
+
+        /* Pagination */
+        .pagination-nature {
+            margin-top: 50px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .page-btn {
             padding: 8px 16px;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: 500;
+            border: 1px solid var(--nature-border);
             text-decoration: none;
-            transition: all 0.15s;
-            border: 1px solid;
-            cursor: pointer;
-            font-family: 'Google Sans', sans-serif;
+            color: var(--nature-black);
+            font-weight: 700;
+            font-size: 14px;
         }
 
-        #sent-history-content .btn-primary {
-            background: #1a73e8;
+        .page-btn.active {
+            background: var(--nature-black);
             color: white;
-            border-color: #1a73e8;
+            border-color: var(--nature-black);
         }
 
-        #sent-history-content .btn-primary:hover {
-            background: #1765cc;
-            border-color: #1765cc;
-            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
-        }
-
-        #sent-history-content .content-area::-webkit-scrollbar {
-            width: 12px;
-        }
-
-        #sent-history-content .content-area::-webkit-scrollbar-track {
-            background: #f6f8fc;
-        }
-
-        #sent-history-content .content-area::-webkit-scrollbar-thumb {
-            background: #dadce0;
-            border-radius: 6px;
-            border: 3px solid #f6f8fc;
-        }
-
-        #sent-history-content .content-area::-webkit-scrollbar-thumb:hover {
-            background: #bdc1c6;
+        .compose-btn {
+            background-color: var(--nature-red);
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 1px;
         }
 
         @media (max-width: 768px) {
-            #sent-history-content .email-left {
-                flex: 0 0 120px;
-            }
-
-            #sent-history-content .email-meta {
-                display: none;
-            }
-
-            #sent-history-content .top-bar {
-                padding: 12px 16px;
-            }
-
-            #sent-history-content .email-row {
-                padding: 12px 16px;
-            }
+            .journal-header { flex-direction: column; align-items: flex-start; gap: 20px; }
         }
     </style>
 </head>
-<body style="margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden;">
+<body>
     <?php include 'sidebar.php'; ?>
 
-    <div id="sent-history-content">
-        <div class="top-bar">
-            <div class="top-bar-left">
-                <h1 class="page-title">Sent</h1>
-                <span class="email-count"><?= number_format($totalEmails) ?> email<?= $totalEmails != 1 ? 's' : '' ?></span>
+    <div id="main-wrapper">
+        <header class="journal-header">
+            <div class="journal-title-section">
+                <p class="journal-subtitle">Archive & Sent Communication</p>
+                <h1>Sent Emails</h1>
+                <p style="color: var(--nature-grey); font-size: 14px;">
+                    Showing <?= count($sentEmails) ?> of <?= $totalEmails ?> records
+                </p>
             </div>
-            <div class="top-bar-right">
-                <a href="index.php" class="btn btn-primary">
-                    <i class="fa-solid fa-plus"></i>
-                    Compose
-                </a>
-            </div>
-        </div>
+            <a href="index.php" class="compose-btn">New Correspondence</a>
+        </header>
 
-        <div class="content-area">
-            <div class="emails-container">
-                <?php if (empty($sentEmails)): ?>
-                    <div class="empty-state">
-                        <i class="fa-regular fa-envelope"></i>
-                        <h2>No sent emails</h2>
-                        <p>Emails you send will appear here</p>
-                        <a href="index.php" class="btn btn-primary">
-                            <i class="fa-solid fa-plus"></i>
-                            Send your first email
-                        </a>
-                    </div>
-                <?php else: ?>
-                    <div class="email-list">
-                        <?php foreach ($sentEmails as $email): ?>
-                        <a href="view_sent_email.php?id=<?= $email['id'] ?>" class="email-row" target="_blank">
-                            <div class="email-left">
-                                <span class="email-recipient">
-                                    <?= htmlspecialchars($email['recipient_email']) ?>
-                                </span>
-                            </div>
-                            
-                            <div class="email-middle">
-                                <div class="email-subject">
-                                    <?= htmlspecialchars($email['subject']) ?>
-                                    <?php if (!empty($email['attachment_names'])): ?>
-                                    <i class="fa-solid fa-paperclip" style="color: #5f6368; font-size: 12px;"></i>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="email-preview">
-                                    <?php if (!empty($email['article_title'])): ?>
-                                        <?= htmlspecialchars($email['article_title']) ?> —
-                                    <?php endif; ?>
-                                    <?= htmlspecialchars(strip_tags(substr($email['message_body'], 0, 100))) ?>...
-                                </div>
-                            </div>
-                            
-                            <div class="email-right">
-                                <div class="email-meta">
-                                    <?php if (!empty($email['cc_list'])): ?>
-                                    <span class="email-badge">
-                                        <i class="fa-solid fa-copy"></i>
-                                        CC
-                                    </span>
-                                    <?php endif; ?>
-                                    <?php if (!empty($email['bcc_list'])): ?>
-                                    <span class="email-badge">
-                                        <i class="fa-solid fa-user-secret"></i>
-                                        BCC
-                                    </span>
-                                    <?php endif; ?>
-                                </div>
-                                <span class="email-date">
-                                    <?php
-                                    $sentTime = strtotime($email['sent_at']);
-                                    $now = time();
-                                    $diff = $now - $sentTime;
-                                    
-                                    if ($diff < 86400) {
-                                        echo date('g:i A', $sentTime);
-                                    } elseif ($diff < 604800) {
-                                        echo date('D', $sentTime);
-                                    } elseif (date('Y', $sentTime) == date('Y')) {
-                                        echo date('M j', $sentTime);
-                                    } else {
-                                        echo date('M j, Y', $sentTime);
-                                    }
-                                    ?>
-                                </span>
-                            </div>
-                        </a>
-                        <?php endforeach; ?>
-                    </div>
-
-                    <?php if ($totalPages > 1): ?>
-                    <div class="pagination">
-                        <?php if ($page > 1): ?>
-                            <a href="?page=<?= $page - 1 ?>" class="page-link">
-                                <i class="fa-solid fa-chevron-left"></i>
-                            </a>
-                        <?php else: ?>
-                            <span class="page-link disabled">
-                                <i class="fa-solid fa-chevron-left"></i>
-                            </span>
+        <main class="article-list">
+            <?php if (empty($sentEmails)): ?>
+                <div style="padding: 50px 0; text-align: center; border: 1px dashed #ccc;">
+                    <p>No records found in the current archive.</p>
+                </div>
+            <?php else: ?>
+                <?php foreach ($sentEmails as $email): ?>
+                <article class="article-item">
+                    <div class="article-meta">
+                        <span class="article-type">Sent Log</span>
+                        <span class="article-date">
+                            <i class="fa-regular fa-calendar"></i> 
+                            <?= date('d F Y', strtotime($email['sent_at'])) ?>
+                        </span>
+                        <?php if (!empty($email['attachment_names'])): ?>
+                            <span><i class="fa-solid fa-paperclip"></i> Supplement</span>
                         <?php endif; ?>
+                    </div>
 
-                        <?php
-                        $startPage = max(1, $page - 2);
-                        $endPage = min($totalPages, $page + 2);
-                        
-                        if ($startPage > 1) {
-                            echo '<a href="?page=1" class="page-link">1</a>';
-                            if ($startPage > 2) {
-                                echo '<span class="page-link disabled">...</span>';
-                            }
-                        }
-                        
-                        for ($i = $startPage; $i <= $endPage; $i++): ?>
-                            <a href="?page=<?= $i ?>" class="page-link <?= $i == $page ? 'active' : '' ?>">
-                                <?= $i ?>
-                            </a>
-                        <?php endfor;
-                        
-                        if ($endPage < $totalPages) {
-                            if ($endPage < $totalPages - 1) {
-                                echo '<span class="page-link disabled">...</span>';
-                            }
-                            echo '<a href="?page=' . $totalPages . '" class="page-link">' . $totalPages . '</a>';
-                        }
+                    <a href="view_sent_email.php?id=<?= $email['id'] ?>" class="article-link-title" target="_blank">
+                        <?= htmlspecialchars($email['subject']) ?>
+                    </a>
+
+                    <div class="article-description">
+                        <?php 
+                            $snippet = strip_tags($email['message_body']);
+                            echo htmlspecialchars(substr($snippet, 0, 180)) . '...';
                         ?>
+                    </div>
 
-                        <?php if ($page < $totalPages): ?>
-                            <a href="?page=<?= $page + 1 ?>" class="page-link">
-                                <i class="fa-solid fa-chevron-right"></i>
-                            </a>
-                        <?php else: ?>
-                            <span class="page-link disabled">
-                                <i class="fa-solid fa-chevron-right"></i>
+                    <div class="article-footer">
+                        <span>Recipient: <span class="author-name"><?= htmlspecialchars($email['recipient_email']) ?></span></span>
+                        <?php if (!empty($email['article_title'])): ?>
+                            <span style="font-style: italic; color: var(--nature-grey);">
+                                Ref: <?= htmlspecialchars($email['article_title']) ?>
                             </span>
                         <?php endif; ?>
                     </div>
-                    <?php endif; ?>
+                </article>
+                <?php endforeach; ?>
+
+                <?php if ($totalPages > 1): ?>
+                <nav class="pagination-nature">
+                    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                        <a href="?page=<?= $i ?>" class="page-btn <?= $i == $page ? 'active' : '' ?>">
+                            <?= $i ?>
+                        </a>
+                    <?php endfor; ?>
+                </nav>
                 <?php endif; ?>
-            </div>
-        </div>
+            <?php endif; ?>
+        </main>
     </div>
 </body>
 </html>
