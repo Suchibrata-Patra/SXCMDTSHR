@@ -275,7 +275,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             <!-- <div class="nav-section-title">Workspace</div> -->
 
             <a href="index.php" class="nav-item <?= ($current_page == 'index') ? 'active' : ''; ?>">
-                <span class="material-icons-round">Edit</span>
+                <span class="material-icons-round">edit</span>
                 <span>Compose</span>
             </a>
             <a href="sent_history.php" class="nav-item <?= ($current_page == 'sent_history') ? 'active' : ''; ?>">
