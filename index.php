@@ -573,7 +573,7 @@ $defaultSignature = json_encode($settings['signature']);
             <!-- Article-style compose form -->
             <div class="compose-container">
                 <header class="compose-header">
-                    <h1 class="compose-title">Compose New Message</h1>
+                    <h1 class="compose-title">Compose New Mail</h1>
                     <p class="compose-subtitle">Create and send professional emails with rich formatting, attachments, and custom signatures.</p>
                 </header>
 
