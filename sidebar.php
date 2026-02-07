@@ -9,15 +9,19 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
 
     <style>
         :root {
             --sidebar-width: 260px;
-            --nature-red: #e4002b; /* Signature Nature Active Color */
+            --nature-red: #6b0215;
+            /* Signature Nature Active Color */
             --inst-black: #1a1a1a;
             --inst-gray: #555555;
             --inst-border: #d1d1d1;
@@ -51,7 +55,8 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         }
 
         .logo-image {
-            width: 52px; /* Restored bigger logo */
+            width: 52px;
+            /* Restored bigger logo */
             height: 52px;
             object-fit: contain;
         }
@@ -94,7 +99,8 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             text-decoration: none;
             color: var(--inst-black);
             font-size: 15px;
-            font-weight: 600; /* Bold design */
+            font-weight: 600;
+            /* Bold design */
             border-radius: 6px;
             margin-bottom: 4px;
             transition: all 0.2s ease;
@@ -212,12 +218,14 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         }
     </style>
 </head>
+
 <body>
 
     <div class="sidebar">
         <div class="sidebar-header">
             <a href="index.php" class="logo">
-                <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg" alt="Institutional Logo" class="logo-image">
+                <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg"
+                    alt="Institutional Logo" class="logo-image">
                 <div class="logo-text">
                     <span class="logo-title">SXC MDTS</span>
                     <span class="logo-subtitle">Mail Delivery System</span>
@@ -243,17 +251,21 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
 
             <div class="nav-section-title">Institutional Labels</div>
             <?php foreach ($sidebarLabels as $label): ?>
-                <a href="sent_history.php?label_id=<?= $label['id'] ?>" class="label-item">
-                    <div class="label-dot" style="background-color: <?= htmlspecialchars($label['label_color']) ?>;"></div>
-                    <span><?= htmlspecialchars($label['label_name']) ?></span>
-                </a>
+            <a href="sent_history.php?label_id=<?= $label['id'] ?>" class="label-item">
+                <div class="label-dot" style="background-color: <?= htmlspecialchars($label['label_color']) ?>;"></div>
+                <span>
+                    <?= htmlspecialchars($label['label_name']) ?>
+                </span>
+            </a>
             <?php endforeach; ?>
         </nav>
 
         <div class="user-footer">
             <div class="user-profile">
                 <span class="user-email-label">Authenticated User</span>
-                <span class="user-email"><?= htmlspecialchars($userEmail) ?></span>
+                <span class="user-email">
+                    <?= htmlspecialchars($userEmail) ?>
+                </span>
             </div>
 
             <div class="footer-actions">
@@ -267,4 +279,5 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
     </div>
 
 </body>
+
 </html>
