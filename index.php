@@ -313,14 +313,14 @@ $defaultSignature = json_encode($settings['signature']);
         }
 
         .btn-attach-list {
-            background: #fff;
+            background: black;
             border: 1px solid #d0d0d0;
             padding: 12px 18px;
-            border-radius: 3px;
+            border-radius: 5px;
             cursor: pointer;
             font-size: 13px;
             font-weight: 500;
-            color: #191919;
+            color: white;
             white-space: nowrap;
             transition: all 0.2s;
             display: flex;
