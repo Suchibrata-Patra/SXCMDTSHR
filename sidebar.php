@@ -171,7 +171,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         .label-dot {
             width: 15px;
             height: 15px;
-            border-radius: 50%;
+            border-radius: 10%;
             /* border: 2px solid rgba(255,255,255,0.8); */
             /* box-shadow: 0 0 0 1px rgba(0,0,0,0.05); */
         }
