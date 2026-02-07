@@ -20,7 +20,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         :root {
             --sidebar-width: 280px;
             --apple-blue: #007AFF;
-            --glass-sidebar: rgba(255, 255, 255, 0.45); 
+            --glass-sidebar: rgba(255, 255, 255, 0.45);
             --glass-border: rgba(0, 0, 0, 0.07);
             --text-main: #1d1d1f;
             --text-secondary: #86868b;
@@ -28,7 +28,11 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             --transition-premium: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
             font-family: 'Inter', -apple-system, sans-serif;
@@ -68,7 +72,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             width: 42px;
             height: 42px;
             border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
             filter: grayscale(0.2);
         }
 
@@ -96,7 +100,9 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             scrollbar-width: none;
         }
 
-        .nav-section::-webkit-scrollbar { display: none; }
+        .nav-section::-webkit-scrollbar {
+            display: none;
+        }
 
         .nav-item {
             display: flex;
@@ -179,7 +185,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         .label-count {
             font-size: 10px;
             font-weight: 700;
-            background: rgba(0,0,0,0.06);
+            background: rgba(0, 0, 0, 0.06);
             color: var(--text-secondary);
             padding: 2px 8px;
             border-radius: 20px;
@@ -196,16 +202,16 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             background: white;
             padding: 14px;
             border-radius: 16px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.03);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.03);
             margin-bottom: 12px;
-            border: 1px solid rgba(255,255,255,0.7);
+            border: 1px solid rgba(255, 255, 255, 0.7);
         }
 
         .auth-badge img {
             display: inline-block;
-            width:30px;
-            height:auto;
-        
+            width: 30px;
+            height: auto;
+
         }
 
         .user-email {
@@ -247,7 +253,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
 
         .logout-btn:hover {
             background: #000;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
         }
     </style>
 </head>
@@ -256,7 +262,8 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
     <div class="sidebar" id="mainSidebar">
         <div class="sidebar-header">
             <a href="index.php" class="logo">
-                <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg" class="logo-image">
+                <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg"
+                    class="logo-image">
                 <div class="logo-text">
                     <span class="logo-title">SXC MDTS</span>
                     <span class="logo-subtitle">Faculty Console</span>
@@ -266,7 +273,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
 
         <nav class="nav-section">
             <!-- <div class="nav-section-title">Workspace</div> -->
-            
+
             <a href="index.php" class="nav-item <?= ($current_page == 'index') ? 'active' : ''; ?>">
                 <span class="material-icons-round">edit_note</span>
                 <span>Compose</span>
@@ -294,42 +301,55 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             <?php foreach ($sidebarLabels as $label): ?>
             <a href="sent_history.php?label_id=<?= $label['id'] ?>" class="label-item">
                 <div class="label-content">
-                    <div class="label-dot" style="background-color: <?= htmlspecialchars($label['label_color']) ?>;"></div>
-                    <span><?= htmlspecialchars($label['label_name']) ?></span>
+                    <div class="label-dot" style="background-color: <?= htmlspecialchars($label['label_color']) ?>;">
+                    </div>
+                    <span>
+                        <?= htmlspecialchars($label['label_name']) ?>
+                    </span>
                 </div>
                 <?php if (isset($label['count']) && $label['count'] > 0): ?>
-                <span class="label-count"><?= $label['count'] ?></span>
+                <span class="label-count">
+                    <?= $label['count'] ?>
+                </span>
                 <?php endif; ?>
             </a>
             <?php endforeach; ?>
         </nav>
 
-        <div class="user-footer" style="padding: 20px; border-top: 1px solid rgba(0,0,0,0.07); background: rgba(255,255,255,0.2);">
-    <div class="user-card" style="background: #ffffff; padding: 14px; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-bottom: 12px;">
-        
-        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-            <span class="auth-badge" style="display: flex; align-items: center;">
-                <img src="/Assets/image/Verified_badge.png" alt="Verified" style="width: 14px; height: 14px; object-fit: contain;">
-            </span>
-            <span style="font-size: 10px; font-weight: 800; color: #34C759; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">
-                Verified Account
-            </span>
+        <div class="user-footer"
+            style="padding: 20px; border-top: 1px solid rgba(0,0,0,0.07); background: rgba(255,255,255,0.2);">
+            <div class="user-card"
+                style="background: #ffffff; padding: 14px; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-bottom: 12px;">
+
+                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                    <span class="auth-badge" style="display: flex; align-items: center;">
+                        <img src="/Assets/image/Verified_badge.png" alt="Verified"
+                            style="width: 14px; height: 14px; object-fit: contain;">
+                    </span>
+                    <span
+                        style="font-size: 10px; font-weight: 800; color: #3090de; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">
+                        Verified Account
+                    </span>
+                </div>
+
+                <span class="user-email"
+                    style="display: block; font-size: 12px; font-weight: 600; color: #1d1d1f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 2px;">
+                    <?= htmlspecialchars($userEmail) ?>
+                </span>
+            </div>
+
+            <div class="footer-actions" style="display: flex; gap: 8px;">
+                <a href="settings.php" class="action-btn config-btn"
+                    style="flex: 1; padding: 10px; border-radius: 10px; text-decoration: none; font-size: 12px; font-weight: 600; text-align: center; background: #ffffff; color: #1d1d1f; border: 1px solid rgba(0,0,0,0.1); transition: 0.2s;">
+                    Settings
+                </a>
+                <a href="logout.php" class="action-btn logout-btn"
+                    style="flex: 1; padding: 10px; border-radius: 10px; text-decoration: none; font-size: 12px; font-weight: 600; text-align: center; background: #1d1d1f; color: #ffffff; transition: 0.2s;">
+                    Sign Out
+                </a>
+            </div>
         </div>
-
-        <span class="user-email" style="display: block; font-size: 12px; font-weight: 600; color: #1d1d1f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 2px;">
-            <?= htmlspecialchars($userEmail) ?>
-        </span>
-    </div>
-
-    <div class="footer-actions" style="display: flex; gap: 8px;">
-        <a href="settings.php" class="action-btn config-btn" style="flex: 1; padding: 10px; border-radius: 10px; text-decoration: none; font-size: 12px; font-weight: 600; text-align: center; background: #ffffff; color: #1d1d1f; border: 1px solid rgba(0,0,0,0.1); transition: 0.2s;">
-            Settings
-        </a>
-        <a href="logout.php" class="action-btn logout-btn" style="flex: 1; padding: 10px; border-radius: 10px; text-decoration: none; font-size: 12px; font-weight: 600; text-align: center; background: #1d1d1f; color: #ffffff; transition: 0.2s;">
-            Sign Out
-        </a>
-    </div>
-</div>
     </div>
 </body>
+
 </html>
