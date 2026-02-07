@@ -311,7 +311,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
 
         <div class="user-footer">
             <div class="user-card">
-                <span class="auth-badge"><img src="SXCMDTSHR/Assets/image/Verified_badge.png" alt=""></span>
+                <span class="auth-badge"><img src="/Assets/image/Verified_badge.png" alt=""></span>
                 <!-- <span class="auth-badge">Verified Account</span> -->
                 <span class="user-email"><?= htmlspecialchars($userEmail) ?></span>
             </div>
