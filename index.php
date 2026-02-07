@@ -268,7 +268,7 @@ $defaultSignature = json_encode($settings['signature']);
         /* Quill Editor Customization */
         .ql-toolbar.ql-snow {
             border: none;
-            border-bottom: 1px solid #e0e0e0;
+            /* border-bottom: 1px solid #e0e0e0; */
             padding: 12px 14px;
             background: #fafafa;
             font-family: 'Inter', sans-serif;
