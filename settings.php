@@ -2,7 +2,6 @@
 // settings.php
 session_start();
 
-// Security check
 if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     header("Location: login.php");
     exit();
@@ -15,7 +14,7 @@ $settingsFile = 'settings.json';
 $allSettings = file_exists($settingsFile) ? json_decode(file_get_contents($settingsFile), true) : [];
 $userSettings = $allSettings[$_SESSION['smtp_user']] ?? [];
 
-// Institutional Defaults
+// Sophisticated Institutional Defaults
 $settings = array_merge([
     'display_name' => '',
     'designation' => '',
@@ -33,295 +32,329 @@ $settings = array_merge([
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Institutional Configuration | SXC MDTS</title>
+    <title>Protocol Configuration | SXC MDTS</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     
     <style>
         :root {
             --nature-red: #a10420;
-            --inst-black: #1a1a1a;
-            --inst-gray: #555555;
-            --inst-border: #d1d1d1;
-            --inst-bg: #fcfcfc;
+            --glass-black: #000000;
+            --text-muted: #666666;
+            --border-soft: #eeeeee;
+            --bg-neutral: #ffffff;
+            --sidebar-width: 280px;
         }
 
         body { 
             font-family: 'Inter', sans-serif;
-            background-color: #ffffff;
-            color: var(--inst-black);
-            display: flex;
-            height: 100vh;
+            background-color: var(--bg-neutral);
+            color: var(--glass-black);
             margin: 0;
+            display: flex;
+            -webkit-font-smoothing: antialiased;
         }
 
         .main-content {
             flex: 1;
+            padding: 80px 120px;
             overflow-y: auto;
-            background-color: var(--inst-bg);
-            padding: 60px;
         }
 
-        .settings-wrapper {
-            max-width: 900px;
+        .config-wrapper {
+            max-width: 840px;
             margin: 0 auto;
         }
 
-        .page-header {
-            border-bottom: 2px solid var(--inst-black);
-            padding-bottom: 20px;
-            margin-bottom: 40px;
+        /* Editorial Header */
+        .header-stack {
+            margin-bottom: 64px;
+            border-bottom: 1px solid var(--glass-black);
+            padding-bottom: 32px;
         }
 
-        .page-header h1 {
+        .header-stack h1 {
             font-family: 'Crimson Pro', serif;
-            font-size: 36px;
+            font-size: 42px;
+            font-weight: 700;
             margin: 0;
-            text-transform: uppercase;
-            letter-spacing: -0.02em;
+            letter-spacing: -0.03em;
         }
 
-        .page-header p {
-            color: var(--inst-gray);
-            font-weight: 600;
+        .header-stack p {
             font-size: 14px;
-            margin-top: 5px;
-        }
-
-        .settings-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 30px;
-        }
-
-        .settings-card {
-            background: white;
-            border: 1px solid var(--inst-border);
-            padding: 30px;
-            position: relative;
-        }
-
-        .card-label {
-            position: absolute;
-            top: -12px;
-            left: 20px;
-            background: var(--inst-black);
-            color: white;
-            padding: 2px 12px;
-            font-size: 11px;
-            font-weight: 800;
+            color: var(--text-muted);
+            margin-top: 8px;
+            letter-spacing: 0.02em;
             text-transform: uppercase;
+            font-weight: 500;
         }
 
-        .form-group {
-            margin-bottom: 25px;
+        /* Sophisticated Section Layout */
+        .config-section {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 60px;
+            margin-bottom: 80px;
+            animation: fadeIn 0.8s ease-out;
         }
 
-        .form-group:last-child { margin-bottom: 0; }
+        .section-info h2 {
+            font-family: 'Crimson Pro', serif;
+            font-size: 20px;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+
+        .section-info p {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* Clean Form Elements */
+        .form-row {
+            margin-bottom: 32px;
+        }
 
         label {
             display: block;
-            font-weight: 700;
-            font-size: 13px;
+            font-size: 11px;
+            font-weight: 600;
             text-transform: uppercase;
-            margin-bottom: 8px;
-            color: var(--inst-black);
+            letter-spacing: 0.1em;
+            margin-bottom: 10px;
+            color: var(--text-muted);
         }
 
         input[type="text"], 
         input[type="email"], 
+        input[type="number"], 
         select, 
         textarea {
             width: 100%;
-            padding: 12px;
-            border: 1px solid var(--inst-border);
+            border: none;
+            border-bottom: 1px solid #ddd;
+            padding: 12px 0;
             font-family: 'Inter', sans-serif;
-            font-size: 14px;
-            font-weight: 500;
-            transition: border-color 0.2s;
+            font-size: 15px;
+            color: var(--glass-black);
+            background: transparent;
+            transition: all 0.3s ease;
         }
 
         input:focus, textarea:focus {
             outline: none;
-            border-color: var(--nature-red);
-            border-width: 1px;
+            border-bottom-color: var(--nature-red);
         }
 
-        .two-col {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .instruction {
-            font-size: 12px;
-            color: var(--inst-gray);
-            margin-top: 6px;
-            font-style: italic;
-        }
-
-        /* Institutional Checkbox Styling */
-        .checkbox-group {
+        /* Toggle Switches (Modern Class) */
+        .toggle-group {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 15px;
-            background: #f8f8f8;
-            border-left: 4px solid var(--nature-red);
+            justify-content: space-between;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border-soft);
         }
 
-        .checkbox-group input {
-            width: 18px;
-            height: 18px;
-            accent-color: var(--nature-red);
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 42px;
+            height: 20px;
         }
 
-        .save-bar {
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #eee;
+            transition: .4s;
+            border-radius: 20px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px; width: 14px;
+            left: 3px; bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider { background-color: var(--nature-red); }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        /* Actions Bar */
+        .sticky-footer {
+            position: sticky;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 24px 0;
             margin-top: 40px;
+            border-top: 1px solid var(--border-soft);
             display: flex;
             justify-content: flex-end;
-            gap: 15px;
+            gap: 24px;
         }
 
         .btn {
-            padding: 12px 30px;
-            font-weight: 800;
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
             text-transform: uppercase;
+            letter-spacing: 0.12em;
+            padding: 14px 32px;
             cursor: pointer;
-            border: none;
-            font-size: 13px;
-            transition: all 0.2s;
+            transition: all 0.3s;
+            border: 1px solid transparent;
         }
 
-        .btn-primary {
-            background: var(--inst-black);
+        .btn-save {
+            background: var(--glass-black);
             color: white;
         }
 
-        .btn-primary:hover {
+        .btn-save:hover {
             background: var(--nature-red);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(161, 4, 32, 0.2);
         }
 
-        .btn-secondary {
+        .btn-ghost {
             background: transparent;
-            border: 1px solid var(--inst-border);
-            color: var(--inst-gray);
+            color: var(--text-muted);
         }
 
-        #statusMessage {
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #toast {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 25px;
-            background: var(--nature-red);
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--glass-black);
             color: white;
-            font-weight: 700;
+            padding: 12px 24px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
             display: none;
-            z-index: 2000;
+            z-index: 9999;
         }
     </style>
 </head>
 <body>
     <?php include 'sidebar.php'; ?>
 
-    <div id="statusMessage">SETTINGS UPDATED SUCCESSFULLY</div>
+    <div id="toast">PROTOCOL UPDATED</div>
 
-    <div class="main-content">
-        <div class="settings-wrapper">
-            <header class="page-header">
-                <h1>System Preferences</h1>
-                <p>Configure institutional mailing protocols and personal identification.</p>
+    <main class="main-content">
+        <div class="config-wrapper">
+            <header class="header-stack">
+                <p>System Configuration</p>
+                <h1>Institutional Protocol</h1>
             </header>
 
-            <form id="institutionalSettingsForm">
-                <div class="settings-grid">
-                    
-                    <div class="settings-card">
-                        <div class="card-label">Official Identity</div>
-                        <div class="two-col">
-                            <div class="form-group">
-                                <label>Full Name (with Initials)</label>
-                                <input type="text" name="display_name" value="<?= htmlspecialchars($settings['display_name']) ?>" placeholder="Dr. John Doe">
-                            </div>
-                            <div class="form-group">
-                                <label>Designation</label>
-                                <input type="text" name="designation" value="<?= htmlspecialchars($settings['designation']) ?>" placeholder="Assistant Professor">
+            <form id="worldClassSettings">
+                <section class="config-section">
+                    <div class="section-info">
+                        <h2>Personal Identity</h2>
+                        <p>Define how your academic credentials appear in official correspondence.</p>
+                    </div>
+                    <div class="section-fields">
+                        <div class="form-row">
+                            <label>Full Legal Name</label>
+                            <input type="text" name="display_name" value="<?= htmlspecialchars($settings['display_name']) ?>" placeholder="e.g. Professor Alex Sterling">
+                        </div>
+                        <div class="form-row">
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                <div>
+                                    <label>Designation</label>
+                                    <input type="text" name="designation" value="<?= htmlspecialchars($settings['designation']) ?>" placeholder="Head of Department">
+                                </div>
+                                <div>
+                                    <label>Academic Unit</label>
+                                    <select name="department">
+                                        <option value="Computer Science" <?= $settings['department'] == 'Computer Science' ? 'selected' : '' ?>>Computer Science</option>
+                                        <option value="Physics" <?= $settings['department'] == 'Physics' ? 'selected' : '' ?>>Physics</option>
+                                        <option value="Mathematics" <?= $settings['department'] == 'Mathematics' ? 'selected' : '' ?>>Mathematics</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label>Department</label>
-                            <select name="department">
-                                <option value="Computer Science" <?= $settings['department'] == 'Computer Science' ? 'selected' : '' ?>>Computer Science</option>
-                                <option value="Physics" <?= $settings['department'] == 'Physics' ? 'selected' : '' ?>>Physics</option>
-                                <option value="Mathematics" <?= $settings['department'] == 'Mathematics' ? 'selected' : '' ?>>Mathematics</option>
-                                <option value="Commerce" <?= $settings['department'] == 'Commerce' ? 'selected' : '' ?>>Commerce</option>
+                    </div>
+                </section>
+
+                <section class="config-section">
+                    <div class="section-info">
+                        <h2>Compliance</h2>
+                        <p>Configure automated oversight and reporting parameters.</p>
+                    </div>
+                    <div class="section-fields">
+                        <div class="form-row">
+                            <label>Supervisory Address (BCC)</label>
+                            <input type="email" name="hod_email" value="<?= htmlspecialchars($settings['hod_email']) ?>" placeholder="authority@sxccal.edu">
+                        </div>
+                        <div class="toggle-group">
+                            <span style="font-size: 14px; font-weight: 500;">Mandatory Oversight Policy</span>
+                            <label class="switch">
+                                <input type="checkbox" name="always_bcc_hod" value="1" <?= $settings['always_bcc_hod'] ? 'checked' : '' ?>>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="config-section">
+                    <div class="section-info">
+                        <h2>Correspondence</h2>
+                        <p>Standardize your email signatures and archiving logic.</p>
+                    </div>
+                    <div class="section-fields">
+                        <div class="form-row">
+                            <label>Institutional Signature</label>
+                            <textarea name="signature_template" rows="4"><?= htmlspecialchars($settings['signature_template']) ?></textarea>
+                        </div>
+                        <div class="form-row">
+                            <label>Default Priority Status</label>
+                            <select name="default_priority">
+                                <option value="normal" <?= $settings['default_priority'] == 'normal' ? 'selected' : '' ?>>Standard Correspondence</option>
+                                <option value="high" <?= $settings['default_priority'] == 'high' ? 'selected' : '' ?>>Urgent/Administrative</option>
                             </select>
                         </div>
                     </div>
+                </section>
 
-                    <div class="settings-card">
-                        <div class="card-label">Compliance & Oversight</div>
-                        <div class="form-group">
-                            <label>HOD / Reporting Authority Email</label>
-                            <input type="email" name="hod_email" value="<?= htmlspecialchars($settings['hod_email']) ?>" placeholder="hod.cs@sxccal.edu">
-                            <p class="instruction">Official correspondence oversight address.</p>
-                        </div>
-                        <div class="checkbox-group">
-                            <input type="checkbox" name="always_bcc_hod" id="bcc_hod" value="1" <?= $settings['always_bcc_hod'] ? 'checked' : '' ?>>
-                            <label for="bcc_hod" style="margin-bottom:0">Mandatory BCC to HOD for all outgoing mail</label>
-                        </div>
-                    </div>
-
-                    <div class="settings-card">
-                        <div class="card-label">Signature & Templates</div>
-                        <div class="form-group">
-                            <label>Official Correspondence Signature</label>
-                            <textarea name="signature_template" rows="4"><?= htmlspecialchars($settings['signature_template']) ?></textarea>
-                            <p class="instruction">Use {name} and {designation} for automatic placeholders.</p>
-                        </div>
-                        <div class="two-col">
-                            <div class="form-group">
-                                <label>Default Mail Priority</label>
-                                <select name="default_priority">
-                                    <option value="normal" <?= $settings['default_priority'] == 'normal' ? 'selected' : '' ?>>Normal Correspondence</option>
-                                    <option value="high" <?= $settings['default_priority'] == 'high' ? 'selected' : '' ?>>Urgent / Official</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Archive Duration (Days)</label>
-                                <input type="number" name="archive_duration" value="<?= htmlspecialchars($settings['archive_duration']) ?>">
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-
-                <div class="save-bar">
-                    <button type="button" class="btn btn-secondary" onclick="window.history.back()">Discard Changes</button>
-                    <button type="submit" class="btn btn-primary">Authorize & Save Settings</button>
+                <div class="sticky-footer">
+                    <button type="button" class="btn btn-ghost" onclick="window.history.back()">Discard</button>
+                    <button type="submit" class="btn btn-save">Deploy Settings</button>
                 </div>
             </form>
         </div>
-    </div>
+    </main>
 
     <script>
-        document.getElementById('institutionalSettingsForm').addEventListener('submit', function(e) {
+        document.getElementById('worldClassSettings').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
             
-            fetch('save_settings.php', {
-                method: 'POST',
-                body: formData
-            })
+            fetch('save_settings.php', { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
                 if(data.success) {
-                    const msg = document.getElementById('statusMessage');
-                    msg.style.display = 'block';
-                    setTimeout(() => msg.style.display = 'none', 3000);
+                    const toast = document.getElementById('toast');
+                    toast.style.display = 'block';
+                    setTimeout(() => toast.style.display = 'none', 3000);
                 }
-            })
-            .catch(err => console.error('Error:', err));
+            });
         });
     </script>
 </body>
