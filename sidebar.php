@@ -240,13 +240,13 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             </a>
 
             <a href="sent_history.php" class="nav-item <?= ($current_page == 'sent_history') ? 'active' : ''; ?>">
-                <span class="material-icons">account_balance</span>
-                <span>CORRESPONDENCE</span>
+                <span class="material-icons">send</span>
+                <span>All Mail</span>
             </a>
 
             <a href="send.php" class="nav-item <?= ($current_page == 'send') ? 'active' : ''; ?>">
-                <span class="material-icons">insights</span>
-                <span>ANALYTICS</span>
+                <span class="material-icons">info</span>
+                <span>Info</span>
             </a>
 
             <div class="nav-section-title">Institutional Labels</div>
