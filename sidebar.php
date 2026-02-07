@@ -197,7 +197,8 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
                 <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg" alt="Logo" class="logo-image">
                 <div class="logo-text">
                     <span class="logo-title">SXC MDTS</span>
-                    <span class="logo-subtitle">Research Portal</span>
+                    <br>
+                    <span class="logo-subtitle">10.57.20.282</span>
                 </div>
             </a>
         </div>
