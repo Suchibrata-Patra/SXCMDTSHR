@@ -191,7 +191,7 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
             height: 48px;
             min-width: 48px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--accent-primary);
             display: flex;
             align-items: center;
             justify-content: center;
