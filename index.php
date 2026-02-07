@@ -582,7 +582,7 @@ $defaultSignature = json_encode($settings['signature']);
                     <!-- Recipients Section -->
                     <section class="form-section">
                         <h2 class="section-title">Recipients</h2>
-                        <p class="section-description">Specify the primary and additional recipients for your message.</p>
+                        <!-- <p class="section-description">Specify the primary and additional recipients for your message.</p> -->
                         
                         <div class="form-group">
                             <label>To <span style="color: #d32f2f;">*</span></label>
