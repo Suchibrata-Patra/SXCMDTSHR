@@ -344,8 +344,8 @@ $userInitial = strtoupper(substr($userEmail, 0, 1));
                 <span>Sent</span>
             </a>
             <a href="sent_history.php" class="nav-item <?= ($current_page == 'sent_history') ? 'active' : ''; ?>">
-                <span class="material-icons">history</span>
-                <span>History</span>
+                <span class="material-icons">mail</span>
+                <span>All Mail</span>
             </a>
             <a href="settings.php" class="nav-item <?= ($current_page == 'settings') ? 'active' : ''; ?>">
                 <span class="material-icons">settings</span>
