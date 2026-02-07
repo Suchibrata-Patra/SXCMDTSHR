@@ -304,17 +304,32 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             <?php endforeach; ?>
         </nav>
 
-        <div class="user-footer">
-            <div class="user-card">
-                <span class="auth-badge"><img src="/Assets/image/Verified_badge.png" alt=""></span>
-                <span>Verified Account</span>
-                <span class="user-email"><?= htmlspecialchars($userEmail) ?></span>
-            </div>
-            <div class="footer-actions">
-                <a href="settings.php" class="action-btn config-btn">Settings</a>
-                <a href="logout.php" class="action-btn logout-btn">Sign Out</a>
-            </div>
+        <div class="user-footer" style="padding: 20px; border-top: 1px solid rgba(0,0,0,0.07); background: rgba(255,255,255,0.2);">
+    <div class="user-card" style="background: #ffffff; padding: 14px; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-bottom: 12px;">
+        
+        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+            <span class="auth-badge" style="display: flex; align-items: center;">
+                <img src="/Assets/image/Verified_badge.png" alt="Verified" style="width: 14px; height: 14px; object-fit: contain;">
+            </span>
+            <span style="font-size: 10px; font-weight: 800; color: #34C759; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">
+                Verified Account
+            </span>
         </div>
+
+        <span class="user-email" style="display: block; font-size: 12px; font-weight: 600; color: #1d1d1f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 2px;">
+            <?= htmlspecialchars($userEmail) ?>
+        </span>
+    </div>
+
+    <div class="footer-actions" style="display: flex; gap: 8px;">
+        <a href="settings.php" class="action-btn config-btn" style="flex: 1; padding: 10px; border-radius: 10px; text-decoration: none; font-size: 12px; font-weight: 600; text-align: center; background: #ffffff; color: #1d1d1f; border: 1px solid rgba(0,0,0,0.1); transition: 0.2s;">
+            Settings
+        </a>
+        <a href="logout.php" class="action-btn logout-btn" style="flex: 1; padding: 10px; border-radius: 10px; text-decoration: none; font-size: 12px; font-weight: 600; text-align: center; background: #1d1d1f; color: #ffffff; transition: 0.2s;">
+            Sign Out
+        </a>
+    </div>
+</div>
     </div>
 </body>
 </html>
