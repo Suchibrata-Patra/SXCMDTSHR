@@ -1,9 +1,13 @@
 <?php
-// deleted_items.php - Shows ALL deleted emails (both sent and received)
-// Using REDESIGNED database schema
+// deleted_items.php - Shows ALL deleted emails (BOTH sent from sent_emails AND received from inbox_messages)
 session_start();
-require 'config.php';
-require 'db_config_REDESIGNED.php';
+
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+require_once 'config.php';
+require_once 'db_config.php';
 
 if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     header("Location: login.php");
@@ -23,41 +27,248 @@ $filters = [
     'date_to' => $_GET['date_to'] ?? ''
 ];
 
+/**
+ * Get BOTH deleted sent emails AND deleted received emails
+ * UNION query combines both tables
+ */
+function getAllDeletedEmails($userEmail, $limit, $offset, $filters) {
+    $pdo = getDatabaseConnection();
+    if (!$pdo) return [];
+    
+    try {
+        // Build WHERE clauses for filters
+        $sentWhere = "se.sender_email = :sender_email AND se.current_status = 0";
+        $inboxWhere = "im.user_email = :user_email AND im.is_deleted = 1";
+        $params = [
+            ':sender_email' => $userEmail,
+            ':user_email' => $userEmail
+        ];
+        
+        // Add search filter
+        if (!empty($filters['search'])) {
+            $searchTerm = '%' . $filters['search'] . '%';
+            $sentWhere .= " AND (se.recipient_email LIKE :search1 OR se.subject LIKE :search2 OR se.message_body LIKE :search3)";
+            $inboxWhere .= " AND (im.sender_email LIKE :search4 OR im.subject LIKE :search5 OR im.body LIKE :search6)";
+            $params[':search1'] = $searchTerm;
+            $params[':search2'] = $searchTerm;
+            $params[':search3'] = $searchTerm;
+            $params[':search4'] = $searchTerm;
+            $params[':search5'] = $searchTerm;
+            $params[':search6'] = $searchTerm;
+        }
+        
+        // Add sender filter
+        if (!empty($filters['sender'])) {
+            $senderTerm = '%' . $filters['sender'] . '%';
+            $inboxWhere .= " AND im.sender_email LIKE :sender_filter";
+            $params[':sender_filter'] = $senderTerm;
+        }
+        
+        // Add recipient filter  
+        if (!empty($filters['recipient'])) {
+            $recipientTerm = '%' . $filters['recipient'] . '%';
+            $sentWhere .= " AND se.recipient_email LIKE :recipient_filter";
+            $params[':recipient_filter'] = $recipientTerm;
+        }
+        
+        // Add subject filter
+        if (!empty($filters['subject'])) {
+            $subjectTerm = '%' . $filters['subject'] . '%';
+            $sentWhere .= " AND se.subject LIKE :subject_sent";
+            $inboxWhere .= " AND im.subject LIKE :subject_inbox";
+            $params[':subject_sent'] = $subjectTerm;
+            $params[':subject_inbox'] = $subjectTerm;
+        }
+        
+        // Add label filter for sent emails
+        if (!empty($filters['label_id'])) {
+            if ($filters['label_id'] === 'unlabeled') {
+                $sentWhere .= " AND se.label_id IS NULL";
+            } else {
+                $sentWhere .= " AND se.label_id = :label_id";
+                $params[':label_id'] = $filters['label_id'];
+            }
+        }
+        
+        // Add date filters
+        if (!empty($filters['date_from'])) {
+            $sentWhere .= " AND DATE(se.sent_at) >= :date_from_sent";
+            $inboxWhere .= " AND DATE(im.received_date) >= :date_from_inbox";
+            $params[':date_from_sent'] = $filters['date_from'];
+            $params[':date_from_inbox'] = $filters['date_from'];
+        }
+        
+        if (!empty($filters['date_to'])) {
+            $sentWhere .= " AND DATE(se.sent_at) <= :date_to_sent";
+            $inboxWhere .= " AND DATE(im.received_date) <= :date_to_inbox";
+            $params[':date_to_sent'] = $filters['date_to'];
+            $params[':date_to_inbox'] = $filters['date_to'];
+        }
+        
+        // UNION query to get both sent and received deleted emails
+        $sql = "
+            (SELECT 
+                se.id,
+                'sent' as email_type,
+                se.sender_email,
+                se.recipient_email,
+                se.subject,
+                se.message_body as body,
+                se.article_title,
+                se.attachment_names,
+                se.sent_at as email_date,
+                se.sent_at as deleted_at,
+                se.label_id,
+                l.label_name,
+                l.label_color,
+                CASE WHEN se.attachment_names IS NOT NULL AND se.attachment_names != '' THEN 1 ELSE 0 END as has_attachments
+            FROM sent_emails se
+            LEFT JOIN labels l ON se.label_id = l.id
+            WHERE {$sentWhere})
+            
+            UNION ALL
+            
+            (SELECT 
+                im.id,
+                'received' as email_type,
+                im.sender_email,
+                im.user_email as recipient_email,
+                im.subject,
+                im.body,
+                NULL as article_title,
+                NULL as attachment_names,
+                im.received_date as email_date,
+                im.deleted_at,
+                NULL as label_id,
+                NULL as label_name,
+                NULL as label_color,
+                im.has_attachments
+            FROM inbox_messages im
+            WHERE {$inboxWhere})
+            
+            ORDER BY deleted_at DESC, email_date DESC
+            LIMIT :limit OFFSET :offset
+        ";
+        
+        $stmt = $pdo->prepare($sql);
+        
+        // Bind all parameters
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value, PDO::PARAM_STR);
+        }
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+        
+        $stmt->execute();
+        return $stmt->fetchAll();
+        
+    } catch (PDOException $e) {
+        error_log("Error fetching deleted emails: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Get total count of deleted emails (both sent and received)
+ */
+function getAllDeletedEmailCount($userEmail, $filters) {
+    $pdo = getDatabaseConnection();
+    if (!$pdo) return 0;
+    
+    try {
+        $sentWhere = "se.sender_email = :sender_email AND se.current_status = 0";
+        $inboxWhere = "im.user_email = :user_email AND im.is_deleted = 1";
+        $params = [
+            ':sender_email' => $userEmail,
+            ':user_email' => $userEmail
+        ];
+        
+        // Add search filter
+        if (!empty($filters['search'])) {
+            $searchTerm = '%' . $filters['search'] . '%';
+            $sentWhere .= " AND (se.recipient_email LIKE :search1 OR se.subject LIKE :search2 OR se.message_body LIKE :search3)";
+            $inboxWhere .= " AND (im.sender_email LIKE :search4 OR im.subject LIKE :search5 OR im.body LIKE :search6)";
+            $params[':search1'] = $searchTerm;
+            $params[':search2'] = $searchTerm;
+            $params[':search3'] = $searchTerm;
+            $params[':search4'] = $searchTerm;
+            $params[':search5'] = $searchTerm;
+            $params[':search6'] = $searchTerm;
+        }
+        
+        if (!empty($filters['sender'])) {
+            $senderTerm = '%' . $filters['sender'] . '%';
+            $inboxWhere .= " AND im.sender_email LIKE :sender_filter";
+            $params[':sender_filter'] = $senderTerm;
+        }
+        
+        if (!empty($filters['recipient'])) {
+            $recipientTerm = '%' . $filters['recipient'] . '%';
+            $sentWhere .= " AND se.recipient_email LIKE :recipient_filter";
+            $params[':recipient_filter'] = $recipientTerm;
+        }
+        
+        if (!empty($filters['subject'])) {
+            $subjectTerm = '%' . $filters['subject'] . '%';
+            $sentWhere .= " AND se.subject LIKE :subject_sent";
+            $inboxWhere .= " AND im.subject LIKE :subject_inbox";
+            $params[':subject_sent'] = $subjectTerm;
+            $params[':subject_inbox'] = $subjectTerm;
+        }
+        
+        if (!empty($filters['label_id'])) {
+            if ($filters['label_id'] === 'unlabeled') {
+                $sentWhere .= " AND se.label_id IS NULL";
+            } else {
+                $sentWhere .= " AND se.label_id = :label_id";
+                $params[':label_id'] = $filters['label_id'];
+            }
+        }
+        
+        if (!empty($filters['date_from'])) {
+            $sentWhere .= " AND DATE(se.sent_at) >= :date_from_sent";
+            $inboxWhere .= " AND DATE(im.received_date) >= :date_from_inbox";
+            $params[':date_from_sent'] = $filters['date_from'];
+            $params[':date_from_inbox'] = $filters['date_from'];
+        }
+        
+        if (!empty($filters['date_to'])) {
+            $sentWhere .= " AND DATE(se.sent_at) <= :date_to_sent";
+            $inboxWhere .= " AND DATE(im.received_date) <= :date_to_inbox";
+            $params[':date_to_sent'] = $filters['date_to'];
+            $params[':date_to_inbox'] = $filters['date_to'];
+        }
+        
+        $sql = "
+            SELECT 
+                (SELECT COUNT(*) FROM sent_emails se WHERE {$sentWhere}) +
+                (SELECT COUNT(*) FROM inbox_messages im WHERE {$inboxWhere}) 
+            as total_count
+        ";
+        
+        $stmt = $pdo->prepare($sql);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value, PDO::PARAM_STR);
+        }
+        $stmt->execute();
+        
+        $result = $stmt->fetch();
+        return $result['total_count'] ?? 0;
+        
+    } catch (PDOException $e) {
+        error_log("Error counting deleted emails: " . $e->getMessage());
+        return 0;
+    }
+}
+
 // Pagination
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $perPage = 50;
 $offset = ($page - 1) * $perPage;
 
-// Get deleted emails using new function (includes BOTH sent and received)
-$deletedEmails = getUserDeletedEmails($userEmail, $perPage, $offset, $filters);
-
-// Get total count for pagination
-function getDeletedEmailCount($userEmail, $filters) {
-    $pdo = getDatabaseConnection();
-    if (!$pdo) return 0;
-    
-    $user = getUserByEmail($userEmail);
-    if (!$user) return 0;
-    
-    $sql = "SELECT COUNT(*) as count 
-            FROM emails e
-            INNER JOIN user_email_access uea ON e.id = uea.email_id
-            WHERE uea.user_id = :user_id 
-            AND uea.is_deleted = 1";
-    
-    $params = [':user_id' => $user['id']];
-    
-    // Apply same filters
-    $sql = applyEmailFilters($sql, $params, $filters);
-    
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-    
-    $result = $stmt->fetch();
-    return $result['count'] ?? 0;
-}
-
-$totalEmails = getDeletedEmailCount($userEmail, $filters);
+// Get deleted emails (BOTH sent and received)
+$deletedEmails = getAllDeletedEmails($userEmail, $perPage, $offset, $filters);
+$totalEmails = getAllDeletedEmailCount($userEmail, $filters);
 $totalPages = ceil($totalEmails / $perPage);
 
 // Get all labels
@@ -173,6 +384,7 @@ $hasActiveFilters = !empty(array_filter($filters));
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            text-decoration: none;
         }
 
         .btn-primary {
@@ -235,75 +447,6 @@ $hasActiveFilters = !empty(array_filter($filters));
             box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
         }
 
-        .filter-panel {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 16px;
-            border: 1px solid var(--border);
-            max-height: 0;
-            overflow: hidden;
-            opacity: 0;
-            transition: all 0.3s;
-        }
-
-        .filter-panel.active {
-            max-height: 500px;
-            opacity: 1;
-            margin-bottom: 16px;
-        }
-
-        .filter-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 16px;
-            margin-bottom: 16px;
-        }
-
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .filter-label {
-            font-size: 13px;
-            font-weight: 500;
-            color: #1c1c1e;
-        }
-
-        .filter-input,
-        .filter-select {
-            padding: 10px 14px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 14px;
-        }
-
-        .active-filters {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-
-        .filter-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            background: #EBF5FF;
-            color: var(--apple-blue);
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        .filter-chip .material-icons {
-            font-size: 16px;
-            cursor: pointer;
-        }
-
         .email-list {
             background: white;
             border-radius: 12px;
@@ -315,7 +458,7 @@ $hasActiveFilters = !empty(array_filter($filters));
             padding: 16px 20px;
             border-bottom: 1px solid var(--border);
             display: grid;
-            grid-template-columns: auto 1fr auto;
+            grid-template-columns: 1fr auto;
             gap: 16px;
             align-items: center;
             transition: background 0.2s;
@@ -330,16 +473,6 @@ $hasActiveFilters = !empty(array_filter($filters));
             background: #f9f9f9;
         }
 
-        .email-item.selected {
-            background: #EBF5FF;
-        }
-
-        .email-checkbox {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-        }
-
         .email-main {
             display: flex;
             flex-direction: column;
@@ -351,6 +484,7 @@ $hasActiveFilters = !empty(array_filter($filters));
             display: flex;
             align-items: center;
             gap: 12px;
+            flex-wrap: wrap;
         }
 
         .email-type-badge {
@@ -375,11 +509,6 @@ $hasActiveFilters = !empty(array_filter($filters));
             font-weight: 600;
             color: #1c1c1e;
             font-size: 14px;
-        }
-
-        .email-recipient {
-            color: var(--apple-gray);
-            font-size: 13px;
         }
 
         .email-subject {
@@ -421,11 +550,6 @@ $hasActiveFilters = !empty(array_filter($filters));
             white-space: nowrap;
         }
 
-        .attachment-icon {
-            color: var(--apple-gray);
-            font-size: 18px;
-        }
-
         .deleted-badge {
             display: inline-flex;
             align-items: center;
@@ -436,27 +560,6 @@ $hasActiveFilters = !empty(array_filter($filters));
             border-radius: 6px;
             font-size: 11px;
             font-weight: 600;
-        }
-
-        .bulk-toolbar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            border-top: 1px solid var(--border);
-            padding: 16px 32px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transform: translateY(100%);
-            transition: transform 0.3s;
-            z-index: 1000;
-            box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
-        }
-
-        .bulk-toolbar.active {
-            transform: translateY(0);
         }
 
         .empty-state {
@@ -522,15 +625,15 @@ $hasActiveFilters = !empty(array_filter($filters));
                 <p class="page-subtitle">
                     <span class="email-count-badge">
                         <span class="material-icons" style="font-size: 16px;">email</span>
-                        <?= number_format($totalEmails) ?> deleted
+                        <?= number_format($totalEmails) ?> deleted (Sent + Received)
                     </span>
                 </p>
             </div>
             <div class="header-actions">
-                <button class="btn btn-secondary" onclick="window.location.href='inbox.php'">
+                <a href="inbox.php" class="btn btn-secondary">
                     <span class="material-icons">arrow_back</span>
                     Back to Inbox
-                </button>
+                </a>
             </div>
         </div>
 
@@ -547,122 +650,6 @@ $hasActiveFilters = !empty(array_filter($filters));
                         onchange="handleSearch(this.value)"
                     >
                 </div>
-                <button class="btn btn-secondary btn-filter-toggle" onclick="toggleFilters()">
-                    <span class="material-icons">filter_list</span>
-                    Filters
-                </button>
-            </div>
-
-            <!-- Active Filters -->
-            <?php if ($hasActiveFilters): ?>
-            <div class="active-filters">
-                <?php if (!empty($filters['search'])): ?>
-                <div class="filter-chip">
-                    Search: <?= htmlspecialchars($filters['search']) ?>
-                    <span class="material-icons" onclick="removeFilter('search')">close</span>
-                </div>
-                <?php endif; ?>
-                
-                <?php if (!empty($filters['sender'])): ?>
-                <div class="filter-chip">
-                    From: <?= htmlspecialchars($filters['sender']) ?>
-                    <span class="material-icons" onclick="removeFilter('sender')">close</span>
-                </div>
-                <?php endif; ?>
-                
-                <?php if (!empty($filters['recipient'])): ?>
-                <div class="filter-chip">
-                    To: <?= htmlspecialchars($filters['recipient']) ?>
-                    <span class="material-icons" onclick="removeFilter('recipient')">close</span>
-                </div>
-                <?php endif; ?>
-                
-                <?php if (!empty($filters['subject'])): ?>
-                <div class="filter-chip">
-                    Subject: <?= htmlspecialchars($filters['subject']) ?>
-                    <span class="material-icons" onclick="removeFilter('subject')">close</span>
-                </div>
-                <?php endif; ?>
-                
-                <?php if (!empty($filters['label_id'])): ?>
-                <div class="filter-chip">
-                    Label Filter
-                    <span class="material-icons" onclick="removeFilter('label_id')">close</span>
-                </div>
-                <?php endif; ?>
-                
-                <?php if (!empty($filters['date_from']) || !empty($filters['date_to'])): ?>
-                <div class="filter-chip">
-                    Date Range
-                    <span class="material-icons" onclick="clearDateFilters()">close</span>
-                </div>
-                <?php endif; ?>
-                
-                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="clearAllFilters()">
-                    Clear All
-                </button>
-            </div>
-            <?php endif; ?>
-
-            <!-- Filter Panel -->
-            <div class="filter-panel" id="filterPanel">
-                <form method="GET">
-                    <div class="filter-grid">
-                        <div class="filter-group">
-                            <label class="filter-label">From (Sender)</label>
-                            <input type="text" name="sender" class="filter-input" 
-                                   value="<?= htmlspecialchars($filters['sender']) ?>" 
-                                   placeholder="sender@example.com">
-                        </div>
-                        
-                        <div class="filter-group">
-                            <label class="filter-label">To (Recipient)</label>
-                            <input type="text" name="recipient" class="filter-input" 
-                                   value="<?= htmlspecialchars($filters['recipient']) ?>" 
-                                   placeholder="recipient@example.com">
-                        </div>
-                        
-                        <div class="filter-group">
-                            <label class="filter-label">Subject Contains</label>
-                            <input type="text" name="subject" class="filter-input" 
-                                   value="<?= htmlspecialchars($filters['subject']) ?>" 
-                                   placeholder="Subject keywords">
-                        </div>
-                        
-                        <div class="filter-group">
-                            <label class="filter-label">Label</label>
-                            <select name="label_id" class="filter-select">
-                                <option value="">All Labels</option>
-                                <option value="unlabeled" <?= $filters['label_id'] === 'unlabeled' ? 'selected' : '' ?>>
-                                    Unlabeled
-                                </option>
-                                <?php foreach ($labels as $label): ?>
-                                <option value="<?= $label['id'] ?>" 
-                                        <?= $filters['label_id'] == $label['id'] ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($label['label_name']) ?>
-                                </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        
-                        <div class="filter-group">
-                            <label class="filter-label">Date From</label>
-                            <input type="date" name="date_from" class="filter-input" 
-                                   value="<?= htmlspecialchars($filters['date_from']) ?>">
-                        </div>
-                        
-                        <div class="filter-group">
-                            <label class="filter-label">Date To</label>
-                            <input type="date" name="date_to" class="filter-input" 
-                                   value="<?= htmlspecialchars($filters['date_to']) ?>">
-                        </div>
-                    </div>
-                    
-                    <div style="display: flex; gap: 12px;">
-                        <button type="submit" class="btn btn-primary">Apply Filters</button>
-                        <button type="button" class="btn btn-secondary" onclick="clearForm()">Clear</button>
-                    </div>
-                </form>
             </div>
 
             <!-- Email List -->
@@ -675,21 +662,17 @@ $hasActiveFilters = !empty(array_filter($filters));
                     </div>
                 <?php else: ?>
                     <?php foreach ($deletedEmails as $email): ?>
-                        <div class="email-item" onclick="openEmail(<?= $email['id'] ?>)">
-                            <input type="checkbox" class="email-checkbox" 
-                                   value="<?= $email['id'] ?>" 
-                                   onclick="event.stopPropagation(); handleCheckboxChange();">
-                            
+                        <div class="email-item" onclick="openEmail('<?= $email['email_type'] ?>', <?= $email['id'] ?>)">
                             <div class="email-main">
                                 <div class="email-header">
-                                    <!-- Email Type Badge (SENT or RECEIVED) -->
+                                    <!-- Email Type Badge -->
                                     <span class="email-type-badge email-type-<?= $email['email_type'] ?>">
                                         <?= strtoupper($email['email_type']) ?>
                                     </span>
                                     
                                     <span class="deleted-badge">
                                         <span class="material-icons" style="font-size: 14px;">delete</span>
-                                        Deleted <?= date('M j', strtotime($email['deleted_at'])) ?>
+                                        Deleted
                                     </span>
                                     
                                     <?php if ($email['email_type'] === 'sent'): ?>
@@ -703,16 +686,16 @@ $hasActiveFilters = !empty(array_filter($filters));
                                     <?= htmlspecialchars($email['subject']) ?: '(No Subject)' ?>
                                 </div>
                                 
-                                <?php if (!empty($email['body_text'])): ?>
+                                <?php if (!empty($email['body'])): ?>
                                 <div class="email-preview">
-                                    <?= htmlspecialchars(substr(strip_tags($email['body_text']), 0, 100)) ?>...
+                                    <?= htmlspecialchars(substr(strip_tags($email['body']), 0, 100)) ?>...
                                 </div>
                                 <?php endif; ?>
                             </div>
                             
                             <div class="email-meta">
-                                <?php if ($email['attachment_count'] > 0): ?>
-                                    <span class="material-icons attachment-icon">attach_file</span>
+                                <?php if ($email['has_attachments']): ?>
+                                    <span class="material-icons" style="color: var(--apple-gray); font-size: 18px;">attach_file</span>
                                 <?php endif; ?>
                                 
                                 <?php if ($email['label_name']): ?>
@@ -729,24 +712,6 @@ $hasActiveFilters = !empty(array_filter($filters));
                         </div>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </div>
-        </div>
-
-        <!-- Bulk Actions Toolbar -->
-        <div class="bulk-toolbar" id="bulkActionToolbar">
-            <div>
-                <span id="selectedCount">0</span> selected
-            </div>
-            <div style="display: flex; gap: 12px;">
-                <button class="btn btn-primary" onclick="bulkRestore()">
-                    <span class="material-icons">restore</span>
-                    Restore
-                </button>
-                <button class="btn btn-secondary" style="background: var(--apple-red); color: white;" onclick="bulkDeleteForever()">
-                    <span class="material-icons">delete_forever</span>
-                    Delete Forever
-                </button>
-                <button class="btn btn-secondary" onclick="clearSelection()">Cancel</button>
             </div>
         </div>
 
@@ -782,119 +747,12 @@ $hasActiveFilters = !empty(array_filter($filters));
     </div>
 
     <script>
-        function handleCheckboxChange() {
-            const checkedBoxes = document.querySelectorAll('.email-checkbox:checked');
-            const toolbar = document.getElementById('bulkActionToolbar');
-            const selectedCount = document.getElementById('selectedCount');
-
-            selectedCount.textContent = checkedBoxes.length;
-
-            if (checkedBoxes.length > 0) {
-                toolbar.classList.add('active');
-                document.querySelectorAll('.email-item').forEach(item => {
-                    const checkbox = item.querySelector('.email-checkbox');
-                    if (checkbox.checked) {
-                        item.classList.add('selected');
-                    } else {
-                        item.classList.remove('selected');
-                    }
-                });
+        function openEmail(type, emailId) {
+            if (type === 'sent') {
+                window.open('view_sent_email.php?id=' + emailId, '_blank');
             } else {
-                toolbar.classList.remove('active');
-                document.querySelectorAll('.email-item').forEach(item => {
-                    item.classList.remove('selected');
-                });
+                window.open('view_inbox_email.php?id=' + emailId, '_blank');
             }
-        }
-
-        function clearSelection() {
-            document.querySelectorAll('.email-checkbox').forEach(checkbox => {
-                checkbox.checked = false;
-            });
-            handleCheckboxChange();
-        }
-
-        async function bulkRestore() {
-            const checkedBoxes = document.querySelectorAll('.email-checkbox:checked');
-            const emailIds = Array.from(checkedBoxes).map(cb => cb.value);
-
-            if (emailIds.length === 0) {
-                alert('Please select at least one email to restore');
-                return;
-            }
-
-            if (!confirm(`Are you sure you want to restore ${emailIds.length} email(s)?`)) {
-                return;
-            }
-
-            try {
-                const formData = new FormData();
-                formData.append('action', 'bulk_restore');
-                formData.append('email_ids', JSON.stringify(emailIds));
-
-                const response = await fetch('bulk_trash_actions_v2.php', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    location.reload();
-                } else {
-                    alert('Failed to restore emails: ' + (result.message || 'Unknown error'));
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred while restoring emails');
-            }
-        }
-
-        async function bulkDeleteForever() {
-            const checkedBoxes = document.querySelectorAll('.email-checkbox:checked');
-            const emailIds = Array.from(checkedBoxes).map(cb => cb.value);
-
-            if (emailIds.length === 0) {
-                alert('Please select at least one email to delete');
-                return;
-            }
-
-            if (!confirm(`⚠️ WARNING: This will permanently delete ${emailIds.length} email(s).\n\nThis action CANNOT be undone and will also schedule deletion from the IMAP server.\n\nAre you sure?`)) {
-                return;
-            }
-
-            try {
-                const formData = new FormData();
-                formData.append('action', 'bulk_delete_forever');
-                formData.append('email_ids', JSON.stringify(emailIds));
-
-                const response = await fetch('bulk_trash_actions_v2.php', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    location.reload();
-                } else {
-                    alert('Failed to delete emails: ' + (result.message || 'Unknown error'));
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred while deleting emails');
-            }
-        }
-
-        function openEmail(emailId) {
-            window.open('view_email.php?id=' + emailId, '_blank');
-        }
-
-        function toggleFilters() {
-            const panel = document.getElementById('filterPanel');
-            const btn = document.querySelector('.btn-filter-toggle');
-            panel.classList.toggle('active');
-            btn.classList.toggle('active');
         }
 
         function handleSearch(value) {
@@ -907,43 +765,6 @@ $hasActiveFilters = !empty(array_filter($filters));
             url.searchParams.delete('page');
             window.location.href = url.toString();
         }
-
-        function clearForm() {
-            const form = document.querySelector('#filterPanel form');
-            form.reset();
-        }
-
-        function removeFilter(filterName) {
-            const url = new URL(window.location.href);
-            url.searchParams.delete(filterName);
-            url.searchParams.delete('page');
-            window.location.href = url.toString();
-        }
-
-        function clearDateFilters() {
-            const url = new URL(window.location.href);
-            url.searchParams.delete('date_from');
-            url.searchParams.delete('date_to');
-            url.searchParams.delete('page');
-            window.location.href = url.toString();
-        }
-
-        function clearAllFilters() {
-            window.location.href = 'deleted_items.php';
-        }
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-                e.preventDefault();
-                document.querySelector('.search-input').focus();
-            }
-
-            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-                e.preventDefault();
-                toggleFilters();
-            }
-        });
     </script>
 </body>
 </html>
