@@ -171,7 +171,7 @@ $hasActiveFilters = !empty(array_filter($filters));
 
         body {
             font-family: 'Inter', -apple-system, sans-serif;
-            background: var(--apple-bg);
+            background: #f2f2f7;
             color: #1c1c1e;
             display: flex;
             height: 100vh;
