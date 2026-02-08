@@ -16,71 +16,296 @@ use PHPMailer\PHPMailer\Exception;
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
-    // --- STEP 1: ECHO DEBUG INFO IMMEDIATELY ---
-    echo "<div style='background:#f8f9fa; border:2px solid #333; padding:15px; margin-bottom:20px; font-family:sans-serif;'>";
-    echo "<h2 style='color:#d9534f;'>System Debugging: Credentials</h2>";
-    
-    // Get Database User ID
-    $pdo = getDatabaseConnection();
-    $userId = "Not Found";
-    if ($pdo) {
-        $userId = getUserId($pdo, $_SESSION['smtp_user']);
-    }
-    
-    echo "<strong>Database User ID:</strong> " . htmlspecialchars($userId) . "<br>";
-    echo "<strong>SMTP Username (Session):</strong> " . htmlspecialchars($_SESSION['smtp_user']) . "<br>";
-    echo "<strong>SMTP Password (Session):</strong> " . htmlspecialchars($_SESSION['smtp_pass']) . "<br>";
-    echo "<p style='color:#888; font-size:0.9em;'><em>Using Hostinger SMTP: smtp.hostinger.com:465</em></p>";
-    echo "</div>";
-
     $mail = new PHPMailer(true);
     
     try {
-        // --- STEP 2: SMTP CONFIGURATION ---
+        // SMTP Configuration
         $mail->isSMTP();
-        $mail->SMTPDebug = 4; // LEVEL 4: Full low-level output
-
+        $mail->SMTPDebug = 0; // Disable debug output
+        
         $settings = $_SESSION['user_settings'] ?? [];
 
-        // SMTP Host - CORRECTED to Hostinger's SMTP server
+        // SMTP Host - Hostinger's SMTP server
         $mail->Host = "smtp.hostinger.com";
         $mail->SMTPAuth = true;
-        $mail->Username = $_SESSION['smtp_user'];  // info.official@holidayseva.com
-        $mail->Password = $_SESSION['smtp_pass'];  // Your email password
+        $mail->Username = $_SESSION['smtp_user'];
+        $mail->Password = $_SESSION['smtp_pass'];
 
-        // Port and Security Configuration (Hostinger uses 465 with SSL)
+        // Port and Security Configuration
         $mail->Port = 465;
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         
+        // Sender
         $displayName = !empty($settings['display_name']) ? $settings['display_name'] : "Holiday Seva";
         $mail->setFrom($_SESSION['smtp_user'], $displayName);
         
-        // RECIPIENT
+        // Recipient
         $recipient = filter_var(trim($_POST['email'] ?? ''), FILTER_SANITIZE_EMAIL);
+        
+        if (!$recipient) {
+            throw new Exception("Invalid email address");
+        }
+        
         $mail->addAddress($recipient);
         
-        // SUBJECT & BODY
+        // Subject & Body
         $mail->isHTML(true);
         $mail->Subject = $_POST['subject'] ?? 'Notification';
         $mail->Body = $_POST['message'] ?? 'Test Message';
 
-        echo "<h3>--- SMTP HANDSHAKE LOG ---</h3>";
-        echo "<pre style='background:#000; color:#0f0; padding:15px; overflow-x:auto;'>";
-        
+        // Send email
         if ($mail->send()) {
-            echo "</pre>";
-            echo "<h2 style='color:green;'>SUCCESS: Email Sent!</h2>";
-            echo "<a href='index.php'>Go Back</a>";
+            echo '<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Sent Successfully</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .success-container {
+            max-width: 600px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            text-align: center;
+        }
+        .success-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+        }
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            animation: scaleIn 0.5s ease-out;
+        }
+        .success-icon i {
+            font-size: 40px;
+            color: white;
+        }
+        @keyframes scaleIn {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .success-body {
+            padding: 40px;
+        }
+        .email-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+        .email-info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .email-info-row:last-child {
+            border-bottom: none;
+        }
+        .label {
+            font-weight: 600;
+            color: #666;
+        }
+        .value {
+            color: #333;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="success-container">
+        <div class="success-header">
+            <div class="success-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h1>Email Sent Successfully!</h1>
+            <p>Your message has been delivered</p>
+        </div>
+        <div class="success-body">
+            <div class="email-info">
+                <div class="email-info-row">
+                    <span class="label">To:</span>
+                    <span class="value">' . htmlspecialchars($recipient) . '</span>
+                </div>
+                <div class="email-info-row">
+                    <span class="label">Subject:</span>
+                    <span class="value">' . htmlspecialchars($mail->Subject) . '</span>
+                </div>
+                <div class="email-info-row">
+                    <span class="label">Sent At:</span>
+                    <span class="value">' . date('M d, Y h:i A') . '</span>
+                </div>
+            </div>
+            <a href="index.php" class="btn">
+                <i class="fas fa-paper-plane"></i>
+                Send Another Email
+            </a>
+        </div>
+    </div>
+</body>
+</html>';
         }
         
     } catch (Exception $e) {
-        echo "</pre>";
-        echo "<div style='background:#f2dede; color:#a94442; padding:15px; border:1px solid #ebccd1;'>";
-        echo "<h2>ERROR: Authentication Failed</h2>";
-        echo "<strong>PHPMailer Says:</strong> " . $e->getMessage() . "<br><br>";
-        echo "<strong>Technical Error Info:</strong> " . nl2br(htmlspecialchars($mail->ErrorInfo));
-        echo "</div>";
-        echo "<br><a href='index.php' style='padding:10px; background:#333; color:#fff; text-decoration:none;'>Try Again</a>";
+        echo '<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Send Error</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .error-container {
+            max-width: 600px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        .error-header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        .error-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+        .error-icon i {
+            font-size: 40px;
+            color: white;
+        }
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .error-body {
+            padding: 40px;
+        }
+        .error-message {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin-bottom: 24px;
+            border-radius: 8px;
+            word-break: break-word;
+        }
+        .error-message strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #856404;
+        }
+        .error-message p {
+            color: #856404;
+            line-height: 1.6;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 32px;
+            background: #f5576c;
+            color: white;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            background: #e04555;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(245, 87, 108, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-header">
+            <div class="error-icon">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <h1>Email Sending Failed</h1>
+            <p>We encountered an error while sending your email</p>
+        </div>
+        <div class="error-body">
+            <div class="error-message">
+                <strong>Error Details:</strong>
+                <p>' . htmlspecialchars($e->getMessage()) . '</p>
+            </div>
+            <a href="index.php" class="btn">
+                <i class="fas fa-arrow-left"></i>
+                Try Again
+            </a>
+        </div>
+    </div>
+</body>
+</html>';
     }
 } else {
     header("Location: index.php");
@@ -88,8 +313,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 }
 
 function showSuccessPage($subject, $successEmails, $failedEmails, $dbSaved, $attachments, $summary) {
-    ?>
-<!DOCTYPE html>
+    ?><!DOCTYPE html>
 <html lang="en">
 
 <head>
