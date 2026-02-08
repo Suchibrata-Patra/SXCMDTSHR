@@ -1,5 +1,5 @@
 <?php
-// deleted_items.php - Ultra-Premium Dashboard-Style Trash Interface
+// deleted_items.php - Apple-Inspired Minimalist Interface
 session_start();
 require 'config.php';
 require 'db_config.php';
@@ -145,88 +145,46 @@ $hasActiveFilters = !empty(array_filter($filters));
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trash Management • SXC MDTS</title>
+    <title>Mail</title>
 
-    <!-- Premium Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
-            /* Modern Dashboard Palette */
-            --primary-50: #f0f9ff;
-            --primary-100: #e0f2fe;
-            --primary-200: #bae6fd;
-            --primary-300: #7dd3fc;
-            --primary-400: #38bdf8;
-            --primary-500: #0ea5e9;
-            --primary-600: #0284c7;
-            --primary-700: #0369a1;
-            --primary-800: #075985;
-            --primary-900: #0c4a6e;
-
-            /* Sophisticated Grays */
-            --gray-50: #f9fafb;
-            --gray-100: #f3f4f6;
-            --gray-150: #eff1f3;
-            --gray-200: #e5e7eb;
-            --gray-300: #d1d5db;
-            --gray-400: #9ca3af;
-            --gray-500: #6b7280;
-            --gray-600: #4b5563;
-            --gray-700: #374151;
-            --gray-800: #1f2937;
-            --gray-900: #111827;
-
-            /* Action Colors */
-            --success-50: #f0fdf4;
-            --success-500: #22c55e;
-            --success-600: #16a34a;
-            --success-700: #15803d;
-
-            --danger-50: #fef2f2;
-            --danger-500: #ef4444;
-            --danger-600: #dc2626;
-            --danger-700: #b91c1c;
-
-            --warning-50: #fffbeb;
-            --warning-500: #f59e0b;
-            --warning-600: #d97706;
-
-            --info-50: #eff6ff;
-            --info-500: #3b82f6;
-            --info-600: #2563eb;
-
-            /* Semantic Colors */
-            --background: #f8f9fa;
-            --surface: #ffffff;
-            --surface-hover: #f9fafb;
-            --border: #e5e7eb;
-            --border-light: #f0f1f3;
-            --divider: #eef0f2;
-
-            /* Text Hierarchy */
-            --text-primary: #111827;
-            --text-secondary: #6b7280;
-            --text-tertiary: #9ca3af;
-            --text-disabled: #d1d5db;
-
-            /* Sophisticated Shadows */
-            --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-            --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-
+            /* Apple System Colors */
+            --system-white: #ffffff;
+            --system-gray-1: #f5f5f7;
+            --system-gray-2: #e8e8ed;
+            --system-gray-3: #d2d2d7;
+            --system-gray-4: #c7c7cc;
+            --system-gray-5: #aeaeb2;
+            --system-gray-6: #8e8e93;
+            --system-separator: rgba(60, 60, 67, 0.12);
+            
+            /* Text Colors */
+            --label-primary: #000000;
+            --label-secondary: rgba(60, 60, 67, 0.6);
+            --label-tertiary: rgba(60, 60, 67, 0.3);
+            --label-quaternary: rgba(60, 60, 67, 0.18);
+            
+            /* Accent Colors - Subtle */
+            --system-blue: #007aff;
+            --system-blue-subtle: rgba(0, 122, 255, 0.1);
+            
+            /* Semantic - Muted */
+            --fill-positive: rgba(52, 199, 89, 0.15);
+            --fill-negative: rgba(255, 59, 48, 0.15);
+            --text-positive: rgba(52, 199, 89, 1);
+            --text-negative: rgba(255, 59, 48, 1);
+            
+            /* Shadows - Ultra Subtle */
+            --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-2: 0 2px 8px rgba(0, 0, 0, 0.04);
+            --shadow-3: 0 4px 16px rgba(0, 0, 0, 0.06);
+            
             /* Transitions */
-            --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-            --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-            --transition-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
-            --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+            --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
         }
 
         * {
@@ -236,14 +194,14 @@ $hasActiveFilters = !empty(array_filter($filters));
         }
 
         body {
-            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: var(--background);
-            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            background: var(--system-white);
+            color: var(--label-primary);
             display: flex;
             height: 100vh;
             overflow: hidden;
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
         }
 
         /* ========== MAIN LAYOUT ========== */
@@ -253,528 +211,365 @@ $hasActiveFilters = !empty(array_filter($filters));
             flex-direction: column;
             height: 100vh;
             overflow: hidden;
-            background: var(--background);
         }
 
-        /* ========== PREMIUM HEADER ========== */
-        .page-header {
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
-            padding: 24px 32px;
+        /* ========== COMPACT TOOLBAR ========== */
+        .toolbar {
+            background: var(--system-white);
+            border-bottom: 0.5px solid var(--system-separator);
+            padding: 8px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-shrink: 0;
-            position: sticky;
-            top: 0;
-            z-index: 20;
-            box-shadow: var(--shadow-xs);
+            height: 52px;
         }
 
-        .header-left {
+        .toolbar-left,
+        .toolbar-right {
             display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .header-icon {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, var(--danger-50) 0%, var(--danger-100) 100%);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--danger-600);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .header-icon .material-icons-round {
-            font-size: 24px;
-        }
-
-        .header-content h1 {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--text-primary);
-            letter-spacing: -0.02em;
-            margin-bottom: 4px;
-        }
-
-        .header-content p {
-            font-size: 14px;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .stats-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 10px;
-            background: var(--gray-100);
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-left: 8px;
-        }
-
-        .stats-badge .material-icons-round {
-            font-size: 16px;
-        }
-
-        /* Header Actions */
-        .header-actions {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-
-        .search-box {
-            position: relative;
-            width: 320px;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 10px 16px 10px 42px;
-            border: 1.5px solid var(--border);
-            border-radius: 10px;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-primary);
-            background: var(--surface);
-            transition: all var(--transition-base);
-        }
-
-        .search-box input:focus {
-            outline: none;
-            border-color: var(--primary-400);
-            box-shadow: 0 0 0 4px var(--primary-50);
-        }
-
-        .search-box input::placeholder {
-            color: var(--text-tertiary);
-        }
-
-        .search-box .material-icons-round {
-            position: absolute;
-            left: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 20px;
-            color: var(--text-tertiary);
-        }
-
-        .btn-secondary,
-        .btn-primary {
-            display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 10px 18px;
-            border-radius: 10px;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all var(--transition-base);
-            border: none;
-            white-space: nowrap;
         }
 
-        .btn-secondary {
-            background: var(--surface);
-            border: 1.5px solid var(--border);
-            color: var(--text-primary);
-        }
-
-        .btn-secondary:hover {
-            background: var(--surface-hover);
-            border-color: var(--gray-300);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .btn-secondary.active {
-            background: var(--primary-50);
-            border-color: var(--primary-300);
-            color: var(--primary-700);
-        }
-
-        .btn-primary {
-            background: var(--primary-600);
-            color: white;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-700);
-            box-shadow: var(--shadow-md);
-            transform: translateY(-1px);
-        }
-
-        .filter-badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 20px;
-            height: 20px;
-            padding: 0 6px;
-            background: var(--primary-600);
-            color: white;
-            border-radius: 10px;
-            font-size: 11px;
-            font-weight: 700;
-        }
-
-        /* ========== BULK ACTION BAR ========== */
-        .bulk-action-bar {
-            background: linear-gradient(135deg, var(--gray-900) 0%, var(--gray-800) 100%);
-            padding: 16px 32px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
-            transform: translateY(-100%);
-            opacity: 0;
-            transition: all var(--transition-smooth);
+        /* Search Field - Apple Style */
+        .search-field {
             position: relative;
-            z-index: 19;
-            box-shadow: var(--shadow-lg);
+            width: 260px;
         }
 
-        .bulk-action-bar.active {
-            transform: translateY(0);
+        .search-field input {
+            width: 100%;
+            height: 32px;
+            padding: 0 32px 0 28px;
+            border: none;
+            border-radius: 6px;
+            background: var(--system-gray-2);
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--label-primary);
+            transition: background 0.2s var(--ease);
+        }
+
+        .search-field input:focus {
+            outline: none;
+            background: var(--system-gray-3);
+        }
+
+        .search-field input::placeholder {
+            color: var(--label-tertiary);
+        }
+
+        .search-field .icon-left {
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 16px;
+            color: var(--label-tertiary);
+            pointer-events: none;
+        }
+
+        .search-field .icon-clear {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+            color: var(--label-tertiary);
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s var(--ease);
+        }
+
+        .search-field input:not(:placeholder-shown) + .icon-clear {
             opacity: 1;
         }
 
-        .bulk-action-bar::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, var(--primary-500), var(--success-500), var(--primary-500));
-            background-size: 200% 100%;
-            animation: shimmer 3s linear infinite;
-        }
-
-        @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
-
-        .bulk-info {
+        /* Minimal Icon Buttons */
+        .icon-button {
+            width: 32px;
+            height: 32px;
             display: flex;
             align-items: center;
-            gap: 16px;
-            color: white;
+            justify-content: center;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--label-secondary);
+            cursor: pointer;
+            transition: all 0.15s var(--ease);
         }
 
-        .selected-count {
+        .icon-button:hover {
+            background: var(--system-gray-2);
+            color: var(--label-primary);
+        }
+
+        .icon-button.active {
+            background: var(--system-blue-subtle);
+            color: var(--system-blue);
+        }
+
+        .icon-button .material-icons-round {
+            font-size: 18px;
+        }
+
+        /* Count Badge - Subtle */
+        .count-badge {
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            background: var(--system-gray-5);
+            color: var(--system-white);
+            border-radius: 9px;
+            font-size: 11px;
+            font-weight: 600;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 36px;
-            height: 36px;
-            padding: 0 12px;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 700;
+            margin-left: 6px;
         }
 
-        .bulk-text {
-            font-size: 15px;
-            font-weight: 600;
-        }
-
-        .bulk-actions {
+        /* ========== SELECTION BAR (Compact) ========== */
+        .selection-bar {
+            background: var(--system-gray-1);
+            border-bottom: 0.5px solid var(--system-separator);
+            padding: 8px 20px;
             display: flex;
-            gap: 10px;
+            justify-content: space-between;
+            align-items: center;
+            height: 44px;
+            opacity: 0;
+            transform: translateY(-100%);
+            transition: all 0.3s var(--ease);
+            position: absolute;
+            top: 52px;
+            left: 0;
+            right: 0;
+            z-index: 10;
         }
 
-        .bulk-btn {
+        .selection-bar.active {
+            opacity: 1;
+            transform: translateY(0);
+            position: relative;
+            top: 0;
+        }
+
+        .selection-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            color: var(--label-secondary);
+            font-weight: 500;
+        }
+
+        .selection-count {
+            font-weight: 600;
+            color: var(--label-primary);
+        }
+
+        .selection-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        /* Minimal Action Buttons */
+        .action-button {
+            height: 28px;
+            padding: 0 12px;
+            border: 0.5px solid var(--system-separator);
+            border-radius: 6px;
+            background: var(--system-white);
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--label-primary);
+            cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            gap: 5px;
+            transition: all 0.15s var(--ease);
+        }
+
+        .action-button:hover {
+            background: var(--system-gray-1);
+            border-color: var(--system-gray-4);
+        }
+
+        .action-button .material-icons-round {
             font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all var(--transition-base);
-            border: none;
         }
 
-        .bulk-btn-restore {
-            background: var(--success-500);
-            color: white;
+        .action-button.restore {
+            color: var(--text-positive);
+            border-color: rgba(52, 199, 89, 0.3);
         }
 
-        .bulk-btn-restore:hover {
-            background: var(--success-600);
-            box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3);
-            transform: translateY(-2px);
+        .action-button.restore:hover {
+            background: var(--fill-positive);
         }
 
-        .bulk-btn-delete {
-            background: var(--danger-500);
-            color: white;
+        .action-button.delete {
+            color: var(--text-negative);
+            border-color: rgba(255, 59, 48, 0.3);
         }
 
-        .bulk-btn-delete:hover {
-            background: var(--danger-600);
-            box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
-            transform: translateY(-2px);
-        }
-
-        .bulk-btn-clear {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .bulk-btn-clear:hover {
-            background: rgba(255, 255, 255, 0.15);
+        .action-button.delete:hover {
+            background: var(--fill-negative);
         }
 
         /* ========== FILTER PANEL ========== */
         .filter-panel {
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
+            background: var(--system-white);
+            border-bottom: 0.5px solid var(--system-separator);
             padding: 0;
             max-height: 0;
             overflow: hidden;
-            transition: all var(--transition-smooth);
-            position: relative;
-            z-index: 18;
+            transition: all 0.3s var(--ease);
         }
 
         .filter-panel.active {
-            max-height: 600px;
-            padding: 24px 32px;
-        }
-
-        .filter-section-title {
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--text-secondary);
-            margin-bottom: 16px;
+            max-height: 400px;
+            padding: 16px 20px;
         }
 
         .filter-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 12px;
         }
 
-        .filter-group {
+        .filter-field {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
         }
 
-        .filter-group label {
-            font-size: 13px;
+        .filter-field label {
+            font-size: 11px;
             font-weight: 600;
-            color: var(--text-secondary);
+            color: var(--label-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .filter-input,
-        .filter-select {
-            width: 100%;
-            padding: 10px 14px;
-            border: 1.5px solid var(--border);
-            border-radius: 8px;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-primary);
-            background: var(--surface);
-            transition: all var(--transition-base);
+        .filter-field input,
+        .filter-field select {
+            height: 32px;
+            padding: 0 10px;
+            border: 0.5px solid var(--system-separator);
+            border-radius: 6px;
+            background: var(--system-white);
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--label-primary);
+            transition: all 0.15s var(--ease);
         }
 
-        .filter-input:focus,
-        .filter-select:focus {
+        .filter-field input:focus,
+        .filter-field select:focus {
             outline: none;
-            border-color: var(--primary-400);
-            box-shadow: 0 0 0 4px var(--primary-50);
+            border-color: var(--system-blue);
+            box-shadow: 0 0 0 3px var(--system-blue-subtle);
         }
 
         .filter-actions {
             display: flex;
-            gap: 12px;
+            gap: 8px;
             justify-content: flex-end;
-            padding-top: 16px;
-            border-top: 1px solid var(--border-light);
+            padding-top: 12px;
+            border-top: 0.5px solid var(--system-separator);
         }
 
-        .btn-filter-clear {
+        /* Active Filters */
+        .active-filters {
             padding: 10px 20px;
-            background: var(--gray-100);
-            border: none;
-            border-radius: 8px;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-primary);
-            cursor: pointer;
-            transition: all var(--transition-base);
-        }
-
-        .btn-filter-clear:hover {
-            background: var(--gray-200);
-        }
-
-        .btn-filter-apply {
-            padding: 10px 24px;
-            background: var(--primary-600);
-            border: none;
-            border-radius: 8px;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 14px;
-            font-weight: 600;
-            color: white;
-            cursor: pointer;
-            transition: all var(--transition-base);
-        }
-
-        .btn-filter-apply:hover {
-            background: var(--primary-700);
-            box-shadow: var(--shadow-md);
-        }
-
-        /* Active Filters Display */
-        .active-filters-bar {
-            padding: 16px 32px;
-            background: var(--gray-50);
-            border-bottom: 1px solid var(--border);
+            background: var(--system-gray-1);
+            border-bottom: 0.5px solid var(--system-separator);
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
             flex-wrap: wrap;
         }
 
-        .active-filters-label {
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--text-secondary);
-        }
-
-        .active-filter-tag {
+        .filter-chip {
+            height: 24px;
+            padding: 0 10px;
+            background: var(--system-white);
+            border: 0.5px solid var(--system-separator);
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--label-primary);
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 6px 12px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--text-primary);
-            box-shadow: var(--shadow-xs);
+            gap: 6px;
         }
 
-        .active-filter-tag .material-icons-round {
-            font-size: 16px;
-            color: var(--text-tertiary);
+        .filter-chip .material-icons-round {
+            font-size: 14px;
+            color: var(--label-tertiary);
             cursor: pointer;
-            transition: all var(--transition-fast);
+            transition: color 0.15s var(--ease);
         }
 
-        .active-filter-tag .material-icons-round:hover {
-            color: var(--danger-500);
+        .filter-chip .material-icons-round:hover {
+            color: var(--text-negative);
         }
 
-        .btn-clear-all-filters {
-            padding: 6px 14px;
-            background: var(--gray-900);
-            border: none;
-            border-radius: 20px;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 13px;
-            font-weight: 600;
-            color: white;
-            cursor: pointer;
-            transition: all var(--transition-base);
-        }
-
-        .btn-clear-all-filters:hover {
-            background: var(--gray-800);
-            box-shadow: var(--shadow-sm);
-        }
-
-        /* ========== CONTENT AREA ========== */
+        /* ========== EMAIL LIST ========== */
         .content-area {
             flex: 1;
             overflow-y: auto;
-            padding: 24px 32px;
+            background: var(--system-white);
         }
 
-        /* ========== EMAIL CARDS ========== */
-        .emails-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+        .email-list {
+            padding: 0;
         }
 
-        .email-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 20px;
+        .email-row {
             display: grid;
-            grid-template-columns: 40px 240px 1fr auto 140px;
-            gap: 20px;
+            grid-template-columns: 36px 200px 1fr auto 100px;
+            gap: 12px;
             align-items: center;
-            transition: all var(--transition-base);
+            padding: 10px 20px;
+            border-bottom: 0.5px solid var(--system-separator);
             cursor: pointer;
+            transition: background 0.15s var(--ease);
             position: relative;
-            overflow: hidden;
         }
 
-        .email-card::before {
+        .email-row:hover {
+            background: var(--system-gray-1);
+        }
+
+        .email-row.selected {
+            background: var(--system-blue-subtle);
+        }
+
+        .email-row::after {
             content: '';
             position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 0;
-            background: linear-gradient(180deg, var(--primary-500), var(--primary-600));
-            transition: width var(--transition-base);
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-family: 'Material Icons Round';
+            content: 'chevron_right';
+            font-size: 16px;
+            color: var(--label-quaternary);
+            opacity: 0;
+            transition: opacity 0.15s var(--ease);
         }
 
-        .email-card:hover {
-            border-color: var(--primary-200);
-            box-shadow: var(--shadow-md);
-            transform: translateX(4px);
+        .email-row:hover::after {
+            opacity: 1;
         }
 
-        .email-card:hover::before {
-            width: 4px;
-        }
-
-        .email-card.selected {
-            background: var(--primary-50);
-            border-color: var(--primary-300);
-            box-shadow: 0 0 0 2px var(--primary-100);
-        }
-
-        .email-card.selected::before {
-            width: 4px;
-        }
-
-        /* Email Card Sections */
+        /* Checkbox */
         .email-checkbox-col {
             display: flex;
             align-items: center;
@@ -782,163 +577,157 @@ $hasActiveFilters = !empty(array_filter($filters));
         }
 
         .email-checkbox {
-            width: 20px;
-            height: 20px;
+            width: 16px;
+            height: 16px;
             cursor: pointer;
-            accent-color: var(--primary-600);
+            accent-color: var(--system-blue);
         }
 
-        .email-recipient {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-primary);
+        /* Recipient */
+        .email-from {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--label-primary);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
+        /* Subject & Preview */
         .email-content {
             min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
         }
 
         .email-subject {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 4px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--label-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .email-preview {
-            font-size: 13px;
-            color: var(--text-tertiary);
-            display: -webkit-box;
-            -webkit-line-clamp: 1;
-            -webkit-box-orient: vertical;
+            font-size: 12px;
+            color: var(--label-tertiary);
+            white-space: nowrap;
             overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .email-label-col {
+        /* Label */
+        .email-label {
             display: flex;
-            gap: 8px;
+            gap: 6px;
         }
 
-        .label-pill {
-            padding: 4px 12px;
-            border-radius: 16px;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: white;
-            box-shadow: var(--shadow-xs);
+        .label-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            opacity: 0.3;
         }
 
-        .email-date-col {
+        /* Date & Attachment */
+        .email-meta {
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-secondary);
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 400;
+            color: var(--label-secondary);
             white-space: nowrap;
         }
 
-        .attachment-indicator {
-            color: var(--text-tertiary);
-            font-size: 16px;
+        .email-meta .material-icons-round {
+            font-size: 14px;
+            color: var(--label-tertiary);
         }
 
         /* ========== EMPTY STATE ========== */
         .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 40px;
             text-align: center;
-            padding: 100px 40px;
         }
 
         .empty-icon {
-            width: 120px;
-            height: 120px;
-            margin: 0 auto 24px;
-            background: linear-gradient(135deg, var(--gray-100) 0%, var(--gray-50) 100%);
+            width: 80px;
+            height: 80px;
+            margin-bottom: 16px;
             border-radius: 50%;
+            background: var(--system-gray-2);
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
-        }
-
-        .empty-icon::before {
-            content: '';
-            position: absolute;
-            inset: 8px;
-            background: var(--surface);
-            border-radius: 50%;
         }
 
         .empty-icon .material-icons-round {
-            font-size: 56px;
-            color: var(--text-tertiary);
-            position: relative;
-            z-index: 1;
+            font-size: 40px;
+            color: var(--label-quaternary);
         }
 
         .empty-state h3 {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 8px;
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--label-primary);
+            margin-bottom: 6px;
         }
 
         .empty-state p {
-            font-size: 14px;
-            color: var(--text-secondary);
-            max-width: 400px;
-            margin: 0 auto;
-            line-height: 1.6;
+            font-size: 13px;
+            color: var(--label-secondary);
+            max-width: 300px;
+            line-height: 1.5;
         }
 
         /* ========== PAGINATION ========== */
         .pagination {
             display: flex;
             justify-content: center;
-            gap: 8px;
-            padding: 24px 32px;
-            background: var(--surface);
-            border-top: 1px solid var(--border);
+            align-items: center;
+            gap: 4px;
+            padding: 12px 20px;
+            background: var(--system-white);
+            border-top: 0.5px solid var(--system-separator);
         }
 
-        .page-btn {
+        .page-button {
+            min-width: 32px;
+            height: 32px;
+            padding: 0 8px;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--label-primary);
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 40px;
-            height: 40px;
-            padding: 0 12px;
-            border: 1.5px solid var(--border);
-            border-radius: 8px;
-            background: var(--surface);
-            color: var(--text-primary);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all var(--transition-base);
+            cursor: pointer;
+            transition: all 0.15s var(--ease);
         }
 
-        .page-btn:hover {
-            border-color: var(--primary-300);
-            background: var(--primary-50);
-            color: var(--primary-700);
+        .page-button:hover {
+            background: var(--system-gray-2);
         }
 
-        .page-btn.active {
-            background: var(--primary-600);
-            border-color: var(--primary-600);
-            color: white;
-            box-shadow: var(--shadow-sm);
+        .page-button.active {
+            background: var(--system-gray-3);
+            color: var(--label-primary);
         }
 
         /* ========== SCROLLBAR ========== */
         .content-area::-webkit-scrollbar {
-            width: 8px;
+            width: 10px;
         }
 
         .content-area::-webkit-scrollbar-track {
@@ -946,19 +735,20 @@ $hasActiveFilters = !empty(array_filter($filters));
         }
 
         .content-area::-webkit-scrollbar-thumb {
-            background: var(--gray-300);
+            background: var(--system-gray-4);
             border-radius: 10px;
+            border: 2px solid var(--system-white);
         }
 
         .content-area::-webkit-scrollbar-thumb:hover {
-            background: var(--gray-400);
+            background: var(--system-gray-5);
         }
 
         /* ========== ANIMATIONS ========== */
-        @keyframes fadeInUp {
+        @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(8px);
             }
             to {
                 opacity: 1;
@@ -966,29 +756,29 @@ $hasActiveFilters = !empty(array_filter($filters));
             }
         }
 
-        .email-card {
-            animation: fadeInUp 0.3s var(--transition-base) backwards;
+        .email-row {
+            animation: fadeIn 0.2s var(--ease) backwards;
         }
 
-        <?php for ($i = 0; $i < min(20, count($sentEmails)); $i++): ?>
-        .email-card:nth-child(<?= $i + 1 ?>) {
-            animation-delay: <?= $i * 0.02 ?>s;
+        <?php for ($i = 0; $i < min(15, count($sentEmails)); $i++): ?>
+        .email-row:nth-child(<?= $i + 1 ?>) {
+            animation-delay: <?= $i * 0.015 ?>s;
         }
         <?php endfor; ?>
 
         /* ========== RESPONSIVE ========== */
-        @media (max-width: 1024px) {
-            .email-card {
-                grid-template-columns: 40px 1fr 100px;
+        @media (max-width: 768px) {
+            .email-row {
+                grid-template-columns: 36px 1fr 80px;
             }
 
-            .email-recipient,
-            .email-label-col {
+            .email-from,
+            .email-label {
                 display: none;
             }
 
-            .filter-grid {
-                grid-template-columns: 1fr;
+            .search-field {
+                width: 180px;
             }
         }
     </style>
@@ -998,82 +788,70 @@ $hasActiveFilters = !empty(array_filter($filters));
     <?php include 'sidebar.php'; ?>
 
     <div id="main-wrapper">
-        <!-- Premium Header -->
-        <div class="page-header">
-            <div class="header-left">
-                <div class="header-icon">
-                    <span class="material-icons-round">delete</span>
-                </div>
-                <div class="header-content">
-                    <h1>Trash Management</h1>
-                    <p>Deleted items are permanently removed after 30 days
-                        <span class="stats-badge">
-                            <span class="material-icons-round">folder</span>
-                            <?= $totalEmails ?>
-                        </span>
-                    </p>
-                </div>
-            </div>
-
-            <div class="header-actions">
-                <div class="search-box">
-                    <span class="material-icons-round">search</span>
-                    <input type="text" placeholder="Search in trash..." 
+        <!-- Compact Toolbar -->
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <div class="search-field">
+                    <span class="material-icons-round icon-left">search</span>
+                    <input type="text" placeholder="Search" 
                            value="<?= htmlspecialchars($filters['search']) ?>"
                            onchange="handleSearch(this.value)">
+                    <span class="material-icons-round icon-clear" onclick="clearSearch()">close</span>
                 </div>
-                <button class="btn-secondary <?= $hasActiveFilters ? 'active' : '' ?>" onclick="toggleFilters()">
-                    <span class="material-icons-round" style="font-size: 20px;">tune</span>
-                    Filters
-                    <?php if ($hasActiveFilters): ?>
-                    <span class="filter-badge"><?= count(array_filter($filters)) ?></span>
-                    <?php endif; ?>
+                <?php if ($totalEmails > 0): ?>
+                <span style="font-size: 13px; color: var(--label-secondary); margin-left: 4px;">
+                    <?= $totalEmails ?> <?= $totalEmails === 1 ? 'item' : 'items' ?>
+                </span>
+                <?php endif; ?>
+            </div>
+
+            <div class="toolbar-right">
+                <button class="icon-button <?= $hasActiveFilters ? 'active' : '' ?>" 
+                        onclick="toggleFilters()" 
+                        title="Filters">
+                    <span class="material-icons-round">filter_list</span>
                 </button>
             </div>
         </div>
 
-        <!-- Bulk Action Bar -->
-        <div class="bulk-action-bar" id="bulkActionBar">
-            <div class="bulk-info">
-                <div class="selected-count" id="selectedCount">0</div>
-                <div class="bulk-text">items selected</div>
+        <!-- Selection Bar -->
+        <div class="selection-bar" id="selectionBar">
+            <div class="selection-info">
+                <span class="selection-count" id="selectedCount">0</span> selected
             </div>
-            <div class="bulk-actions">
-                <button class="bulk-btn bulk-btn-restore" onclick="bulkRestore()">
-                    <span class="material-icons-round" style="font-size: 18px;">restore</span>
+            <div class="selection-actions">
+                <button class="action-button restore" onclick="bulkRestore()">
+                    <span class="material-icons-round">arrow_upward</span>
                     Restore
                 </button>
-                <button class="bulk-btn bulk-btn-delete" onclick="bulkDeleteForever()">
-                    <span class="material-icons-round" style="font-size: 18px;">delete_forever</span>
-                    Delete Forever
+                <button class="action-button delete" onclick="bulkDeleteForever()">
+                    <span class="material-icons-round">delete_forever</span>
+                    Delete
                 </button>
-                <button class="bulk-btn bulk-btn-clear" onclick="clearSelection()">
-                    Clear Selection
+                <button class="action-button" onclick="clearSelection()">
+                    Clear
                 </button>
             </div>
         </div>
 
         <!-- Filter Panel -->
         <div class="filter-panel <?= $hasActiveFilters ? 'active' : '' ?>" id="filterPanel">
-            <div class="filter-section-title">Advanced Filters</div>
             <form method="GET" action="deleted_items.php">
                 <div class="filter-grid">
-                    <div class="filter-group">
-                        <label>Recipient Email</label>
-                        <input type="text" name="recipient" class="filter-input" 
-                               placeholder="e.g., user@example.com"
+                    <div class="filter-field">
+                        <label>Recipient</label>
+                        <input type="text" name="recipient" 
                                value="<?= htmlspecialchars($filters['recipient']) ?>">
                     </div>
-                    <div class="filter-group">
+                    <div class="filter-field">
                         <label>Subject</label>
-                        <input type="text" name="subject" class="filter-input" 
-                               placeholder="Search by subject"
+                        <input type="text" name="subject" 
                                value="<?= htmlspecialchars($filters['subject']) ?>">
                     </div>
-                    <div class="filter-group">
+                    <div class="filter-field">
                         <label>Label</label>
-                        <select name="label_id" class="filter-select">
-                            <option value="">All Labels</option>
+                        <select name="label_id">
+                            <option value="">All</option>
                             <option value="unlabeled" <?= $filters['label_id'] === 'unlabeled' ? 'selected' : '' ?>>
                                 Unlabeled
                             </option>
@@ -1084,49 +862,48 @@ $hasActiveFilters = !empty(array_filter($filters));
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="filter-group">
-                        <label>Date From</label>
-                        <input type="date" name="date_from" class="filter-input" 
+                    <div class="filter-field">
+                        <label>From Date</label>
+                        <input type="date" name="date_from" 
                                value="<?= htmlspecialchars($filters['date_from']) ?>">
                     </div>
-                    <div class="filter-group">
-                        <label>Date To</label>
-                        <input type="date" name="date_to" class="filter-input" 
+                    <div class="filter-field">
+                        <label>To Date</label>
+                        <input type="date" name="date_to" 
                                value="<?= htmlspecialchars($filters['date_to']) ?>">
                     </div>
                 </div>
                 <div class="filter-actions">
-                    <button type="button" class="btn-filter-clear" onclick="clearForm()">Clear Filters</button>
-                    <button type="submit" class="btn-filter-apply">Apply Filters</button>
+                    <button type="button" class="action-button" onclick="clearForm()">Clear</button>
+                    <button type="submit" class="action-button" style="color: var(--system-blue); border-color: var(--system-blue);">Apply</button>
                 </div>
             </form>
         </div>
 
-        <!-- Active Filters Bar -->
+        <!-- Active Filters -->
         <?php if ($hasActiveFilters): ?>
-        <div class="active-filters-bar">
-            <span class="active-filters-label">Active Filters</span>
+        <div class="active-filters">
             <?php if (!empty($filters['search'])): ?>
-            <div class="active-filter-tag">
+            <div class="filter-chip">
                 Search: <?= htmlspecialchars($filters['search']) ?>
                 <span class="material-icons-round" onclick="removeFilter('search')">close</span>
             </div>
             <?php endif; ?>
             <?php if (!empty($filters['recipient'])): ?>
-            <div class="active-filter-tag">
-                Recipient: <?= htmlspecialchars($filters['recipient']) ?>
+            <div class="filter-chip">
+                <?= htmlspecialchars($filters['recipient']) ?>
                 <span class="material-icons-round" onclick="removeFilter('recipient')">close</span>
             </div>
             <?php endif; ?>
             <?php if (!empty($filters['subject'])): ?>
-            <div class="active-filter-tag">
+            <div class="filter-chip">
                 Subject: <?= htmlspecialchars($filters['subject']) ?>
                 <span class="material-icons-round" onclick="removeFilter('subject')">close</span>
             </div>
             <?php endif; ?>
             <?php if (!empty($filters['label_id'])): ?>
-            <div class="active-filter-tag">
-                Label: <?php 
+            <div class="filter-chip">
+                <?php 
                     if ($filters['label_id'] === 'unlabeled') {
                         echo 'Unlabeled';
                     } else {
@@ -1142,60 +919,56 @@ $hasActiveFilters = !empty(array_filter($filters));
             </div>
             <?php endif; ?>
             <?php if (!empty($filters['date_from']) || !empty($filters['date_to'])): ?>
-            <div class="active-filter-tag">
-                Date: <?= htmlspecialchars($filters['date_from'] ?: 'Any') ?> – <?= htmlspecialchars($filters['date_to'] ?: 'Any') ?>
+            <div class="filter-chip">
+                <?= htmlspecialchars($filters['date_from'] ?: '...') ?> – <?= htmlspecialchars($filters['date_to'] ?: '...') ?>
                 <span class="material-icons-round" onclick="clearDateFilters()">close</span>
             </div>
             <?php endif; ?>
-            <button class="btn-clear-all-filters" onclick="clearAllFilters()">
-                Clear All
-            </button>
         </div>
         <?php endif; ?>
 
-        <!-- Content Area with Email Cards -->
+        <!-- Content Area -->
         <div class="content-area">
             <?php if (empty($sentEmails)): ?>
             <div class="empty-state">
                 <div class="empty-icon">
-                    <span class="material-icons-round">delete_sweep</span>
+                    <span class="material-icons-round">inbox</span>
                 </div>
-                <h3>No items in trash</h3>
-                <p>When you delete emails, they'll appear here temporarily before being permanently removed.</p>
+                <h3>No Items</h3>
+                <p>Deleted emails appear here for 30 days before being permanently removed.</p>
             </div>
             <?php else: ?>
-            <div class="emails-grid">
+            <div class="email-list">
                 <?php foreach ($sentEmails as $email): ?>
-                <div class="email-card">
+                <div class="email-row">
                     <div class="email-checkbox-col">
                         <input type="checkbox" class="email-checkbox" value="<?= $email['id'] ?>" 
                                onchange="handleCheckboxChange()">
                     </div>
 
-                    <div class="email-recipient" onclick="openEmail(<?= $email['id'] ?>)">
+                    <div class="email-from" onclick="openEmail(<?= $email['id'] ?>)">
                         <?= htmlspecialchars($email['recipient_email']) ?>
                     </div>
 
                     <div class="email-content" onclick="openEmail(<?= $email['id'] ?>)">
                         <div class="email-subject"><?= htmlspecialchars($email['subject']) ?></div>
                         <div class="email-preview">
-                            <?= htmlspecialchars(mb_substr(strip_tags($email['message_body']), 0, 150)) ?>...
+                            <?= htmlspecialchars(mb_substr(strip_tags($email['message_body']), 0, 120)) ?>
                         </div>
                     </div>
 
-                    <div class="email-label-col">
-                        <?php if (!empty($email['label_name'])): ?>
-                        <span class="label-pill" style="background: <?= htmlspecialchars($email['label_color']) ?>;">
-                            <?= htmlspecialchars($email['label_name']) ?>
-                        </span>
+                    <div class="email-label">
+                        <?php if (!empty($email['label_color'])): ?>
+                        <div class="label-dot" style="background: <?= htmlspecialchars($email['label_color']) ?>;" 
+                             title="<?= htmlspecialchars($email['label_name']) ?>"></div>
                         <?php endif; ?>
                     </div>
 
-                    <div class="email-date-col" onclick="openEmail(<?= $email['id'] ?>)">
+                    <div class="email-meta" onclick="openEmail(<?= $email['id'] ?>)">
                         <?php if (!empty($email['attachment_names'])): ?>
-                        <span class="material-icons-round attachment-indicator">attach_file</span>
+                        <span class="material-icons-round">attach_file</span>
                         <?php endif; ?>
-                        <?= date('M j, Y', strtotime($email['sent_at'])) ?>
+                        <?= date('M j', strtotime($email['sent_at'])) ?>
                     </div>
                 </div>
                 <?php endforeach; ?>
@@ -1209,25 +982,19 @@ $hasActiveFilters = !empty(array_filter($filters));
             <?php
             $currentParams = $_GET;
             
-            if ($page > 3) {
-                $currentParams['page'] = 1;
-                echo '<a href="?' . http_build_query($currentParams) . '" class="page-btn">1</a>';
-                if ($page > 4) {
-                    echo '<span class="page-btn" style="border: none; cursor: default;">···</span>';
-                }
+            if ($page > 1) {
+                $currentParams['page'] = $page - 1;
+                echo '<a href="?' . http_build_query($currentParams) . '" class="page-button">‹</a>';
             }
             
             for ($i = max(1, $page - 2); $i <= min($totalPages, $page + 2); $i++) {
                 $currentParams['page'] = $i;
-                echo '<a href="?' . http_build_query($currentParams) . '" class="page-btn ' . ($i == $page ? 'active' : '') . '">' . $i . '</a>';
+                echo '<a href="?' . http_build_query($currentParams) . '" class="page-button ' . ($i == $page ? 'active' : '') . '">' . $i . '</a>';
             }
             
-            if ($page < $totalPages - 2) {
-                if ($page < $totalPages - 3) {
-                    echo '<span class="page-btn" style="border: none; cursor: default;">···</span>';
-                }
-                $currentParams['page'] = $totalPages;
-                echo '<a href="?' . http_build_query($currentParams) . '" class="page-btn">' . $totalPages . '</a>';
+            if ($page < $totalPages) {
+                $currentParams['page'] = $page + 1;
+                echo '<a href="?' . http_build_query($currentParams) . '" class="page-button">›</a>';
             }
             ?>
         </div>
@@ -1236,22 +1003,22 @@ $hasActiveFilters = !empty(array_filter($filters));
 
     <script>
         function handleCheckboxChange() {
-            const checkedBoxes = document.querySelectorAll('.email-checkbox:checked');
-            const bar = document.getElementById('bulkActionBar');
+            const checked = document.querySelectorAll('.email-checkbox:checked');
+            const bar = document.getElementById('selectionBar');
             const count = document.getElementById('selectedCount');
 
-            count.textContent = checkedBoxes.length;
+            count.textContent = checked.length;
 
-            if (checkedBoxes.length > 0) {
+            if (checked.length > 0) {
                 bar.classList.add('active');
-                document.querySelectorAll('.email-card').forEach(card => {
-                    const checkbox = card.querySelector('.email-checkbox');
-                    card.classList.toggle('selected', checkbox.checked);
+                document.querySelectorAll('.email-row').forEach(row => {
+                    const checkbox = row.querySelector('.email-checkbox');
+                    row.classList.toggle('selected', checkbox.checked);
                 });
             } else {
                 bar.classList.remove('active');
-                document.querySelectorAll('.email-card').forEach(card => {
-                    card.classList.remove('selected');
+                document.querySelectorAll('.email-row').forEach(row => {
+                    row.classList.remove('selected');
                 });
             }
         }
@@ -1262,63 +1029,46 @@ $hasActiveFilters = !empty(array_filter($filters));
         }
 
         async function bulkRestore() {
-            const emailIds = Array.from(document.querySelectorAll('.email-checkbox:checked')).map(cb => cb.value);
-            if (emailIds.length === 0) {
-                showNotification('Please select at least one email', 'error');
-                return;
-            }
+            const ids = Array.from(document.querySelectorAll('.email-checkbox:checked')).map(cb => cb.value);
+            if (ids.length === 0) return;
 
-            if (!confirm(`Restore ${emailIds.length} email(s) to inbox?`)) return;
+            if (!confirm(`Restore ${ids.length} ${ids.length === 1 ? 'item' : 'items'}?`)) return;
 
             try {
                 const response = await fetch('bulk_trash_actions.php', {
                     method: 'POST',
-                    body: new URLSearchParams({
-                        action: 'bulk_restore',
-                        email_ids: JSON.stringify(emailIds)
-                    })
+                    body: new URLSearchParams({ action: 'bulk_restore', email_ids: JSON.stringify(ids) })
                 });
-
                 const result = await response.json();
                 if (result.success) {
-                    showNotification(`Restored ${emailIds.length} email(s)`, 'success');
-                    setTimeout(() => location.reload(), 1500);
+                    setTimeout(() => location.reload(), 800);
                 } else {
-                    showNotification(result.message || 'Failed to restore', 'error');
+                    alert(result.message || 'Failed');
                 }
             } catch (error) {
-                showNotification('An error occurred', 'error');
+                alert('Error occurred');
             }
         }
 
         async function bulkDeleteForever() {
-            const emailIds = Array.from(document.querySelectorAll('.email-checkbox:checked')).map(cb => cb.value);
-            if (emailIds.length === 0) {
-                showNotification('Please select at least one email', 'error');
-                return;
-            }
+            const ids = Array.from(document.querySelectorAll('.email-checkbox:checked')).map(cb => cb.value);
+            if (ids.length === 0) return;
 
-            if (!confirm(`⚠️ PERMANENT DELETE\n\nDelete ${emailIds.length} email(s) forever? This cannot be undone.`)) return;
-            if (!confirm('Are you absolutely sure? This action is irreversible.')) return;
+            if (!confirm(`Permanently delete ${ids.length} ${ids.length === 1 ? 'item' : 'items'}? This cannot be undone.`)) return;
 
             try {
                 const response = await fetch('bulk_trash_actions.php', {
                     method: 'POST',
-                    body: new URLSearchParams({
-                        action: 'bulk_delete_forever',
-                        email_ids: JSON.stringify(emailIds)
-                    })
+                    body: new URLSearchParams({ action: 'bulk_delete_forever', email_ids: JSON.stringify(ids) })
                 });
-
                 const result = await response.json();
                 if (result.success) {
-                    showNotification(`Permanently deleted ${emailIds.length} email(s)`, 'success');
-                    setTimeout(() => location.reload(), 1500);
+                    setTimeout(() => location.reload(), 800);
                 } else {
-                    showNotification(result.message || 'Failed to delete', 'error');
+                    alert(result.message || 'Failed');
                 }
             } catch (error) {
-                showNotification('An error occurred', 'error');
+                alert('Error occurred');
             }
         }
 
@@ -1328,7 +1078,7 @@ $hasActiveFilters = !empty(array_filter($filters));
 
         function toggleFilters() {
             document.getElementById('filterPanel').classList.toggle('active');
-            document.querySelector('.btn-secondary').classList.toggle('active');
+            document.querySelector('.icon-button').classList.toggle('active');
         }
 
         function handleSearch(value) {
@@ -1336,6 +1086,12 @@ $hasActiveFilters = !empty(array_filter($filters));
             value ? url.searchParams.set('search', value) : url.searchParams.delete('search');
             url.searchParams.delete('page');
             window.location.href = url.toString();
+        }
+
+        function clearSearch() {
+            const input = document.querySelector('.search-field input');
+            input.value = '';
+            handleSearch('');
         }
 
         function clearForm() {
@@ -1357,65 +1113,13 @@ $hasActiveFilters = !empty(array_filter($filters));
             window.location.href = url.toString();
         }
 
-        function clearAllFilters() {
-            window.location.href = 'deleted_items.php';
-        }
-
-        function showNotification(message, type) {
-            const notif = document.createElement('div');
-            const colors = {
-                success: 'var(--success-500)',
-                error: 'var(--danger-500)',
-                info: 'var(--info-500)'
-            };
-            
-            notif.style.cssText = `
-                position: fixed;
-                top: 24px;
-                right: 24px;
-                padding: 16px 24px;
-                background: ${colors[type] || colors.info};
-                color: white;
-                border-radius: 10px;
-                font-family: 'Plus Jakarta Sans', sans-serif;
-                font-size: 14px;
-                font-weight: 600;
-                box-shadow: var(--shadow-xl);
-                z-index: 10000;
-                animation: slideIn 0.3s ease-out;
-            `;
-            notif.textContent = message;
-            document.body.appendChild(notif);
-
-            setTimeout(() => {
-                notif.style.animation = 'slideOut 0.3s ease-out';
-                setTimeout(() => notif.remove(), 300);
-            }, 3000);
-        }
-
+        // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
                 e.preventDefault();
-                document.querySelector('.search-box input').focus();
-            }
-            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-                e.preventDefault();
-                toggleFilters();
+                document.querySelector('.search-field input').focus();
             }
         });
-
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from { transform: translateX(400px); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-            @keyframes slideOut {
-                from { transform: translateX(0); opacity: 1; }
-                to { transform: translateX(400px); opacity: 0; }
-            }
-        `;
-        document.head.appendChild(style);
     </script>
 </body>
 
