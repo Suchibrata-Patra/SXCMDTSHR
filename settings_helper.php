@@ -282,15 +282,15 @@ function importSettings($email, $json) {
 /**
  * Load IMAP configuration to session
  */
-function loadImapConfigToSession($email, $password) {
-    // Load IMAP settings from database or use defaults
-    $_SESSION['imap_host'] = env('IMAP_HOST', 'imap.gmail.com');
-    $_SESSION['imap_port'] = env('IMAP_PORT', '993');
-    $_SESSION['imap_encryption'] = 'ssl';
-    $_SESSION['imap_configured'] = true;
+// function loadImapConfigToSession($email, $password) {
+//     // Load IMAP settings from database or use defaults
+//     $_SESSION['imap_host'] = env('IMAP_HOST', 'imap.gmail.com');
+//     $_SESSION['imap_port'] = env('IMAP_PORT', '993');
+//     $_SESSION['imap_encryption'] = 'ssl';
+//     $_SESSION['imap_configured'] = true;
     
-    error_log("IMAP config loaded for: $email");
+//     error_log("IMAP config loaded for: $email");
     
-    return true;
-}
+//     return true;
+// }
 ?>
