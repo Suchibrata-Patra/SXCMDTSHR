@@ -52,14 +52,21 @@ try {
     // ==================== SMTP CONFIGURATION ====================
     $settings = $_SESSION['user_settings'] ?? [];
     
+    // Load environment config for SMTP (same as login.php)
+    require 'config.php';
+    if (file_exists(__DIR__ . '/.env')) {
+        $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+        $dotenv->load();
+    }
+    
     $mail->isSMTP();
-    $mail->Host       = $settings['smtp_host'] ?? 'smtp.holidayseva.com';
+    $mail->Host       = $settings['smtp_host'] ?? env("SMTP_HOST");
     $mail->SMTPAuth   = true;
     $mail->Username   = $_SESSION['smtp_user'];
     $mail->Password   = $_SESSION['smtp_pass'];
     
     // Determine encryption and port
-    $smtpPort = intval($settings['smtp_port'] ?? 587);
+    $smtpPort = intval($settings['smtp_port'] ?? env("SMTP_PORT"));
     if ($smtpPort == 465) {
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         $mail->Port = 465;
