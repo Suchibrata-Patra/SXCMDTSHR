@@ -60,7 +60,7 @@ $defaultSignature = json_encode($settings['signature']);
         
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            background-color: #fff;
+            background-color: #f2f2f7;
             color: #191919;
             display: flex;
             height: 100vh;
