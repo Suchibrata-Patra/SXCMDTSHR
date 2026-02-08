@@ -1,8 +1,9 @@
 <?php
-// deleted_items.php - Premium Trash Archive
+// deleted_items.php - Shows ALL deleted emails (both sent and received)
+// Using REDESIGNED database schema
 session_start();
 require 'config.php';
-require 'db_config.php';
+require 'db_config_REDESIGNED.php';
 
 if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     header("Location: login.php");
@@ -14,6 +15,7 @@ $userEmail = $_SESSION['smtp_user'];
 // Get filter parameters
 $filters = [
     'search' => $_GET['search'] ?? '',
+    'sender' => $_GET['sender'] ?? '',
     'recipient' => $_GET['recipient'] ?? '',
     'subject' => $_GET['subject'] ?? '',
     'label_id' => $_GET['label_id'] ?? '',
@@ -21,105 +23,32 @@ $filters = [
     'date_to' => $_GET['date_to'] ?? ''
 ];
 
-// Function to fetch only deleted items (current_status = 0)
-function getDeletedEmailsLocal($userEmail, $limit, $offset, $filters) {
-    $pdo = getDatabaseConnection();
-    if (!$pdo) return [];
-    
-    $sql = "SELECT se.*, l.label_name, l.label_color 
-            FROM sent_emails se 
-            LEFT JOIN labels l ON se.label_id = l.id 
-            WHERE se.sender_email = :sender_email 
-            AND se.current_status = 0";
+// Pagination
+$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$perPage = 50;
+$offset = ($page - 1) * $perPage;
 
-    $params = [':sender_email' => $userEmail];
+// Get deleted emails using new function (includes BOTH sent and received)
+$deletedEmails = getUserDeletedEmails($userEmail, $perPage, $offset, $filters);
 
-    if (!empty($filters['search'])) {
-        $sql .= " AND (se.recipient_email LIKE :search OR se.subject LIKE :search OR se.message_body LIKE :search)";
-        $params[':search'] = '%' . $filters['search'] . '%';
-    }
-    
-    if (!empty($filters['recipient'])) {
-        $sql .= " AND se.recipient_email LIKE :recipient";
-        $params[':recipient'] = '%' . $filters['recipient'] . '%';
-    }
-    
-    if (!empty($filters['subject'])) {
-        $sql .= " AND se.subject LIKE :subject";
-        $params[':subject'] = '%' . $filters['subject'] . '%';
-    }
-    
-    if (!empty($filters['label_id'])) {
-        if ($filters['label_id'] === 'unlabeled') {
-            $sql .= " AND se.label_id IS NULL";
-        } else {
-            $sql .= " AND se.label_id = :label_id";
-            $params[':label_id'] = $filters['label_id'];
-        }
-    }
-    
-    if (!empty($filters['date_from'])) {
-        $sql .= " AND DATE(se.sent_at) >= :date_from";
-        $params[':date_from'] = $filters['date_from'];
-    }
-    
-    if (!empty($filters['date_to'])) {
-        $sql .= " AND DATE(se.sent_at) <= :date_to";
-        $params[':date_to'] = $filters['date_to'];
-    }
-
-    $sql .= " ORDER BY se.sent_at DESC LIMIT :limit OFFSET :offset";
-    $stmt = $pdo->prepare($sql);
-    $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
-    $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
-    foreach ($params as $key => $val) { $stmt->bindValue($key, $val); }
-    $stmt->execute();
-    return $stmt->fetchAll();
-}
-
+// Get total count for pagination
 function getDeletedEmailCount($userEmail, $filters) {
     $pdo = getDatabaseConnection();
     if (!$pdo) return 0;
     
-    $sql = "SELECT COUNT(*) as count FROM sent_emails se 
-            WHERE se.sender_email = :sender_email 
-            AND se.current_status = 0";
+    $user = getUserByEmail($userEmail);
+    if (!$user) return 0;
     
-    $params = [':sender_email' => $userEmail];
+    $sql = "SELECT COUNT(*) as count 
+            FROM emails e
+            INNER JOIN user_email_access uea ON e.id = uea.email_id
+            WHERE uea.user_id = :user_id 
+            AND uea.is_deleted = 1";
     
-    if (!empty($filters['search'])) {
-        $sql .= " AND (se.recipient_email LIKE :search OR se.subject LIKE :search OR se.message_body LIKE :search)";
-        $params[':search'] = '%' . $filters['search'] . '%';
-    }
+    $params = [':user_id' => $user['id']];
     
-    if (!empty($filters['recipient'])) {
-        $sql .= " AND se.recipient_email LIKE :recipient";
-        $params[':recipient'] = '%' . $filters['recipient'] . '%';
-    }
-    
-    if (!empty($filters['subject'])) {
-        $sql .= " AND se.subject LIKE :subject";
-        $params[':subject'] = '%' . $filters['subject'] . '%';
-    }
-    
-    if (!empty($filters['label_id'])) {
-        if ($filters['label_id'] === 'unlabeled') {
-            $sql .= " AND se.label_id IS NULL";
-        } else {
-            $sql .= " AND se.label_id = :label_id";
-            $params[':label_id'] = $filters['label_id'];
-        }
-    }
-    
-    if (!empty($filters['date_from'])) {
-        $sql .= " AND DATE(se.sent_at) >= :date_from";
-        $params[':date_from'] = $filters['date_from'];
-    }
-    
-    if (!empty($filters['date_to'])) {
-        $sql .= " AND DATE(se.sent_at) <= :date_to";
-        $params[':date_to'] = $filters['date_to'];
-    }
+    // Apply same filters
+    $sql = applyEmailFilters($sql, $params, $filters);
     
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
@@ -128,19 +57,11 @@ function getDeletedEmailCount($userEmail, $filters) {
     return $result['count'] ?? 0;
 }
 
-// Pagination
-$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
-$perPage = 50;
-$offset = ($page - 1) * $perPage;
-
-// Get filtered emails
-$sentEmails = getDeletedEmailsLocal($userEmail, $perPage, $offset, $filters);
 $totalEmails = getDeletedEmailCount($userEmail, $filters);
 $totalPages = ceil($totalEmails / $perPage);
 
 // Get all labels
 $labels = getLabelCounts($userEmail);
-$unlabeledCount = getUnlabeledEmailCount($userEmail);
 
 // Check if filters are active
 $hasActiveFilters = !empty(array_filter($filters));
@@ -161,6 +82,7 @@ $hasActiveFilters = !empty(array_filter($filters));
             --glass: rgba(255, 255, 255, 0.7);
             --border: #E5E5EA;
             --apple-red: #FF3B30;
+            --apple-green: #34C759;
         }
 
         * {
@@ -179,7 +101,6 @@ $hasActiveFilters = !empty(array_filter($filters));
             -webkit-font-smoothing: antialiased;
         }
 
-        /* ========== LAYOUT ========== */
         #main-wrapper {
             flex: 1;
             display: flex;
@@ -188,7 +109,6 @@ $hasActiveFilters = !empty(array_filter($filters));
             overflow: hidden;
         }
 
-        /* ========== HEADER ========== */
         .page-header {
             background: white;
             border-bottom: 1px solid var(--border);
@@ -237,30 +157,75 @@ $hasActiveFilters = !empty(array_filter($filters));
             color: var(--apple-red);
         }
 
-        .email-count-badge .material-icons {
-            font-size: 16px;
-        }
-
-        /* ========== HEADER ACTIONS ========== */
         .header-actions {
             display: flex;
             gap: 12px;
-            align-items: center;
         }
 
-        .search-container {
-            position: relative;
+        .btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--apple-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0051D5;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #1c1c1e;
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: #f9f9f9;
+        }
+
+        .content-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px 32px;
+        }
+
+        .toolbar {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border);
+        }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            max-width: 500px;
         }
 
         .search-input {
-            width: 320px;
-            padding: 10px 16px 10px 40px;
+            flex: 1;
+            padding: 10px 16px;
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 14px;
-            font-family: 'Inter', sans-serif;
-            color: #1c1c1e;
-            background: white;
             transition: all 0.2s;
         }
 
@@ -270,66 +235,29 @@ $hasActiveFilters = !empty(array_filter($filters));
             box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
         }
 
-        .search-input::placeholder {
-            color: var(--apple-gray);
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--apple-gray);
-            font-size: 20px;
-            pointer-events: none;
-        }
-
-        .btn-filter-toggle {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 18px;
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: #1c1c1e;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: 'Inter', sans-serif;
-        }
-
-        .btn-filter-toggle:hover {
-            background: #F2F2F7;
-        }
-
-        .btn-filter-toggle.active {
-            background: var(--apple-blue);
-            color: white;
-            border-color: var(--apple-blue);
-        }
-
-        /* ========== FILTER PANEL ========== */
         .filter-panel {
             background: white;
-            border-bottom: 1px solid var(--border);
-            padding: 0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
             max-height: 0;
             overflow: hidden;
+            opacity: 0;
             transition: all 0.3s;
         }
 
         .filter-panel.active {
             max-height: 500px;
-            padding: 24px 32px;
+            opacity: 1;
+            margin-bottom: 16px;
         }
 
         .filter-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
         }
 
         .filter-group {
@@ -341,80 +269,22 @@ $hasActiveFilters = !empty(array_filter($filters));
         .filter-label {
             font-size: 13px;
             font-weight: 500;
-            color: #52525b;
+            color: #1c1c1e;
         }
 
         .filter-input,
         .filter-select {
-            padding: 8px 12px;
+            padding: 10px 14px;
             border: 1px solid var(--border);
             border-radius: 8px;
             font-size: 14px;
-            font-family: 'Inter', sans-serif;
-            background: white;
-            color: #1c1c1e;
-            transition: all 0.2s;
         }
 
-        .filter-input:focus,
-        .filter-select:focus {
-            outline: none;
-            border-color: var(--apple-blue);
-            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
-        }
-
-        .filter-actions {
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-        }
-
-        .btn-filter-action {
-            padding: 8px 20px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: none;
-            font-family: 'Inter', sans-serif;
-        }
-
-        .btn-clear {
-            background: #F2F2F7;
-            color: #52525b;
-        }
-
-        .btn-clear:hover {
-            background: #E5E5EA;
-        }
-
-        .btn-apply {
-            background: var(--apple-blue);
-            color: white;
-        }
-
-        .btn-apply:hover {
-            background: #0051D5;
-        }
-
-        /* ========== ACTIVE FILTERS ========== */
         .active-filters {
-            padding: 16px 32px;
-            background: white;
-            border-bottom: 1px solid var(--border);
-            display: none;
-        }
-
-        .active-filters.show {
-            display: block;
-        }
-
-        .filter-chips {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            align-items: center;
+            margin-bottom: 16px;
         }
 
         .filter-chip {
@@ -422,105 +292,19 @@ $hasActiveFilters = !empty(array_filter($filters));
             align-items: center;
             gap: 6px;
             padding: 6px 12px;
-            background: #F2F2F7;
+            background: #EBF5FF;
+            color: var(--apple-blue);
             border-radius: 20px;
             font-size: 13px;
-            color: #1c1c1e;
             font-weight: 500;
         }
 
         .filter-chip .material-icons {
             font-size: 16px;
             cursor: pointer;
-            color: var(--apple-gray);
         }
 
-        .filter-chip .material-icons:hover {
-            color: #1c1c1e;
-        }
-
-        .clear-all-filters {
-            color: var(--apple-blue);
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            text-decoration: none;
-        }
-
-        .clear-all-filters:hover {
-            text-decoration: underline;
-        }
-
-        /* ========== BULK ACTION TOOLBAR ========== */
-        .bulk-action-toolbar {
-            padding: 12px 32px;
-            background: white;
-            border-bottom: 1px solid var(--border);
-            display: none;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .bulk-action-toolbar.active {
-            display: flex;
-        }
-
-        .selection-info {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            color: #1c1c1e;
-            font-weight: 500;
-        }
-
-        .bulk-action-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: #1c1c1e;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .bulk-action-btn:hover {
-            background: #F2F2F7;
-        }
-
-        .bulk-action-btn.restore {
-            background: var(--apple-blue);
-            color: white;
-            border-color: var(--apple-blue);
-        }
-
-        .bulk-action-btn.restore:hover {
-            background: #0051D5;
-        }
-
-        .bulk-action-btn.danger:hover {
-            background: var(--apple-red);
-            color: white;
-            border-color: var(--apple-red);
-        }
-
-        /* ========== EMAIL LIST ========== */
-        .email-list-container {
-            flex: 1;
-            overflow-y: auto;
-            background: var(--apple-bg);
-        }
-
-        .email-list-wrapper {
-            padding: 24px 32px;
-        }
-
-        .email-table {
+        .email-list {
             background: white;
             border-radius: 12px;
             overflow: hidden;
@@ -528,15 +312,14 @@ $hasActiveFilters = !empty(array_filter($filters));
         }
 
         .email-item {
-            display: grid;
-            grid-template-columns: 40px 2fr 3fr 1fr 150px;
-            gap: 16px;
             padding: 16px 20px;
             border-bottom: 1px solid var(--border);
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 16px;
             align-items: center;
-            transition: all 0.2s;
+            transition: background 0.2s;
             cursor: pointer;
-            opacity: 0.7;
         }
 
         .email-item:last-child {
@@ -544,141 +327,151 @@ $hasActiveFilters = !empty(array_filter($filters));
         }
 
         .email-item:hover {
-            background: #F9F9FB;
-            opacity: 1;
+            background: #f9f9f9;
         }
 
         .email-item.selected {
-            background: rgba(255, 59, 48, 0.05);
-            opacity: 1;
-        }
-
-        .col-checkbox {
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background: #EBF5FF;
         }
 
         .email-checkbox {
-            width: 18px;
-            height: 18px;
+            width: 20px;
+            height: 20px;
             cursor: pointer;
-            accent-color: var(--apple-red);
         }
 
-        .col-recipient {
-            font-size: 14px;
-            font-weight: 500;
-            color: #1c1c1e;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+        .email-main {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 0;
         }
 
-        .col-subject {
-            font-size: 14px;
-            color: #52525b;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .col-label {
+        .email-header {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 12px;
         }
 
-        .label-dropdown {
-            position: relative;
-            display: inline-block;
+        .email-type-badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
         }
 
-        .label-dropdown-btn {
+        .email-type-sent {
+            background: #E8F5E9;
+            color: #2E7D32;
+        }
+
+        .email-type-received {
+            background: #E3F2FD;
+            color: #1565C0;
+        }
+
+        .email-sender {
+            font-weight: 600;
+            color: #1c1c1e;
+            font-size: 14px;
+        }
+
+        .email-recipient {
+            color: var(--apple-gray);
+            font-size: 13px;
+        }
+
+        .email-subject {
+            font-size: 15px;
+            color: #1c1c1e;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .email-preview {
+            font-size: 13px;
+            color: var(--apple-gray);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .email-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .email-label {
             display: inline-flex;
             align-items: center;
             gap: 6px;
             padding: 4px 10px;
-            border-radius: 20px;
+            border-radius: 6px;
             font-size: 12px;
             font-weight: 500;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s;
         }
 
-        .label-dropdown-btn:hover {
-            opacity: 0.8;
-        }
-
-        .label-dropdown-content {
-            display: none;
-            position: absolute;
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            z-index: 10;
-            min-width: 180px;
-            top: 100%;
-            left: 0;
-            margin-top: 4px;
-        }
-
-        .label-dropdown:hover .label-dropdown-content {
-            display: block;
-        }
-
-        .label-option {
-            padding: 8px 14px;
-            cursor: pointer;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s;
-        }
-
-        .label-option:hover {
-            background: #F2F2F7;
-        }
-
-        .label-color-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
-
-        .col-date {
+        .email-date {
             font-size: 13px;
             color: var(--apple-gray);
-            text-align: right;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 6px;
+            white-space: nowrap;
         }
 
         .attachment-icon {
-            font-size: 14px;
             color: var(--apple-gray);
+            font-size: 18px;
         }
 
-        /* ========== EMPTY STATE ========== */
+        .deleted-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            background: #FFEBEE;
+            color: #C62828;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .bulk-toolbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid var(--border);
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transform: translateY(100%);
+            transition: transform 0.3s;
+            z-index: 1000;
+            box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .bulk-toolbar.active {
+            transform: translateY(0);
+        }
+
         .empty-state {
             text-align: center;
-            padding: 80px 20px;
+            padding: 60px 20px;
         }
 
         .empty-state .material-icons {
             font-size: 64px;
-            color: #D1D1D6;
+            color: var(--apple-gray);
             margin-bottom: 16px;
         }
 
         .empty-state h3 {
             font-size: 20px;
-            font-weight: 600;
             color: #1c1c1e;
             margin-bottom: 8px;
         }
@@ -688,33 +481,26 @@ $hasActiveFilters = !empty(array_filter($filters));
             color: var(--apple-gray);
         }
 
-        /* ========== PAGINATION ========== */
         .pagination {
             display: flex;
             justify-content: center;
+            align-items: center;
             gap: 8px;
-            padding: 24px 32px;
+            padding: 24px 0;
         }
 
         .page-link {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 36px;
-            height: 36px;
-            padding: 0 12px;
+            padding: 8px 14px;
+            border: 1px solid var(--border);
             border-radius: 8px;
+            color: #1c1c1e;
             text-decoration: none;
             font-size: 14px;
-            font-weight: 500;
-            color: #1c1c1e;
-            background: white;
-            border: 1px solid var(--border);
             transition: all 0.2s;
         }
 
         .page-link:hover {
-            background: #F2F2F7;
+            background: #f9f9f9;
         }
 
         .page-link.active {
@@ -725,215 +511,242 @@ $hasActiveFilters = !empty(array_filter($filters));
     </style>
 </head>
 <body>
-    <?php include 'sidebar.php'; ?>
-
     <div id="main-wrapper">
         <!-- Header -->
         <div class="page-header">
             <div class="header-left">
                 <h1 class="page-title">
                     <span class="material-icons">delete</span>
-                    Trash
+                    Deleted Items
                 </h1>
-                <div class="page-subtitle">
+                <p class="page-subtitle">
                     <span class="email-count-badge">
-                        <span class="material-icons">delete_outline</span>
-                        <?= number_format($totalEmails) ?> deleted emails
+                        <span class="material-icons" style="font-size: 16px;">email</span>
+                        <?= number_format($totalEmails) ?> deleted
                     </span>
-                </div>
+                </p>
             </div>
-
             <div class="header-actions">
-                <div class="search-container">
-                    <span class="material-icons search-icon">search</span>
-                    <input type="text" 
-                           class="search-input" 
-                           placeholder="Search deleted emails..."
-                           value="<?= htmlspecialchars($filters['search']) ?>"
-                           onchange="handleSearch(this.value)">
-                </div>
-                <button class="btn-filter-toggle" onclick="toggleFilters()">
-                    <span class="material-icons">filter_list</span>
-                    Filters
+                <button class="btn btn-secondary" onclick="window.location.href='inbox.php'">
+                    <span class="material-icons">arrow_back</span>
+                    Back to Inbox
                 </button>
             </div>
         </div>
 
-        <!-- Filter Panel -->
-        <div class="filter-panel" id="filterPanel">
-            <form method="GET" action="deleted_items.php">
-                <div class="filter-grid">
-                    <div class="filter-group">
-                        <label class="filter-label">Recipient</label>
-                        <input type="text" 
-                               name="recipient" 
-                               class="filter-input" 
-                               placeholder="Filter by recipient"
-                               value="<?= htmlspecialchars($filters['recipient']) ?>">
-                    </div>
-                    <div class="filter-group">
-                        <label class="filter-label">Subject</label>
-                        <input type="text" 
-                               name="subject" 
-                               class="filter-input" 
-                               placeholder="Filter by subject"
-                               value="<?= htmlspecialchars($filters['subject']) ?>">
-                    </div>
-                    <div class="filter-group">
-                        <label class="filter-label">Label</label>
-                        <select name="label_id" class="filter-select">
-                            <option value="">All labels</option>
-                            <option value="unlabeled" <?= $filters['label_id'] === 'unlabeled' ? 'selected' : '' ?>>
-                                Unlabeled
-                            </option>
-                            <?php foreach ($labels as $label): ?>
-                            <option value="<?= $label['id'] ?>" 
-                                    <?= $filters['label_id'] == $label['id'] ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($label['label_name']) ?>
-                            </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label class="filter-label">Date From</label>
-                        <input type="date" 
-                               name="date_from" 
-                               class="filter-input"
-                               value="<?= htmlspecialchars($filters['date_from']) ?>">
-                    </div>
-                    <div class="filter-group">
-                        <label class="filter-label">Date To</label>
-                        <input type="date" 
-                               name="date_to" 
-                               class="filter-input"
-                               value="<?= htmlspecialchars($filters['date_to']) ?>">
-                    </div>
+        <div class="content-wrapper">
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div class="search-bar">
+                    <span class="material-icons" style="color: var(--apple-gray);">search</span>
+                    <input 
+                        type="text" 
+                        class="search-input" 
+                        placeholder="Search deleted emails..."
+                        value="<?= htmlspecialchars($filters['search']) ?>"
+                        onchange="handleSearch(this.value)"
+                    >
                 </div>
-                <div class="filter-actions">
-                    <button type="button" class="btn-filter-action btn-clear" onclick="clearForm()">
-                        Clear
-                    </button>
-                    <button type="submit" class="btn-filter-action btn-apply">
-                        Apply Filters
-                    </button>
-                </div>
-            </form>
-        </div>
+                <button class="btn btn-secondary btn-filter-toggle" onclick="toggleFilters()">
+                    <span class="material-icons">filter_list</span>
+                    Filters
+                </button>
+            </div>
 
-        <!-- Active Filters -->
-        <?php if ($hasActiveFilters): ?>
-        <div class="active-filters show">
-            <div class="filter-chips">
-                <strong>Active filters:</strong>
+            <!-- Active Filters -->
+            <?php if ($hasActiveFilters): ?>
+            <div class="active-filters">
                 <?php if (!empty($filters['search'])): ?>
-                <span class="filter-chip">
-                    Search: "<?= htmlspecialchars($filters['search']) ?>"
+                <div class="filter-chip">
+                    Search: <?= htmlspecialchars($filters['search']) ?>
                     <span class="material-icons" onclick="removeFilter('search')">close</span>
-                </span>
+                </div>
                 <?php endif; ?>
+                
+                <?php if (!empty($filters['sender'])): ?>
+                <div class="filter-chip">
+                    From: <?= htmlspecialchars($filters['sender']) ?>
+                    <span class="material-icons" onclick="removeFilter('sender')">close</span>
+                </div>
+                <?php endif; ?>
+                
                 <?php if (!empty($filters['recipient'])): ?>
-                <span class="filter-chip">
-                    Recipient: <?= htmlspecialchars($filters['recipient']) ?>
+                <div class="filter-chip">
+                    To: <?= htmlspecialchars($filters['recipient']) ?>
                     <span class="material-icons" onclick="removeFilter('recipient')">close</span>
-                </span>
+                </div>
                 <?php endif; ?>
+                
                 <?php if (!empty($filters['subject'])): ?>
-                <span class="filter-chip">
+                <div class="filter-chip">
                     Subject: <?= htmlspecialchars($filters['subject']) ?>
                     <span class="material-icons" onclick="removeFilter('subject')">close</span>
-                </span>
+                </div>
                 <?php endif; ?>
+                
+                <?php if (!empty($filters['label_id'])): ?>
+                <div class="filter-chip">
+                    Label Filter
+                    <span class="material-icons" onclick="removeFilter('label_id')">close</span>
+                </div>
+                <?php endif; ?>
+                
                 <?php if (!empty($filters['date_from']) || !empty($filters['date_to'])): ?>
-                <span class="filter-chip">
-                    Date: <?= $filters['date_from'] ?? 'Any' ?> to <?= $filters['date_to'] ?? 'Now' ?>
+                <div class="filter-chip">
+                    Date Range
                     <span class="material-icons" onclick="clearDateFilters()">close</span>
-                </span>
+                </div>
                 <?php endif; ?>
-                <a href="#" class="clear-all-filters" onclick="clearAllFilters()">Clear all</a>
+                
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="clearAllFilters()">
+                    Clear All
+                </button>
             </div>
-        </div>
-        <?php endif; ?>
+            <?php endif; ?>
 
-        <!-- Bulk Action Toolbar -->
-        <div class="bulk-action-toolbar" id="bulkActionToolbar">
-            <div class="selection-info">
-                <span id="selectedCount">0</span> selected
+            <!-- Filter Panel -->
+            <div class="filter-panel" id="filterPanel">
+                <form method="GET">
+                    <div class="filter-grid">
+                        <div class="filter-group">
+                            <label class="filter-label">From (Sender)</label>
+                            <input type="text" name="sender" class="filter-input" 
+                                   value="<?= htmlspecialchars($filters['sender']) ?>" 
+                                   placeholder="sender@example.com">
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label">To (Recipient)</label>
+                            <input type="text" name="recipient" class="filter-input" 
+                                   value="<?= htmlspecialchars($filters['recipient']) ?>" 
+                                   placeholder="recipient@example.com">
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label">Subject Contains</label>
+                            <input type="text" name="subject" class="filter-input" 
+                                   value="<?= htmlspecialchars($filters['subject']) ?>" 
+                                   placeholder="Subject keywords">
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label">Label</label>
+                            <select name="label_id" class="filter-select">
+                                <option value="">All Labels</option>
+                                <option value="unlabeled" <?= $filters['label_id'] === 'unlabeled' ? 'selected' : '' ?>>
+                                    Unlabeled
+                                </option>
+                                <?php foreach ($labels as $label): ?>
+                                <option value="<?= $label['id'] ?>" 
+                                        <?= $filters['label_id'] == $label['id'] ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($label['label_name']) ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label">Date From</label>
+                            <input type="date" name="date_from" class="filter-input" 
+                                   value="<?= htmlspecialchars($filters['date_from']) ?>">
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label">Date To</label>
+                            <input type="date" name="date_to" class="filter-input" 
+                                   value="<?= htmlspecialchars($filters['date_to']) ?>">
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px;">
+                        <button type="submit" class="btn btn-primary">Apply Filters</button>
+                        <button type="button" class="btn btn-secondary" onclick="clearForm()">Clear</button>
+                    </div>
+                </form>
             </div>
-            <button class="bulk-action-btn restore" onclick="bulkRestore()">
-                <span class="material-icons">restore</span>
-                Restore
-            </button>
-            <button class="bulk-action-btn danger" onclick="bulkDeleteForever()">
-                <span class="material-icons">delete_forever</span>
-                Delete Forever
-            </button>
-            <button class="bulk-action-btn" onclick="clearSelection()">
-                <span class="material-icons">close</span>
-                Clear Selection
-            </button>
-        </div>
 
-        <!-- Email List -->
-        <div class="email-list-container">
-            <div class="email-list-wrapper">
-                <div class="email-table">
-                    <?php if (empty($sentEmails)): ?>
+            <!-- Email List -->
+            <div class="email-list">
+                <?php if (empty($deletedEmails)): ?>
                     <div class="empty-state">
                         <span class="material-icons">delete_outline</span>
-                        <h3>Trash is empty</h3>
-                        <p>Deleted emails will appear here</p>
+                        <h3>No Deleted Items</h3>
+                        <p>Your deleted emails will appear here</p>
                     </div>
-                    <?php else: ?>
-                        <?php foreach ($sentEmails as $email): ?>
-                        <div class="email-item">
-                            <div class="col-checkbox">
-                                <input type="checkbox" 
-                                       class="email-checkbox" 
-                                       value="<?= $email['id'] ?>"
-                                       onchange="handleCheckboxChange()">
+                <?php else: ?>
+                    <?php foreach ($deletedEmails as $email): ?>
+                        <div class="email-item" onclick="openEmail(<?= $email['id'] ?>)">
+                            <input type="checkbox" class="email-checkbox" 
+                                   value="<?= $email['id'] ?>" 
+                                   onclick="event.stopPropagation(); handleCheckboxChange();">
+                            
+                            <div class="email-main">
+                                <div class="email-header">
+                                    <!-- Email Type Badge (SENT or RECEIVED) -->
+                                    <span class="email-type-badge email-type-<?= $email['email_type'] ?>">
+                                        <?= strtoupper($email['email_type']) ?>
+                                    </span>
+                                    
+                                    <span class="deleted-badge">
+                                        <span class="material-icons" style="font-size: 14px;">delete</span>
+                                        Deleted <?= date('M j', strtotime($email['deleted_at'])) ?>
+                                    </span>
+                                    
+                                    <?php if ($email['email_type'] === 'sent'): ?>
+                                        <span class="email-sender">To: <?= htmlspecialchars($email['recipient_email']) ?></span>
+                                    <?php else: ?>
+                                        <span class="email-sender">From: <?= htmlspecialchars($email['sender_email']) ?></span>
+                                    <?php endif; ?>
+                                </div>
+                                
+                                <div class="email-subject">
+                                    <?= htmlspecialchars($email['subject']) ?: '(No Subject)' ?>
+                                </div>
+                                
+                                <?php if (!empty($email['body_text'])): ?>
+                                <div class="email-preview">
+                                    <?= htmlspecialchars(substr(strip_tags($email['body_text']), 0, 100)) ?>...
+                                </div>
+                                <?php endif; ?>
                             </div>
-
-                            <div class="col-recipient" onclick="openEmail(<?= $email['id'] ?>)">
-                                <?= htmlspecialchars($email['recipient_email']) ?>
-                            </div>
-
-                            <div class="col-subject" onclick="openEmail(<?= $email['id'] ?>)">
-                                <?= htmlspecialchars($email['subject']) ?>
-                            </div>
-
-                            <div class="col-label">
-                                <div class="label-dropdown">
-                                    <button class="label-dropdown-btn" 
-                                            style="background: <?= $email['label_color'] ?? '#F2F2F7' ?>; 
-                                                   color: <?= $email['label_color'] ? 'white' : '#52525b' ?>;">
-                                        <?= htmlspecialchars($email['label_name'] ?? 'No label') ?>
-                                    </button>
-                                    <div class="label-dropdown-content">
-                                        <div class="label-option" onclick="updateLabel(<?= $email['id'] ?>, null)">
-                                            <span class="material-icons">label_off</span>
-                                            Remove Label
-                                        </div>
-                                        <?php foreach ($labels as $label): ?>
-                                        <div class="label-option" onclick="updateLabel(<?= $email['id'] ?>, <?= $label['id'] ?>)">
-                                            <span class="label-color-dot" 
-                                                  style="background: <?= htmlspecialchars($label['label_color']) ?>;"></span>
-                                            <?= htmlspecialchars($label['label_name']) ?>
-                                        </div>
-                                        <?php endforeach; ?>
-                                    </div>
+                            
+                            <div class="email-meta">
+                                <?php if ($email['attachment_count'] > 0): ?>
+                                    <span class="material-icons attachment-icon">attach_file</span>
+                                <?php endif; ?>
+                                
+                                <?php if ($email['label_name']): ?>
+                                    <span class="email-label" style="background-color: <?= $email['label_color'] ?>20; color: <?= $email['label_color'] ?>;">
+                                        <span class="material-icons" style="font-size: 16px;">label</span>
+                                        <?= htmlspecialchars($email['label_name']) ?>
+                                    </span>
+                                <?php endif; ?>
+                                
+                                <div class="email-date">
+                                    <?= date('M j, Y', strtotime($email['email_date'])) ?>
                                 </div>
                             </div>
-
-                            <div class="col-date" onclick="openEmail(<?= $email['id'] ?>)">
-                                <?php if (!empty($email['attachment_names'])): ?>
-                                <span class="material-icons attachment-icon">attach_file</span>
-                                <?php endif; ?>
-                                <?= date('M j, Y', strtotime($email['sent_at'])) ?>
-                            </div>
                         </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Bulk Actions Toolbar -->
+        <div class="bulk-toolbar" id="bulkActionToolbar">
+            <div>
+                <span id="selectedCount">0</span> selected
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-primary" onclick="bulkRestore()">
+                    <span class="material-icons">restore</span>
+                    Restore
+                </button>
+                <button class="btn btn-secondary" style="background: var(--apple-red); color: white;" onclick="bulkDeleteForever()">
+                    <span class="material-icons">delete_forever</span>
+                    Delete Forever
+                </button>
+                <button class="btn btn-secondary" onclick="clearSelection()">Cancel</button>
             </div>
         </div>
 
@@ -1019,7 +832,7 @@ $hasActiveFilters = !empty(array_filter($filters));
                 formData.append('action', 'bulk_restore');
                 formData.append('email_ids', JSON.stringify(emailIds));
 
-                const response = await fetch('bulk_trash_actions.php', {
+                const response = await fetch('bulk_trash_actions_v2.php', {
                     method: 'POST',
                     body: formData
                 });
@@ -1046,7 +859,7 @@ $hasActiveFilters = !empty(array_filter($filters));
                 return;
             }
 
-            if (!confirm(`Are you sure you want to permanently delete ${emailIds.length} email(s)? This action cannot be undone.`)) {
+            if (!confirm(`⚠️ WARNING: This will permanently delete ${emailIds.length} email(s).\n\nThis action CANNOT be undone and will also schedule deletion from the IMAP server.\n\nAre you sure?`)) {
                 return;
             }
 
@@ -1055,7 +868,7 @@ $hasActiveFilters = !empty(array_filter($filters));
                 formData.append('action', 'bulk_delete_forever');
                 formData.append('email_ids', JSON.stringify(emailIds));
 
-                const response = await fetch('bulk_trash_actions.php', {
+                const response = await fetch('bulk_trash_actions_v2.php', {
                     method: 'POST',
                     body: formData
                 });
@@ -1074,7 +887,7 @@ $hasActiveFilters = !empty(array_filter($filters));
         }
 
         function openEmail(emailId) {
-            window.open('view_sent_email.php?id=' + emailId, '_blank');
+            window.open('view_email.php?id=' + emailId, '_blank');
         }
 
         function toggleFilters() {
@@ -1119,31 +932,6 @@ $hasActiveFilters = !empty(array_filter($filters));
             window.location.href = 'deleted_items.php';
         }
 
-        async function updateLabel(emailId, labelId) {
-            try {
-                const formData = new FormData();
-                formData.append('ajax', '1');
-                formData.append('email_id', emailId);
-                formData.append('label_id', labelId || '');
-
-                const response = await fetch('update_email_label.php', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    location.reload();
-                } else {
-                    alert('Failed to update label');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred');
-            }
-        }
-
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -1154,14 +942,6 @@ $hasActiveFilters = !empty(array_filter($filters));
             if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
                 e.preventDefault();
                 toggleFilters();
-            }
-
-            if (e.key === 'Delete' || e.key === 'Backspace') {
-                const checkedBoxes = document.querySelectorAll('.email-checkbox:checked');
-                if (checkedBoxes.length > 0 && !e.target.matches('input[type="text"], input[type="date"], select')) {
-                    e.preventDefault();
-                    bulkDeleteForever();
-                }
             }
         });
     </script>
