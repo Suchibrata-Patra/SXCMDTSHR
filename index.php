@@ -34,9 +34,6 @@ $settings = array_merge([
 
 // Update session settings for immediate use
 $_SESSION['user_settings'] = $settings;
-
-// Prepare signature for JavaScript (escape for JSON)
-$defaultSignature = json_encode($settings['signature']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -62,6 +59,7 @@ $defaultSignature = json_encode($settings['signature']);
             --glass: rgba(255, 255, 255, 0.7);
             --border: #E5E5EA;
             --success-green: #34C759;
+            --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
         * {
@@ -179,6 +177,7 @@ $defaultSignature = json_encode($settings['signature']);
         /* ========== INPUT FIELDS ========== */
         input[type="email"],
         input[type="text"],
+        textarea,
         select {
             width: 100%;
             padding: 10px 14px;
@@ -191,15 +190,22 @@ $defaultSignature = json_encode($settings['signature']);
             transition: all 0.2s;
         }
 
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
         input[type="email"]:focus,
         input[type="text"]:focus,
+        textarea:focus,
         select:focus {
             outline: none;
             border-color: var(--apple-blue);
             box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
         }
 
-        input::placeholder {
+        input::placeholder,
+        textarea::placeholder {
             color: var(--apple-gray);
         }
 
@@ -249,85 +255,43 @@ $defaultSignature = json_encode($settings['signature']);
             display: none;
         }
 
-        /* ========== FILE PREVIEW GRID ========== */
-        .file-preview-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 12px;
-            margin-top: 16px;
-        }
-
-        .file-preview-item {
+        /* ========== UPLOAD PROGRESS (Individual file) ========== */
+        .upload-item {
             background: white;
             border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 12px;
-            position: relative;
-            transition: all 0.2s;
-        }
-
-        .file-preview-item:hover {
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .file-icon {
-            font-size: 36px;
-            color: var(--apple-blue);
-            margin-bottom: 8px;
-        }
-
-        .file-name {
-            font-size: 12px;
-            color: #1c1c1e;
-            font-weight: 500;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            margin-bottom: 4px;
-        }
-
-        .file-size {
-            font-size: 11px;
-            color: var(--apple-gray);
-        }
-
-        .file-remove {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            width: 20px;
-            height: 20px;
-            background: rgba(255, 59, 48, 0.9);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-
-        .file-preview-item:hover .file-remove {
-            opacity: 1;
-        }
-
-        .file-remove .material-icons {
-            font-size: 14px;
-            color: white;
-        }
-
-        /* ========== PROGRESS BAR ========== */
-        .upload-progress {
+            padding: 12px 16px;
             margin-top: 12px;
-            background: #f0f0f0;
-            border-radius: 6px;
-            overflow: hidden;
-            height: 6px;
             display: none;
         }
 
-        .upload-progress.active {
+        .upload-item.active {
             display: block;
+        }
+
+        .upload-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .upload-filename {
+            font-size: 14px;
+            font-weight: 500;
+            color: #1c1c1e;
+        }
+
+        .upload-percentage {
+            font-size: 13px;
+            color: var(--apple-gray);
+        }
+
+        .upload-progress-bar-container {
+            height: 4px;
+            background: #f0f0f0;
+            border-radius: 2px;
+            overflow: hidden;
         }
 
         .upload-progress-bar {
@@ -337,16 +301,99 @@ $defaultSignature = json_encode($settings['signature']);
             width: 0%;
         }
 
-        .upload-status {
-            margin-top: 8px;
-            font-size: 13px;
-            color: var(--apple-gray);
-            text-align: center;
-            display: none;
+        /* ========== FILE PREVIEW CARDS ========== */
+        .file-cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
         }
 
-        .upload-status.active {
-            display: block;
+        .file-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            position: relative;
+            transition: all 0.2s;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .file-card:hover {
+            box-shadow: var(--card-shadow);
+            transform: translateY(-2px);
+        }
+
+        .file-card-icon {
+            font-size: 48px;
+            color: var(--apple-blue);
+            margin-bottom: 12px;
+        }
+
+        .file-card-name {
+            font-size: 13px;
+            color: #1c1c1e;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-bottom: 4px;
+        }
+
+        .file-card-size {
+            font-size: 12px;
+            color: var(--apple-gray);
+            margin-bottom: 8px;
+        }
+
+        .file-card-badge {
+            display: inline-block;
+            font-size: 11px;
+            padding: 4px 8px;
+            background: #E8F5E9;
+            color: var(--success-green);
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .file-card-remove {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 24px;
+            height: 24px;
+            background: rgba(255, 59, 48, 0.95);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .file-card:hover .file-card-remove {
+            opacity: 1;
+        }
+
+        .file-card-remove .material-icons {
+            font-size: 16px;
+            color: white;
+        }
+
+        .file-card-download {
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--apple-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .file-card-download .material-icons {
+            font-size: 16px;
         }
 
         .size-warning {
@@ -443,6 +490,10 @@ $defaultSignature = json_encode($settings['signature']);
             .action-buttons {
                 flex-direction: column;
             }
+
+            .file-cards-container {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            }
         }
     </style>
 </head>
@@ -533,12 +584,40 @@ $defaultSignature = json_encode($settings['signature']);
                             </div>
                             <input type="hidden" name="message" id="messageInput">
                         </div>
+                    </div>
+
+                    <!-- Signature Section -->
+                    <div class="form-section">
+                        <h3 class="section-title">Email Signature</h3>
+                        
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="signatureWish">Closing Wish</label>
+                                <input type="text" id="signatureWish" name="signatureWish"
+                                    placeholder="e.g., Best Regards, Warm Wishes">
+                                <p class="field-description">Your closing greeting</p>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="signatureName">Name</label>
+                                <input type="text" id="signatureName" name="signatureName"
+                                    placeholder="e.g., Durba Bhattacharya">
+                                <p class="field-description">Your full name</p>
+                            </div>
+                        </div>
 
                         <div class="form-group">
-                            <label>Signature</label>
-                            <div class="editor-wrapper">
-                                <div id="quillSignature"></div>
-                            </div>
+                            <label for="signatureDesignation">Designation</label>
+                            <input type="text" id="signatureDesignation" name="signatureDesignation"
+                                placeholder="e.g., H.O.D of SXC MDTS">
+                            <p class="field-description">Your title or position</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="signatureExtra">Additional Information <span class="label-optional">(optional)</span></label>
+                            <textarea id="signatureExtra" name="signatureExtra" rows="3"
+                                placeholder="Any extra details like contact info, department, etc."></textarea>
+                            <p class="field-description">Additional text that will appear in your signature</p>
                         </div>
                     </div>
 
@@ -553,11 +632,16 @@ $defaultSignature = json_encode($settings['signature']);
                             <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.zip,.txt,.csv">
                         </div>
 
-                        <!-- Upload Progress -->
-                        <div class="upload-progress" id="uploadProgress">
-                            <div class="upload-progress-bar" id="uploadProgressBar"></div>
+                        <!-- Individual Upload Progress -->
+                        <div class="upload-item" id="uploadItem">
+                            <div class="upload-item-header">
+                                <span class="upload-filename" id="uploadFilename"></span>
+                                <span class="upload-percentage" id="uploadPercentage">0%</span>
+                            </div>
+                            <div class="upload-progress-bar-container">
+                                <div class="upload-progress-bar" id="uploadProgressBar"></div>
+                            </div>
                         </div>
-                        <div class="upload-status" id="uploadStatus"></div>
                         
                         <!-- Size Warning -->
                         <div class="size-warning" id="sizeWarning">
@@ -565,8 +649,8 @@ $defaultSignature = json_encode($settings['signature']);
                             <span id="sizeWarningText"></span>
                         </div>
 
-                        <!-- File Preview Grid -->
-                        <div class="file-preview-grid" id="filePreviewGrid"></div>
+                        <!-- File Preview Cards -->
+                        <div class="file-cards-container" id="fileCardsContainer"></div>
                         
                         <!-- Hidden input for attachment IDs -->
                         <input type="hidden" name="attachment_ids" id="attachmentIds" value="">
@@ -592,7 +676,7 @@ $defaultSignature = json_encode($settings['signature']);
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
 
     <script>
-        // Initialize Quill editors
+        // Initialize Quill editor
         const quillMessage = new Quill('#quillMessage', {
             theme: 'snow',
             modules: {
@@ -608,31 +692,14 @@ $defaultSignature = json_encode($settings['signature']);
             placeholder: 'Type your message here...'
         });
 
-        const quillSignature = new Quill('#quillSignature', {
-            theme: 'snow',
-            modules: {
-                toolbar: [
-                    ['bold', 'italic', 'underline'],
-                    [{ 'color': [] }],
-                    ['link'],
-                    ['clean']
-                ]
-            },
-            placeholder: 'Add your signature...'
-        });
-
-        // Load default signature
-        <?php if (!empty($settings['signature'])): ?>
-        quillSignature.clipboard.dangerouslyPasteHTML(<?= $defaultSignature ?>);
-        <?php endif; ?>
-
         // ========== FILE UPLOAD FUNCTIONALITY ==========
         const fileInput = document.getElementById('fileInput');
         const fileUploadArea = document.getElementById('fileUploadArea');
-        const filePreviewGrid = document.getElementById('filePreviewGrid');
-        const uploadProgress = document.getElementById('uploadProgress');
+        const fileCardsContainer = document.getElementById('fileCardsContainer');
+        const uploadItem = document.getElementById('uploadItem');
+        const uploadFilename = document.getElementById('uploadFilename');
+        const uploadPercentage = document.getElementById('uploadPercentage');
         const uploadProgressBar = document.getElementById('uploadProgressBar');
-        const uploadStatus = document.getElementById('uploadStatus');
         const sizeWarning = document.getElementById('sizeWarning');
         const sizeWarningText = document.getElementById('sizeWarningText');
         const attachmentIdsInput = document.getElementById('attachmentIds');
@@ -697,9 +764,9 @@ $defaultSignature = json_encode($settings['signature']);
             formData.append('file', file);
 
             // Show progress
-            uploadProgress.classList.add('active');
-            uploadStatus.classList.add('active');
-            uploadStatus.textContent = `Uploading ${file.name}...`;
+            uploadItem.classList.add('active');
+            uploadFilename.textContent = file.name;
+            uploadPercentage.textContent = '0%';
             uploadProgressBar.style.width = '0%';
 
             try {
@@ -708,8 +775,9 @@ $defaultSignature = json_encode($settings['signature']);
                 // Progress tracking
                 xhr.upload.addEventListener('progress', (e) => {
                     if (e.lengthComputable) {
-                        const percentComplete = (e.loaded / e.total) * 100;
+                        const percentComplete = Math.round((e.loaded / e.total) * 100);
                         uploadProgressBar.style.width = percentComplete + '%';
+                        uploadPercentage.textContent = percentComplete + '%';
                     }
                 });
 
@@ -721,17 +789,16 @@ $defaultSignature = json_encode($settings['signature']);
                         if (response.success) {
                             uploadedFiles.push(response);
                             totalSize += response.file_size;
-                            addFilePreview(response);
+                            addFileCard(response);
                             updateAttachmentIds();
-                            uploadStatus.textContent = `✓ ${file.name} uploaded successfully`;
                             
+                            // Hide progress after 500ms
                             setTimeout(() => {
-                                uploadProgress.classList.remove('active');
-                                uploadStatus.classList.remove('active');
-                            }, 1500);
+                                uploadItem.classList.remove('active');
+                            }, 500);
                         } else {
-                            uploadStatus.textContent = `✗ Error: ${response.error}`;
-                            uploadStatus.style.color = '#FF3B30';
+                            alert('Upload failed: ' + response.error);
+                            uploadItem.classList.remove('active');
                         }
                     }
                 });
@@ -741,38 +808,54 @@ $defaultSignature = json_encode($settings['signature']);
 
             } catch (error) {
                 console.error('Upload error:', error);
-                uploadStatus.textContent = `✗ Upload failed: ${error.message}`;
-                uploadStatus.style.color = '#FF3B30';
+                alert('Upload failed: ' + error.message);
+                uploadItem.classList.remove('active');
             }
         }
 
-        // Add file preview
-        function addFilePreview(fileData) {
-            const previewItem = document.createElement('div');
-            previewItem.className = 'file-preview-item';
-            previewItem.dataset.fileId = fileData.id;
+        // Add file card
+        function addFileCard(fileData) {
+            const card = document.createElement('div');
+            card.className = 'file-card';
+            card.dataset.fileId = fileData.id;
+            card.dataset.encryptedId = fileData.encrypted_id;
 
             const icon = getFileIcon(fileData.extension);
             
-            previewItem.innerHTML = `
-                <div style="text-align: center;">
-                    <div class="material-icons file-icon">${icon}</div>
-                    <div class="file-name" title="${fileData.original_name}">${fileData.original_name}</div>
-                    <div class="file-size">${fileData.formatted_size}</div>
-                    ${fileData.deduplicated ? '<div class="file-size" style="color: var(--success-green);">✓ Reused</div>' : ''}
+            card.innerHTML = `
+                <div class="material-icons file-card-icon">${icon}</div>
+                <div class="file-card-name" title="${fileData.original_name}">${fileData.original_name}</div>
+                <div class="file-card-size">${fileData.formatted_size}</div>
+                ${fileData.deduplicated ? '<div class="file-card-badge">✓ Reused</div>' : ''}
+                <div class="file-card-download">
+                    <span class="material-icons">download</span>
+                    <span>Click to download</span>
                 </div>
-                <div class="file-remove">
+                <div class="file-card-remove">
                     <span class="material-icons">close</span>
                 </div>
             `;
 
-            // Remove file handler
-            previewItem.querySelector('.file-remove').addEventListener('click', () => {
-                removeFile(fileData.id);
-                previewItem.remove();
+            // Click to download
+            card.addEventListener('click', (e) => {
+                if (!e.target.closest('.file-card-remove')) {
+                    downloadFile(fileData.encrypted_id, fileData.original_name);
+                }
             });
 
-            filePreviewGrid.appendChild(previewItem);
+            // Remove file handler
+            card.querySelector('.file-card-remove').addEventListener('click', (e) => {
+                e.stopPropagation();
+                removeFile(fileData.id);
+                card.remove();
+            });
+
+            fileCardsContainer.appendChild(card);
+        }
+
+        // Download file
+        function downloadFile(encryptedId, originalName) {
+            window.location.href = `download_file.php?fid=${encodeURIComponent(encryptedId)}`;
         }
 
         // Remove file
@@ -833,16 +916,9 @@ $defaultSignature = json_encode($settings['signature']);
         document.getElementById('composeForm').addEventListener('submit', function(e) {
             // Get message content from Quill
             const messageHtml = quillMessage.root.innerHTML;
-            const signatureHtml = quillSignature.root.innerHTML;
-
-            // Combine message and signature
-            let finalHtml = messageHtml;
-            if (signatureHtml.trim() && signatureHtml !== '<p><br></p>') {
-                finalHtml += '<br><br>' + signatureHtml;
-            }
-
+            
             // Set hidden input
-            document.getElementById('messageInput').value = finalHtml;
+            document.getElementById('messageInput').value = messageHtml;
         });
 
         // Preview button
@@ -858,12 +934,12 @@ $defaultSignature = json_encode($settings['signature']);
 
             // Get message content
             const messageHtml = quillMessage.root.innerHTML;
-            const signatureHtml = quillSignature.root.innerHTML;
 
-            let finalHtml = messageHtml;
-            if (signatureHtml.trim() && signatureHtml !== '<p><br></p>') {
-                finalHtml += '<br><br>' + signatureHtml;
-            }
+            // Get signature components
+            const signatureWish = document.getElementById('signatureWish').value;
+            const signatureName = document.getElementById('signatureName').value;
+            const signatureDesignation = document.getElementById('signatureDesignation').value;
+            const signatureExtra = document.getElementById('signatureExtra').value;
 
             // Create preview form
             const form = document.createElement('form');
@@ -875,7 +951,11 @@ $defaultSignature = json_encode($settings['signature']);
                 'email': email,
                 'subject': subject,
                 'articletitle': articletitle,
-                'message': finalHtml
+                'message': messageHtml,
+                'signatureWish': signatureWish,
+                'signatureName': signatureName,
+                'signatureDesignation': signatureDesignation,
+                'signatureExtra': signatureExtra
             };
 
             for (const [key, value] of Object.entries(fields)) {

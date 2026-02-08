@@ -18,6 +18,28 @@ define('MAX_FILE_SIZE', 20 * 1024 * 1024); // 20MB per file
 define('MAX_TOTAL_SIZE', 25 * 1024 * 1024); // 25MB total
 define('UPLOAD_DIR', 'uploads/attachments/');
 
+// Encryption for download links
+define('ENCRYPTION_KEY', 'your-32-char-secret-key-here!!'); // Change this!
+define('ENCRYPTION_METHOD', 'AES-256-CBC');
+
+/**
+ * Encrypt file ID for secure download links
+ */
+function encryptFileId($fileId) {
+    $iv_length = openssl_cipher_iv_length(ENCRYPTION_METHOD);
+    $iv = openssl_random_pseudo_bytes($iv_length);
+    
+    $encrypted = openssl_encrypt(
+        (string)$fileId,
+        ENCRYPTION_METHOD,
+        ENCRYPTION_KEY,
+        0,
+        $iv
+    );
+    
+    return base64_encode($iv . $encrypted);
+}
+
 class UploadHandler {
     private $pdo;
     private $uploadDir;
@@ -70,6 +92,7 @@ class UploadHandler {
                 return [
                     'success' => true,
                     'id' => $existing['id'],
+                    'encrypted_id' => encryptFileId($existing['id']),
                     'path' => $this->uploadDir . $existing['storage_path'],
                     'original_name' => $uploadedFile['name'],
                     'file_size' => $uploadedFile['size'],
@@ -121,6 +144,7 @@ class UploadHandler {
             return [
                 'success' => true,
                 'id' => $attachmentId,
+                'encrypted_id' => encryptFileId($attachmentId),
                 'path' => $storagePath,
                 'original_name' => $uploadedFile['name'],
                 'file_size' => $uploadedFile['size'],
@@ -216,6 +240,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         $result = $handler->processUpload($_FILES['file']);
         
         if ($result['success']) {
+            // Get user ID and grant access
+            $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
+            $stmt->execute([$_SESSION['smtp_user']]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($user) {
+                // Grant access to this file
+                $stmt = $pdo->prepare("
+                    INSERT INTO user_attachment_access (user_id, attachment_id, access_type)
+                    VALUES (?, ?, 'owner')
+                    ON DUPLICATE KEY UPDATE access_type = 'owner'
+                ");
+                $stmt->execute([$user['id'], $result['id']]);
+            }
+            
             // Store in session for later use
             $_SESSION['temp_attachments'][] = $result;
         }
