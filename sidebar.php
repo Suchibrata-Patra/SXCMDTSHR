@@ -14,18 +14,45 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
+    
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
         :root {
-            --sidebar-width: 280px;
-            --apple-blue: #007AFF;
-            --glass-sidebar: rgba(255, 255, 255, 0.45);
-            --glass-border: rgba(0, 0, 0, 0.07);
-            --text-main: #1d1d1f;
-            --text-secondary: #86868b;
-            --active-item-bg: rgba(0, 122, 255, 0.09);
-            --transition-premium: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            /* macOS System Colors */
+            --macos-blue: #007AFF;
+            --macos-blue-hover: #0051D5;
+            
+            /* Apple Text Colors (Light Mode) */
+            --label-primary: #1C1C1E;
+            --label-secondary: rgba(60, 60, 67, 0.70);
+            --label-tertiary: rgba(60, 60, 67, 0.45);
+            --label-quaternary: rgba(60, 60, 67, 0.25);
+            
+            /* Glass Effect */
+            --glass-bg: rgba(255, 255, 255, 0.55);
+            --glass-border: rgba(0, 0, 0, 0.06);
+            --glass-inner-glow: rgba(255, 255, 255, 0.35);
+            
+            /* Shadows */
+            --shadow-sidebar: 0 6px 22px rgba(0, 0, 0, 0.06);
+            --shadow-card: 0 4px 14px rgba(0, 0, 0, 0.08);
+            
+            /* Active States */
+            --active-bg: rgba(0, 122, 255, 0.12);
+            --hover-bg: rgba(0, 0, 0, 0.03);
+            
+            /* Spacing (8px rhythm) */
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 12px;
+            --spacing-lg: 16px;
+            --spacing-xl: 22px;
+            --spacing-2xl: 30px;
+            
+            /* macOS Transitions */
+            --transition-default: all 0.20s cubic-bezier(0.25, 0.1, 0.25, 1);
+            --transition-bounce: all 0.30s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
         * {
@@ -35,66 +62,85 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         }
 
         body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            background: #f5f5f7;
-            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', system-ui, sans-serif;
+            background: #F5F5F7;
+            color: var(--label-primary);
             -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
         }
 
-        /* Premium Sidebar Layout */
+        /* ========== SIDEBAR CONTAINER ========== */
         .sidebar {
-            width: var(--sidebar-width);
+            width: 280px;
             height: 100vh;
-            background: var(--glass-sidebar);
-            backdrop-filter: blur(50px) saturate(210%);
-            -webkit-backdrop-filter: blur(50px) saturate(210%);
+            background: var(--glass-bg);
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
             border-right: 1px solid var(--glass-border);
+            box-shadow: inset 0 0 0 0.5px var(--glass-inner-glow), var(--shadow-sidebar);
             display: flex;
             flex-direction: column;
             position: sticky;
             top: 0;
             z-index: 1000;
+            overflow: hidden;
         }
 
-        /* Logo Area */
+        /* ========== HEADER / LOGO AREA ========== */
         .sidebar-header {
-            padding: 40px 24px 20px;
+            padding: var(--spacing-xl) var(--spacing-xl) 18px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.04);
         }
 
         .logo {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: var(--spacing-md);
             text-decoration: none;
+            transition: var(--transition-default);
+        }
+
+        .logo:hover {
+            opacity: 0.85;
         }
 
         .logo-image {
-            width: 60px;
-            height: auto;
-            background: none !important;
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            object-fit: cover;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
         }
 
         .logo-title {
             font-size: 17px;
-            font-weight: 700;
+            font-weight: 600;
             letter-spacing: -0.4px;
-            color: var(--text-main);
-            line-height: 1.1;
+            color: var(--label-primary);
+            line-height: 1.2;
         }
 
         .logo-subtitle {
-            font-size: 9px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            /* text-transform: uppercase; */
-            letter-spacing: 1.2px;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--label-tertiary);
+            letter-spacing: 0.3px;
         }
 
-        /* Navigation Content */
+        /* ========== NAVIGATION SECTION ========== */
         .nav-section {
             flex: 1;
-            padding: 10px 14px;
+            padding: 18px var(--spacing-xl);
             overflow-y: auto;
+            overflow-x: hidden;
             scrollbar-width: none;
         }
 
@@ -102,177 +148,346 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             display: none;
         }
 
+        /* Navigation Item (Compose, Sent, Trash, Analytics) */
         .nav-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 10px 14px;
+            gap: var(--spacing-md);
+            padding: 8px var(--spacing-md);
             text-decoration: none;
-            color: var(--text-main);
-            font-size: 14px;
+            color: var(--label-secondary);
+            font-size: 15px;
             font-weight: 500;
-            border-radius: 12px;
-            margin-bottom: 2px;
-            transition: var(--transition-premium);
+            border-radius: 10px;
+            margin-bottom: 4px;
+            transition: var(--transition-default);
+            position: relative;
+            cursor: pointer;
         }
 
         .nav-item:hover {
-            background: rgba(0, 0, 0, 0.04);
-            /* transform: translateX(3px); */
+            background: var(--hover-bg);
+            color: var(--label-primary);
         }
 
         .nav-item.active {
-            background: var(--active-item-bg);
-            color: var(--apple-blue);
+            background: var(--active-bg);
+            color: var(--macos-blue);
             font-weight: 600;
         }
 
-        .material-icons-round {
-            font-size: 20px;
-            color: var(--text-secondary);
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 20px;
+            background: var(--macos-blue);
+            border-radius: 0 2px 2px 0;
+        }
+
+        .nav-item .material-icons-round {
+            font-size: 18px;
+            color: #8E8E93;
+            transition: var(--transition-default);
+        }
+
+        .nav-item:hover .material-icons-round {
+            color: var(--label-primary);
         }
 
         .nav-item.active .material-icons-round {
-            color: var(--apple-blue);
+            color: var(--macos-blue);
         }
 
-        /* Labels Section */
+        /* ========== LABELS SECTION ========== */
+        .nav-section-divider {
+            height: var(--spacing-2xl);
+        }
+
         .nav-section-title {
-            font-size: 10px;
-            font-weight: 700;
-            color: var(--text-secondary);
-            padding: 24px 14px 10px;
-            /* text-transform: uppercase; */
-            letter-spacing: 1px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--label-tertiary);
+            padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: var(--spacing-sm);
         }
 
+        .label-settings-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition-default);
+            text-decoration: none;
+        }
+
+        .label-settings-btn .material-icons-round {
+            font-size: 16px;
+            color: var(--label-tertiary);
+            transition: var(--transition-default);
+        }
+
+        .label-settings-btn:hover {
+            background: rgba(0, 0, 0, 0.04);
+        }
+
+        .label-settings-btn:hover .material-icons-round {
+            color: var(--label-secondary);
+        }
+
+        /* Label Items */
         .label-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 8px 14px;
+            padding: 7px var(--spacing-md);
             text-decoration: none;
-            color: var(--text-main);
-            font-size: 13.5px;
-            border-radius: 10px;
-            margin-bottom: 2px;
-            transition: var(--transition-premium);
+            color: var(--label-secondary);
+            font-size: 13px;
+            font-weight: 400;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            transition: var(--transition-default);
         }
 
         .label-item:hover {
-            background: rgba(0, 0, 0, 0.03);
+            background: rgba(0, 0, 0, 0.025);
+            color: var(--label-primary);
         }
 
         .label-content {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
         }
 
         .label-dot {
-            width: 15px;
-            height: 15px;
-            border-radius: 10%;
-            /* border: 2px solid rgba(255,255,255,0.8); */
-            /* box-shadow: 0 0 0 1px rgba(0,0,0,0.05); */
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            flex-shrink: 0;
+            opacity: 0.85;
         }
 
-        .label-count {
-            font-size: 10px;
-            font-weight: 700;
-            background: rgba(0, 0, 0, 0.06);
-            color: var(--text-secondary);
-            padding: 2px 8px;
-            border-radius: 20px;
-        }
-
-        /* Premium Footer Area */
-        .user-footer {
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.15);
-            border-top: 1px solid var(--glass-border);
-        }
-
-        .user-card {
-            background: white;
-            padding: 14px;
-            border-radius: 16px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.03);
-            margin-bottom: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.7);
-        }
-
-        .auth-badge img {
-            display: inline-block;
-            width: 30px;
-            height: auto;
-
-        }
-
-        .user-email {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-main);
-            display: block;
+        .label-name {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
+        .label-count {
+            font-size: 11px;
+            font-weight: 600;
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--label-tertiary);
+            padding: 2px 7px;
+            border-radius: 10px;
+            min-width: 22px;
+            text-align: center;
+        }
+
+        /* ========== BOTTOM USER PANEL ========== */
+        .user-footer {
+            padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-xl);
+            background: rgba(255, 255, 255, 0.15);
+            border-top: 1px solid rgba(0, 0, 0, 0.04);
+        }
+
+        .user-card {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            padding: var(--spacing-lg);
+            border-radius: 14px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: var(--shadow-card);
+            margin-bottom: var(--spacing-md);
+            transition: var(--transition-default);
+        }
+
+        .user-card:hover {
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.10);
+        }
+
+        .verified-badge-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .verified-badge {
+            display: flex;
+            align-items: center;
+        }
+
+        .verified-badge img {
+            width: 14px;
+            height: 14px;
+            object-fit: contain;
+        }
+
+        .verified-text {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--macos-blue);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .user-email {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--label-secondary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding-left: 2px;
+        }
+
+        /* ========== ACTION BUTTONS ========== */
         .footer-actions {
             display: flex;
-            gap: 8px;
+            gap: var(--spacing-sm);
         }
 
         .action-btn {
             flex: 1;
-            padding: 10px;
+            padding: 10px var(--spacing-md);
             border-radius: 10px;
             text-decoration: none;
-            font-size: 12px;
-            font-weight: 600;
+            font-size: 13px;
+            font-weight: 500;
             text-align: center;
-            transition: var(--transition-premium);
+            transition: var(--transition-default);
+            cursor: pointer;
+            border: none;
+            font-family: inherit;
         }
 
         .config-btn {
-            background: #fff;
-            color: var(--text-main);
-            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.6);
+            color: var(--label-primary);
+            border: 1px solid rgba(0, 0, 0, 0.09);
+        }
+
+        .config-btn:hover {
+            background: rgba(255, 255, 255, 0.85);
+            border-color: rgba(0, 0, 0, 0.12);
+        }
+
+        .config-btn:active {
+            transform: scale(0.97);
+            transition: transform 0.08s;
         }
 
         .logout-btn {
-            background: #1d1d1f;
+            background: #1C1C1E;
             color: white;
         }
 
         .logout-btn:hover {
-            background: #000;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+            background: #000000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+        }
+
+        .logout-btn:active {
+            transform: scale(0.97);
+            transition: transform 0.08s;
+        }
+
+        /* ========== SMOOTH SCROLLBAR (macOS Style) ========== */
+        .nav-section {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+        }
+
+        .nav-section::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .nav-section::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .nav-section::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 10px;
+        }
+
+        .nav-section::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.25);
+        }
+
+        /* ========== ACCESSIBILITY & FOCUS STATES ========== */
+        .nav-item:focus-visible,
+        .label-item:focus-visible,
+        .action-btn:focus-visible {
+            outline: 2px solid var(--macos-blue);
+            outline-offset: 2px;
+        }
+
+        /* ========== RESPONSIVE ADJUSTMENTS ========== */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 260px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 240px;
+            }
+            
+            .sidebar-header {
+                padding: var(--spacing-lg) var(--spacing-lg) 14px;
+            }
+            
+            .nav-section {
+                padding: 14px var(--spacing-lg);
+            }
+            
+            .user-footer {
+                padding: var(--spacing-md) var(--spacing-lg) var(--spacing-lg);
+            }
         }
     </style>
 </head>
 
 <body>
     <div class="sidebar" id="mainSidebar">
+        <!-- Logo Header -->
         <div class="sidebar-header">
             <a href="index.php" class="logo">
                 <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg"
+                    alt="SXC Logo"
                     class="logo-image">
                 <div class="logo-text">
                     <span class="logo-title">SXC MDTS</span>
-                    <br>
-                    <span class="logo-subtitle">V_1.2.15</span>
+                    <span class="logo-subtitle">Version 1.2.15</span>
                 </div>
             </a>
         </div>
 
+        <!-- Navigation Section -->
         <nav class="nav-section">
-            <!-- <div class="nav-section-title">Workspace</div> -->
-
+            <!-- Main Navigation -->
             <a href="index.php" class="nav-item <?= ($current_page == 'index') ? 'active' : ''; ?>">
                 <span class="material-icons-round">edit</span>
                 <span>Compose</span>
@@ -282,70 +497,53 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
                 <span>Sent</span>
             </a>
             <a href="deleted_items.php" class="nav-item <?= ($current_page == 'deleted_items') ? 'active' : ''; ?>">
-                <span class="material-icons-round">delete_outline</span>
+                <span class="material-icons-round">delete</span>
                 <span>Trash</span>
             </a>
             <a href="send.php" class="nav-item <?= ($current_page == 'send') ? 'active' : ''; ?>">
-                <span class="material-icons-round">info</span>
+                <span class="material-icons-round">analytics</span>
                 <span>Analytics</span>
             </a>
 
+            <!-- Divider -->
+            <div class="nav-section-divider"></div>
+
+            <!-- Labels Section -->
             <div class="nav-section-title">
                 Labels
-                <a href="manage_labels.php" style="color:var(--text-secondary); text-decoration:none;">
-                    <span class="material-icons-round" style="font-size: 16px;">settings</span>
+                <a href="manage_labels.php" class="label-settings-btn" aria-label="Manage Labels">
+                    <span class="material-icons-round">settings</span>
                 </a>
             </div>
 
             <?php foreach ($sidebarLabels as $label): ?>
             <a href="sent_history.php?label_id=<?= $label['id'] ?>" class="label-item">
                 <div class="label-content">
-                    <div class="label-dot" style="background-color: <?= htmlspecialchars($label['label_color']) ?>;">
-                    </div>
-                    <span>
-                        <?= htmlspecialchars($label['label_name']) ?>
-                    </span>
+                    <div class="label-dot" style="background-color: <?= htmlspecialchars($label['label_color']) ?>;"></div>
+                    <span class="label-name"><?= htmlspecialchars($label['label_name']) ?></span>
                 </div>
                 <?php if (isset($label['count']) && $label['count'] > 0): ?>
-                <span class="label-count">
-                    <?= $label['count'] ?>
-                </span>
+                <span class="label-count"><?= $label['count'] ?></span>
                 <?php endif; ?>
             </a>
             <?php endforeach; ?>
         </nav>
 
-        <div class="user-footer"
-            style="padding: 20px; border-top: 1px solid rgba(0,0,0,0.07); background: rgba(255,255,255,0.2);">
-            <div class="user-card"
-                style="background: #ffffff; padding: 14px; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-bottom: 12px;">
-
-                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                    <span class="auth-badge" style="display: flex; align-items: center;">
-                        <img src="/Assets/image/Verified_badge.png" alt="Verified"
-                            style="width: 14px; height: 14px; object-fit: contain;">
+        <!-- User Footer -->
+        <div class="user-footer">
+            <div class="user-card">
+                <div class="verified-badge-row">
+                    <span class="verified-badge">
+                        <img src="/Assets/image/Verified_badge.png" alt="Verified">
                     </span>
-                    <span
-                        style="font-size: 10px; font-weight: 800; color: #3090de; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">
-                        Verified Account
-                    </span>
+                    <span class="verified-text">Verified Account</span>
                 </div>
-
-                <span class="user-email"
-                    style="display: block; font-size: 12px; font-weight: 600; color: #6e6e6e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 2px;">
-                    <?= htmlspecialchars($userEmail) ?>
-                </span>
+                <span class="user-email"><?= htmlspecialchars($userEmail) ?></span>
             </div>
 
-            <div class="footer-actions" style="display: flex; gap: 8px;">
-                <a href="settings.php" class="action-btn config-btn"
-                    style="flex: 1; padding: 10px; border-radius: 10px; text-decoration: none; font-size: 12px; font-weight: 600; text-align: center; background: #ffffff; color: #1d1d1f; border: 1px solid rgba(0,0,0,0.1); transition: 0.2s;">
-                    Settings
-                </a>
-                <a href="logout.php" class="action-btn logout-btn"
-                    style="flex: 1; padding: 10px; border-radius: 10px; text-decoration: none; font-size: 12px; font-weight: 600; text-align: center; background: #000000; color: #ffffff; transition: 0.2s;">
-                    Sign Out
-                </a>
+            <div class="footer-actions">
+                <a href="settings.php" class="action-btn config-btn">Settings</a>
+                <a href="logout.php" class="action-btn logout-btn">Sign Out</a>
             </div>
         </div>
     </div>
