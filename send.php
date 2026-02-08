@@ -111,6 +111,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $articleTitle = $_POST['articletitle'] ?? '';
         $isHtml = isset($_POST['message_is_html']) && $_POST['message_is_html'] === 'true';
         
+        // Get signature components
+        $signatureWish = $_POST['signatureWish'] ?? '';
+        $signatureName = $_POST['signatureName'] ?? '';
+        $signatureDesignation = $_POST['signatureDesignation'] ?? '';
+        $signatureExtra = $_POST['signatureExtra'] ?? '';
+        
         // Load template
         $templatePath = 'templates/template1.html';
         $finalHtml = '';
@@ -137,6 +143,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $finalHtml = str_replace('{{CURRENT_YEAR}}', date('Y'), $finalHtml);
             $finalHtml = str_replace('{{YEAR}}', date('Y'), $finalHtml);
             $finalHtml = str_replace('{{ATTACHMENT}}', '', $finalHtml);
+            
+            // Replace signature components
+            $finalHtml = str_replace('{{SIGNATURE_WISH}}', htmlspecialchars($signatureWish), $finalHtml);
+            $finalHtml = str_replace('{{SIGNATURE_NAME}}', htmlspecialchars($signatureName), $finalHtml);
+            $finalHtml = str_replace('{{SIGNATURE_DESIGNATION}}', htmlspecialchars($signatureDesignation), $finalHtml);
+            $finalHtml = str_replace('{{SIGNATURE_EXTRA}}', nl2br(htmlspecialchars($signatureExtra)), $finalHtml);
             
             $mail->Body = $finalHtml;
             $mail->AltBody = strip_tags($messageBody);

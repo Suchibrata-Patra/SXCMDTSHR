@@ -5,6 +5,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $subject = $_POST['subject'];
     $message = $_POST['message'];
     
+    // Get signature components
+    $signatureWish = $_POST['signatureWish'] ?? '';
+    $signatureName = $_POST['signatureName'] ?? '';
+    $signatureDesignation = $_POST['signatureDesignation'] ?? '';
+    $signatureExtra = $_POST['signatureExtra'] ?? '';
+    
     // Explicitly using your stunning template
     $templatePath = 'templates/template1.html';
 
@@ -17,6 +23,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         // Swap placeholders
         $previewHtml = str_replace('{{MESSAGE}}', $safeMessage, $templateContent);
+        $previewHtml = str_replace('{{SIGNATURE_WISH}}', htmlspecialchars($signatureWish), $previewHtml);
+        $previewHtml = str_replace('{{SIGNATURE_NAME}}', htmlspecialchars($signatureName), $previewHtml);
+        $previewHtml = str_replace('{{SIGNATURE_DESIGNATION}}', htmlspecialchars($signatureDesignation), $previewHtml);
+        $previewHtml = str_replace('{{SIGNATURE_EXTRA}}', nl2br(htmlspecialchars($signatureExtra)), $previewHtml);
         $previewHtml = str_replace('{{YEAR}}', date('Y'), $previewHtml);
     } else {
         $previewHtml = "<div style='color:red; padding:20px;'>Error: Template not found at $templatePath</div>";
@@ -54,6 +64,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <input type="hidden" name="email" value="<?php echo htmlspecialchars($email); ?>">
                 <input type="hidden" name="subject" value="<?php echo htmlspecialchars($subject); ?>">
                 <input type="hidden" name="message" value="<?php echo htmlspecialchars($message); ?>">
+                <input type="hidden" name="signatureWish" value="<?php echo htmlspecialchars($signatureWish); ?>">
+                <input type="hidden" name="signatureName" value="<?php echo htmlspecialchars($signatureName); ?>">
+                <input type="hidden" name="signatureDesignation" value="<?php echo htmlspecialchars($signatureDesignation); ?>">
+                <input type="hidden" name="signatureExtra" value="<?php echo htmlspecialchars($signatureExtra); ?>">
                 
                 <button type="button" class="btn btn-back" onclick="history.back()">Edit Message</button>
                 <button type="submit" class="btn btn-send">Confirm & Send Now</button>
