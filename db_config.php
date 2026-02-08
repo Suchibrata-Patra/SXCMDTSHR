@@ -1,7 +1,8 @@
 <?php
-// db_config.php - Simplified Database configuration
-// Labels table stores: id, user_email, label_name, label_color, created_at
-// Sent_emails table only stores: label_id (reference)
+/**
+ * db_config.php - Database Configuration and Helper Functions
+ * Updated for unified email and attachment tracking system
+ */
 
 function getDatabaseConnection() {
     // Direct database credentials
@@ -28,54 +29,126 @@ function getDatabaseConnection() {
     }
 }
 
+// ==================== USER MANAGEMENT ====================
+
 /**
- * Save sent email to database
+ * Get user ID by email address
  */
-function saveSentEmail($data) {
+function getUserId($pdo, $email) {
     try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) {
-            error_log("Failed to save sent email: No database connection");
-            return false;
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $user ? $user['id'] : null;
+    } catch (PDOException $e) {
+        error_log("Error getting user ID: " . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Get user ID by email - alias for consistency
+ */
+function getUserIdByEmail($pdo, $email) {
+    return getUserId($pdo, $email);
+}
+
+/**
+ * Create user if doesn't exist
+ */
+function createUserIfNotExists($pdo, $email, $fullName = null) {
+    try {
+        $existingId = getUserId($pdo, $email);
+        if ($existingId) {
+            return $existingId;
         }
         
-        $sql = "INSERT INTO sent_emails 
-                (sender_email, recipient_email, cc_list, bcc_list, subject, 
-                 article_title, message_body, attachment_names, label_id, sent_at) 
-                VALUES 
-                (:sender_email, :recipient_email, :cc_list, :bcc_list, :subject, 
-                 :article_title, :message_body, :attachment_names, :label_id, NOW())";
+        $uuid = generateUuidV4();
+        $stmt = $pdo->prepare("
+            INSERT INTO users (user_uuid, email, full_name, created_at)
+            VALUES (?, ?, ?, NOW())
+        ");
+        $stmt->execute([$uuid, $email, $fullName]);
         
-        $stmt = $pdo->prepare($sql);
+        return $pdo->lastInsertId();
+    } catch (PDOException $e) {
+        error_log("Error creating user: " . $e->getMessage());
+        return null;
+    }
+}
+
+// ==================== EMAIL MANAGEMENT ====================
+
+/**
+ * Save email to database and return email ID
+ */
+function saveEmailToDatabase($pdo, $emailData) {
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO emails (
+                email_uuid, message_id, sender_email, sender_name,
+                recipient_email, cc_list, bcc_list, reply_to,
+                subject, body_text, body_html, article_title,
+                email_type, has_attachments, email_date, sent_at, created_at
+            ) VALUES (
+                :email_uuid, :message_id, :sender_email, :sender_name,
+                :recipient_email, :cc_list, :bcc_list, :reply_to,
+                :subject, :body_text, :body_html, :article_title,
+                :email_type, :has_attachments, NOW(), NOW(), NOW()
+            )
+        ");
         
         $result = $stmt->execute([
-            ':sender_email' => $data['sender_email'],
-            ':recipient_email' => $data['recipient_email'],
-            ':cc_list' => $data['cc_list'] ?? '',
-            ':bcc_list' => $data['bcc_list'] ?? '',
-            ':subject' => $data['subject'],
-            ':article_title' => $data['article_title'],
-            ':message_body' => $data['message_body'],
-            ':attachment_names' => $data['attachment_names'] ?? '',
-            ':label_id' => $data['label_id'] ?? null
+            ':email_uuid' => $emailData['email_uuid'],
+            ':message_id' => $emailData['message_id'] ?? null,
+            ':sender_email' => $emailData['sender_email'],
+            ':sender_name' => $emailData['sender_name'] ?? null,
+            ':recipient_email' => $emailData['recipient_email'],
+            ':cc_list' => $emailData['cc_list'] ?? null,
+            ':bcc_list' => $emailData['bcc_list'] ?? null,
+            ':reply_to' => $emailData['reply_to'] ?? null,
+            ':subject' => $emailData['subject'],
+            ':body_text' => $emailData['body_text'] ?? null,
+            ':body_html' => $emailData['body_html'] ?? null,
+            ':article_title' => $emailData['article_title'] ?? null,
+            ':email_type' => $emailData['email_type'] ?? 'sent',
+            ':has_attachments' => $emailData['has_attachments'] ?? 0
         ]);
         
         if ($result) {
-            error_log("Email saved to database successfully. ID: " . $pdo->lastInsertId());
+            return $pdo->lastInsertId();
         }
         
-        return $result;
+        return null;
         
     } catch (PDOException $e) {
-        error_log("Error saving sent email: " . $e->getMessage());
-        error_log("SQL State: " . $e->getCode());
+        error_log("Error saving email: " . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Create email access record for user
+ */
+function createEmailAccess($pdo, $emailId, $userId, $accessType = 'recipient', $labelId = null) {
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO user_email_access (
+                email_id, user_id, access_type, label_id,
+                is_deleted, created_at
+            ) VALUES (?, ?, ?, ?, 0, NOW())
+        ");
+        
+        return $stmt->execute([$emailId, $userId, $accessType, $labelId]);
+        
+    } catch (PDOException $e) {
+        error_log("Error creating email access: " . $e->getMessage());
         return false;
     }
 }
 
 /**
- * Get all sent emails for current user with optional filters
- * Joins with labels table to get label_name and label_color
+ * Get sent emails for current user
  */
 function getSentEmails($userEmail, $limit = 100, $offset = 0, $filters = []) {
     try {
@@ -84,66 +157,62 @@ function getSentEmails($userEmail, $limit = 100, $offset = 0, $filters = []) {
             return [];
         }
         
-        // Join with labels table to fetch label_name and label_color
-        // Only show non-deleted emails (current_status = 1 or NULL for backward compatibility)
-        $sql = "SELECT se.*, l.label_name, l.label_color 
-                FROM sent_emails se 
-                LEFT JOIN labels l ON se.label_id = l.id 
-                WHERE se.sender_email = :sender_email 
-                AND (se.current_status = 1 OR se.current_status IS NULL)";
+        // Get user ID
+        $userId = getUserId($pdo, $userEmail);
+        if (!$userId) {
+            return [];
+        }
         
-        $params = [':sender_email' => $userEmail];
+        // Use the view for sent emails
+        $sql = "SELECT * FROM v_user_sent 
+                WHERE user_id = :user_id";
+        
+        $params = [':user_id' => $userId];
         
         // Add search filters
         if (!empty($filters['search'])) {
             $sql .= " AND (
-                se.recipient_email LIKE :search 
-                OR se.subject LIKE :search 
-                OR se.message_body LIKE :search
-                OR se.article_title LIKE :search
+                recipient_email LIKE :search 
+                OR subject LIKE :search 
+                OR body_text LIKE :search
+                OR article_title LIKE :search
             )";
             $params[':search'] = '%' . $filters['search'] . '%';
         }
         
-        // Add recipient filter
         if (!empty($filters['recipient'])) {
-            $sql .= " AND se.recipient_email LIKE :recipient";
+            $sql .= " AND recipient_email LIKE :recipient";
             $params[':recipient'] = '%' . $filters['recipient'] . '%';
         }
         
-        // Add subject filter
         if (!empty($filters['subject'])) {
-            $sql .= " AND se.subject LIKE :subject";
+            $sql .= " AND subject LIKE :subject";
             $params[':subject'] = '%' . $filters['subject'] . '%';
         }
         
-        // Add label filter
         if (!empty($filters['label_id'])) {
             if ($filters['label_id'] === 'unlabeled') {
-                $sql .= " AND se.label_id IS NULL";
+                $sql .= " AND label_id IS NULL";
             } else {
-                $sql .= " AND se.label_id = :label_id";
+                $sql .= " AND label_id = :label_id";
                 $params[':label_id'] = $filters['label_id'];
             }
         }
         
-        // Add date range filter
         if (!empty($filters['date_from'])) {
-            $sql .= " AND DATE(se.sent_at) >= :date_from";
+            $sql .= " AND DATE(sent_at) >= :date_from";
             $params[':date_from'] = $filters['date_from'];
         }
         
         if (!empty($filters['date_to'])) {
-            $sql .= " AND DATE(se.sent_at) <= :date_to";
+            $sql .= " AND DATE(sent_at) <= :date_to";
             $params[':date_to'] = $filters['date_to'];
         }
         
-        // Add sorting
-        $sql .= " ORDER BY se.sent_at DESC LIMIT :limit OFFSET :offset";
+        $sql .= " ORDER BY sent_at DESC LIMIT :limit OFFSET :offset";
         
         $stmt = $pdo->prepare($sql);
         
-        // Bind all parameters
         foreach ($params as $key => $value) {
             $stmt->bindValue($key, $value, PDO::PARAM_STR);
         }
@@ -161,7 +230,7 @@ function getSentEmails($userEmail, $limit = 100, $offset = 0, $filters = []) {
 }
 
 /**
- * Get count of sent emails for current user with optional filters
+ * Get count of sent emails
  */
 function getSentEmailCount($userEmail, $filters = []) {
     try {
@@ -170,49 +239,52 @@ function getSentEmailCount($userEmail, $filters = []) {
             return 0;
         }
         
-        $sql = "SELECT COUNT(*) as count FROM sent_emails se 
-                WHERE se.sender_email = :sender_email 
-                AND (se.current_status = 1 OR se.current_status IS NULL)";
+        $userId = getUserId($pdo, $userEmail);
+        if (!$userId) {
+            return 0;
+        }
         
-        $params = [':sender_email' => $userEmail];
+        $sql = "SELECT COUNT(*) as count FROM v_user_sent 
+                WHERE user_id = :user_id";
         
-        // Add the same filters as getSentEmails
+        $params = [':user_id' => $userId];
+        
         if (!empty($filters['search'])) {
             $sql .= " AND (
-                se.recipient_email LIKE :search 
-                OR se.subject LIKE :search 
-                OR se.message_body LIKE :search
-                OR se.article_title LIKE :search
+                recipient_email LIKE :search 
+                OR subject LIKE :search 
+                OR body_text LIKE :search
+                OR article_title LIKE :search
             )";
             $params[':search'] = '%' . $filters['search'] . '%';
         }
         
         if (!empty($filters['recipient'])) {
-            $sql .= " AND se.recipient_email LIKE :recipient";
+            $sql .= " AND recipient_email LIKE :recipient";
             $params[':recipient'] = '%' . $filters['recipient'] . '%';
         }
         
         if (!empty($filters['subject'])) {
-            $sql .= " AND se.subject LIKE :subject";
+            $sql .= " AND subject LIKE :subject";
             $params[':subject'] = '%' . $filters['subject'] . '%';
         }
         
         if (!empty($filters['label_id'])) {
             if ($filters['label_id'] === 'unlabeled') {
-                $sql .= " AND se.label_id IS NULL";
+                $sql .= " AND label_id IS NULL";
             } else {
-                $sql .= " AND se.label_id = :label_id";
+                $sql .= " AND label_id = :label_id";
                 $params[':label_id'] = $filters['label_id'];
             }
         }
         
         if (!empty($filters['date_from'])) {
-            $sql .= " AND DATE(se.sent_at) >= :date_from";
+            $sql .= " AND DATE(sent_at) >= :date_from";
             $params[':date_from'] = $filters['date_from'];
         }
         
         if (!empty($filters['date_to'])) {
-            $sql .= " AND DATE(se.sent_at) <= :date_to";
+            $sql .= " AND DATE(sent_at) <= :date_to";
             $params[':date_to'] = $filters['date_to'];
         }
         
@@ -228,7 +300,7 @@ function getSentEmailCount($userEmail, $filters = []) {
     }
 }
 
-// ==================== LABEL MANAGEMENT FUNCTIONS ====================
+// ==================== LABEL MANAGEMENT ====================
 
 /**
  * Get all labels for a user
@@ -241,7 +313,7 @@ function getUserLabels($userEmail) {
         }
         
         $sql = "SELECT * FROM labels 
-                WHERE user_email = :user_email 
+                WHERE user_email = :user_email OR user_email IS NULL
                 ORDER BY label_name ASC";
         
         $stmt = $pdo->prepare($sql);
@@ -261,26 +333,37 @@ function getUserLabels($userEmail) {
 function getLabelCounts($userEmail) {
     try {
         $pdo = getDatabaseConnection();
-        if (!$pdo) { return []; }
+        if (!$pdo) {
+            return [];
+        }
         
-        // Removed "WHERE l.user_email = :user_email"
-        // Only count non-deleted emails
+        $userId = getUserId($pdo, $userEmail);
+        if (!$userId) {
+            return [];
+        }
+        
         $sql = "SELECT 
                     l.id, 
                     l.label_name, 
                     l.label_color,
                     l.created_at,
-                    COUNT(se.id) as email_count
+                    COUNT(uea.email_id) as email_count
                 FROM labels l
-                LEFT JOIN sent_emails se ON l.id = se.label_id 
-                    AND (se.current_status = 1 OR se.current_status IS NULL)
+                LEFT JOIN user_email_access uea ON l.id = uea.label_id 
+                    AND uea.user_id = :user_id
+                    AND uea.is_deleted = 0
+                WHERE l.user_email = :user_email OR l.user_email IS NULL
                 GROUP BY l.id, l.label_name, l.label_color, l.created_at
                 ORDER BY l.label_name ASC";
         
         $stmt = $pdo->prepare($sql);
-        $stmt->execute(); // No parameters needed if global
+        $stmt->execute([
+            ':user_id' => $userId,
+            ':user_email' => $userEmail
+        ]);
         
         return $stmt->fetchAll();
+        
     } catch (PDOException $e) {
         error_log("Error fetching label counts: " . $e->getMessage());
         return [];
@@ -365,7 +448,7 @@ function deleteLabel($labelId, $userEmail) {
         }
         
         // First, remove the label from all emails
-        $stmt = $pdo->prepare("UPDATE sent_emails SET label_id = NULL WHERE label_id = :label_id");
+        $stmt = $pdo->prepare("UPDATE user_email_access SET label_id = NULL WHERE label_id = :label_id");
         $stmt->execute([':label_id' => $labelId]);
         
         // Then delete the label
@@ -392,14 +475,19 @@ function updateEmailLabel($emailId, $userEmail, $labelId) {
             return false;
         }
         
-        $sql = "UPDATE sent_emails 
+        $userId = getUserId($pdo, $userEmail);
+        if (!$userId) {
+            return false;
+        }
+        
+        $sql = "UPDATE user_email_access 
                 SET label_id = :label_id 
-                WHERE id = :id AND sender_email = :sender_email";
+                WHERE email_id = :email_id AND user_id = :user_id";
         
         $stmt = $pdo->prepare($sql);
         return $stmt->execute([
-            ':id' => $emailId,
-            ':sender_email' => $userEmail,
+            ':email_id' => $emailId,
+            ':user_id' => $userId,
             ':label_id' => $labelId
         ]);
         
@@ -419,13 +507,18 @@ function getUnlabeledEmailCount($userEmail) {
             return 0;
         }
         
-        $sql = "SELECT COUNT(*) as count FROM sent_emails 
-                WHERE sender_email = :sender_email 
+        $userId = getUserId($pdo, $userEmail);
+        if (!$userId) {
+            return 0;
+        }
+        
+        $sql = "SELECT COUNT(*) as count FROM user_email_access 
+                WHERE user_id = :user_id 
                 AND label_id IS NULL 
-                AND (current_status = 1 OR current_status IS NULL)";
+                AND is_deleted = 0";
         
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([':sender_email' => $userEmail]);
+        $stmt->execute([':user_id' => $userId]);
         
         $result = $stmt->fetch();
         return $result['count'] ?? 0;
@@ -436,20 +529,29 @@ function getUnlabeledEmailCount($userEmail) {
     }
 }
 
+// ==================== UTILITY FUNCTIONS ====================
+
 /**
- * Create default labels for new users
+ * Generate UUID v4
  */
-function createDefaultLabels($userEmail) {
-    $defaultLabels = [
-        ['name' => 'Work', 'color' => '#0973dc'],
-        ['name' => 'Personal', 'color' => '#34a853'],
-        ['name' => 'Urgent', 'color' => '#ea4335'],
-        ['name' => 'Marketing', 'color' => '#fbbc04'],
-        ['name' => 'Archive', 'color' => '#5f6368']
-    ];
-    
-    foreach ($defaultLabels as $label) {
-        createLabel($userEmail, $label['name'], $label['color']);
-    }
+function generateUuidV4() {
+    return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+        mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+        mt_rand(0, 0xffff),
+        mt_rand(0, 0x0fff) | 0x4000,
+        mt_rand(0, 0x3fff) | 0x8000,
+        mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+    );
+}
+
+// ==================== BACKWARD COMPATIBILITY ====================
+// Keep old function for backward compatibility during transition
+
+/**
+ * @deprecated Use saveEmailToDatabase() and createEmailAccess() instead
+ */
+function saveSentEmail($data) {
+    error_log("DEPRECATED: saveSentEmail() called - please update to use new email system");
+    return false;
 }
 ?>
