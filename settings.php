@@ -578,6 +578,7 @@ $s = array_merge($defaults, $userSettings);
                         <option value="statistics" <?= $s['dept']=='statistics'?'selected':'' ?>>Statistics</option>
                         <option value="data_science" <?= $s['dept']=='data_science'?'selected':'' ?>>Data Science</option>
                         <option value="CS" <?= $s['dept']=='CS'?'selected':'' ?>>Computer Science</option>
+    </select>
                 </div>
                 <div class="setting-row">
                     <div class="setting-info">
