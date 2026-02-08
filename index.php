@@ -8,6 +8,9 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     exit();
 }
 
+// Clear temp attachments on page load (fresh start)
+$_SESSION['temp_attachments'] = [];
+
 // Load settings from JSON file
 $settingsFile = 'settings.json';
 $settings = [];
@@ -31,9 +34,6 @@ $settings = array_merge([
 
 // Update session settings for immediate use
 $_SESSION['user_settings'] = $settings;
-
-// Prepare signature for JavaScript (escape for JSON)
-$defaultSignature = json_encode($settings['signature']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -59,6 +59,7 @@ $defaultSignature = json_encode($settings['signature']);
             --glass: rgba(255, 255, 255, 0.7);
             --border: #E5E5EA;
             --success-green: #34C759;
+            --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
         * {
@@ -176,6 +177,7 @@ $defaultSignature = json_encode($settings['signature']);
         /* ========== INPUT FIELDS ========== */
         input[type="email"],
         input[type="text"],
+        textarea,
         select {
             width: 100%;
             padding: 10px 14px;
@@ -188,15 +190,22 @@ $defaultSignature = json_encode($settings['signature']);
             transition: all 0.2s;
         }
 
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
         input[type="email"]:focus,
         input[type="text"]:focus,
+        textarea:focus,
         select:focus {
             outline: none;
             border-color: var(--apple-blue);
             box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
         }
 
-        input::placeholder {
+        input::placeholder,
+        textarea::placeholder {
             color: var(--apple-gray);
         }
 
@@ -218,7 +227,8 @@ $defaultSignature = json_encode($settings['signature']);
             cursor: pointer;
         }
 
-        .file-upload-area:hover {
+        .file-upload-area:hover,
+        .file-upload-area.drag-over {
             border-color: var(--apple-blue);
             background: #F5F9FF;
         }
@@ -245,257 +255,226 @@ $defaultSignature = json_encode($settings['signature']);
             display: none;
         }
 
-        /* ========== FILE PREVIEW GRID ========== */
-        .file-preview-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 12px;
-            margin-top: 16px;
-        }
-
-        .file-preview-item {
+        /* ========== UPLOAD PROGRESS (Individual file) ========== */
+        .upload-item {
             background: white;
             border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 12px;
-            position: relative;
-            transition: all 0.2s;
+            padding: 12px 16px;
+            margin-top: 12px;
+            display: none;
         }
 
-        .file-preview-item:hover {
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        .upload-item.active {
+            display: block;
         }
 
-        .file-preview-icon {
-            font-size: 32px;
-            color: var(--apple-blue);
+        .upload-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 8px;
         }
 
-        .file-preview-name {
-            font-size: 12px;
-            color: #1c1c1e;
+        .upload-filename {
+            font-size: 14px;
             font-weight: 500;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            margin-bottom: 4px;
+            color: #1c1c1e;
         }
 
-        .file-preview-size {
-            font-size: 11px;
+        .upload-percentage {
+            font-size: 13px;
             color: var(--apple-gray);
         }
 
-        .file-remove-btn {
+        .upload-progress-bar-container {
+            height: 4px;
+            background: #f0f0f0;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .upload-progress-bar {
+            height: 100%;
+            background: var(--apple-blue);
+            transition: width 0.3s;
+            width: 0%;
+        }
+
+        /* ========== FILE PREVIEW CARDS ========== */
+        .file-cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .file-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            position: relative;
+            transition: all 0.2s;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .file-card:hover {
+            box-shadow: var(--card-shadow);
+            transform: translateY(-2px);
+        }
+
+        .file-card-icon {
+            font-size: 48px;
+            color: var(--apple-blue);
+            margin-bottom: 12px;
+        }
+
+        .file-card-name {
+            font-size: 13px;
+            color: #1c1c1e;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-bottom: 4px;
+        }
+
+        .file-card-size {
+            font-size: 12px;
+            color: var(--apple-gray);
+            margin-bottom: 8px;
+        }
+
+        .file-card-badge {
+            display: inline-block;
+            font-size: 11px;
+            padding: 4px 8px;
+            background: #E8F5E9;
+            color: var(--success-green);
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .file-card-remove {
             position: absolute;
             top: 8px;
             right: 8px;
-            width: 20px;
-            height: 20px;
+            width: 24px;
+            height: 24px;
+            background: rgba(255, 59, 48, 0.95);
             border-radius: 50%;
-            background: #FF3B30;
-            color: white;
-            border: none;
-            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
+            cursor: pointer;
             opacity: 0;
             transition: opacity 0.2s;
         }
 
-        .file-preview-item:hover .file-remove-btn {
+        .file-card:hover .file-card-remove {
             opacity: 1;
         }
 
-        /* ========== EMAIL LIST UPLOAD ========== */
-        .email-list-upload {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 14px;
-            background: #F2F2F7;
-            border-radius: 6px;
-            font-size: 13px;
-            color: var(--apple-blue);
-            cursor: pointer;
-            transition: all 0.2s;
-            border: none;
-            font-weight: 500;
-            margin-top: 8px;
-        }
-
-        .email-list-upload:hover {
-            background: #E5E5EA;
-        }
-
-        .email-list-upload .material-icons {
+        .file-card-remove .material-icons {
             font-size: 16px;
+            color: white;
+        }
+
+        .file-card-download {
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--apple-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .file-card-download .material-icons {
+            font-size: 16px;
+        }
+
+        .size-warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 12px;
+            font-size: 13px;
+            color: #856404;
+            display: none;
+        }
+
+        .size-warning.active {
+            display: block;
         }
 
         /* ========== RICH TEXT EDITOR ========== */
         .editor-wrapper {
             border: 1px solid var(--border);
             border-radius: 8px;
-            background: white;
-            transition: all 0.2s;
             overflow: hidden;
+            background: white;
         }
 
-        .editor-wrapper.focused {
-            border-color: var(--apple-blue);
-            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
-        }
-        
-        /* FIX: Ensure toolbar buttons display correctly */
         .ql-toolbar {
-            border: none !important;
-            border-bottom: 1px solid var(--border) !important;
-            background: #FAFAFA !important;
-            padding: 12px !important;
-        }
-
-        .ql-toolbar .ql-stroke {
-            stroke: #1c1c1e !important;
-        }
-
-        .ql-toolbar .ql-fill {
-            fill: #1c1c1e !important;
-        }
-
-        .ql-toolbar .ql-picker-label {
-            color: #1c1c1e !important;
+            border: none;
+            border-bottom: 1px solid var(--border);
+            background: #FAFAFA;
         }
 
         .ql-container {
             border: none;
-            font-size: 15px;
             font-family: 'Inter', sans-serif;
-            min-height: 250px;
-        }
-
-        .ql-editor {
-            min-height: 250px;
-            padding: 16px;
-        }
-
-        .ql-editor.ql-blank::before {
-            color: var(--apple-gray);
-            font-style: normal;
-        }
-
-        /* Signature editor smaller */
-        #signatureContainer .ql-container {
-            min-height: 120px;
-        }
-
-        #signatureContainer .ql-editor {
-            min-height: 120px;
-        }
-
-        /* Quill toolbar buttons */
-        .ql-toolbar button {
-            border-radius: 4px;
-        }
-
-        .ql-toolbar button:hover {
-            background: rgba(0, 122, 255, 0.1) !important;
-        }
-
-        .ql-toolbar button.ql-active {
-            background: rgba(0, 122, 255, 0.15) !important;
-            color: var(--apple-blue) !important;
-        }
-
-        .ql-toolbar button.ql-active .ql-stroke {
-            stroke: var(--apple-blue) !important;
-        }
-
-        .ql-toolbar button.ql-active .ql-fill {
-            fill: var(--apple-blue) !important;
+            font-size: 15px;
+            min-height: 200px;
         }
 
         /* ========== ACTION BUTTONS ========== */
-        .form-actions {
+        .action-buttons {
             display: flex;
             gap: 12px;
-            justify-content: flex-end;
             margin-top: 30px;
         }
 
         .btn {
-            padding: 12px 24px;
-            border-radius: 10px;
+            flex: 1;
+            padding: 14px 28px;
+            border: none;
+            border-radius: 8px;
             font-size: 15px;
             font-weight: 600;
+            font-family: 'Inter', sans-serif;
             cursor: pointer;
             transition: all 0.2s;
-            border: none;
-            font-family: 'Inter', sans-serif;
-            display: inline-flex;
+            display: flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--apple-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0066CC;
+        }
+
+        .btn-secondary {
+            background: #F2F2F7;
+            color: #1c1c1e;
+        }
+
+        .btn-secondary:hover {
+            background: #E5E5EA;
         }
 
         .btn .material-icons {
             font-size: 18px;
-        }
-
-        .btn-preview {
-            background: white;
-            color: #1c1c1e;
-            border: 1px solid var(--border);
-        }
-
-        .btn-preview:hover {
-            background: #F2F2F7;
-        }
-
-        .btn-send {
-            background: var(--apple-blue);
-            color: white;
-            box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
-        }
-
-        .btn-send:hover {
-            background: #0051D5;
-            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4);
-            transform: translateY(-1px);
-        }
-
-        .btn-send:active {
-            transform: translateY(0);
-        }
-
-        /* ========== COLLAPSIBLE SECTIONS ========== */
-        .section-toggle {
-            cursor: pointer;
-            user-select: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .section-toggle .material-icons {
-            font-size: 20px;
-            color: var(--apple-gray);
-            transition: transform 0.2s;
-        }
-
-        .section-toggle.collapsed .material-icons {
-            transform: rotate(-90deg);
-        }
-
-        .section-content {
-            max-height: 2000px;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out;
-        }
-
-        .section-content.collapsed {
-            max-height: 0;
         }
 
         /* ========== RESPONSIVE ========== */
@@ -504,44 +483,17 @@ $defaultSignature = json_encode($settings['signature']);
                 padding: 20px;
             }
 
-            .page-header {
-                padding: 20px;
-            }
-
             .form-grid {
                 grid-template-columns: 1fr;
             }
 
-            .form-actions {
+            .action-buttons {
                 flex-direction: column;
             }
 
-            .btn {
-                width: 100%;
-                justify-content: center;
+            .file-cards-container {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
             }
-
-            .file-preview-grid {
-                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            }
-        }
-
-        /* ========== SCROLLBAR ========== */
-        .content-area::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .content-area::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .content-area::-webkit-scrollbar-thumb {
-            background: rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
-        }
-
-        .content-area::-webkit-scrollbar-thumb:hover {
-            background: rgba(0, 0, 0, 0.2);
         }
     </style>
 </head>
@@ -554,73 +506,61 @@ $defaultSignature = json_encode($settings['signature']);
             <!-- Header -->
             <div class="page-header">
                 <div class="header-container">
-                    <h1 class="page-title">Compose Email</h1>
-                    <p class="page-subtitle">Create and send professional emails to your contacts</p>
+                    <h1 class="page-title">Compose New Email</h1>
+                    <p class="page-subtitle">Send professional emails with templates and signatures</p>
                 </div>
             </div>
 
             <!-- Compose Form -->
             <div class="compose-container">
-                <form id="composeForm" action="send.php" method="POST" enctype="multipart/form-data">
+                <form id="composeForm" method="POST" action="send.php" enctype="multipart/form-data">
+                    
                     <!-- Recipients Section -->
                     <div class="form-section">
-                        <h2 class="section-title">Recipients</h2>
-
+                        <h3 class="section-title">Recipients</h3>
+                        
                         <div class="form-group">
                             <label for="email">
                                 To
                                 <span style="color: #FF3B30;">*</span>
                             </label>
-                            <input type="email" id="email" name="email" placeholder="recipient@example.com" value="suchibratapatra2003@gmail.com" required>
-                            <label for="toFileUpload" class="email-list-upload">
-                                <span class="material-icons">upload_file</span>
-                                Import from file
-                            </label>
-                            <input type="file" id="toFileUpload" accept=".txt,.csv"
-                                onchange="handleEmailListUpload(this, 'email')">
+                            <input type="email" name="email" id="email" 
+                                   placeholder="recipient@example.com" required>
+                            <p class="field-description">Primary recipient email address</p>
                         </div>
 
                         <div class="form-grid">
                             <div class="form-group">
                                 <label for="cc">
                                     CC
-                                    <span class="label-optional">(Optional)</span>
+                                    <span class="label-optional">(optional)</span>
                                 </label>
-                                <input type="text" id="cc" name="cc" placeholder="cc@example.com">
-                                <label for="ccFileUpload" class="email-list-upload">
-                                    <span class="material-icons">upload_file</span>
-                                    Import from file
-                                </label>
-                                <input type="file" id="ccFileUpload" accept=".txt,.csv"
-                                    onchange="handleEmailListUpload(this, 'cc')">
+                                <input type="text" name="cc" id="cc" 
+                                       placeholder="cc1@example.com, cc2@example.com">
                             </div>
 
                             <div class="form-group">
                                 <label for="bcc">
                                     BCC
-                                    <span class="label-optional">(Optional)</span>
+                                    <span class="label-optional">(optional)</span>
                                 </label>
-                                <input type="text" id="bcc" name="bcc" placeholder="bcc@example.com">
-                                <label for="bccFileUpload" class="email-list-upload">
-                                    <span class="material-icons">upload_file</span>
-                                    Import from file
-                                </label>
-                                <input type="file" id="bccFileUpload" accept=".txt,.csv"
-                                    onchange="handleEmailListUpload(this, 'bcc')">
+                                <input type="text" name="bcc" id="bcc" 
+                                       placeholder="bcc@example.com">
                             </div>
                         </div>
                     </div>
 
                     <!-- Email Details Section -->
                     <div class="form-section">
-                        <h2 class="section-title">Email Details</h2>
-
+                        <h3 class="section-title">Email Details</h3>
+                        
                         <div class="form-group">
                             <label for="subject">
                                 Subject
                                 <span style="color: #FF3B30;">*</span>
                             </label>
-                            <input type="text" id="subject" name="subject" placeholder="Enter email subject" value="This is the mail Subject" required>
+                            <input type="text" name="subject" id="subject" 
+                                   placeholder="Enter email subject" required>
                         </div>
 
                         <div class="form-group">
@@ -628,166 +568,101 @@ $defaultSignature = json_encode($settings['signature']);
                                 Article Title
                                 <span style="color: #FF3B30;">*</span>
                             </label>
-                            <input type="text" id="articletitle" name="articletitle" placeholder="Enter article title" value="This is the subject"
-                                required>
-                            <p class="field-description">This will appear as the main heading in your email</p>
+                            <input type="text" name="articletitle" id="articletitle" 
+                                   placeholder="Article or document title" required>
                         </div>
                     </div>
 
                     <!-- Message Section -->
                     <div class="form-section">
-                        <h2 class="section-title">Message</h2>
-
+                        <h3 class="section-title">Message</h3>
+                        
                         <div class="form-group">
-                            <div class="editor-wrapper" id="editorContainer">
-                                <div id="toolbar">
-                                    <select class="ql-header">
-                                        <option value="1">Heading 1</option>
-                                        <option value="2">Heading 2</option>
-                                        <option value="3">Heading 3</option>
-                                        <option selected>Normal</option>
-                                    </select>
-                                    <button class="ql-bold"></button>
-                                    <button class="ql-italic"></button>
-                                    <button class="ql-underline"></button>
-                                    <button class="ql-strike"></button>
-                                    <select class="ql-color"></select>
-                                    <select class="ql-background"></select>
-                                    <button class="ql-list" value="ordered"></button>
-                                    <button class="ql-list" value="bullet"></button>
-                                    <select class="ql-align"></select>
-                                    <button class="ql-link"></button>
-                                    <button class="ql-image"></button>
-                                    <button class="ql-clean"></button>
-                                </div>
-                                <div id="editor"></div>
+                            <label>Email Body</label>
+                            <div class="editor-wrapper">
+                                <div id="quillMessage"></div>
                             </div>
                             <input type="hidden" name="message" id="messageInput">
                         </div>
                     </div>
 
-                    <!-- Signature Section - COLLAPSED BY DEFAULT -->
+                    <!-- Signature Section -->
                     <div class="form-section">
-                        <div class="section-toggle collapsed" onclick="toggleSection('signatureSection')">
-                            <span class="material-icons">expand_more</span>
-                            <h2 class="section-title" style="margin: 0;">Email Signature</h2>
-                        </div>
-
-                        <div class="section-content collapsed" id="signatureSection">
-                            <div class="form-group" style="margin-top: 16px;">
+                        <h3 class="section-title">Email Signature</h3>
+                        
+                        <div class="form-grid">
+                            <div class="form-group">
                                 <label for="signatureWish">Closing Wish</label>
-                                <input type="text" id="signatureWish" name="signatureWish" class="form-input"
-                                    placeholder="e.g., Best Regards, Warm Wishes, Sincerely">
+                                <input type="text" id="signatureWish" name="signatureWish"
+                                    placeholder="e.g., Best Regards, Warm Wishes">
                                 <p class="field-description">Your closing greeting</p>
                             </div>
 
                             <div class="form-group">
                                 <label for="signatureName">Name</label>
-                                <input type="text" id="signatureName" name="signatureName" class="form-input"
+                                <input type="text" id="signatureName" name="signatureName"
                                     placeholder="e.g., Durba Bhattacharya">
                                 <p class="field-description">Your full name</p>
                             </div>
+                        </div>
 
-                            <div class="form-group">
-                                <label for="signatureDesignation">Designation</label>
-                                <input type="text" id="signatureDesignation" name="signatureDesignation"
-                                    class="form-input" placeholder="e.g., H.O.D of SXC MDTS">
-                                <p class="field-description">Your title or position</p>
-                            </div>
+                        <div class="form-group">
+                            <label for="signatureDesignation">Designation</label>
+                            <input type="text" id="signatureDesignation" name="signatureDesignation"
+                                placeholder="e.g., H.O.D of SXC MDTS">
+                            <p class="field-description">Your title or position</p>
+                        </div>
 
-                            <div class="form-group">
-                                <label for="signatureExtra">Additional Text (Optional)</label>
-                                <textarea id="signatureExtra" name="signatureExtra" class="form-input" rows="3"
-                                    placeholder="Any additional information"></textarea>
-                                <p class="field-description">Extra details like contact info, department, etc.</p>
-                            </div>
+                        <div class="form-group">
+                            <label for="signatureExtra">Additional Information <span class="label-optional">(optional)</span></label>
+                            <textarea id="signatureExtra" name="signatureExtra" rows="3"
+                                placeholder="Any extra details like contact info, department, etc."></textarea>
+                            <p class="field-description">Additional text that will appear in your signature</p>
                         </div>
                     </div>
-
-                    <script>
-                        // Add to your existing form submission logic
-                        document.addEventListener('DOMContentLoaded', function () {
-                            const form = document.getElementById('emailForm'); // Adjust to your form ID
-
-                            if (form) {
-                                const originalSubmit = form.onsubmit;
-
-                                form.onsubmit = function (e) {
-                                    // Build signature from components
-                                    const wish = document.getElementById('signatureWish').value.trim();
-                                    const name = document.getElementById('signatureName').value.trim();
-                                    const designation = document.getElementById('signatureDesignation').value.trim();
-                                    const extra = document.getElementById('signatureExtra').value.trim();
-
-                                    // Create formatted signature
-                                    let signature = '';
-                                    if (wish) signature += wish + '\n';
-                                    if (name) signature += name + '\n';
-                                    if (designation) signature += designation + '\n';
-                                    if (extra) signature += '\n' + extra;
-
-                                    // Create hidden input for signature if it doesn't exist
-                                    let signatureInput = document.getElementById('hiddenSignature');
-                                    if (!signatureInput) {
-                                        signatureInput = document.createElement('input');
-                                        signatureInput.type = 'hidden';
-                                        signatureInput.id = 'hiddenSignature';
-                                        signatureInput.name = 'signature';
-                                        form.appendChild(signatureInput);
-                                    }
-                                    signatureInput.value = signature;
-
-                                    // Also send individual components
-                                    const components = ['signatureWish', 'signatureName', 'signatureDesignation', 'signatureExtra'];
-                                    components.forEach(comp => {
-                                        let input = document.getElementById('hidden_' + comp);
-                                        if (!input) {
-                                            input = document.createElement('input');
-                                            input.type = 'hidden';
-                                            input.id = 'hidden_' + comp;
-                                            input.name = comp;
-                                            form.appendChild(input);
-                                        }
-                                        input.value = document.getElementById(comp).value;
-                                    });
-
-                                    // Call original submit handler if exists
-                                    if (originalSubmit) {
-                                        return originalSubmit.call(form, e);
-                                    }
-                                };
-                            }
-                        });
-                    </script>
 
                     <!-- Attachments Section -->
                     <div class="form-section">
-                        <div class="section-toggle" onclick="toggleSection('attachmentsSection')">
-                            <span class="material-icons">expand_more</span>
-                            <h2 class="section-title" style="margin: 0;">Attachments</h2>
+                        <h3 class="section-title">Attachments</h3>
+                        
+                        <div class="file-upload-area" id="fileUploadArea">
+                            <div class="material-icons file-upload-icon">cloud_upload</div>
+                            <p class="file-upload-text">Click to upload or drag and drop</p>
+                            <p class="file-upload-hint">Maximum 20MB per file, 25MB total</p>
+                            <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.zip,.txt,.csv">
                         </div>
 
-                        <div class="section-content" id="attachmentsSection">
-                            <div class="form-group" style="margin-top: 16px;">
-                                <label for="attachments" class="file-upload-area">
-                                    <div class="material-icons file-upload-icon">cloud_upload</div>
-                                    <div class="file-upload-text">Click to upload or drag files here</div>
-                                    <div class="file-upload-hint">Supported: PDF, DOC, XLS, Images, ZIP (Max 25MB)</div>
-                                </label>
-                                <input type="file" id="attachments" name="attachments[]" multiple
-                                    onchange="handleFileSelect(event)">
-                                <div id="filePreviewGrid" class="file-preview-grid"></div>
+                        <!-- Individual Upload Progress -->
+                        <div class="upload-item" id="uploadItem">
+                            <div class="upload-item-header">
+                                <span class="upload-filename" id="uploadFilename"></span>
+                                <span class="upload-percentage" id="uploadPercentage">0%</span>
+                            </div>
+                            <div class="upload-progress-bar-container">
+                                <div class="upload-progress-bar" id="uploadProgressBar"></div>
                             </div>
                         </div>
+                        
+                        <!-- Size Warning -->
+                        <div class="size-warning" id="sizeWarning">
+                            <span class="material-icons" style="vertical-align: middle; font-size: 18px;">warning</span>
+                            <span id="sizeWarningText"></span>
+                        </div>
+
+                        <!-- File Preview Cards -->
+                        <div class="file-cards-container" id="fileCardsContainer"></div>
+                        
+                        <!-- Hidden input for attachment IDs -->
+                        <input type="hidden" name="attachment_ids" id="attachmentIds" value="">
                     </div>
 
                     <!-- Action Buttons -->
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-preview" id="previewBtn">
-                            <span class="material-icons">visibility</span>
+                    <div class="action-buttons">
+                        <button type="button" class="btn btn-secondary" id="previewBtn">
+                            <span class="material-icons">preview</span>
                             Preview Email
                         </button>
-                        <button type="submit" class="btn btn-send">
+                        <button type="submit" class="btn btn-primary">
                             <span class="material-icons">send</span>
                             Send Email
                         </button>
@@ -798,116 +673,225 @@ $defaultSignature = json_encode($settings['signature']);
     </div>
 
     <!-- Quill Rich Text Editor JS -->
-    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
 
     <script>
-        // Initialize Quill editors
-        const quillMessage = new Quill('#editor', {
-            modules: {
-                toolbar: '#toolbar'
-            },
+        // Initialize Quill editor
+        const quillMessage = new Quill('#quillMessage', {
             theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                    [{ 'color': [] }, { 'background': [] }],
+                    ['link'],
+                    ['clean']
+                ]
+            },
             placeholder: 'Type your message here...'
         });
 
-        const quillSignature = new Quill('#signatureEditor', {
-            modules: {
-                toolbar: '#signatureToolbar'
-            },
-            theme: 'snow',
-            placeholder: 'Your professional signature...'
+        // ========== FILE UPLOAD FUNCTIONALITY ==========
+        const fileInput = document.getElementById('fileInput');
+        const fileUploadArea = document.getElementById('fileUploadArea');
+        const fileCardsContainer = document.getElementById('fileCardsContainer');
+        const uploadItem = document.getElementById('uploadItem');
+        const uploadFilename = document.getElementById('uploadFilename');
+        const uploadPercentage = document.getElementById('uploadPercentage');
+        const uploadProgressBar = document.getElementById('uploadProgressBar');
+        const sizeWarning = document.getElementById('sizeWarning');
+        const sizeWarningText = document.getElementById('sizeWarningText');
+        const attachmentIdsInput = document.getElementById('attachmentIds');
+
+        let uploadedFiles = [];
+        let totalSize = 0;
+        const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+        const MAX_TOTAL_SIZE = 25 * 1024 * 1024; // 25MB
+
+        // Click to upload
+        fileUploadArea.addEventListener('click', () => {
+            fileInput.click();
         });
 
-        // Load default signature from settings
-        const defaultSignature = <?php echo $defaultSignature; ?>;
-        if (defaultSignature) {
-            quillSignature.root.innerHTML = defaultSignature;
-        }
+        // Drag and drop
+        fileUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.add('drag-over');
+        });
 
-        // Focus effects for editor containers
-        const editorContainer = document.getElementById('editorContainer');
-        const signatureContainer = document.getElementById('signatureContainer');
+        fileUploadArea.addEventListener('dragleave', () => {
+            fileUploadArea.classList.remove('drag-over');
+        });
 
-        quillMessage.on('selection-change', function (range) {
-            if (range) {
-                editorContainer.classList.add('focused');
-            } else {
-                editorContainer.classList.remove('focused');
+        fileUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            handleFiles(files);
+        });
+
+        // File selection
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        // Handle file uploads
+        async function handleFiles(files) {
+            for (let file of files) {
+                // Check individual file size
+                if (file.size > MAX_FILE_SIZE) {
+                    alert(`File "${file.name}" exceeds 20MB limit`);
+                    continue;
+                }
+
+                // Check total size
+                if (totalSize + file.size > MAX_TOTAL_SIZE) {
+                    showSizeWarning(totalSize, file.size);
+                    break;
+                }
+
+                await uploadFile(file);
             }
-        });
+            
+            // Clear file input
+            fileInput.value = '';
+        }
 
-        quillSignature.on('selection-change', function (range) {
-            if (range) {
-                signatureContainer.classList.add('focused');
-            } else {
-                signatureContainer.classList.remove('focused');
+        // Upload single file with progress
+        async function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // Show progress
+            uploadItem.classList.add('active');
+            uploadFilename.textContent = file.name;
+            uploadPercentage.textContent = '0%';
+            uploadProgressBar.style.width = '0%';
+
+            try {
+                const xhr = new XMLHttpRequest();
+
+                // Progress tracking
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) {
+                        const percentComplete = Math.round((e.loaded / e.total) * 100);
+                        uploadProgressBar.style.width = percentComplete + '%';
+                        uploadPercentage.textContent = percentComplete + '%';
+                    }
+                });
+
+                // Upload complete
+                xhr.addEventListener('load', () => {
+                    if (xhr.status === 200) {
+                        const response = JSON.parse(xhr.responseText);
+                        
+                        if (response.success) {
+                            uploadedFiles.push(response);
+                            totalSize += response.file_size;
+                            addFileCard(response);
+                            updateAttachmentIds();
+                            
+                            // Hide progress after 500ms
+                            setTimeout(() => {
+                                uploadItem.classList.remove('active');
+                            }, 500);
+                        } else {
+                            alert('Upload failed: ' + response.error);
+                            uploadItem.classList.remove('active');
+                        }
+                    }
+                });
+
+                xhr.open('POST', 'upload_handler.php');
+                xhr.send(formData);
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('Upload failed: ' + error.message);
+                uploadItem.classList.remove('active');
             }
-        });
-
-        // Section toggle functionality
-        function toggleSection(sectionId) {
-            const section = document.getElementById(sectionId);
-            const toggle = section.previousElementSibling;
-
-            section.classList.toggle('collapsed');
-            toggle.classList.toggle('collapsed');
         }
 
-        // File handling variables
-        let selectedFiles = [];
+        // Add file card
+        function addFileCard(fileData) {
+            const card = document.createElement('div');
+            card.className = 'file-card';
+            card.dataset.fileId = fileData.id;
+            card.dataset.encryptedId = fileData.encrypted_id;
 
-        // Handle file selection
-        function handleFileSelect(event) {
-            const files = Array.from(event.target.files);
-            selectedFiles = [...selectedFiles, ...files];
-            renderFilePreview();
-        }
+            const icon = getFileIcon(fileData.extension);
+            
+            card.innerHTML = `
+                <div class="material-icons file-card-icon">${icon}</div>
+                <div class="file-card-name" title="${fileData.original_name}">${fileData.original_name}</div>
+                <div class="file-card-size">${fileData.formatted_size}</div>
+                ${fileData.deduplicated ? '<div class="file-card-badge">✓ Reused</div>' : ''}
+                <div class="file-card-download">
+                    <span class="material-icons">download</span>
+                    <span>Click to download</span>
+                </div>
+                <div class="file-card-remove">
+                    <span class="material-icons">close</span>
+                </div>
+            `;
 
-        // Render file preview grid
-        function renderFilePreview() {
-            const grid = document.getElementById('filePreviewGrid');
-            grid.innerHTML = '';
-
-            selectedFiles.forEach((file, index) => {
-                const item = document.createElement('div');
-                item.className = 'file-preview-item';
-
-                const icon = getFileIcon(file.name);
-                const size = formatFileSize(file.size);
-
-                item.innerHTML = `
-                    <span class="material-icons file-preview-icon">${icon}</span>
-                    <div class="file-preview-name">${escapeHtml(file.name)}</div>
-                    <div class="file-preview-size">${size}</div>
-                    <button type="button" class="file-remove-btn" onclick="removeFile(${index})" title="Remove file">
-                        <span class="material-icons" style="font-size: 14px;">close</span>
-                    </button>
-                `;
-
-                grid.appendChild(item);
+            // Click to download
+            card.addEventListener('click', (e) => {
+                if (!e.target.closest('.file-card-remove')) {
+                    downloadFile(fileData.encrypted_id, fileData.original_name);
+                }
             });
 
-            // Update the file input with a DataTransfer object
-            updateFileInput();
+            // Remove file handler
+            card.querySelector('.file-card-remove').addEventListener('click', (e) => {
+                e.stopPropagation();
+                removeFile(fileData.id);
+                card.remove();
+            });
+
+            fileCardsContainer.appendChild(card);
         }
 
-        // Remove file from selection
-        function removeFile(index) {
-            selectedFiles.splice(index, 1);
-            renderFilePreview();
+        // Download file
+        function downloadFile(encryptedId, originalName) {
+            window.location.href = `download_file.php?fid=${encodeURIComponent(encryptedId)}`;
         }
 
-        // Update the actual file input with selected files
-        function updateFileInput() {
-            const input = document.getElementById('attachments');
-            const dt = new DataTransfer();
-            selectedFiles.forEach(file => dt.items.add(file));
-            input.files = dt.files;
+        // Remove file
+        function removeFile(fileId) {
+            const index = uploadedFiles.findIndex(f => f.id === fileId);
+            if (index > -1) {
+                totalSize -= uploadedFiles[index].file_size;
+                uploadedFiles.splice(index, 1);
+                updateAttachmentIds();
+                hideSizeWarning();
+            }
         }
 
-        // Get appropriate icon for file type
-        function getFileIcon(filename) {
-            const ext = filename.split('.').pop().toLowerCase();
+        // Update hidden input with attachment IDs
+        function updateAttachmentIds() {
+            const ids = uploadedFiles.map(f => f.id).join(',');
+            attachmentIdsInput.value = ids;
+        }
+
+        // Show size warning
+        function showSizeWarning(currentSize, attemptedSize) {
+            const currentMB = (currentSize / 1024 / 1024).toFixed(2);
+            const attemptedMB = (attemptedSize / 1024 / 1024).toFixed(2);
+            sizeWarningText.textContent = `Cannot add file. Current total: ${currentMB}MB, attempted: ${attemptedMB}MB. Maximum is 25MB.`;
+            sizeWarning.classList.add('active');
+        }
+
+        // Hide size warning
+        function hideSizeWarning() {
+            if (totalSize < MAX_TOTAL_SIZE * 0.9) {
+                sizeWarning.classList.remove('active');
+            }
+        }
+
+        // Get file icon
+        function getFileIcon(extension) {
             const iconMap = {
                 'pdf': 'picture_as_pdf',
                 'doc': 'description',
@@ -925,203 +909,25 @@ $defaultSignature = json_encode($settings['signature']);
                 'txt': 'text_snippet',
                 'csv': 'table_view'
             };
-            return iconMap[ext] || 'insert_drive_file';
+            return iconMap[extension] || 'insert_drive_file';
         }
 
-        // Format file size
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-        }
-
-        // Escape HTML
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Handle Email List File Upload
-        function handleEmailListUpload(fileInput, targetInputId) {
-            const file = fileInput.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const content = e.target.result;
-
-                // Parse emails from file
-                let emails = content
-                    .split(/[,;\n\r]+/)
-                    .map(email => email.trim())
-                    .filter(email => email.length > 0);
-
-                // Set the emails in the target input
-                const targetInput = document.getElementById(targetInputId);
-                const currentValue = targetInput.value.trim();
-
-                if (currentValue) {
-                    targetInput.value = currentValue + ', ' + emails.join(', ');
-                } else {
-                    targetInput.value = emails.join(', ');
-                }
-
-                alert(`✓ Successfully loaded ${emails.length} email address${emails.length !== 1 ? 'es' : ''} from file`);
-            };
-
-            reader.readAsText(file);
-        }
-
-    /**
- * IMPROVED FORM SUBMISSION SCRIPT
- * Add this to index.php to fix the "subject is empty" issue
- * 
- * Place this script AFTER the existing form submission handler
- */
-
-// Replace the existing form submission handler with this improved version
-document.getElementById('composeForm').addEventListener('submit', function (e) {
-    // === STEP 1: Validate Required Fields ===
-    const subjectField = document.querySelector('input[name="subject"]');
-    const emailField = document.querySelector('input[name="email"]');
-    const articleField = document.querySelector('input[name="articletitle"]');
-    
-    const subject = subjectField ? subjectField.value.trim() : '';
-    const email = emailField ? emailField.value.trim() : '';
-    const article = articleField ? articleField.value.trim() : '';
-    
-    // Validate subject (most critical)
-    if (!subject) {
-        e.preventDefault();
-        alert('❌ Subject field is required! Please enter a subject for your email.');
-        if (subjectField) subjectField.focus();
-        return false;
-    }
-    
-    // Validate recipient
-    if (!email) {
-        e.preventDefault();
-        alert('❌ Recipient email is required!');
-        if (emailField) emailField.focus();
-        return false;
-    }
-    
-    // Validate article title
-    if (!article) {
-        e.preventDefault();
-        alert('❌ Article title is required!');
-        if (articleField) articleField.focus();
-        return false;
-    }
-    
-    // === STEP 2: Process Message Content ===
-    console.log('✓ Form validation passed');
-    console.log('  Subject:', subject);
-    console.log('  Recipient:', email);
-    console.log('  Article:', article);
-    
-    // Get message content from Quill editor
-    const messageHtml = quillMessage.root.innerHTML;
-    
-    // Get signature content (if signature editor exists)
-    let signatureHtml = '';
-    if (typeof quillSignature !== 'undefined') {
-        signatureHtml = quillSignature.root.innerHTML;
-    }
-    
-    // Combine message and signature
-    let finalHtml = messageHtml;
-    
-    // Only add signature if it's not empty
-    if (signatureHtml.trim() && signatureHtml !== '<p><br></p>') {
-        finalHtml += '<br><br>' + signatureHtml;
-    }
-    
-    // === STEP 3: Set Hidden Fields ===
-    // Set the combined HTML to hidden input
-    const messageInput = document.getElementById('messageInput');
-    if (messageInput) {
-        messageInput.value = finalHtml;
-    }
-    
-    // Add HTML flag if not already present
-    if (!document.querySelector('input[name="message_is_html"]')) {
-        const htmlFlag = document.createElement('input');
-        htmlFlag.type = 'hidden';
-        htmlFlag.name = 'message_is_html';
-        htmlFlag.value = 'true';
-        this.appendChild(htmlFlag);
-    }
-    
-    // === STEP 4: Debug Logging ===
-    console.log('📧 Submitting email with the following data:');
-    const formData = new FormData(this);
-    
-    // Log each field
-    for (let [key, value] of formData.entries()) {
-        if (key === 'message') {
-            console.log(`  ${key}:`, value.substring(0, 100) + '...');
-        } else {
-            console.log(`  ${key}:`, value);
-        }
-    }
-    
-    // Count attachments
-    const attachments = formData.getAll('attachments[]');
-    console.log(`  Attachments: ${attachments.filter(f => f.size > 0).length} file(s)`);
-    
-    // === STEP 5: Allow submission ===
-    console.log('✓ Form submitting to send.php...');
-    return true;
-});
-
-/**
- * ADDITIONAL: Add real-time subject validation
- */
-document.addEventListener('DOMContentLoaded', function() {
-    const subjectField = document.querySelector('input[name="subject"]');
-    
-    if (subjectField) {
-        // Add visual feedback for empty subject
-        subjectField.addEventListener('blur', function() {
-            if (!this.value.trim()) {
-                this.style.borderColor = '#ff3b30';
-                this.style.backgroundColor = '#fff5f5';
-            } else {
-                this.style.borderColor = '';
-                this.style.backgroundColor = '';
-            }
+        // ========== FORM SUBMISSION ==========
+        document.getElementById('composeForm').addEventListener('submit', function(e) {
+            // Get message content from Quill
+            const messageHtml = quillMessage.root.innerHTML;
+            
+            // Set hidden input
+            document.getElementById('messageInput').value = messageHtml;
         });
-        
-        // Clear error styling when typing
-        subjectField.addEventListener('input', function() {
-            if (this.value.trim()) {
-                this.style.borderColor = '';
-                this.style.backgroundColor = '';
-            }
-        });
-    }
-});
 
-/**
- * DEBUGGING: Add this to check if form data is being captured
- */
-console.log('Form submission script loaded successfully');
-console.log('Subject field exists:', !!document.querySelector('input[name="subject"]'));
-console.log('Email field exists:', !!document.querySelector('input[name="email"]'));
-console.log('Form exists:', !!document.getElementById('composeForm'));
-
-        // Preview Email Functionality
+        // Preview button
         document.getElementById('previewBtn').addEventListener('click', () => {
-            const recipientEmail = document.querySelector('input[name="email"]').value;
-            const subject = document.querySelector('input[name="subject"]').value;
-            const articletitle = document.querySelector('input[name="articletitle"]').value;
+            const email = document.getElementById('email').value;
+            const subject = document.getElementById('subject').value;
+            const articletitle = document.getElementById('articletitle').value;
 
-            // Validate required fields
-            if (!recipientEmail || !subject || !articletitle) {
+            if (!email || !subject || !articletitle) {
                 alert('Please fill in all required fields (To, Subject, and Article Title) before previewing.');
                 return;
             }
@@ -1129,27 +935,27 @@ console.log('Form exists:', !!document.getElementById('composeForm'));
             // Get message content
             const messageHtml = quillMessage.root.innerHTML;
 
-            // Get signature content
-            const signatureHtml = quillSignature.root.innerHTML;
+            // Get signature components
+            const signatureWish = document.getElementById('signatureWish').value;
+            const signatureName = document.getElementById('signatureName').value;
+            const signatureDesignation = document.getElementById('signatureDesignation').value;
+            const signatureExtra = document.getElementById('signatureExtra').value;
 
-            // Combine message and signature
-            let finalHtml = messageHtml;
-            if (signatureHtml.trim() && signatureHtml !== '<p><br></p>') {
-                finalHtml += '<br><br>' + signatureHtml;
-            }
-
-            // Create a form to submit to preview.php
+            // Create preview form
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = 'preview.php';
             form.target = '_blank';
 
-            // Add form fields
             const fields = {
-                'email': recipientEmail,
+                'email': email,
                 'subject': subject,
                 'articletitle': articletitle,
-                'message': finalHtml
+                'message': messageHtml,
+                'signatureWish': signatureWish,
+                'signatureName': signatureName,
+                'signatureDesignation': signatureDesignation,
+                'signatureExtra': signatureExtra
             };
 
             for (const [key, value] of Object.entries(fields)) {
@@ -1160,7 +966,6 @@ console.log('Form exists:', !!document.getElementById('composeForm'));
                 form.appendChild(input);
             }
 
-            // Add form to body and submit
             document.body.appendChild(form);
             form.submit();
             document.body.removeChild(form);
