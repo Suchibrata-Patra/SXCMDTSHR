@@ -1,13 +1,22 @@
 <?php
 /**
  * db_config.php - Database Configuration and Helper Functions
- * Clean version - NO DUPLICATES
+ * CORRECTED VERSION with proper session handling
  */
+
+// Start session if not already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // ==================== FILE ENCRYPTION SETTINGS ====================
 // IMPORTANT: Change this to a unique 32-character key in production!
-define('FILE_ENCRYPTION_KEY', 'k8Bv2nQx7Wp4Yj9Zm5Rt1Lc6Hd3Fg0Sa');
-define('FILE_ENCRYPTION_METHOD', 'AES-256-CBC');
+if (!defined('FILE_ENCRYPTION_KEY')) {
+    define('FILE_ENCRYPTION_KEY', 'k8Bv2nQx7Wp4Yj9Zm5Rt1Lc6Hd3Fg0Sa');
+}
+if (!defined('FILE_ENCRYPTION_METHOD')) {
+    define('FILE_ENCRYPTION_METHOD', 'AES-256-CBC');
+}
 
 // ==================== DATABASE CONNECTION ====================
 
@@ -22,7 +31,7 @@ function getDatabaseConnection() {
     }
     
     try {
-        // Direct database credentials (from your existing config)
+        // Direct database credentials
         $host = "localhost";
         $dbname = "u955994755_SXC_MDTS";
         $username = "u955994755_DB_supremacy";
@@ -562,6 +571,11 @@ function generateUuidV4() {
  * Load IMAP config to session
  */
 function loadImapConfigToSession($email, $password) {
+    // Ensure session is started
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    
     $_SESSION['imap_configured'] = true;
 }
 
@@ -574,4 +588,9 @@ function parseEmailList($emailString) {
     $emails = array_filter($emails);
     return $emails;
 }
+
+// Enable error display for debugging (remove in production)
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 ?>
