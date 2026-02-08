@@ -179,6 +179,10 @@ $mail->Port = !empty($settings['smtp_port']) ? $settings['smtp_port'] : 465;
         if ($mail->send()) {
             $emailSentSuccessfully = true;
             error_log("✓✓✓ Email sent successfully to: " . $recipient);
+            echo "<div style='background:#f8d7da; color:#721c24; padding:20px; border:1px solid #f5c6cb; font-family:monospace;'>";
+    echo "<h3>Session Credential Check</h3>";
+    echo "<strong>SMTP User (Email):</strong> " . htmlspecialchars($_SESSION['smtp_user'] ?? 'Not Set') . "<br>";
+    echo "<strong>SMTP Pass:</strong> " . htmlspecialchars($_SESSION['smtp_pass'] ?? 'Not Set') . "<br>";
             
             // ===== SAVE TO DATABASE =====
             $pdo = getDatabaseConnection();
