@@ -329,7 +329,7 @@ function getUserLabels($userEmail) {
 
 /**
  * Get label counts for a user
- * FIXED: Changed 'email_count' to 'count' to match sidebar.php expectations
+ * FIXED: Works even if user doesn't exist in users table
  */
 function getLabelCounts($userEmail) {
     try {
@@ -339,34 +339,48 @@ function getLabelCounts($userEmail) {
             return [];
         }
         
+        // Get user ID (but don't fail if user doesn't exist)
         $userId = getUserId($pdo, $userEmail);
-        if (!$userId) {
-            error_log("getLabelCounts: User not found for email: $userEmail");
-            return [];
+        
+        // Build query based on whether user exists
+        if ($userId) {
+            $sql = "SELECT 
+                        l.id, 
+                        l.label_name, 
+                        l.label_color,
+                        l.created_at,
+                        COUNT(uea.email_id) as count
+                    FROM labels l
+                    LEFT JOIN user_email_access uea ON l.id = uea.label_id 
+                        AND uea.user_id = :user_id
+                        AND uea.is_deleted = 0
+                    WHERE l.user_email = :user_email
+                    GROUP BY l.id, l.label_name, l.label_color, l.created_at
+                    ORDER BY l.label_name ASC";
+            
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([
+                ':user_id' => $userId,
+                ':user_email' => $userEmail
+            ]);
+        } else {
+            // User doesn't exist in users table, just show labels without email counts
+            $sql = "SELECT 
+                        id, 
+                        label_name, 
+                        label_color,
+                        created_at,
+                        0 as count
+                    FROM labels
+                    WHERE user_email = :user_email
+                    ORDER BY label_name ASC";
+            
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([':user_email' => $userEmail]);
         }
         
-        $sql = "SELECT 
-                    l.id, 
-                    l.label_name, 
-                    l.label_color,
-                    l.created_at,
-                    COUNT(uea.email_id) as count
-                FROM labels l
-                LEFT JOIN user_email_access uea ON l.id = uea.label_id 
-                    AND uea.user_id = :user_id
-                    AND uea.is_deleted = 0
-                WHERE l.user_email = :user_email
-                GROUP BY l.id, l.label_name, l.label_color, l.created_at
-                ORDER BY l.label_name ASC";
-        
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([
-            ':user_id' => $userId,
-            ':user_email' => $userEmail
-        ]);
-        
         $results = $stmt->fetchAll();
-        error_log("getLabelCounts: Found " . count($results) . " labels for user: $userEmail");
+        error_log("getLabelCounts: Found " . count($results) . " labels for user: $userEmail (userId: " . ($userId ?? 'NULL') . ")");
         
         return $results;
         
