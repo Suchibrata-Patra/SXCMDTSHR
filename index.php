@@ -40,36 +40,43 @@ $defaultSignature = json_encode($settings['signature']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SXC MDTS</title>
+    <title>Compose Email — SXC MDTS</title>
     
-    <!-- Google Fonts - Nature.com uses Harding and Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
     <!-- Quill Rich Text Editor CSS -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     
     <style>
-        * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
+        :root {
+            --apple-blue: #007AFF;
+            --apple-gray: #8E8E93;
+            --apple-bg: #F2F2F7;
+            --glass: rgba(255, 255, 255, 0.7);
+            --border: #E5E5EA;
+            --success-green: #34C759;
         }
-        
-        body { 
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            background-color: #f2f2f7;
-            color: #191919;
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--apple-bg);
+            color: #1c1c1e;
             display: flex;
             height: 100vh;
             overflow: hidden;
-            line-height: 1.6;
-            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* Main Content */
+        /* ========== MAIN LAYOUT ========== */
         .main-content {
             flex: 1;
             display: flex;
@@ -79,626 +86,661 @@ $defaultSignature = json_encode($settings['signature']);
         .content-area {
             flex: 1;
             overflow-y: auto;
-            background: #f2f2f7;
+            background: var(--apple-bg);
         }
 
-        /* Nature.com style header */
+        /* ========== HEADER ========== */
         .page-header {
-            background: #f2f2f7;
-            /* border-bottom: 1px solid #e0e0e0; */
-            padding: 0;
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 24px 40px;
             position: sticky;
             top: 0;
             z-index: 100;
         }
 
         .header-container {
-            max-width: 1280px;
+            max-width: 900px;
             margin: 0 auto;
-            padding: 20px 40px;
         }
 
-        .breadcrumb {
-            font-size: 13px;
-            color: #666;
-            margin-bottom: 8px;
-            font-weight: 400;
-        }
-
-        .breadcrumb a {
-            color: #0973dc;
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-
-        .breadcrumb a:hover {
-            color: #006bb3;
-            text-decoration: underline;
-        }
-
-        .breadcrumb-separator {
-            margin: 0 8px;
-            color: #999;
-        }
-
-        .page-type {
-            display: inline-block;
-            font-size: 13px;
+        .page-title {
+            font-size: 28px;
             font-weight: 600;
-            color: #0973dc;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 12px;
-        }
-
-        /* Article-style container */
-        .compose-container {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 20px 40px 80px;
-        }
-
-        .compose-header {
-            margin-bottom: 5px;
-            /* padding-bottom: 32px; */
-            /* border-bottom: 1px solid #e0e0e0; */
-        }
-
-        .compose-title {
-            font-family: 'Harding', Georgia, serif;
-            font-size: 42px;
-            font-weight: 600;
-            line-height: 1.2;
-            color: #191919;
-            margin-bottom: 16px;
+            color: #1c1c1e;
             letter-spacing: -0.5px;
+            margin-bottom: 6px;
         }
 
-        .compose-subtitle {
-            font-size: 18px;
-            color: #666;
-            line-height: 1.6;
+        .page-subtitle {
+            font-size: 15px;
+            color: var(--apple-gray);
             font-weight: 400;
         }
 
-        /* Form sections - Nature.com article sections */
+        /* ========== COMPOSE CONTAINER ========== */
+        .compose-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        /* ========== FORM SECTIONS ========== */
         .form-section {
-            margin-bottom: 48px;
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
         }
 
         .section-title {
-            font-family: 'Harding', Georgia, serif;
-            font-size: 24px;
+            font-size: 17px;
             font-weight: 600;
-            color: #191919;
+            color: #1c1c1e;
             margin-bottom: 20px;
             letter-spacing: -0.3px;
         }
 
-        .section-description {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 20px;
-            line-height: 1.6;
-        }
-
-        /* Form groups with Nature.com styling */
+        /* ========== FORM GROUPS ========== */
         .form-group {
-            margin-bottom: 24px;
-        }
-
-        .form-group-compact {
             margin-bottom: 20px;
         }
 
-        label {
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-group label {
             display: block;
             margin-bottom: 8px;
             font-weight: 500;
-            color: #191919;
+            color: #1c1c1e;
             font-size: 14px;
-            letter-spacing: 0.2px;
         }
 
         .label-optional {
             font-size: 13px;
-            color: #999;
+            color: var(--apple-gray);
             font-weight: 400;
             margin-left: 4px;
         }
 
-        /* Input fields with Nature.com aesthetic */
-        input[type="email"], 
-        input[type="text"], 
+        .field-description {
+            font-size: 13px;
+            color: var(--apple-gray);
+            margin-top: 6px;
+        }
+
+        /* ========== INPUT FIELDS ========== */
+        input[type="email"],
+        input[type="text"],
         select {
             width: 100%;
-            padding: 12px 14px;
-            border: 1px solid #d0d0d0;
-            border-radius: 3px;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
             font-size: 15px;
             font-family: 'Inter', sans-serif;
+            background: white;
+            color: #1c1c1e;
             transition: all 0.2s;
-            background-color: #fff;
-            color: #191919;
         }
 
-        input[type="email"]:focus, 
-        input[type="text"]:focus, 
+        input[type="email"]:focus,
+        input[type="text"]:focus,
         select:focus {
             outline: none;
-            border-color: #0973dc;
-            box-shadow: 0 0 0 2px rgba(9, 115, 220, 0.1);
-        }
-
-        input[type="email"]:hover:not(:focus), 
-        input[type="text"]:hover:not(:focus) {
-            border-color: #999;
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
         }
 
         input::placeholder {
-            color: #999;
-            font-weight: 400;
+            color: var(--apple-gray);
         }
 
-        /* Two-column grid for compact fields */
+        /* Two-column grid */
         .form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 16px;
         }
 
-        /* Rich Text Editor - Nature.com style */
-        .editor-wrapper {
-            border: 1px solid #d0d0d0;
-            border-radius: 3px;
-            background: #fff;
+        /* ========== FILE UPLOAD AREA ========== */
+        .file-upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            background: #FAFAFA;
             transition: all 0.2s;
-        }
-
-        .editor-wrapper:hover {
-            border-color: #999;
-        }
-
-        .editor-wrapper.focused {
-            border-color: #0973dc;
-            box-shadow: 0 0 0 2px rgba(9, 115, 220, 0.1);
-        }
-
-        /* Quill Editor Customization */
-        .ql-toolbar.ql-snow {
-            border: none;
-            /* border-bottom: 1px solid #e0e0e0; */
-            padding: 12px 14px;
-            background: #fafafa;
-            font-family: 'Inter', sans-serif;
-        }
-
-        .ql-container.ql-snow {
-            border: none;
-            font-family: 'Inter', sans-serif;
-        }
-
-        .ql-editor {
-            padding: 16px;
-            min-height: 300px;
-            font-size: 15px;
-            line-height: 1.7;
-            color: #191919;
-        }
-
-        .ql-editor.ql-blank::before {
-            color: #999;
-            font-style: normal;
-            font-weight: 400;
-        }
-
-        #signatureEditor .ql-editor {
-            min-height: 120px;
-            font-size: 14px;
-        }
-
-        /* Input with attach button */
-        .input-with-button {
-            display: flex;
-            gap: 10px;
-        }
-
-        .input-with-button input {
-            flex: 1;
-        }
-
-        .btn-attach-list {
-            background: #fff;
-            border: 1px solid #d0d0d0;
-            padding: 12px 18px;
-            border-radius: 3px;
             cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-            color: #191919;
-            white-space: nowrap;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 6px;
         }
 
-        .btn-attach-list:hover {
-            background: #fafafa;
-            border-color: #0973dc;
-            color: #0973dc;
+        .file-upload-area:hover {
+            border-color: var(--apple-blue);
+            background: #F5F9FF;
         }
 
-        .help-text {
-            display: block;
-            margin-top: 6px;
-            font-size: 13px;
-            color: #666;
-            line-height: 1.5;
+        .file-upload-icon {
+            font-size: 48px;
+            color: var(--apple-blue);
+            margin-bottom: 12px;
         }
 
-        /* File Attachments - Nature.com card style */
-        .attachment-section {
-            margin-top: 32px;
-            padding: 24px;
-            background: #fafafa;
-            border: 1px solid #e0e0e0;
-            border-radius: 3px;
-        }
-
-        .attachment-section-title {
+        .file-upload-text {
             font-size: 15px;
-            font-weight: 600;
-            color: #191919;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .file-input-wrapper {
-            position: relative;
-            display: inline-block;
-        }
-
-        .file-input-label {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
-            background: #fff;
-            border: 1px solid #d0d0d0;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 14px;
-            color: #191919;
-            transition: all 0.2s;
+            color: #1c1c1e;
             font-weight: 500;
+            margin-bottom: 4px;
         }
 
-        .file-input-label:hover {
-            background: #0973dc;
-            border-color: #0973dc;
-            color: #fff;
-        }
-
-        .file-input-label i {
-            font-size: 14px;
+        .file-upload-hint {
+            font-size: 13px;
+            color: var(--apple-gray);
         }
 
         input[type="file"] {
             display: none;
         }
 
-        /* File Preview Grid - Nature.com cards */
+        /* ========== FILE PREVIEW GRID ========== */
         .file-preview-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 16px;
-            margin-top: 20px;
+            gap: 12px;
+            margin-top: 16px;
         }
 
         .file-preview-item {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
             position: relative;
-            background: #fff;
-            border: 1px solid #d0d0d0;
-            border-radius: 3px;
-            padding: 16px;
-            text-align: center;
             transition: all 0.2s;
         }
 
         .file-preview-item:hover {
-            border-color: #999;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
         .file-preview-icon {
-            font-size: 36px;
-            color: #0973dc;
-            margin-bottom: 10px;
+            font-size: 32px;
+            color: var(--apple-blue);
+            margin-bottom: 8px;
         }
 
         .file-preview-name {
             font-size: 12px;
-            color: #191919;
-            word-break: break-word;
-            line-height: 1.4;
-            margin-bottom: 6px;
+            color: #1c1c1e;
             font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 4px;
         }
 
         .file-preview-size {
             font-size: 11px;
-            color: #666;
+            color: var(--apple-gray);
         }
 
         .file-remove-btn {
             position: absolute;
             top: 8px;
             right: 8px;
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
-            background: #fff;
-            border: 1px solid #d0d0d0;
-            color: #666;
+            background: #FF3B30;
+            color: white;
+            border: none;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 11px;
-            transition: all 0.2s;
+            font-size: 12px;
             opacity: 0;
+            transition: opacity 0.2s;
         }
 
         .file-preview-item:hover .file-remove-btn {
             opacity: 1;
         }
 
-        .file-remove-btn:hover {
-            background: #d32f2f;
-            border-color: #d32f2f;
-            color: #fff;
-        }
-
-        /* Action buttons - Nature.com style */
-        .compose-actions {
-            margin-top: 48px;
-            padding-top: 32px;
-            border-top: 1px solid #e0e0e0;
-            display: flex;
-            gap: 16px;
-        }
-
-        .btn {
+        /* ========== EMAIL LIST UPLOAD ========== */
+        .email-list-upload {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 14px 28px;
-            border-radius: 3px;
-            font-size: 15px;
-            font-weight: 500;
-            border: 1px solid;
-            transition: all 0.2s;
+            padding: 6px 14px;
+            background: #F2F2F7;
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--apple-blue);
             cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            font-weight: 500;
+            margin-top: 8px;
+        }
+
+        .email-list-upload:hover {
+            background: #E5E5EA;
+        }
+
+        .email-list-upload .material-icons {
+            font-size: 16px;
+        }
+
+        /* ========== RICH TEXT EDITOR ========== */
+        .editor-wrapper {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: white;
+            transition: all 0.2s;
+            overflow: hidden;
+        }
+
+        .editor-wrapper.focused {
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+
+        .ql-toolbar {
+            border: none;
+            border-bottom: 1px solid var(--border);
+            background: #FAFAFA;
+            padding: 12px;
+        }
+
+        .ql-container {
+            border: none;
+            font-size: 15px;
             font-family: 'Inter', sans-serif;
+            min-height: 250px;
         }
 
-        .btn-send {
-            background: #0973dc;
-            color: #fff;
-            border-color: #0973dc;
-            flex: 1;
+        .ql-editor {
+            min-height: 250px;
+            padding: 16px;
         }
 
-        .btn-send:hover {
-            background: #006bb3;
-            border-color: #006bb3;
-            box-shadow: 0 2px 8px rgba(9, 115, 220, 0.3);
+        .ql-editor.ql-blank::before {
+            color: var(--apple-gray);
+            font-style: normal;
+        }
+
+        /* Signature editor smaller */
+        #signatureContainer .ql-container {
+            min-height: 120px;
+        }
+
+        #signatureContainer .ql-editor {
+            min-height: 120px;
+        }
+
+        /* Quill toolbar buttons */
+        .ql-toolbar button {
+            border-radius: 4px;
+        }
+
+        .ql-toolbar button:hover {
+            background: rgba(0, 122, 255, 0.1);
+        }
+
+        .ql-toolbar button.ql-active {
+            background: rgba(0, 122, 255, 0.15);
+            color: var(--apple-blue);
+        }
+
+        /* ========== ACTION BUTTONS ========== */
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            font-family: 'Inter', sans-serif;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn .material-icons {
+            font-size: 18px;
         }
 
         .btn-preview {
-            background: #fff;
-            color: #191919;
-            border-color: #d0d0d0;
+            background: white;
+            color: #1c1c1e;
+            border: 1px solid var(--border);
         }
 
         .btn-preview:hover {
-            background: #fafafa;
-            border-color: #999;
+            background: #F2F2F7;
         }
 
-        /* Scrollbar styling */
-        ::-webkit-scrollbar {
-            width: 10px;
+        .btn-send {
+            background: var(--apple-blue);
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
         }
 
-        ::-webkit-scrollbar-track {
-            background: #f5f5f5;
+        .btn-send:hover {
+            background: #0051D5;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4);
+            transform: translateY(-1px);
         }
 
-        ::-webkit-scrollbar-thumb {
-            background: #c0c0c0;
-            border-radius: 5px;
+        .btn-send:active {
+            transform: translateY(0);
         }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: #a0a0a0;
+        /* ========== COLLAPSIBLE SECTIONS ========== */
+        .section-toggle {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        /* Responsive */
+        .section-toggle .material-icons {
+            font-size: 20px;
+            color: var(--apple-gray);
+            transition: transform 0.2s;
+        }
+
+        .section-toggle.collapsed .material-icons {
+            transform: rotate(-90deg);
+        }
+
+        .section-content {
+            max-height: 2000px;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .section-content.collapsed {
+            max-height: 0;
+        }
+
+        /* ========== RESPONSIVE ========== */
         @media (max-width: 768px) {
             .compose-container {
-                padding: 32px 24px 60px;
+                padding: 20px;
             }
 
-            .compose-title {
-                font-size: 32px;
-            }
-
-            .section-title {
-                font-size: 20px;
+            .page-header {
+                padding: 20px;
             }
 
             .form-grid {
                 grid-template-columns: 1fr;
             }
 
-            .file-preview-grid {
-                grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            .form-actions {
+                flex-direction: column;
             }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .file-preview-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+        }
+
+        /* ========== SCROLLBAR ========== */
+        .content-area::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .content-area::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .content-area::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+
+        .content-area::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.2);
         }
     </style>
 </head>
 <body>
     <?php include 'sidebar.php'; ?>
 
-    <!-- Main Content -->
     <div class="main-content">
         <div class="content-area">
-            <!-- Nature.com style header -->
-            <!-- <div class="page-header">
+            <!-- Header -->
+            <div class="page-header">
                 <div class="header-container">
-                    <div class="breadcrumb">
-                        <a href="index.php">Dashboard</a>
-                        <span class="breadcrumb-separator">›</span>
-                        <span>Compose Email</span>
-                    </div>
-                    <span class="page-type">Email Composer</span>
+                    <h1 class="page-title">Compose Email</h1>
+                    <p class="page-subtitle">Create and send professional emails to your contacts</p>
                 </div>
-            </div> -->
+            </div>
 
-            <!-- Article-style compose form -->
+            <!-- Compose Form -->
             <div class="compose-container">
-                <header class="compose-header">
-                    <h1 class="compose-title">Compose New Message</h1>
-                </header>
-
-                <form action="send.php" method="POST" enctype="multipart/form-data" id="composeForm">
-                    
+                <form id="composeForm" action="send.php" method="POST" enctype="multipart/form-data">
                     <!-- Recipients Section -->
-                    <section class="form-section">
+                    <div class="form-section">
                         <h2 class="section-title">Recipients</h2>
                         
                         <div class="form-group">
-                            <label>To <span style="color: #d32f2f;">*</span></label>
-                            <input type="email" name="email" required placeholder="recipient@example.com" value="suchibratapatra2003@gmail.com">
+                            <label for="email">
+                                To
+                                <span style="color: #FF3B30;">*</span>
+                            </label>
+                            <input 
+                                type="email" 
+                                id="email" 
+                                name="email" 
+                                placeholder="recipient@example.com" 
+                                required
+                            >
+                            <label for="toFileUpload" class="email-list-upload">
+                                <span class="material-icons">upload_file</span>
+                                Import from file
+                            </label>
+                            <input 
+                                type="file" 
+                                id="toFileUpload" 
+                                accept=".txt,.csv" 
+                                onchange="handleEmailListUpload(this, 'email')"
+                            >
                         </div>
 
                         <div class="form-grid">
-                            <div class="form-group-compact">
-                                <label>Cc <span class="label-optional">(optional)</span></label>
-                                <div class="input-with-button">
-                                    <input type="text" name="cc" id="ccInput" placeholder="cc@example.com">
-                                    <button type="button" class="btn-attach-list" onclick="document.getElementById('ccFile').click()">
-                                        <i class="fa-solid fa-paperclip"></i> List
-                                    </button>
-                                    <input type="file" name="cc_file" id="ccFile" accept=".txt,.csv" onchange="handleEmailListUpload(this, 'ccInput')">
-                                </div>
-                                <small class="help-text">Separate multiple emails with commas</small>
+                            <div class="form-group">
+                                <label for="cc">
+                                    CC
+                                    <span class="label-optional">(Optional)</span>
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="cc" 
+                                    name="cc" 
+                                    placeholder="cc@example.com"
+                                >
+                                <label for="ccFileUpload" class="email-list-upload">
+                                    <span class="material-icons">upload_file</span>
+                                    Import from file
+                                </label>
+                                <input 
+                                    type="file" 
+                                    id="ccFileUpload" 
+                                    accept=".txt,.csv" 
+                                    onchange="handleEmailListUpload(this, 'cc')"
+                                >
                             </div>
 
-                            <div class="form-group-compact">
-                                <label>Bcc <span class="label-optional">(optional)</span></label>
-                                <div class="input-with-button">
-                                    <input type="text" name="bcc" id="bccInput" placeholder="bcc@example.com">
-                                    <button type="button" class="btn-attach-list" onclick="document.getElementById('bccFile').click()">
-                                        <i class="fa-solid fa-paperclip"></i> List
-                                    </button>
-                                    <input type="file" name="bcc_file" id="bccFile" accept=".txt,.csv" onchange="handleEmailListUpload(this, 'bccInput')">
-                                </div>
-                                <small class="help-text">Hidden recipients for privacy</small>
+                            <div class="form-group">
+                                <label for="bcc">
+                                    BCC
+                                    <span class="label-optional">(Optional)</span>
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="bcc" 
+                                    name="bcc" 
+                                    placeholder="bcc@example.com"
+                                >
+                                <label for="bccFileUpload" class="email-list-upload">
+                                    <span class="material-icons">upload_file</span>
+                                    Import from file
+                                </label>
+                                <input 
+                                    type="file" 
+                                    id="bccFileUpload" 
+                                    accept=".txt,.csv" 
+                                    onchange="handleEmailListUpload(this, 'bcc')"
+                                >
                             </div>
                         </div>
-                    </section>
+                    </div>
 
                     <!-- Email Details Section -->
-                    <section class="form-section">
+                    <div class="form-section">
                         <h2 class="section-title">Email Details</h2>
                         
                         <div class="form-group">
-                            <label>Subject <span style="color: #d32f2f;">*</span></label>
-                            <input type="text" name="subject" required placeholder="Enter a clear, descriptive subject line" value="This is the Mail Subject">
+                            <label for="subject">
+                                Subject
+                                <span style="color: #FF3B30;">*</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                id="subject" 
+                                name="subject" 
+                                placeholder="Enter email subject" 
+                                required
+                            >
                         </div>
 
                         <div class="form-group">
-                            <label>Article Title <span style="color: #d32f2f;">*</span></label>
-                            <input type="text" name="articletitle" required placeholder="Title for email template" value="This is the article Title">
-                            <small class="help-text">This appears in the email header template</small>
+                            <label for="articletitle">
+                                Article Title
+                                <span style="color: #FF3B30;">*</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                id="articletitle" 
+                                name="articletitle" 
+                                placeholder="Enter article title" 
+                                required
+                            >
+                            <p class="field-description">This will appear as the main heading in your email</p>
                         </div>
-                    </section>
+                    </div>
 
-                    <!-- Message Composition Section -->
-                    <section class="form-section">
-                        <h2 class="section-title">Message Content</h2>
+                    <!-- Message Section -->
+                    <div class="form-section">
+                        <h2 class="section-title">Message</h2>
                         
                         <div class="form-group">
-                            <label>Message Body <span style="color: #d32f2f;">*</span></label>
                             <div class="editor-wrapper" id="editorContainer">
                                 <div id="toolbar">
+                                    <select class="ql-header">
+                                        <option value="1">Heading 1</option>
+                                        <option value="2">Heading 2</option>
+                                        <option value="3">Heading 3</option>
+                                        <option selected>Normal</option>
+                                    </select>
                                     <button class="ql-bold"></button>
                                     <button class="ql-italic"></button>
                                     <button class="ql-underline"></button>
+                                    <button class="ql-strike"></button>
                                     <select class="ql-color"></select>
                                     <select class="ql-background"></select>
                                     <button class="ql-list" value="ordered"></button>
                                     <button class="ql-list" value="bullet"></button>
                                     <select class="ql-align"></select>
                                     <button class="ql-link"></button>
+                                    <button class="ql-image"></button>
+                                    <button class="ql-clean"></button>
                                 </div>
                                 <div id="editor"></div>
                             </div>
-                            <input type="hidden" name="message" id="messageInput" required>
-                            <input type="hidden" name="message_is_html" value="true">
+                            <input type="hidden" name="message" id="messageInput">
                         </div>
-                    </section>
+                    </div>
 
                     <!-- Signature Section -->
-                    <section class="form-section">
-                        <h2 class="section-title">Email Signature</h2>
+                    <div class="form-section">
+                        <div class="section-toggle" onclick="toggleSection('signatureSection')">
+                            <span class="material-icons">expand_more</span>
+                            <h2 class="section-title" style="margin: 0;">Email Signature</h2>
+                        </div>
                         
-                        <div class="form-group">
-                            <label>Signature <span class="label-optional">(optional)</span></label>
-                            <div class="editor-wrapper" id="signatureContainer">
-                                <div id="signatureToolbar">
-                                    <button class="ql-bold"></button>
-                                    <button class="ql-italic"></button>
-                                    <button class="ql-underline"></button>
-                                    <select class="ql-color"></select>
-                                    <button class="ql-link"></button>
+                        <div class="section-content" id="signatureSection">
+                            <div class="form-group" style="margin-top: 16px;">
+                                <div class="editor-wrapper" id="signatureContainer">
+                                    <div id="signatureToolbar">
+                                        <button class="ql-bold"></button>
+                                        <button class="ql-italic"></button>
+                                        <button class="ql-underline"></button>
+                                        <select class="ql-color"></select>
+                                        <button class="ql-link"></button>
+                                    </div>
+                                    <div id="signatureEditor"></div>
                                 </div>
-                                <div id="signatureEditor"></div>
+                                <p class="field-description">This signature will be appended to your email</p>
                             </div>
                         </div>
-                    </section>
+                    </div>
 
                     <!-- Attachments Section -->
-                    <div class="attachment-section">
-                        <div class="attachment-section-title">
-                            <i class="fa-solid fa-paperclip"></i>
-                            File Attachments
+                    <div class="form-section">
+                        <div class="section-toggle" onclick="toggleSection('attachmentsSection')">
+                            <span class="material-icons">expand_more</span>
+                            <h2 class="section-title" style="margin: 0;">Attachments</h2>
                         </div>
-                        <div class="file-input-wrapper">
-                            <label for="attachments" class="file-input-label">
-                                <i class="fa-solid fa-upload"></i>
-                                <span>Choose Files</span>
-                            </label>
-                            <input type="file" name="attachments[]" id="attachments" multiple onchange="handleFileSelect(event)">
-                        </div>
-                        <small class="help-text">You can select multiple files. Supported formats: PDF, DOC, DOCX, XLS, XLSX, images, and more.</small>
                         
-                        <!-- File Preview Grid -->
-                        <div class="file-preview-grid" id="filePreviewGrid"></div>
+                        <div class="section-content" id="attachmentsSection">
+                            <div class="form-group" style="margin-top: 16px;">
+                                <label for="attachments" class="file-upload-area">
+                                    <div class="material-icons file-upload-icon">cloud_upload</div>
+                                    <div class="file-upload-text">Click to upload or drag files here</div>
+                                    <div class="file-upload-hint">Supported: PDF, DOC, XLS, Images, ZIP (Max 25MB)</div>
+                                </label>
+                                <input 
+                                    type="file" 
+                                    id="attachments" 
+                                    name="attachments[]" 
+                                    multiple 
+                                    onchange="handleFileSelect(event)"
+                                >
+                                <div id="filePreviewGrid" class="file-preview-grid"></div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Action Buttons -->
-                    <div class="compose-actions">
+                    <div class="form-actions">
                         <button type="button" class="btn btn-preview" id="previewBtn">
-                            <i class="fa-solid fa-eye"></i> Preview Email
+                            <span class="material-icons">visibility</span>
+                            Preview Email
                         </button>
                         <button type="submit" class="btn btn-send">
-                            <i class="fa-solid fa-paper-plane"></i> Send Email
+                            <span class="material-icons">send</span>
+                            Send Email
                         </button>
                     </div>
                 </form>
@@ -753,6 +795,15 @@ $defaultSignature = json_encode($settings['signature']);
             }
         });
 
+        // Section toggle functionality
+        function toggleSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            const toggle = section.previousElementSibling;
+            
+            section.classList.toggle('collapsed');
+            toggle.classList.toggle('collapsed');
+        }
+
         // File handling variables
         let selectedFiles = [];
 
@@ -776,11 +827,11 @@ $defaultSignature = json_encode($settings['signature']);
                 const size = formatFileSize(file.size);
 
                 item.innerHTML = `
-                    <i class="fa-solid ${icon} file-preview-icon"></i>
+                    <span class="material-icons file-preview-icon">${icon}</span>
                     <div class="file-preview-name">${escapeHtml(file.name)}</div>
                     <div class="file-preview-size">${size}</div>
                     <button type="button" class="file-remove-btn" onclick="removeFile(${index})" title="Remove file">
-                        <i class="fa-solid fa-times"></i>
+                        <span class="material-icons" style="font-size: 14px;">close</span>
                     </button>
                 `;
 
@@ -809,23 +860,23 @@ $defaultSignature = json_encode($settings['signature']);
         function getFileIcon(filename) {
             const ext = filename.split('.').pop().toLowerCase();
             const iconMap = {
-                'pdf': 'fa-file-pdf',
-                'doc': 'fa-file-word',
-                'docx': 'fa-file-word',
-                'xls': 'fa-file-excel',
-                'xlsx': 'fa-file-excel',
-                'ppt': 'fa-file-powerpoint',
-                'pptx': 'fa-file-powerpoint',
-                'jpg': 'fa-file-image',
-                'jpeg': 'fa-file-image',
-                'png': 'fa-file-image',
-                'gif': 'fa-file-image',
-                'zip': 'fa-file-zipper',
-                'rar': 'fa-file-zipper',
-                'txt': 'fa-file-lines',
-                'csv': 'fa-file-csv'
+                'pdf': 'picture_as_pdf',
+                'doc': 'description',
+                'docx': 'description',
+                'xls': 'table_chart',
+                'xlsx': 'table_chart',
+                'ppt': 'slideshow',
+                'pptx': 'slideshow',
+                'jpg': 'image',
+                'jpeg': 'image',
+                'png': 'image',
+                'gif': 'image',
+                'zip': 'folder_zip',
+                'rar': 'folder_zip',
+                'txt': 'text_snippet',
+                'csv': 'table_view'
             };
-            return iconMap[ext] || 'fa-file';
+            return iconMap[ext] || 'insert_drive_file';
         }
 
         // Format file size
