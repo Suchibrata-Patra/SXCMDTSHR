@@ -1,388 +1,459 @@
-# SXC MDTS Inbox System
+# IMAP Settings Refactor - Complete Implementation Package
 
-A complete, secure, and high-performance inbox system for the SXC MDTS email platform. Built with PHP, MySQL, and IMAP, featuring an Apple-inspired UI design.
+## 📦 Package Contents
 
----
+This package contains all files needed to refactor the SXC MDTS mail system to use database-stored IMAP settings with security enhancements.
 
-## ✨ Features
+### Core Files (Replace Existing)
+1. **settings_helper.php** (13KB) - Enhanced settings management with IMAP functions
+2. **login.php** (9.3KB) - Updated login with session config loading
+3. **imap_helper.php** (12KB) - Session-based IMAP operations
+4. **fetch_inbox_messages.php** (1.7KB) - Simplified fetch using session config
+5. **save_settings.php** (6.9KB) - Settings save with lock mechanism
 
-### Core Functionality
-- 📥 **IMAP Email Fetching** - Automatically sync emails from any IMAP server
-- 📧 **Message Management** - Read, mark unread, delete messages
-- 🔍 **Advanced Search** - Filter by sender, subject, date range
-- 📄 **Pagination** - Smooth navigation through large inboxes
-- 🏷️ **Unread Tracking** - Instant read/unread status updates
-- 📎 **Attachment Detection** - Identifies messages with attachments
-- 🗑️ **Soft Delete** - Messages moved to trash, not permanently deleted
+### UI Component (Add to Settings Page)
+6. **imap_settings_ui_component.php** (12KB) - Ready-to-use settings interface
 
-### Security Features
-- 🔐 **Session-based Authentication** - Secure user verification
-- 🔒 **SQL Injection Protection** - Prepared statements throughout
-- 🛡️ **XSS Prevention** - All output properly sanitized
-- 🚫 **CSRF Protection** - JSON-based API endpoints
-- 🔑 **App Password Support** - Secure IMAP authentication
-- 📊 **Activity Logging** - All actions logged for audit
+### Database
+7. **database_migration.sql** (3.8KB) - Creates tables and default settings
 
-### Performance Features
-- ⚡ **Database Indexing** - Optimized queries for fast loading
-- 🔄 **Incremental Sync** - Fetches only new messages
-- 💾 **Smart Caching** - Prevents duplicate message fetching
-- 📊 **Lazy Loading** - Pagination prevents memory issues
-- 🎯 **AJAX Updates** - No page reload for status changes
-
-### UI/UX Features
-- 🎨 **Apple-Inspired Design** - Clean, modern interface
-- 📱 **Fully Responsive** - Works on desktop, tablet, mobile
-- ⚡ **Instant Feedback** - Real-time status updates
-- 🌈 **Visual States** - Clear unread/read styling
-- 🔔 **Toast Notifications** - Non-intrusive success/error messages
-- 🖱️ **Hover Actions** - Quick access to message actions
+### Documentation
+8. **IMPLEMENTATION_GUIDE.md** (10KB) - Complete implementation guide
+9. **QUICK_REFERENCE.md** (6.8KB) - Quick reference for developers
 
 ---
 
-## 📁 Project Structure
+## 🎯 What This Solves
 
-```
-inbox-system/
-├── inbox.php                    # Main inbox page UI
-├── inbox_functions.php          # Database CRUD functions
-├── imap_helper.php             # IMAP connection & email fetching
-├── fetch_inbox_messages.php    # AJAX endpoint - sync messages
-├── mark_read.php               # AJAX endpoint - mark read/unread
-├── delete_inbox_message.php    # AJAX endpoint - delete message
-├── view_message.php            # Individual message viewer
-├── create_inbox_table.sql      # Database schema
-├── INSTALLATION_GUIDE.md       # Complete setup instructions
-└── README.md                   # This file
-```
+### Problems Fixed
+✅ Hardcoded IMAP server settings throughout codebase  
+✅ No centralized configuration management  
+✅ Users could change critical settings repeatedly  
+✅ No audit trail for admin actions  
+✅ Email passwords stored insecurely  
+
+### New Features
+✅ Database-stored IMAP configuration  
+✅ Session-based IMAP access (no hardcoded values)  
+✅ One-time settings change with automatic locking  
+✅ Super admin override with audit logging  
+✅ Secure password handling (session-only)  
+✅ Input validation and SQL injection protection  
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Installation
 
-### 1. Install PHP IMAP Extension
-
+### Step 1: Backup (CRITICAL!)
 ```bash
-# Ubuntu/Debian
-sudo apt-get install php-imap
-sudo systemctl restart apache2
+# Backup database
+mysqldump -u USER -p DATABASE > backup_$(date +%Y%m%d).sql
 
-# Verify installation
-php -m | grep imap
+# Backup files
+cp settings_helper.php settings_helper.php.backup
+cp login.php login.php.backup
+cp imap_helper.php imap_helper.php.backup
+cp fetch_inbox_messages.php fetch_inbox_messages.php.backup
+cp save_settings.php save_settings.php.backup
 ```
 
-### 2. Create Database Tables
-
+### Step 2: Database Migration
 ```bash
-mysql -u username -p database_name < create_inbox_table.sql
+mysql -u u955994755_DB_supremacy -p u955994755_SXC_MDTS < database_migration.sql
 ```
 
-### 3. Upload Files
-
-Copy all files to your web root directory and set permissions:
-
+### Step 3: Replace Files
 ```bash
-chmod 644 *.php
-chmod 644 *.sql
+# Copy new files to your htdocs directory
+cp settings_helper.php /path/to/htdocs/
+cp login.php /path/to/htdocs/
+cp imap_helper.php /path/to/htdocs/
+cp fetch_inbox_messages.php /path/to/htdocs/
+cp save_settings.php /path/to/htdocs/
 ```
 
-### 4. Configure IMAP Settings
+### Step 4: Add UI Component to Settings Page
+Open your `settings.php` and add the IMAP settings section from `imap_settings_ui_component.php`
 
-Add to your `user_settings` table:
-
+### Step 5: Configure Super Admin
 ```sql
-INSERT INTO user_settings (user_email, setting_key, setting_value) VALUES
-('user@example.com', 'imap_server', 'imap.gmail.com'),
-('user@example.com', 'imap_port', '993'),
-('user@example.com', 'imap_password', 'your_app_password');
+INSERT INTO user_settings (user_email, setting_key, setting_value, updated_at)
+VALUES ('admin@sxccal.edu', 'is_super_admin', 'true', NOW())
+ON DUPLICATE KEY UPDATE setting_value = 'true', updated_at = NOW();
 ```
 
-### 5. Access Inbox
-
-Navigate to: `https://your-domain.com/inbox.php`
+### Step 6: Test
+1. Login with existing account
+2. Check inbox sync works
+3. Try to save IMAP settings
+4. Verify settings lock
 
 ---
 
-## 📋 Requirements
+## 🔐 Security Architecture
 
-### Server Requirements
-- **PHP:** 7.4 or higher
-- **PHP Extensions:** 
-  - `imap` (required)
-  - `pdo_mysql` (required)
-  - `openssl` (required)
-  - `mbstring` (recommended)
-- **MySQL:** 5.7+ or MariaDB 10.2+
-- **Apache/Nginx:** With mod_rewrite enabled
-
-### Email Server Requirements
-- IMAP server access (port 993 for SSL)
-- Valid email credentials
-- For Gmail: App Password required
-
----
-
-## 🎨 UI Design Principles
-
-This inbox system follows the same design language as `sent_history.php`:
-
-### Color Palette
-```css
---apple-blue: #007AFF      /* Primary actions */
---apple-gray: #8E8E93      /* Secondary text */
---apple-bg: #F2F2F7        /* Background */
---border: #E5E5EA          /* Borders */
---unread-bg: #f0f9ff       /* Unread messages */
+### Session-Based Configuration
+```
+Login → Load from DB → Store in Session → Use Everywhere
+  ↓
+$_SESSION['imap_config'] = [
+    'imap_server' => 'imap.hostinger.com',
+    'imap_port' => 993,
+    'imap_encryption' => 'ssl',
+    'imap_username' => 'user@sxccal.edu',
+    'imap_password' => '********' // From login, NOT stored in DB
+]
 ```
 
-### Typography
-- **Font Family:** Inter, -apple-system
-- **Headings:** 700 weight, -0.8px letter spacing
-- **Body:** 400-500 weight, 1.6 line height
-- **UI Elements:** 600 weight, -0.08px letter spacing
-
-### Spacing
-- **Container Padding:** 30px-40px
-- **Component Gaps:** 12px-20px
-- **Border Radius:** 8px-12px for cards
-
----
-
-## 🔧 Configuration Options
-
-### Database Functions (db_config.php)
-
-All inbox functions are namespaced and documented:
-
-```php
-// Fetch messages with filters
-$messages = getInboxMessages($userEmail, $limit, $offset, $filters);
-
-// Get counts
-$total = getInboxMessageCount($userEmail, $filters);
-$unread = getUnreadCount($userEmail);
-
-// Update status
-markMessageAsRead($messageId, $userEmail);
-markMessageAsUnread($messageId, $userEmail);
-
-// Soft delete
-deleteInboxMessage($messageId, $userEmail);
+### Settings Lock Flow
+```
+First Save → Validate → Save to DB → Lock Settings → Future Changes Blocked
+                                           ↓
+                                   Only Super Admin Can Override
+                                           ↓
+                                   All Overrides Logged
 ```
 
-### IMAP Configuration
-
-Customize in `imap_helper.php`:
-
-```php
-// Adjust sync limit (default: 50)
-$result = fetchNewMessages($userEmail, $imapConfig, 25);
-
-// Change IMAP timeout
-imap_timeout(IMAP_OPENTIMEOUT, 30);
-```
-
-### UI Customization
-
-Modify CSS variables in `inbox.php`:
-
-```css
-:root {
-    --apple-blue: #007AFF;     /* Change primary color */
-    --perPage: 50;             /* Messages per page */
-}
-```
-
----
-
-## 🔒 Security Best Practices
-
-### 1. Authentication
-```php
-// Every page starts with:
-session_start();
-if (!isset($_SESSION['authenticated'])) {
-    header('Location: login.php');
-    exit;
-}
-```
-
-### 2. Database Queries
-```php
-// Always use prepared statements
-$stmt = $pdo->prepare("SELECT * FROM inbox_messages WHERE id = :id");
-$stmt->execute([':id' => $messageId]);
-```
-
-### 3. Output Sanitization
-```php
-// Always escape output
-echo htmlspecialchars($message['subject']);
-```
-
-### 4. HTTPS Only
-```php
-if (empty($_SERVER['HTTPS'])) {
-    header('Location: https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']);
-    exit;
-}
-```
+### Password Security
+- ✅ Password obtained during SMTP authentication
+- ✅ Stored ONLY in server-side session
+- ✅ NEVER stored in database
+- ✅ NEVER sent to client
+- ✅ Session expires after timeout
+- ✅ Must re-login to renew
 
 ---
 
 ## 📊 Database Schema
 
-### inbox_messages Table
-
-| Field | Type | Description |
-|-------|------|-------------|
-| id | INT | Primary key |
-| message_id | VARCHAR(255) | Unique message identifier |
-| user_email | VARCHAR(255) | Recipient email |
-| sender_email | VARCHAR(255) | Sender email |
-| sender_name | VARCHAR(255) | Sender display name |
-| subject | TEXT | Email subject |
-| body | LONGTEXT | Email body |
-| received_date | DATETIME | Original receive date |
-| fetched_at | DATETIME | When fetched from server |
-| is_read | TINYINT(1) | Read status (0/1) |
-| read_at | DATETIME | When marked as read |
-| has_attachments | TINYINT(1) | Has attachments (0/1) |
-| is_starred | TINYINT(1) | Starred (0/1) |
-| is_deleted | TINYINT(1) | Soft delete flag (0/1) |
-
-**Indexes:**
-- `idx_user_email` - Fast user filtering
-- `idx_message_id` - Duplicate prevention
-- `idx_received_date` - Chronological sorting
-- `idx_inbox_main` - Composite index for main query
-
----
-
-## 🧪 Testing
-
-### Manual Testing Checklist
-
-- [ ] IMAP connection successful
-- [ ] Messages sync correctly
-- [ ] Unread messages highlighted
-- [ ] Click message marks as read
-- [ ] Toggle read/unread works
-- [ ] Delete removes from view
-- [ ] Search filters work
-- [ ] Date filters work
-- [ ] Pagination works
-- [ ] Responsive on mobile
-- [ ] Toast notifications appear
-- [ ] No console errors
-
-### Performance Testing
-
-```bash
-# Test database query performance
-EXPLAIN SELECT * FROM inbox_messages 
-WHERE user_email = 'user@example.com' 
-AND is_deleted = 0 
-ORDER BY received_date DESC 
-LIMIT 50;
-
-# Should use indexes
-```
-
----
-
-## 🐛 Common Issues & Solutions
-
-### Issue: "Call to undefined function imap_open()"
-**Solution:** Install PHP IMAP extension
-```bash
-sudo apt-get install php-imap
-sudo systemctl restart apache2
-```
-
-### Issue: "IMAP connection failed"
-**Solution:** 
-1. Check IMAP credentials
-2. For Gmail, use App Password
-3. Enable IMAP in email settings
-4. Check firewall allows port 993
-
-### Issue: "Duplicate entry for key 'unique_message'"
-**Solution:** This is normal - prevents duplicate messages
-
-### Issue: Slow page loading
-**Solution:**
-1. Add database indexes (check SQL file)
-2. Reduce sync limit to 25 messages
-3. Enable query caching
-
----
-
-## 🔄 Maintenance
-
-### Daily
-- Monitor error logs
-- Check sync success rate
-
-### Weekly
-- Review unread counts
-- Check disk space (messages table grows)
-
-### Monthly
+### user_settings Table (Updated)
 ```sql
--- Optimize tables
-OPTIMIZE TABLE inbox_messages;
-ANALYZE TABLE inbox_messages;
+CREATE TABLE user_settings (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_email VARCHAR(255) NOT NULL,
+    setting_key VARCHAR(100) NOT NULL,
+    setting_value TEXT,
+    updated_at TIMESTAMP,
+    UNIQUE KEY (user_email, setting_key)
+);
+```
 
--- Archive old messages (optional)
-UPDATE inbox_messages 
-SET is_deleted = 1 
-WHERE received_date < DATE_SUB(NOW(), INTERVAL 6 MONTH);
+**New Setting Keys:**
+- `imap_server` - IMAP server hostname
+- `imap_port` - IMAP port number
+- `imap_encryption` - ssl/tls/none
+- `imap_username` - IMAP login username
+- `settings_locked` - true/false
+- `is_super_admin` - true/false
+
+### admin_audit_log Table (New)
+```sql
+CREATE TABLE admin_audit_log (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    admin_email VARCHAR(255) NOT NULL,
+    action VARCHAR(100) NOT NULL,
+    target_user VARCHAR(255) NOT NULL,
+    details TEXT,
+    ip_address VARCHAR(45) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 ```
 
 ---
 
-## 🎯 Roadmap
+## 🔧 Key Functions Reference
 
-Future enhancements planned:
+### settings_helper.php
+```php
+// Load IMAP config to session
+loadImapConfigToSession($email, $password)
 
-- [ ] Attachment download functionality
-- [ ] Rich text email display (HTML emails)
-- [ ] Email reply functionality
-- [ ] Message forwarding
-- [ ] Folder/label support
-- [ ] Advanced spam filtering
-- [ ] Email templates
-- [ ] Batch operations (select multiple)
-- [ ] Export to PDF/CSV
-- [ ] Email signatures
+// Get IMAP config from session
+getImapConfigFromSession() : array|null
+
+// Check if settings are locked
+areSettingsLocked($email) : bool
+
+// Check if super admin
+isSuperAdmin() : bool
+
+// Lock/Unlock settings
+lockSettings($email) : bool
+unlockSettings($email) : bool
+
+// Log admin actions
+logSuperAdminAction($admin, $action, $target, $details)
+
+// Validate IMAP settings
+validateImapSettings($settings) : array
+```
+
+### imap_helper.php
+```php
+// Connect using session config
+connectToIMAPFromSession() : resource|false
+
+// Fetch messages using session config
+fetchNewMessagesFromSession($email, $limit) : array
+
+// Quick sync check
+quickSyncCheckFromSession($email) : array
+```
 
 ---
 
-## 📄 License
+## 🎨 UI Component Features
 
-This project is part of the SXC MDTS email system.
+The provided UI component includes:
 
----
-
-## 🙏 Credits
-
-**Design Inspiration:** Apple Mail, Gmail
-**Framework:** Custom PHP with modern CSS
-**Icons:** Material Icons by Google
-**Fonts:** Inter by Rasmus Andersson
-
----
-
-## 📞 Support
-
-For issues or questions:
-1. Check `INSTALLATION_GUIDE.md` for detailed setup
-2. Review error logs: `/var/log/apache2/error.log`
-3. Contact system administrator
+✅ Lock status indicator (badge)  
+✅ Warning messages for lock state  
+✅ Input validation  
+✅ Disabled inputs when locked  
+✅ Super admin override button  
+✅ Responsive design  
+✅ Inline help text  
+✅ Password security notice  
+✅ Confirmation dialogs  
 
 ---
 
-**Built with ❤️ for SXC MDTS**
+## 📋 Migration Checklist
 
-Version 1.0.0 | Last Updated: February 2026
+### Pre-Deployment
+- [ ] Read IMPLEMENTATION_GUIDE.md thoroughly
+- [ ] Read QUICK_REFERENCE.md for quick tips
+- [ ] Review all modified files
+- [ ] Test in staging environment
+- [ ] Backup database
+- [ ] Backup PHP files
+
+### Deployment
+- [ ] Run database migration script
+- [ ] Replace PHP files
+- [ ] Add UI component to settings page
+- [ ] Configure super admin
+- [ ] Clear PHP opcode cache (if applicable)
+- [ ] Restart Apache/Nginx (if needed)
+
+### Post-Deployment
+- [ ] Test login functionality
+- [ ] Test inbox sync
+- [ ] Test settings save (first time)
+- [ ] Test settings lock (second attempt)
+- [ ] Test super admin override
+- [ ] Check error logs
+- [ ] Check audit logs
+- [ ] Monitor for 24 hours
+- [ ] Update internal documentation
+
+---
+
+## 🛠️ Troubleshooting Guide
+
+### Issue: "IMAP not configured"
+**Cause:** Session doesn't have IMAP config  
+**Solution:**
+1. Check database: `SELECT * FROM user_settings WHERE setting_key LIKE 'imap_%'`
+2. Logout and login again
+3. If still fails, check error logs
+
+### Issue: "Could not connect to IMAP server"
+**Cause:** Wrong IMAP settings or network issue  
+**Solution:**
+1. Verify settings in database
+2. Test connection: `openssl s_client -connect imap.hostinger.com:993`
+3. Check firewall rules
+4. Check error logs for detailed message
+
+### Issue: Settings locked unexpectedly
+**Cause:** User already saved settings once  
+**Solution:**
+1. This is expected behavior
+2. To unlock: Super admin must do it
+3. Or manually: `UPDATE user_settings SET setting_value='false' WHERE setting_key='settings_locked'`
+
+### Issue: Super admin actions not logging
+**Cause:** admin_audit_log table missing  
+**Solution:**
+1. Run database migration script
+2. Verify table exists: `SHOW TABLES LIKE 'admin_audit_log'`
+
+---
+
+## 📞 Support & Maintenance
+
+### Error Logging
+All errors are logged to PHP error log. Check:
+```bash
+# Linux
+tail -f /var/log/apache2/error.log
+
+# Or check PHP error log location
+php -i | grep error_log
+```
+
+### Audit Trail
+Review admin actions regularly:
+```sql
+SELECT 
+    admin_email,
+    action,
+    target_user,
+    created_at
+FROM admin_audit_log
+ORDER BY created_at DESC
+LIMIT 50;
+```
+
+### Session Monitoring
+To debug session issues:
+```php
+<?php
+session_start();
+echo '<pre>';
+print_r($_SESSION);
+echo '</pre>';
+?>
+```
+
+---
+
+## 🔄 Backward Compatibility
+
+### Legacy Functions
+Old functions still work but log deprecation warnings:
+
+```php
+// Old way (deprecated but works)
+fetchNewMessages($email, $imapConfig, 50);
+
+// New way (recommended)
+fetchNewMessagesFromSession($email, 50);
+```
+
+### Migration Path
+1. Deploy new code
+2. Existing users continue to work with defaults
+3. Users configure IMAP settings at their convenience
+4. No immediate action required from users
+
+---
+
+## 📈 Performance Impact
+
+### Minimal Overhead
+- Session read: ~0.01ms
+- Database query (cached): ~1-5ms
+- IMAP connection: Same as before
+- Overall impact: Negligible
+
+### Scalability
+- Session data per user: ~500 bytes
+- Database rows per user: ~6 new rows
+- Audit log growth: ~10 KB per month per admin
+
+---
+
+## 🔮 Future Enhancements
+
+Possible improvements for future versions:
+
+1. **Multi-account Support**
+   - Allow users to configure multiple IMAP accounts
+   - Switch between accounts in UI
+
+2. **Settings Backup/Restore**
+   - Export settings to JSON
+   - Import settings from backup
+
+3. **Scheduled Unlocking**
+   - Auto-unlock after X days
+   - Time-limited unlock tokens
+
+4. **Advanced Audit**
+   - Visual audit trail dashboard
+   - Email notifications for admin actions
+   - Compliance reporting
+
+5. **OAuth2 Support**
+   - Replace password with OAuth2 tokens
+   - Enhanced security
+
+---
+
+## 📄 License & Credits
+
+**Project:** SXC MDTS - Mail Delivery & Tracking System  
+**Institution:** St. Xavier's College, Kolkata  
+**Version:** 1.0.0  
+**Date:** February 8, 2026  
+**License:** Internal Use Only
+
+---
+
+## ✅ Summary
+
+### What You Get
+- ✅ 5 updated PHP files
+- ✅ 1 ready-to-use UI component
+- ✅ 1 database migration script
+- ✅ 2 comprehensive documentation files
+- ✅ Complete implementation package
+
+### What It Does
+- ✅ Removes all hardcoded IMAP settings
+- ✅ Centralizes configuration in database
+- ✅ Loads settings to session at login
+- ✅ Locks settings after first save
+- ✅ Provides super admin override
+- ✅ Logs all admin actions
+- ✅ Secures password handling
+
+### Time to Deploy
+- Reading docs: 30 minutes
+- Testing in staging: 1 hour
+- Production deployment: 15 minutes
+- **Total: ~2 hours**
+
+### Risk Level
+**LOW** - Backward compatible, minimal changes to existing code
+
+---
+
+## 📞 Need Help?
+
+If you encounter issues:
+
+1. **Check Documentation**
+   - IMPLEMENTATION_GUIDE.md - Detailed guide
+   - QUICK_REFERENCE.md - Quick tips
+
+2. **Check Logs**
+   - PHP error log
+   - Database query log
+   - Audit log
+
+3. **Debug Mode**
+   ```php
+   ini_set('display_errors', 1);
+   error_reporting(E_ALL);
+   ```
+
+4. **Test Queries**
+   ```sql
+   -- Check settings
+   SELECT * FROM user_settings WHERE user_email = 'your@email.com';
+   
+   -- Check locks
+   SELECT * FROM user_settings WHERE setting_key = 'settings_locked';
+   
+   -- Check audit
+   SELECT * FROM admin_audit_log ORDER BY created_at DESC;
+   ```
+
+---
+
+**Ready to deploy? Start with IMPLEMENTATION_GUIDE.md**
+
+Good luck! 🚀

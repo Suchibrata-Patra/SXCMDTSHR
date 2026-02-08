@@ -2,6 +2,8 @@
 session_start();
 require 'vendor/autoload.php';
 require 'config.php';
+require 'db_config.php';
+require 'settings_helper.php';
 
 if (file_exists(__DIR__ . '/.env')) {
     $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
@@ -14,35 +16,64 @@ use PHPMailer\PHPMailer\Exception;
 $error = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $user_email = $_POST['email'];
+    $user_email = trim($_POST['email']);
     $user_pass = $_POST['app_password'];
 
-    $mail = new PHPMailer(true);
-    $mail->SMTPDebug = 2;
-    $mail->Debugoutput = 'html';
-    try {
-        $mail->isSMTP();
-        $mail->Host       = env("SMTP_HOST"); 
-        $mail->SMTPAuth   = true;
-        $mail->Username   = $user_email;
-        $mail->Password   = $user_pass;
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-        $mail->Port       = env("SMTP_PORT");
+    // Sanitize email input
+    if (!filter_var($user_email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Invalid email format.";
+    } else {
+        $mail = new PHPMailer(true);
+        $mail->SMTPDebug = 0; // Set to 0 in production
+        $mail->Debugoutput = 'html';
+        
+        try {
+            $mail->isSMTP();
+            $mail->Host       = env("SMTP_HOST"); 
+            $mail->SMTPAuth   = true;
+            $mail->Username   = $user_email;
+            $mail->Password   = $user_pass;
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+            $mail->Port       = env("SMTP_PORT");
 
-        $mail->setFrom($user_email, 'NoReply Security');
-        $mail->addAddress($user_email); 
-        $mail->Subject = "Login Verification";
-        $mail->isHTML(true);
-        $mail->Body    = "<b>Login Successful!</b><br>If this wasn't you, please revoke your App Password.";
+            $mail->setFrom($user_email, 'NoReply Security');
+            $mail->addAddress($user_email); 
+            $mail->Subject = "Login Verification";
+            $mail->isHTML(true);
+            $mail->Body    = "<b>Login Successful!</b><br>If this wasn't you, please revoke your App Password.";
 
-        if ($mail->send()) {
-            $_SESSION['smtp_user'] = $user_email;
-            $_SESSION['smtp_pass'] = $user_pass;
-            header("Location: index.php");
-            exit();
+            if ($mail->send()) {
+                // Authentication successful
+                $_SESSION['smtp_user'] = $user_email;
+                $_SESSION['smtp_pass'] = $user_pass;
+                $_SESSION['authenticated'] = true;
+                
+                // Load user settings into session
+                $userSettings = getSettingsWithDefaults($user_email);
+                
+                // Store IMAP configuration in session (non-sensitive parts)
+                // Password comes from login credentials
+                loadImapConfigToSession($user_email, $user_pass);
+                
+                // Check if user is super admin (you can implement your own logic)
+                // For now, we'll check if there's a setting for it
+                $isSuperAdmin = getUserSetting($user_email, 'is_super_admin', false);
+                if ($isSuperAdmin === true || $isSuperAdmin === 'true' || $isSuperAdmin === '1') {
+                    $_SESSION['user_role'] = 'super_admin';
+                } else {
+                    $_SESSION['user_role'] = 'user';
+                }
+                
+                // Log successful login
+                error_log("Successful login: $user_email at " . date('Y-m-d H:i:s'));
+                
+                header("Location: index.php");
+                exit();
+            }
+        } catch (Exception $e) {
+            error_log("Login failed for $user_email: " . $e->getMessage());
+            $error = "Authentication Failed. Please verify credentials.";
         }
-    } catch (Exception $e) {
-        $error = "Authentication Failed. Please verify credentials.";
     }
 }
 ?>
@@ -53,7 +84,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SXC MDTS</title>
+    <title>SXC MDTS - Login</title>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@0,700;1,700&display=swap"
         rel="stylesheet">
@@ -88,7 +119,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         .login-card {
             width: 100%;
             max-width: 420px;
-            /* Original width restored */
             padding: 40px;
             background: #ffffff;
             border-radius: 12px;
@@ -109,14 +139,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         .brand-logo {
             width: 60px;
-            /* Sized to fit narrow container */
             height: auto;
             flex-shrink: 0;
         }
 
         .brand-details {
             font-size: 0.6rem;
-            /* Scaled down for the 420px width */
             line-height: 1.3;
             color: #666;
             font-weight: 500;
@@ -249,7 +277,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             <?php if ($error): ?>
             <div class="error-toast">
-                <?php echo $error; ?>
+                <?php echo htmlspecialchars($error); ?>
             </div>
             <?php endif; ?>
 
@@ -269,13 +297,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </label>
                 </div>
 
-                <button type="submit">Verify & Proceeed</button>
+                <button type="submit">Verify & Proceed</button>
             </form>
 
-            <!-- <footer>
-                &copy;
-                <?php echo date("Y"); ?> Dept. of Data Science | SXC
-            </footer> -->
+            <footer>
+                &copy; <?php echo date("Y"); ?> SXC MDTS | Secure Authentication
+            </footer>
         </div>
     </div>
 

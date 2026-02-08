@@ -2,6 +2,8 @@
 /**
  * Fetch Inbox Messages API
  * Syncs new emails from IMAP server to database
+ * 
+ * UPDATED: Now uses session-based IMAP configuration
  */
 
 session_start();
@@ -23,29 +25,19 @@ require_once 'imap_helper.php';
 $userEmail = $_SESSION['smtp_user'];
 
 try {
-    // Get user's IMAP settings
-    $settings = getSettingsWithDefaults($userEmail);
+    // Check if IMAP is configured in session
+    $imapConfig = getImapConfigFromSession();
     
-    // Check if IMAP is configured
-    $imapPassword = $settings['imap_password'] ?? '';
-    
-    if (empty($imapPassword)) {
+    if (!$imapConfig) {
         echo json_encode([
             'success' => false,
-            'error' => 'IMAP not configured. Please set up your email settings.'
+            'error' => 'IMAP not configured. Please configure your mail settings first.'
         ]);
         exit;
     }
     
-    // Prepare IMAP config
-    $imapConfig = [
-        'imap_server' => $settings['imap_server'] ?? 'imap.hostinger.com',
-        'imap_port' => $settings['imap_port'] ?? 993,
-        'imap_password' => $imapPassword
-    ];
-    
-    // Fetch new messages (limit to 50 per sync to prevent timeout)
-    $result = fetchNewMessages($userEmail, $imapConfig, 50);
+    // Fetch new messages using session configuration (limit to 50 per sync to prevent timeout)
+    $result = fetchNewMessagesFromSession($userEmail, 50);
     
     if ($result['success']) {
         echo json_encode([

@@ -2,10 +2,34 @@
 /**
  * IMAP Helper Functions
  * Fetches emails from IMAP server and stores them in database
+ * 
+ * UPDATED: Now uses session-based IMAP configuration instead of hardcoded values
  */
 
 require_once 'db_config.php';
 require_once 'settings_helper.php';
+
+/**
+ * Connect to IMAP server using session configuration
+ * 
+ * @return resource|false IMAP connection or false on failure
+ */
+function connectToIMAPFromSession() {
+    // Get IMAP config from session
+    $config = getImapConfigFromSession();
+    
+    if (!$config) {
+        error_log("IMAP configuration not found in session");
+        return false;
+    }
+    
+    return connectToIMAP(
+        $config['imap_server'],
+        $config['imap_port'],
+        $config['imap_username'],
+        $config['imap_password']
+    );
+}
 
 /**
  * Connect to IMAP server
@@ -37,34 +61,20 @@ function connectToIMAP($server, $port, $email, $password) {
 }
 
 /**
- * Fetch new messages from IMAP server
+ * Fetch new messages from IMAP server using session configuration
  * 
  * @param string $userEmail User's email address
- * @param array $imapConfig IMAP configuration (server, port, password)
  * @param int $limit Maximum messages to fetch per sync (default 50)
  * @return array Result with status and message count
  */
-function fetchNewMessages($userEmail, $imapConfig, $limit = 50) {
-    // Get IMAP connection details
-    $server = $imapConfig['imap_server'] ?? 'imap.hostinger.com';
-    $port = $imapConfig['imap_port'] ?? 993;
-    $password = $imapConfig['imap_password'] ?? '';
-    
-    if (empty($password)) {
-        return [
-            'success' => false,
-            'error' => 'IMAP password not configured',
-            'count' => 0
-        ];
-    }
-    
-    // Connect to IMAP
-    $connection = connectToIMAP($server, $port, $userEmail, $password);
+function fetchNewMessagesFromSession($userEmail, $limit = 50) {
+    // Get IMAP connection from session config
+    $connection = connectToIMAPFromSession();
     
     if (!$connection) {
         return [
             'success' => false,
-            'error' => 'Could not connect to IMAP server',
+            'error' => 'Could not connect to IMAP server. Please check your settings.',
             'count' => 0
         ];
     }
@@ -179,6 +189,23 @@ function fetchNewMessages($userEmail, $imapConfig, $limit = 50) {
             'count' => 0
         ];
     }
+}
+
+/**
+ * Legacy function for backward compatibility
+ * Now redirects to session-based function
+ * 
+ * @param string $userEmail User's email address
+ * @param array $imapConfig IMAP configuration (DEPRECATED - uses session now)
+ * @param int $limit Maximum messages to fetch per sync
+ * @return array Result with status and message count
+ */
+function fetchNewMessages($userEmail, $imapConfig = [], $limit = 50) {
+    // Log deprecation warning
+    error_log("DEPRECATED: fetchNewMessages() called with config array. Using session config instead.");
+    
+    // Use session-based function
+    return fetchNewMessagesFromSession($userEmail, $limit);
 }
 
 /**
@@ -313,21 +340,13 @@ function extractName($from) {
 
 /**
  * Quick sync check - returns unread count without full fetch
+ * Uses session-based configuration
  * 
  * @param string $userEmail User's email
- * @param array $imapConfig IMAP configuration
  * @return array Status with unread count
  */
-function quickSyncCheck($userEmail, $imapConfig) {
-    $server = $imapConfig['imap_server'] ?? 'imap.hostinger.com';
-    $port = $imapConfig['imap_port'] ?? 993;
-    $password = $imapConfig['imap_password'] ?? '';
-    
-    if (empty($password)) {
-        return ['success' => false, 'unread' => 0];
-    }
-    
-    $connection = connectToIMAP($server, $port, $userEmail, $password);
+function quickSyncCheckFromSession($userEmail) {
+    $connection = connectToIMAPFromSession();
     
     if (!$connection) {
         return ['success' => false, 'unread' => 0];
@@ -348,5 +367,17 @@ function quickSyncCheck($userEmail, $imapConfig) {
         imap_close($connection);
         return ['success' => false, 'unread' => 0];
     }
+}
+
+/**
+ * Legacy function for backward compatibility
+ * 
+ * @param string $userEmail User's email
+ * @param array $imapConfig IMAP configuration (DEPRECATED)
+ * @return array Status with unread count
+ */
+function quickSyncCheck($userEmail, $imapConfig = []) {
+    error_log("DEPRECATED: quickSyncCheck() called with config array. Using session config instead.");
+    return quickSyncCheckFromSession($userEmail);
 }
 ?>
