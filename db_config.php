@@ -589,6 +589,40 @@ function parseEmailList($emailString) {
     return $emails;
 }
 
+/**
+ * Get count of emails for a user that have no label assigned
+ */
+function getUnlabeledEmailCount($userEmail) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) {
+            return 0;
+        }
+        
+        $userId = getUserId($pdo, $userEmail);
+        if (!$userId) {
+            return 0;
+        }
+        
+        // Count entries in user_email_access where label_id is NULL
+        $sql = "SELECT COUNT(*) as count 
+                FROM user_email_access 
+                WHERE user_id = :user_id 
+                AND label_id IS NULL 
+                AND is_deleted = 0";
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([':user_id' => $userId]);
+        $result = $stmt->fetch();
+        
+        return $result['count'] ?? 0;
+        
+    } catch (PDOException $e) {
+        error_log("Error fetching unlabeled count: " . $e->getMessage());
+        return 0;
+    }
+}
+
 // Enable error display for debugging (remove in production)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);

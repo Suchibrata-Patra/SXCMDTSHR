@@ -500,7 +500,6 @@ $_SESSION['user_settings'] = $settings;
 
 <body>
     <?php include 'sidebar.php'; ?>
-
     <div class="main-content">
         <div class="content-area">
             <!-- Header -->
