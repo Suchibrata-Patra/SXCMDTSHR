@@ -269,43 +269,48 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
 
-        // --- Handle Multiple File Attachments with Deduplication ---
+        // Initialize AttachmentManager for linking attachments to email
         $attachmentManager = new AttachmentManager($pdo);
-        
-        if (isset($_FILES['attachments']) && is_array($_FILES['attachments']['name'])) {
-            $fileCount = count($_FILES['attachments']['name']);
-            error_log("Processing $fileCount attachment(s)...");
+
+        // --- Handle Multiple File Attachments from AJAX Uploads ---
+        if (!empty($_POST['attachment_ids'])) {
+            $attachmentIds = array_filter(explode(',', trim($_POST['attachment_ids'])));
+            error_log("Processing " . count($attachmentIds) . " pre-uploaded attachment(s)...");
             
-            for ($i = 0; $i < $fileCount; $i++) {
-                if ($_FILES['attachments']['error'][$i] == UPLOAD_ERR_OK) {
-                    try {
-                        // Process and store file with deduplication
-                        $uploadedFile = [
-                            'name' => $_FILES['attachments']['name'][$i],
-                            'type' => $_FILES['attachments']['type'][$i],
-                            'tmp_name' => $_FILES['attachments']['tmp_name'][$i],
-                            'size' => $_FILES['attachments']['size'][$i]
-                        ];
+            foreach ($attachmentIds as $attachmentId) {
+                $attachmentId = trim($attachmentId);
+                if (empty($attachmentId) || !is_numeric($attachmentId)) continue;
+                
+                try {
+                    // Get attachment details from database
+                    $stmt = $pdo->prepare("SELECT * FROM attachments WHERE id = ?");
+                    $stmt->execute([$attachmentId]);
+                    $attachment = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    if ($attachment) {
+                        $filePath = 'uploads/attachments/' . $attachment['storage_path'];
                         
-                        $fileInfo = $attachmentManager->processUpload($uploadedFile);
-                        
-                        // Attach to email
-                        $mail->addAttachment($fileInfo['path'], $fileInfo['original_name']);
-                        
-                        // Store for database logging
-                        $processedAttachments[] = $fileInfo;
-                        
-                        error_log("Attachment added: {$fileInfo['original_name']} " . 
-                                  ($fileInfo['deduplicated'] ? '(deduplicated)' : '(new file)'));
-                        
-                    } catch (Exception $e) {
-                        error_log("Failed to process attachment {$_FILES['attachments']['name'][$i]}: " . $e->getMessage());
-                        $failedEmails[] = [
-                            'email' => 'Attachment: ' . $_FILES['attachments']['name'][$i], 
-                            'type' => 'File', 
-                            'reason' => $e->getMessage()
-                        ];
+                        if (file_exists($filePath)) {
+                            // Attach to email
+                            $mail->addAttachment($filePath, $attachment['original_filename']);
+                            
+                            // Store for database logging
+                            $processedAttachments[] = [
+                                'id' => $attachment['id'],
+                                'path' => $filePath,
+                                'original_name' => $attachment['original_filename'],
+                                'deduplicated' => false // Already processed during upload
+                            ];
+                            
+                            error_log("Attachment added: {$attachment['original_filename']} (ID: {$attachment['id']})");
+                        } else {
+                            error_log("Attachment file not found: $filePath");
+                        }
+                    } else {
+                        error_log("Attachment ID not found in database: $attachmentId");
                     }
+                } catch (Exception $e) {
+                    error_log("Failed to process attachment ID $attachmentId: " . $e->getMessage());
                 }
             }
         }
