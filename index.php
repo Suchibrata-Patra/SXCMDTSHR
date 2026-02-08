@@ -37,20 +37,19 @@ $defaultSignature = json_encode($settings['signature']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Compose Email — SXC MDTS</title>
-
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-
+    
     <!-- Quill Rich Text Editor CSS -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-
+    
     <style>
         :root {
             --apple-blue: #007AFF;
@@ -524,7 +523,6 @@ $defaultSignature = json_encode($settings['signature']);
         }
     </style>
 </head>
-
 <body>
     <?php include 'sidebar.php'; ?>
 
@@ -544,19 +542,29 @@ $defaultSignature = json_encode($settings['signature']);
                     <!-- Recipients Section -->
                     <div class="form-section">
                         <h2 class="section-title">Recipients</h2>
-
+                        
                         <div class="form-group">
                             <label for="email">
                                 To
                                 <span style="color: #FF3B30;">*</span>
                             </label>
-                            <input type="email" id="email" name="email" placeholder="recipient@example.com" required>
+                            <input 
+                                type="email" 
+                                id="email" 
+                                name="email" 
+                                placeholder="recipient@example.com" 
+                                required
+                            >
                             <label for="toFileUpload" class="email-list-upload">
                                 <span class="material-icons">upload_file</span>
                                 Import from file
                             </label>
-                            <input type="file" id="toFileUpload" accept=".txt,.csv"
-                                onchange="handleEmailListUpload(this, 'email')">
+                            <input 
+                                type="file" 
+                                id="toFileUpload" 
+                                accept=".txt,.csv" 
+                                onchange="handleEmailListUpload(this, 'email')"
+                            >
                         </div>
 
                         <div class="form-grid">
@@ -565,13 +573,22 @@ $defaultSignature = json_encode($settings['signature']);
                                     CC
                                     <span class="label-optional">(Optional)</span>
                                 </label>
-                                <input type="text" id="cc" name="cc" placeholder="cc@example.com">
+                                <input 
+                                    type="text" 
+                                    id="cc" 
+                                    name="cc" 
+                                    placeholder="cc@example.com"
+                                >
                                 <label for="ccFileUpload" class="email-list-upload">
                                     <span class="material-icons">upload_file</span>
                                     Import from file
                                 </label>
-                                <input type="file" id="ccFileUpload" accept=".txt,.csv"
-                                    onchange="handleEmailListUpload(this, 'cc')">
+                                <input 
+                                    type="file" 
+                                    id="ccFileUpload" 
+                                    accept=".txt,.csv" 
+                                    onchange="handleEmailListUpload(this, 'cc')"
+                                >
                             </div>
 
                             <div class="form-group">
@@ -579,13 +596,22 @@ $defaultSignature = json_encode($settings['signature']);
                                     BCC
                                     <span class="label-optional">(Optional)</span>
                                 </label>
-                                <input type="text" id="bcc" name="bcc" placeholder="bcc@example.com">
+                                <input 
+                                    type="text" 
+                                    id="bcc" 
+                                    name="bcc" 
+                                    placeholder="bcc@example.com"
+                                >
                                 <label for="bccFileUpload" class="email-list-upload">
                                     <span class="material-icons">upload_file</span>
                                     Import from file
                                 </label>
-                                <input type="file" id="bccFileUpload" accept=".txt,.csv"
-                                    onchange="handleEmailListUpload(this, 'bcc')">
+                                <input 
+                                    type="file" 
+                                    id="bccFileUpload" 
+                                    accept=".txt,.csv" 
+                                    onchange="handleEmailListUpload(this, 'bcc')"
+                                >
                             </div>
                         </div>
                     </div>
@@ -593,13 +619,19 @@ $defaultSignature = json_encode($settings['signature']);
                     <!-- Email Details Section -->
                     <div class="form-section">
                         <h2 class="section-title">Email Details</h2>
-
+                        
                         <div class="form-group">
                             <label for="subject">
                                 Subject
                                 <span style="color: #FF3B30;">*</span>
                             </label>
-                            <input type="text" id="subject" name="subject" placeholder="Enter email subject" required>
+                            <input 
+                                type="text" 
+                                id="subject" 
+                                name="subject" 
+                                placeholder="Enter email subject" 
+                                required
+                            >
                         </div>
 
                         <div class="form-group">
@@ -607,8 +639,13 @@ $defaultSignature = json_encode($settings['signature']);
                                 Article Title
                                 <span style="color: #FF3B30;">*</span>
                             </label>
-                            <input type="text" id="articletitle" name="articletitle" placeholder="Enter article title"
-                                required>
+                            <input 
+                                type="text" 
+                                id="articletitle" 
+                                name="articletitle" 
+                                placeholder="Enter article title" 
+                                required
+                            >
                             <p class="field-description">This will appear as the main heading in your email</p>
                         </div>
                     </div>
@@ -616,7 +653,7 @@ $defaultSignature = json_encode($settings['signature']);
                     <!-- Message Section -->
                     <div class="form-section">
                         <h2 class="section-title">Message</h2>
-
+                        
                         <div class="form-group">
                             <div class="editor-wrapper" id="editorContainer">
                                 <div id="toolbar">
@@ -647,98 +684,110 @@ $defaultSignature = json_encode($settings['signature']);
 
                     <!-- Signature Section -->
                     <!-- Signature Section -->
-                    <div class="form-section">
-                        <div class="section-toggle collapsed" onclick="toggleSection('signatureSection')">
-                            <span class="material-icons">expand_more</span>
-                            <h2 class="section-title" style="margin: 0;">Email Signature</h2>
-                        </div>
+<div class="form-section">
+    <div class="section-toggle" onclick="toggleSection('signatureSection')">
+        <span class="material-icons">expand_more</span>
+        <h2 class="section-title" style="margin: 0;">Email Signature</h2>
+    </div>
+    
+    <div class="section-content" id="signatureSection">
+        <div class="form-group" style="margin-top: 16px;">
+            <label for="signatureWish">Closing Wish</label>
+            <input type="text" 
+                   id="signatureWish" 
+                   name="signatureWish" 
+                   class="form-input" 
+                   placeholder="e.g., Best Regards, Warm Wishes, Sincerely">
+            <p class="field-description">Your closing greeting</p>
+        </div>
 
-                        <div class="section-content" id="signatureSection">
-                            <div class="form-group" style="margin-top: 16px;">
-                                <label for="signatureWish">Closing Wish</label>
-                                <input type="text" id="signatureWish" name="signatureWish" class="form-input"
-                                    placeholder="e.g., Best Regards, Warm Wishes, Sincerely etc." value="Best Regards" >
-                                <p class="field-description">Your closing greeting</p>
-                            </div>
+        <div class="form-group">
+            <label for="signatureName">Name</label>
+            <input type="text" 
+                   id="signatureName" 
+                   name="signatureName" 
+                   class="form-input" 
+                   placeholder="e.g., Durba Bhattacharya">
+            <p class="field-description">Your full name</p>
+        </div>
 
-                            <div class="form-group">
-                                <label for="signatureName">Name</label>
-                                <input type="text" id="signatureName" name="signatureName" class="form-input"
-                                    placeholder="e.g., Durba Bhattacharya" value="Prof. Dr. Durba Bhattacharya">
-                                <p class="field-description">Your full name</p>
-                            </div>
+        <div class="form-group">
+            <label for="signatureDesignation">Designation</label>
+            <input type="text" 
+                   id="signatureDesignation" 
+                   name="signatureDesignation" 
+                   class="form-input" 
+                   placeholder="e.g., H.O.D of SXC MDTS">
+            <p class="field-description">Your title or position</p>
+        </div>
 
-                            <div class="form-group">
-                                <label for="signatureDesignation">Designation</label>
-                                <input type="text" id="signatureDesignation" name="signatureDesignation"
-                                    class="form-input" placeholder="e.g., H.O.D of SXC MDTS" value="H.O.D Department of Data Science">
-                                <p class="field-description">Your title or position</p>
-                            </div>
+        <div class="form-group">
+            <label for="signatureExtra">Additional Text (Optional)</label>
+            <textarea id="signatureExtra" 
+                      name="signatureExtra" 
+                      class="form-input" 
+                      rows="3" 
+                      placeholder="Any additional information"></textarea>
+            <p class="field-description">Extra details like contact info, department, etc.</p>
+        </div>
+    </div>
+</div>
 
-                            <div class="form-group">
-                                <label for="signatureExtra">Additional Text (Optional)</label>
-                                <textarea id="signatureExtra" name="signatureExtra" class="form-input" rows="3"
-                                    placeholder="Any additional information"></textarea>
-                                <p class="field-description">Extra details like contact info, department, etc.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <script>
-                        // Add to your existing form submission logic
-                        document.addEventListener('DOMContentLoaded', function () {
-                            const form = document.getElementById('emailForm'); // Adjust to your form ID
-
-                            if (form) {
-                                const originalSubmit = form.onsubmit;
-
-                                form.onsubmit = function (e) {
-                                    // Build signature from components
-                                    const wish = document.getElementById('signatureWish').value.trim();
-                                    const name = document.getElementById('signatureName').value.trim();
-                                    const designation = document.getElementById('signatureDesignation').value.trim();
-                                    const extra = document.getElementById('signatureExtra').value.trim();
-
-                                    // Create formatted signature
-                                    let signature = '';
-                                    if (wish) signature += wish + '\n';
-                                    if (name) signature += name + '\n';
-                                    if (designation) signature += designation + '\n';
-                                    if (extra) signature += '\n' + extra;
-
-                                    // Create hidden input for signature if it doesn't exist
-                                    let signatureInput = document.getElementById('hiddenSignature');
-                                    if (!signatureInput) {
-                                        signatureInput = document.createElement('input');
-                                        signatureInput.type = 'hidden';
-                                        signatureInput.id = 'hiddenSignature';
-                                        signatureInput.name = 'signature';
-                                        form.appendChild(signatureInput);
-                                    }
-                                    signatureInput.value = signature;
-
-                                    // Also send individual components
-                                    const components = ['signatureWish', 'signatureName', 'signatureDesignation', 'signatureExtra'];
-                                    components.forEach(comp => {
-                                        let input = document.getElementById('hidden_' + comp);
-                                        if (!input) {
-                                            input = document.createElement('input');
-                                            input.type = 'hidden';
-                                            input.id = 'hidden_' + comp;
-                                            input.name = comp;
-                                            form.appendChild(input);
-                                        }
-                                        input.value = document.getElementById(comp).value;
-                                    });
-
-                                    // Call original submit handler if exists
-                                    if (originalSubmit) {
-                                        return originalSubmit.call(form, e);
-                                    }
-                                };
-                            }
-                        });
-                    </script>
+<script>
+// Add to your existing form submission logic
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('emailForm'); // Adjust to your form ID
+    
+    if (form) {
+        const originalSubmit = form.onsubmit;
+        
+        form.onsubmit = function(e) {
+            // Build signature from components
+            const wish = document.getElementById('signatureWish').value.trim();
+            const name = document.getElementById('signatureName').value.trim();
+            const designation = document.getElementById('signatureDesignation').value.trim();
+            const extra = document.getElementById('signatureExtra').value.trim();
+            
+            // Create formatted signature
+            let signature = '';
+            if (wish) signature += wish + '\n';
+            if (name) signature += name + '\n';
+            if (designation) signature += designation + '\n';
+            if (extra) signature += '\n' + extra;
+            
+            // Create hidden input for signature if it doesn't exist
+            let signatureInput = document.getElementById('hiddenSignature');
+            if (!signatureInput) {
+                signatureInput = document.createElement('input');
+                signatureInput.type = 'hidden';
+                signatureInput.id = 'hiddenSignature';
+                signatureInput.name = 'signature';
+                form.appendChild(signatureInput);
+            }
+            signatureInput.value = signature;
+            
+            // Also send individual components
+            const components = ['signatureWish', 'signatureName', 'signatureDesignation', 'signatureExtra'];
+            components.forEach(comp => {
+                let input = document.getElementById('hidden_' + comp);
+                if (!input) {
+                    input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.id = 'hidden_' + comp;
+                    input.name = comp;
+                    form.appendChild(input);
+                }
+                input.value = document.getElementById(comp).value;
+            });
+            
+            // Call original submit handler if exists
+            if (originalSubmit) {
+                return originalSubmit.call(form, e);
+            }
+        };
+    }
+});
+</script>
 
                     <!-- Attachments Section -->
                     <div class="form-section">
@@ -746,7 +795,7 @@ $defaultSignature = json_encode($settings['signature']);
                             <span class="material-icons">expand_more</span>
                             <h2 class="section-title" style="margin: 0;">Attachments</h2>
                         </div>
-
+                        
                         <div class="section-content" id="attachmentsSection">
                             <div class="form-group" style="margin-top: 16px;">
                                 <label for="attachments" class="file-upload-area">
@@ -754,8 +803,13 @@ $defaultSignature = json_encode($settings['signature']);
                                     <div class="file-upload-text">Click to upload or drag files here</div>
                                     <div class="file-upload-hint">Supported: PDF, DOC, XLS, Images, ZIP (Max 25MB)</div>
                                 </label>
-                                <input type="file" id="attachments" name="attachments[]" multiple
-                                    onchange="handleFileSelect(event)">
+                                <input 
+                                    type="file" 
+                                    id="attachments" 
+                                    name="attachments[]" 
+                                    multiple 
+                                    onchange="handleFileSelect(event)"
+                                >
                                 <div id="filePreviewGrid" class="file-preview-grid"></div>
                             </div>
                         </div>
@@ -799,7 +853,7 @@ $defaultSignature = json_encode($settings['signature']);
         });
 
         // Load default signature from settings
-        const defaultSignature = <? php echo $defaultSignature; ?>;
+        const defaultSignature = <?php echo $defaultSignature; ?>;
         if (defaultSignature) {
             quillSignature.root.innerHTML = defaultSignature;
         }
@@ -808,7 +862,7 @@ $defaultSignature = json_encode($settings['signature']);
         const editorContainer = document.getElementById('editorContainer');
         const signatureContainer = document.getElementById('signatureContainer');
 
-        quillMessage.on('selection-change', function (range) {
+        quillMessage.on('selection-change', function(range) {
             if (range) {
                 editorContainer.classList.add('focused');
             } else {
@@ -816,7 +870,7 @@ $defaultSignature = json_encode($settings['signature']);
             }
         });
 
-        quillSignature.on('selection-change', function (range) {
+        quillSignature.on('selection-change', function(range) {
             if (range) {
                 signatureContainer.classList.add('focused');
             } else {
@@ -828,7 +882,7 @@ $defaultSignature = json_encode($settings['signature']);
         function toggleSection(sectionId) {
             const section = document.getElementById(sectionId);
             const toggle = section.previousElementSibling;
-
+            
             section.classList.toggle('collapsed');
             toggle.classList.toggle('collapsed');
         }
@@ -930,9 +984,9 @@ $defaultSignature = json_encode($settings['signature']);
             if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = function (e) {
+            reader.onload = function(e) {
                 const content = e.target.result;
-
+                
                 // Parse emails from file
                 let emails = content
                     .split(/[,;\n\r]+/)
@@ -942,7 +996,7 @@ $defaultSignature = json_encode($settings['signature']);
                 // Set the emails in the target input
                 const targetInput = document.getElementById(targetInputId);
                 const currentValue = targetInput.value.trim();
-
+                
                 if (currentValue) {
                     targetInput.value = currentValue + ', ' + emails.join(', ');
                 } else {
@@ -956,21 +1010,21 @@ $defaultSignature = json_encode($settings['signature']);
         }
 
         // Form submission - combine message + signature
-        document.getElementById('composeForm').addEventListener('submit', function (e) {
+        document.getElementById('composeForm').addEventListener('submit', function(e) {
             // Get message content
             const messageHtml = quillMessage.root.innerHTML;
-
+            
             // Get signature content
             const signatureHtml = quillSignature.root.innerHTML;
-
+            
             // Combine message and signature
             let finalHtml = messageHtml;
-
+            
             // Only add signature if it's not empty
             if (signatureHtml.trim() && signatureHtml !== '<p><br></p>') {
                 finalHtml += '<br><br>' + signatureHtml;
             }
-
+            
             // Set the combined HTML to hidden input
             document.getElementById('messageInput').value = finalHtml;
         });
@@ -989,10 +1043,10 @@ $defaultSignature = json_encode($settings['signature']);
 
             // Get message content
             const messageHtml = quillMessage.root.innerHTML;
-
+            
             // Get signature content
             const signatureHtml = quillSignature.root.innerHTML;
-
+            
             // Combine message and signature
             let finalHtml = messageHtml;
             if (signatureHtml.trim() && signatureHtml !== '<p><br></p>') {
@@ -1028,5 +1082,4 @@ $defaultSignature = json_encode($settings['signature']);
         });
     </script>
 </body>
-
 </html>
