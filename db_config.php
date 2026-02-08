@@ -335,11 +335,13 @@ function getLabelCounts($userEmail) {
     try {
         $pdo = getDatabaseConnection();
         if (!$pdo) {
+            error_log("getLabelCounts: Database connection failed");
             return [];
         }
         
         $userId = getUserId($pdo, $userEmail);
         if (!$userId) {
+            error_log("getLabelCounts: User not found for email: $userEmail");
             return [];
         }
         
@@ -353,7 +355,7 @@ function getLabelCounts($userEmail) {
                 LEFT JOIN user_email_access uea ON l.id = uea.label_id 
                     AND uea.user_id = :user_id
                     AND uea.is_deleted = 0
-                WHERE l.user_email = :user_email OR l.user_email IS NULL
+                WHERE l.user_email = :user_email
                 GROUP BY l.id, l.label_name, l.label_color, l.created_at
                 ORDER BY l.label_name ASC";
         
@@ -363,10 +365,14 @@ function getLabelCounts($userEmail) {
             ':user_email' => $userEmail
         ]);
         
-        return $stmt->fetchAll();
+        $results = $stmt->fetchAll();
+        error_log("getLabelCounts: Found " . count($results) . " labels for user: $userEmail");
+        
+        return $results;
         
     } catch (PDOException $e) {
         error_log("Error fetching label counts: " . $e->getMessage());
+        error_log("SQL Error: " . print_r($e->errorInfo, true));
         return [];
     }
 }
