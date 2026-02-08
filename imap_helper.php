@@ -1,9 +1,7 @@
 <?php
 /**
- * IMAP Helper Functions
- * Fetches emails from IMAP server and stores them in database
- * 
- * UPDATED: Now uses session-based IMAP configuration instead of hardcoded values
+ * ENHANCED IMAP Helper Functions
+ * Fetches emails from IMAP server with attachment handling and HTML stripping
  */
 
 require_once 'db_config.php';
@@ -11,11 +9,8 @@ require_once 'settings_helper.php';
 
 /**
  * Connect to IMAP server using session configuration
- * 
- * @return resource|false IMAP connection or false on failure
  */
 function connectToIMAPFromSession() {
-    // Get IMAP config from session
     $config = getImapConfigFromSession();
     
     if (!$config) {
@@ -33,18 +28,11 @@ function connectToIMAPFromSession() {
 
 /**
  * Connect to IMAP server
- * 
- * @param string $server IMAP server address
- * @param int $port IMAP port (usually 993 for SSL)
- * @param string $email User email
- * @param string $password User password
- * @return resource|false IMAP connection or false on failure
  */
 function connectToIMAP($server, $port, $email, $password) {
     $mailbox = "{" . $server . ":" . $port . "/imap/ssl}INBOX";
     
     try {
-        // Suppress IMAP warnings and handle them manually
         $connection = @imap_open($mailbox, $email, $password);
         
         if (!$connection) {
@@ -61,14 +49,9 @@ function connectToIMAP($server, $port, $email, $password) {
 }
 
 /**
- * Fetch new messages from IMAP server using session configuration
- * 
- * @param string $userEmail User's email address
- * @param int $limit Maximum messages to fetch per sync (default 50)
- * @return array Result with status and message count
+ * Fetch new messages from IMAP server with attachment handling
  */
-function fetchNewMessagesFromSession($userEmail, $limit = 50) {
-    // Get IMAP connection from session config
+function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = false) {
     $connection = connectToIMAPFromSession();
     
     if (!$connection) {
@@ -80,7 +63,6 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50) {
     }
     
     try {
-        // Get total number of messages
         $totalMessages = imap_num_msg($connection);
         
         if ($totalMessages === 0) {
@@ -92,10 +74,13 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50) {
             ];
         }
         
-        // Get last sync date to determine which messages to fetch
-        $lastSyncDate = getLastSyncDate($userEmail);
+        // If force refresh, clear existing messages
+        if ($forceRefresh) {
+            clearInboxMessages($userEmail);
+        }
         
-        // Fetch most recent messages (up to limit)
+        $lastSyncDate = $forceRefresh ? null : getLastSyncDate($userEmail);
+        
         $startMsg = max(1, $totalMessages - $limit + 1);
         $endMsg = $totalMessages;
         
@@ -105,7 +90,6 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50) {
         // Fetch messages in reverse order (newest first)
         for ($msgNum = $endMsg; $msgNum >= $startMsg; $msgNum--) {
             try {
-                // Get message overview
                 $overview = imap_fetch_overview($connection, $msgNum, 0);
                 
                 if (empty($overview)) {
@@ -113,19 +97,12 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50) {
                 }
                 
                 $info = $overview[0];
-                
-                // Get unique message ID
                 $messageId = $info->message_id ?? 'msg-' . $msgNum . '-' . time();
                 $lastMessageId = $messageId;
                 
-                // Skip if message date is before last sync (optimization)
-                if ($lastSyncDate && isset($info->date)) {
-                    $messageDate = strtotime($info->date);
-                    $lastSync = strtotime($lastSyncDate);
-                    
-                    if ($messageDate <= $lastSync) {
-                        continue; // Skip older messages
-                    }
+                // Skip if already exists (unless force refresh)
+                if (!$forceRefresh && messageExists($userEmail, $messageId)) {
+                    continue;
                 }
                 
                 // Extract sender information
@@ -136,11 +113,14 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50) {
                 // Get subject
                 $subject = isset($info->subject) ? imap_utf8($info->subject) : '(No Subject)';
                 
-                // Get message body
+                // Get message body (with HTML stripping)
                 $body = getMessageBody($connection, $msgNum);
+                $cleanBody = stripHtmlFromBody($body);
                 
-                // Check for attachments
-                $hasAttachments = hasAttachments($connection, $msgNum);
+                // Get attachments with metadata
+                $attachments = getAttachmentMetadata($connection, $msgNum);
+                $hasAttachments = !empty($attachments);
+                $attachmentData = $hasAttachments ? json_encode($attachments) : null;
                 
                 // Get received date
                 $receivedDate = isset($info->date) ? date('Y-m-d H:i:s', strtotime($info->date)) : date('Y-m-d H:i:s');
@@ -152,9 +132,10 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50) {
                     'sender_email' => $senderEmail,
                     'sender_name' => $senderName,
                     'subject' => $subject,
-                    'body' => $body,
+                    'body' => $cleanBody,
                     'received_date' => $receivedDate,
-                    'has_attachments' => $hasAttachments ? 1 : 0
+                    'has_attachments' => $hasAttachments ? 1 : 0,
+                    'attachment_data' => $attachmentData
                 ];
                 
                 if (saveInboxMessage($messageData)) {
@@ -167,14 +148,15 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50) {
             }
         }
         
-        // Update last sync timestamp
         updateLastSyncDate($userEmail, $lastMessageId);
         
         imap_close($connection);
         
         return [
             'success' => true,
-            'message' => "Fetched $newMessagesCount new messages",
+            'message' => $forceRefresh 
+                ? "Refreshed inbox with $newMessagesCount messages" 
+                : "Fetched $newMessagesCount new messages",
             'count' => $newMessagesCount,
             'total' => $totalMessages
         ];
@@ -192,28 +174,147 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50) {
 }
 
 /**
- * Legacy function for backward compatibility
- * Now redirects to session-based function
- * 
- * @param string $userEmail User's email address
- * @param array $imapConfig IMAP configuration (DEPRECATED - uses session now)
- * @param int $limit Maximum messages to fetch per sync
- * @return array Result with status and message count
+ * Strip HTML tags and return clean text
  */
-function fetchNewMessages($userEmail, $imapConfig = [], $limit = 50) {
-    // Log deprecation warning
-    error_log("DEPRECATED: fetchNewMessages() called with config array. Using session config instead.");
+function stripHtmlFromBody($body) {
+    // Remove HTML tags
+    $text = strip_tags($body);
     
-    // Use session-based function
-    return fetchNewMessagesFromSession($userEmail, $limit);
+    // Decode HTML entities
+    $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    
+    // Remove excessive whitespace
+    $text = preg_replace('/\s+/', ' ', $text);
+    
+    // Trim
+    $text = trim($text);
+    
+    return $text;
+}
+
+/**
+ * Get attachment metadata (names, types, sizes)
+ */
+function getAttachmentMetadata($connection, $msgNum) {
+    $attachments = [];
+    
+    try {
+        $structure = imap_fetchstructure($connection, $msgNum);
+        
+        if (!isset($structure->parts) || !count($structure->parts)) {
+            return $attachments;
+        }
+        
+        foreach ($structure->parts as $partNum => $part) {
+            // Check if this part is an attachment
+            if (isset($part->disposition) && 
+                (strtolower($part->disposition) === 'attachment' || 
+                 strtolower($part->disposition) === 'inline')) {
+                
+                $filename = 'attachment';
+                
+                // Get filename
+                if (isset($part->dparameters)) {
+                    foreach ($part->dparameters as $param) {
+                        if (strtolower($param->attribute) === 'filename') {
+                            $filename = $param->value;
+                            break;
+                        }
+                    }
+                }
+                
+                // Fallback to parameters
+                if ($filename === 'attachment' && isset($part->parameters)) {
+                    foreach ($part->parameters as $param) {
+                        if (strtolower($param->attribute) === 'name') {
+                            $filename = $param->value;
+                            break;
+                        }
+                    }
+                }
+                
+                // Get file extension
+                $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                
+                // Estimate size (approximate)
+                $size = isset($part->bytes) ? $part->bytes : 0;
+                
+                // Determine file type category
+                $fileType = getFileTypeCategory($extension);
+                
+                $attachments[] = [
+                    'filename' => $filename,
+                    'extension' => $extension,
+                    'size' => $size,
+                    'type' => $fileType,
+                    'icon' => getFileIcon($extension)
+                ];
+            }
+        }
+        
+    } catch (Exception $e) {
+        error_log("Error getting attachment metadata: " . $e->getMessage());
+    }
+    
+    return $attachments;
+}
+
+/**
+ * Get file type category based on extension
+ */
+function getFileTypeCategory($extension) {
+    $categories = [
+        'image' => ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'],
+        'pdf' => ['pdf'],
+        'document' => ['doc', 'docx', 'txt', 'rtf', 'odt'],
+        'spreadsheet' => ['xls', 'xlsx', 'csv', 'ods'],
+        'presentation' => ['ppt', 'pptx', 'odp'],
+        'archive' => ['zip', 'rar', '7z', 'tar', 'gz'],
+        'video' => ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv'],
+        'audio' => ['mp3', 'wav', 'ogg', 'flac', 'aac']
+    ];
+    
+    foreach ($categories as $category => $extensions) {
+        if (in_array($extension, $extensions)) {
+            return $category;
+        }
+    }
+    
+    return 'file';
+}
+
+/**
+ * Get file icon emoji based on extension
+ */
+function getFileIcon($extension) {
+    $icons = [
+        'pdf' => '📄',
+        'doc' => '📝',
+        'docx' => '📝',
+        'txt' => '📝',
+        'xls' => '📊',
+        'xlsx' => '📊',
+        'csv' => '📊',
+        'ppt' => '📽️',
+        'pptx' => '📽️',
+        'jpg' => '🖼️',
+        'jpeg' => '🖼️',
+        'png' => '🖼️',
+        'gif' => '🖼️',
+        'zip' => '🗜️',
+        'rar' => '🗜️',
+        '7z' => '🗜️',
+        'mp4' => '🎥',
+        'avi' => '🎥',
+        'mp3' => '🎵',
+        'wav' => '🎵'
+    ];
+    
+    return $icons[$extension] ?? '📎';
 }
 
 /**
  * Get message body (prioritizes plain text, falls back to HTML)
- * 
- * @param resource $connection IMAP connection
- * @param int $msgNum Message number
- * @return string Message body
  */
 function getMessageBody($connection, $msgNum) {
     $body = '';
@@ -221,13 +322,12 @@ function getMessageBody($connection, $msgNum) {
     try {
         $structure = imap_fetchstructure($connection, $msgNum);
         
-        // Check if multipart message
         if (isset($structure->parts) && count($structure->parts)) {
             // Multipart message
             for ($i = 0; $i < count($structure->parts); $i++) {
                 $part = $structure->parts[$i];
                 
-                // Plain text
+                // Plain text (preferred)
                 if ($part->subtype === 'PLAIN') {
                     $body = imap_fetchbody($connection, $msgNum, $i + 1);
                     $body = decodeBody($body, $part->encoding);
@@ -238,7 +338,6 @@ function getMessageBody($connection, $msgNum) {
                 if ($part->subtype === 'HTML' && empty($body)) {
                     $body = imap_fetchbody($connection, $msgNum, $i + 1);
                     $body = decodeBody($body, $part->encoding);
-                    $body = strip_tags($body); // Convert HTML to plain text
                 }
             }
         } else {
@@ -259,10 +358,6 @@ function getMessageBody($connection, $msgNum) {
 
 /**
  * Decode message body based on encoding type
- * 
- * @param string $body Encoded body
- * @param int $encoding Encoding type
- * @return string Decoded body
  */
 function decodeBody($body, $encoding) {
     switch ($encoding) {
@@ -283,10 +378,6 @@ function decodeBody($body, $encoding) {
 
 /**
  * Check if message has attachments
- * 
- * @param resource $connection IMAP connection
- * @param int $msgNum Message number
- * @return bool True if has attachments
  */
 function hasAttachments($connection, $msgNum) {
     try {
@@ -314,9 +405,6 @@ function hasAttachments($connection, $msgNum) {
 
 /**
  * Extract email address from "From" header
- * 
- * @param string $from From header string
- * @return string Email address
  */
 function extractEmail($from) {
     if (preg_match('/<([^>]+)>/', $from, $matches)) {
@@ -327,9 +415,6 @@ function extractEmail($from) {
 
 /**
  * Extract sender name from "From" header
- * 
- * @param string $from From header string
- * @return string Sender name
  */
 function extractName($from) {
     if (preg_match('/^([^<]+)</', $from, $matches)) {
@@ -339,11 +424,41 @@ function extractName($from) {
 }
 
 /**
- * Quick sync check - returns unread count without full fetch
- * Uses session-based configuration
- * 
- * @param string $userEmail User's email
- * @return array Status with unread count
+ * Check if message already exists in database
+ */
+function messageExists($userEmail, $messageId) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return false;
+        
+        $stmt = $pdo->prepare("SELECT id FROM inbox_messages WHERE user_email = :email AND message_id = :message_id");
+        $stmt->execute([':email' => $userEmail, ':message_id' => $messageId]);
+        
+        return $stmt->fetch() !== false;
+    } catch (Exception $e) {
+        error_log("Error checking message existence: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Clear all inbox messages for user (for force refresh)
+ */
+function clearInboxMessages($userEmail) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return false;
+        
+        $stmt = $pdo->prepare("DELETE FROM inbox_messages WHERE user_email = :email");
+        return $stmt->execute([':email' => $userEmail]);
+    } catch (Exception $e) {
+        error_log("Error clearing inbox messages: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Quick sync check
  */
 function quickSyncCheckFromSession($userEmail) {
     $connection = connectToIMAPFromSession();
@@ -369,15 +484,14 @@ function quickSyncCheckFromSession($userEmail) {
     }
 }
 
-/**
- * Legacy function for backward compatibility
- * 
- * @param string $userEmail User's email
- * @param array $imapConfig IMAP configuration (DEPRECATED)
- * @return array Status with unread count
- */
+// Legacy function for backward compatibility
+function fetchNewMessages($userEmail, $imapConfig = [], $limit = 50) {
+    error_log("DEPRECATED: fetchNewMessages() called. Using session config instead.");
+    return fetchNewMessagesFromSession($userEmail, $limit);
+}
+
 function quickSyncCheck($userEmail, $imapConfig = []) {
-    error_log("DEPRECATED: quickSyncCheck() called with config array. Using session config instead.");
+    error_log("DEPRECATED: quickSyncCheck() called. Using session config instead.");
     return quickSyncCheckFromSession($userEmail);
 }
 ?>

@@ -1,15 +1,53 @@
 <?php
-// ==================== INBOX FUNCTIONS ====================
-// Add these functions to your existing db_config.php file
+/**
+ * ENHANCED INBOX FUNCTIONS
+ * Database operations for inbox with attachment support
+ */
+
+/**
+ * Save fetched email message to database with attachment data
+ */
+function saveInboxMessage($messageData) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) {
+            return false;
+        }
+        
+        $sql = "INSERT INTO inbox_messages 
+                (message_id, user_email, sender_email, sender_name, subject, 
+                 body, received_date, has_attachments, attachment_data, fetched_at) 
+                VALUES 
+                (:message_id, :user_email, :sender_email, :sender_name, :subject, 
+                 :body, :received_date, :has_attachments, :attachment_data, NOW())
+                ON DUPLICATE KEY UPDATE
+                    body = VALUES(body),
+                    has_attachments = VALUES(has_attachments),
+                    attachment_data = VALUES(attachment_data),
+                    fetched_at = NOW()";
+        
+        $stmt = $pdo->prepare($sql);
+        
+        return $stmt->execute([
+            ':message_id' => $messageData['message_id'],
+            ':user_email' => $messageData['user_email'],
+            ':sender_email' => $messageData['sender_email'],
+            ':sender_name' => $messageData['sender_name'] ?? '',
+            ':subject' => $messageData['subject'],
+            ':body' => $messageData['body'],
+            ':received_date' => $messageData['received_date'],
+            ':has_attachments' => $messageData['has_attachments'] ?? 0,
+            ':attachment_data' => $messageData['attachment_data'] ?? null
+        ]);
+        
+    } catch (PDOException $e) {
+        error_log("Error saving inbox message: " . $e->getMessage());
+        return false;
+    }
+}
 
 /**
  * Fetch inbox messages from database with pagination and filters
- * 
- * @param string $userEmail User's email address
- * @param int $limit Number of messages per page
- * @param int $offset Pagination offset
- * @param array $filters Optional filters (search, unread_only, date_from, date_to)
- * @return array Array of inbox messages
  */
 function getInboxMessages($userEmail, $limit = 50, $offset = 0, $filters = []) {
     try {
@@ -81,10 +119,6 @@ function getInboxMessages($userEmail, $limit = 50, $offset = 0, $filters = []) {
 
 /**
  * Get total count of inbox messages with filters
- * 
- * @param string $userEmail User's email address
- * @param array $filters Optional filters
- * @return int Total count
  */
 function getInboxMessageCount($userEmail, $filters = []) {
     try {
@@ -99,7 +133,6 @@ function getInboxMessageCount($userEmail, $filters = []) {
         
         $params = [':user_email' => $userEmail];
         
-        // Apply same filters as getInboxMessages
         if (!empty($filters['search'])) {
             $sql .= " AND (
                 sender_email LIKE :search 
@@ -143,9 +176,6 @@ function getInboxMessageCount($userEmail, $filters = []) {
 
 /**
  * Get unread message count
- * 
- * @param string $userEmail User's email address
- * @return int Unread count
  */
 function getUnreadCount($userEmail) {
     try {
@@ -173,10 +203,6 @@ function getUnreadCount($userEmail) {
 
 /**
  * Mark message as read
- * 
- * @param int $messageId Message ID
- * @param string $userEmail User's email address
- * @return bool Success status
  */
 function markMessageAsRead($messageId, $userEmail) {
     try {
@@ -205,10 +231,6 @@ function markMessageAsRead($messageId, $userEmail) {
 
 /**
  * Mark message as unread
- * 
- * @param int $messageId Message ID
- * @param string $userEmail User's email address
- * @return bool Success status
  */
 function markMessageAsUnread($messageId, $userEmail) {
     try {
@@ -236,52 +258,7 @@ function markMessageAsUnread($messageId, $userEmail) {
 }
 
 /**
- * Save fetched email message to database
- * Prevents duplicates using message_id
- * 
- * @param array $messageData Message data from IMAP
- * @return bool Success status
- */
-function saveInboxMessage($messageData) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) {
-            return false;
-        }
-        
-        $sql = "INSERT INTO inbox_messages 
-                (message_id, user_email, sender_email, sender_name, subject, 
-                 body, received_date, has_attachments, fetched_at) 
-                VALUES 
-                (:message_id, :user_email, :sender_email, :sender_name, :subject, 
-                 :body, :received_date, :has_attachments, NOW())
-                ON DUPLICATE KEY UPDATE
-                    fetched_at = NOW()";
-        
-        $stmt = $pdo->prepare($sql);
-        
-        return $stmt->execute([
-            ':message_id' => $messageData['message_id'],
-            ':user_email' => $messageData['user_email'],
-            ':sender_email' => $messageData['sender_email'],
-            ':sender_name' => $messageData['sender_name'] ?? '',
-            ':subject' => $messageData['subject'],
-            ':body' => $messageData['body'],
-            ':received_date' => $messageData['received_date'],
-            ':has_attachments' => $messageData['has_attachments'] ?? 0
-        ]);
-        
-    } catch (PDOException $e) {
-        error_log("Error saving inbox message: " . $e->getMessage());
-        return false;
-    }
-}
-
-/**
  * Get last sync timestamp for user
- * 
- * @param string $userEmail User's email address
- * @return string|null Last sync datetime or null
  */
 function getLastSyncDate($userEmail) {
     try {
@@ -307,10 +284,6 @@ function getLastSyncDate($userEmail) {
 
 /**
  * Update last sync timestamp for user
- * 
- * @param string $userEmail User's email address
- * @param string $lastMessageId Last fetched message ID
- * @return bool Success status
  */
 function updateLastSyncDate($userEmail, $lastMessageId = null) {
     try {
@@ -319,7 +292,6 @@ function updateLastSyncDate($userEmail, $lastMessageId = null) {
             return false;
         }
         
-        // Get current counts
         $totalCount = getInboxMessageCount($userEmail, []);
         $unreadCount = getUnreadCount($userEmail);
         
@@ -350,10 +322,6 @@ function updateLastSyncDate($userEmail, $lastMessageId = null) {
 
 /**
  * Soft delete inbox message (move to trash)
- * 
- * @param int $messageId Message ID
- * @param string $userEmail User's email address
- * @return bool Success status
  */
 function deleteInboxMessage($messageId, $userEmail) {
     try {
@@ -382,10 +350,6 @@ function deleteInboxMessage($messageId, $userEmail) {
 
 /**
  * Toggle star status on message
- * 
- * @param int $messageId Message ID
- * @param string $userEmail User's email address
- * @return bool Success status
  */
 function toggleStarMessage($messageId, $userEmail) {
     try {

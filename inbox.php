@@ -1,12 +1,11 @@
 <?php
 /**
- * INBOX PAGE - SPLIT VIEW WITH MESSAGE READER
- * Modern layout with sidebar, message list, and reading pane
+ * ENHANCED INBOX PAGE
+ * Features: Auto-refresh, Manual refresh, HTML stripping, Attachment previews
  */
 
 session_start();
 
-// Check authentication BEFORE any output
 if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['authenticated']) || $_SESSION['authenticated'] !== true) {
     header("Location: login.php");
     exit();
@@ -19,7 +18,6 @@ require_once 'imap_helper.php';
 
 $userEmail = $_SESSION['smtp_user'];
 
-// Load IMAP config to session if not already loaded
 if (!isset($_SESSION['imap_config'])) {
     if (isset($_SESSION['smtp_pass'])) {
         loadImapConfigToSession($userEmail, $_SESSION['smtp_pass']);
@@ -30,7 +28,6 @@ if (!isset($_SESSION['imap_config'])) {
     }
 }
 
-// Check if IMAP settings are configured
 $imapConfig = getImapConfigFromSession();
 $hasImapSettings = $imapConfig ? true : false;
 
@@ -42,7 +39,17 @@ if (isset($_GET['action'])) {
         case 'sync':
             if ($hasImapSettings) {
                 $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 50;
-                $result = fetchNewMessagesFromSession($userEmail, $limit);
+                $result = fetchNewMessagesFromSession($userEmail, $limit, false);
+                echo json_encode($result);
+            } else {
+                echo json_encode(['success' => false, 'error' => 'IMAP not configured']);
+            }
+            exit();
+            
+        case 'force_refresh':
+            if ($hasImapSettings) {
+                $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 100;
+                $result = fetchNewMessagesFromSession($userEmail, $limit, true);
                 echo json_encode($result);
             } else {
                 echo json_encode(['success' => false, 'error' => 'IMAP not configured']);
@@ -58,29 +65,19 @@ if (isset($_GET['action'])) {
                 $message = $stmt->fetch();
                 
                 if ($message) {
-                    // Mark as read
                     markMessageAsRead($messageId, $userEmail);
+                    
+                    // Parse attachment data
+                    if ($message['attachment_data']) {
+                        $message['attachments'] = json_decode($message['attachment_data'], true);
+                    } else {
+                        $message['attachments'] = [];
+                    }
+                    
                     echo json_encode(['success' => true, 'message' => $message]);
                 } else {
                     echo json_encode(['success' => false, 'error' => 'Message not found']);
                 }
-            }
-            exit();
-            
-        case 'mark_read':
-        case 'mark_unread':
-            $input = json_decode(file_get_contents('php://input'), true);
-            $messageId = intval($input['message_id'] ?? 0);
-            
-            if ($messageId > 0) {
-                $result = ($_GET['action'] === 'mark_read') 
-                    ? markMessageAsRead($messageId, $userEmail)
-                    : markMessageAsUnread($messageId, $userEmail);
-                    
-                echo json_encode([
-                    'success' => $result,
-                    'message' => $result ? 'Status updated' : 'Failed to update'
-                ]);
             }
             exit();
             
@@ -109,28 +106,34 @@ if (isset($_GET['action'])) {
                 ]);
             }
             exit();
+            
+        case 'get_messages_list':
+            $messages = $hasImapSettings ? getInboxMessages($userEmail, 50, 0, []) : [];
+            $totalMessages = $hasImapSettings ? getInboxMessageCount($userEmail, []) : 0;
+            $unreadCount = $hasImapSettings ? getUnreadCount($userEmail) : 0;
+            
+            echo json_encode([
+                'success' => true,
+                'messages' => $messages,
+                'total' => $totalMessages,
+                'unread' => $unreadCount
+            ]);
+            exit();
     }
 }
 
-// Get filter parameters
 $filters = [
     'search' => $_GET['search'] ?? '',
-    'unread_only' => isset($_GET['unread']) && $_GET['unread'] === '1',
-    'sender' => $_GET['sender'] ?? '',
-    'date_from' => $_GET['date_from'] ?? '',
-    'date_to' => $_GET['date_to'] ?? ''
+    'unread_only' => isset($_GET['unread']) && $_GET['unread'] === '1'
 ];
 
-// Pagination
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $perPage = 50;
 $offset = ($page - 1) * $perPage;
 
-// Get messages and counts
 $messages = $hasImapSettings ? getInboxMessages($userEmail, $perPage, $offset, $filters) : [];
 $totalMessages = $hasImapSettings ? getInboxMessageCount($userEmail, $filters) : 0;
 $unreadCount = $hasImapSettings ? getUnreadCount($userEmail) : 0;
-$totalPages = ceil($totalMessages / $perPage);
 $lastSyncDate = $hasImapSettings ? getLastSyncDate($userEmail) : null;
 ?>
 <!DOCTYPE html>
@@ -248,6 +251,7 @@ $lastSyncDate = $hasImapSettings ? getLastSyncDate($userEmail) : null;
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            font-family: 'Inter', sans-serif;
         }
 
         .btn-primary {
@@ -257,6 +261,51 @@ $lastSyncDate = $hasImapSettings ? getLastSyncDate($userEmail) : null;
 
         .btn-primary:hover {
             background: #0051D5;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #1c1c1e;
+            border: 1px solid #e5e5ea;
+        }
+
+        .btn-secondary:hover {
+            background: #f5f5f7;
+        }
+
+        .btn-danger {
+            background: #ff3b30;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #d32f2f;
+        }
+
+        .sync-status {
+            font-size: 12px;
+            color: #8e8e93;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .sync-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #34c759;
+            animation: pulse 2s infinite;
+        }
+
+        .sync-dot.syncing {
+            background: #ff9500;
+            animation: pulse 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
 
         .split-container {
@@ -391,6 +440,7 @@ $lastSyncDate = $hasImapSettings ? getLastSyncDate($userEmail) : null;
             display: flex;
             gap: 6px;
             margin-top: 6px;
+            flex-wrap: wrap;
         }
 
         .badge {
@@ -411,6 +461,29 @@ $lastSyncDate = $hasImapSettings ? getLastSyncDate($userEmail) : null;
         .badge-starred {
             background: #fff9e6;
             color: #ff9500;
+        }
+
+        /* Attachment Previews */
+        .attachment-preview {
+            background: #f0f0f5;
+            border: 1px solid #e5e5ea;
+            border-radius: 6px;
+            padding: 6px 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            max-width: 150px;
+        }
+
+        .attachment-icon {
+            font-size: 16px;
+        }
+
+        .attachment-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .reader-panel {
@@ -481,6 +554,60 @@ $lastSyncDate = $hasImapSettings ? getLastSyncDate($userEmail) : null;
 
         .reader-date {
             font-size: 13px;
+            color: #8e8e93;
+        }
+
+        .reader-attachments {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .attachments-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1c1c1e;
+            margin-bottom: 12px;
+        }
+
+        .attachments-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+        }
+
+        .attachment-card {
+            background: #f9f9f9;
+            border: 1px solid #e5e5ea;
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .attachment-card:hover {
+            background: #f0f0f5;
+            border-color: #d1d1d6;
+        }
+
+        .attachment-card-icon {
+            font-size: 32px;
+        }
+
+        .attachment-card-name {
+            font-size: 11px;
+            color: #1c1c1e;
+            font-weight: 500;
+            word-break: break-word;
+            line-height: 1.3;
+        }
+
+        .attachment-card-size {
+            font-size: 10px;
             color: #8e8e93;
         }
 
@@ -573,27 +700,6 @@ $lastSyncDate = $hasImapSettings ? getLastSyncDate($userEmail) : null;
             100% { transform: rotate(360deg); }
         }
 
-        .sync-status {
-            font-size: 12px;
-            color: #8e8e93;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .sync-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: #34c759;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
         .warning-box {
             background: #fff3cd;
             border-left: 4px solid #ffc107;
@@ -610,23 +716,60 @@ $lastSyncDate = $hasImapSettings ? getLastSyncDate($userEmail) : null;
             text-decoration: none;
             font-weight: 600;
         }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #1c1c1e;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            display: none;
+            align-items: center;
+            gap: 10px;
+            z-index: 10000;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .toast.show {
+            display: flex;
+        }
+
+        .toast.success {
+            background: #34c759;
+        }
+
+        .toast.error {
+            background: #ff3b30;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="main-container">
-        <!-- Include Sidebar -->
         <?php include 'sidebar.php'; ?>
 
-        <!-- Content Area -->
         <div class="content-area">
-            <!-- Top Header -->
             <div class="top-header">
                 <div class="header-left">
                     <div class="page-title">
                         <span class="material-icons">inbox</span>
                         Inbox
                         <?php if ($unreadCount > 0): ?>
-                            <span class="unread-badge"><?= $unreadCount ?></span>
+                            <span class="unread-badge" id="unreadBadge"><?= $unreadCount ?></span>
                         <?php endif; ?>
                     </div>
                     
@@ -638,16 +781,20 @@ $lastSyncDate = $hasImapSettings ? getLastSyncDate($userEmail) : null;
 
                 <div class="header-actions">
                     <?php if ($lastSyncDate): ?>
-                        <div class="sync-status">
-                            <span class="sync-dot"></span>
-                            Last synced: <?= date('h:i A', strtotime($lastSyncDate)) ?>
+                        <div class="sync-status" id="syncStatus">
+                            <span class="sync-dot" id="syncDot"></span>
+                            <span id="syncText">Last synced: <?= date('h:i A', strtotime($lastSyncDate)) ?></span>
                         </div>
                     <?php endif; ?>
                     
                     <?php if ($hasImapSettings): ?>
-                        <button class="btn btn-primary" onclick="syncMessages()">
+                        <button class="btn btn-secondary" onclick="forceRefresh()" title="Force refresh all emails from server">
+                            <span class="material-icons" style="font-size: 18px;">refresh</span>
+                            Refresh
+                        </button>
+                        <button class="btn btn-primary" onclick="syncMessages()" id="syncBtn">
                             <span class="material-icons" style="font-size: 18px;">sync</span>
-                            Sync
+                            Sync New
                         </button>
                     <?php endif; ?>
                 </div>
@@ -664,12 +811,10 @@ $lastSyncDate = $hasImapSettings ? getLastSyncDate($userEmail) : null;
                 </div>
             <?php endif; ?>
 
-            <!-- Split View Container -->
             <div class="split-container">
-                <!-- Message List Panel -->
                 <div class="message-list-panel">
                     <div class="message-list-header">
-                        <div class="message-count">
+                        <div class="message-count" id="messageCount">
                             <?= $totalMessages ?> messages
                         </div>
                         <div class="filter-buttons">
@@ -692,7 +837,9 @@ $lastSyncDate = $hasImapSettings ? getLastSyncDate($userEmail) : null;
                                 <p>Click "Sync" to fetch your latest emails</p>
                             </div>
                         <?php else: ?>
-                            <?php foreach ($messages as $msg): ?>
+                            <?php foreach ($messages as $msg): 
+                                $attachments = $msg['attachment_data'] ? json_decode($msg['attachment_data'], true) : [];
+                            ?>
                                 <div class="message-item <?= $msg['is_read'] ? '' : 'unread' ?>" 
                                      data-id="<?= $msg['id'] ?>"
                                      onclick="loadMessage(<?= $msg['id'] ?>)">
@@ -708,18 +855,30 @@ $lastSyncDate = $hasImapSettings ? getLastSyncDate($userEmail) : null;
                                     <div class="message-preview">
                                         <?= htmlspecialchars(substr($msg['body'], 0, 100)) ?>...
                                     </div>
-                                    <?php if ($msg['has_attachments'] || $msg['is_starred']): ?>
+                                    <?php if ($msg['has_attachments'] || $msg['is_starred'] || !empty($attachments)): ?>
                                         <div class="message-badges">
-                                            <?php if ($msg['has_attachments']): ?>
-                                                <span class="badge badge-attachment">
-                                                    <span class="material-icons" style="font-size: 14px;">attach_file</span>
-                                                    Attachment
-                                                </span>
-                                            <?php endif; ?>
                                             <?php if ($msg['is_starred']): ?>
                                                 <span class="badge badge-starred">
                                                     <span class="material-icons" style="font-size: 14px;">star</span>
                                                     Starred
+                                                </span>
+                                            <?php endif; ?>
+                                            <?php if ($msg['has_attachments'] && !empty($attachments)): ?>
+                                                <?php foreach (array_slice($attachments, 0, 2) as $att): ?>
+                                                    <div class="attachment-preview">
+                                                        <span class="attachment-icon"><?= $att['icon'] ?? '📎' ?></span>
+                                                        <span class="attachment-name"><?= htmlspecialchars($att['filename']) ?></span>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                                <?php if (count($attachments) > 2): ?>
+                                                    <span class="badge badge-attachment">
+                                                        +<?= count($attachments) - 2 ?> more
+                                                    </span>
+                                                <?php endif; ?>
+                                            <?php elseif ($msg['has_attachments']): ?>
+                                                <span class="badge badge-attachment">
+                                                    <span class="material-icons" style="font-size: 14px;">attach_file</span>
+                                                    Attachment
                                                 </span>
                                             <?php endif; ?>
                                         </div>
@@ -730,7 +889,6 @@ $lastSyncDate = $hasImapSettings ? getLastSyncDate($userEmail) : null;
                     </div>
                 </div>
 
-                <!-- Reader Panel -->
                 <div class="reader-panel">
                     <div class="reader-empty" id="readerEmpty">
                         <span class="material-icons">mail_outline</span>
@@ -748,6 +906,7 @@ $lastSyncDate = $hasImapSettings ? getLastSyncDate($userEmail) : null;
                                 </div>
                                 <div class="reader-date" id="readerDate"></div>
                             </div>
+                            <div id="readerAttachmentsContainer"></div>
                         </div>
 
                         <div class="reader-actions">
@@ -776,10 +935,192 @@ $lastSyncDate = $hasImapSettings ? getLastSyncDate($userEmail) : null;
         </div>
     </div>
 
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <span class="material-icons" id="toastIcon">info</span>
+        <span id="toastMessage"></span>
+    </div>
+
     <script>
         let currentMessageId = null;
         let currentMessageData = null;
+        let autoSyncInterval = null;
 
+        // Auto-sync every 30 seconds
+        function startAutoSync() {
+            autoSyncInterval = setInterval(() => {
+                autoSyncMessages();
+            }, 30000); // 30 seconds
+        }
+
+        // Auto sync (silent, no alerts)
+        function autoSyncMessages() {
+            const syncDot = document.getElementById('syncDot');
+            const syncText = document.getElementById('syncText');
+            
+            if (syncDot) syncDot.classList.add('syncing');
+            if (syncText) syncText.textContent = 'Syncing...';
+            
+            fetch('?action=sync&limit=50')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.count > 0) {
+                        showToast(`${data.count} new message(s) received`, 'success');
+                        refreshMessageList();
+                    }
+                    
+                    if (syncDot) syncDot.classList.remove('syncing');
+                    if (syncText) {
+                        const now = new Date();
+                        syncText.textContent = `Last synced: ${now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+                    }
+                })
+                .catch(err => {
+                    if (syncDot) syncDot.classList.remove('syncing');
+                });
+        }
+
+        // Manual sync
+        function syncMessages() {
+            const btn = document.getElementById('syncBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="material-icons" style="font-size: 18px;">hourglass_empty</span> Syncing...';
+
+            fetch('?action=sync&limit=50')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast(data.message, 'success');
+                        refreshMessageList();
+                    } else {
+                        showToast('Error: ' + data.error, 'error');
+                    }
+                    
+                    btn.disabled = false;
+                    btn.innerHTML = '<span class="material-icons" style="font-size: 18px;">sync</span> Sync New';
+                })
+                .catch(err => {
+                    showToast('Network error: ' + err.message, 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = '<span class="material-icons" style="font-size: 18px;">sync</span> Sync New';
+                });
+        }
+
+        // Force refresh (re-fetch ALL emails)
+        function forceRefresh() {
+            if (!confirm('This will re-fetch all emails from the server and may take a moment. Continue?')) {
+                return;
+            }
+            
+            const btn = event.target.closest('button');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="material-icons" style="font-size: 18px;">hourglass_empty</span> Refreshing...';
+
+            fetch('?action=force_refresh&limit=100')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast(data.message, 'success');
+                        location.reload();
+                    } else {
+                        showToast('Error: ' + data.error, 'error');
+                        btn.disabled = false;
+                        btn.innerHTML = '<span class="material-icons" style="font-size: 18px;">refresh</span> Refresh';
+                    }
+                })
+                .catch(err => {
+                    showToast('Network error: ' + err.message, 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = '<span class="material-icons" style="font-size: 18px;">refresh</span> Refresh';
+                });
+        }
+
+        // Refresh message list without page reload
+        function refreshMessageList() {
+            fetch('?action=get_messages_list')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        updateMessageList(data.messages);
+                        updateCounts(data.total, data.unread);
+                    }
+                });
+        }
+
+        // Update message list in UI
+        function updateMessageList(messages) {
+            const listContainer = document.getElementById('messageList');
+            
+            if (messages.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <h3>No messages</h3>
+                        <p>Click "Sync" to fetch your latest emails</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            listContainer.innerHTML = messages.map(msg => {
+                const attachments = msg.attachment_data ? JSON.parse(msg.attachment_data) : [];
+                const unreadClass = msg.is_read ? '' : 'unread';
+                const activeClass = (currentMessageId === msg.id) ? 'active' : '';
+                
+                let attachmentHTML = '';
+                if (msg.has_attachments && attachments.length > 0) {
+                    attachmentHTML = attachments.slice(0, 2).map(att => `
+                        <div class="attachment-preview">
+                            <span class="attachment-icon">${att.icon}</span>
+                            <span class="attachment-name">${escapeHtml(att.filename)}</span>
+                        </div>
+                    `).join('');
+                    
+                    if (attachments.length > 2) {
+                        attachmentHTML += `<span class="badge badge-attachment">+${attachments.length - 2} more</span>`;
+                    }
+                }
+                
+                const starBadge = msg.is_starred ? `
+                    <span class="badge badge-starred">
+                        <span class="material-icons" style="font-size: 14px;">star</span>
+                        Starred
+                    </span>
+                ` : '';
+                
+                return `
+                    <div class="message-item ${unreadClass} ${activeClass}" 
+                         data-id="${msg.id}"
+                         onclick="loadMessage(${msg.id})">
+                        <div class="message-sender">
+                            <span>${escapeHtml(msg.sender_name || msg.sender_email)}</span>
+                            <span class="message-time">${formatShortDate(msg.received_date)}</span>
+                        </div>
+                        <div class="message-subject">${escapeHtml(msg.subject)}</div>
+                        <div class="message-preview">${escapeHtml(msg.body.substring(0, 100))}...</div>
+                        ${(starBadge || attachmentHTML) ? `<div class="message-badges">${starBadge}${attachmentHTML}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Update counts
+        function updateCounts(total, unread) {
+            document.getElementById('messageCount').textContent = `${total} messages`;
+            const badge = document.getElementById('unreadBadge');
+            if (unread > 0) {
+                if (badge) {
+                    badge.textContent = unread;
+                } else {
+                    const titleEl = document.querySelector('.page-title');
+                    titleEl.innerHTML += `<span class="unread-badge" id="unreadBadge">${unread}</span>`;
+                }
+            } else if (badge) {
+                badge.remove();
+            }
+        }
+
+        // Load message
         function loadMessage(messageId) {
             currentMessageId = messageId;
             
@@ -804,14 +1145,15 @@ $lastSyncDate = $hasImapSettings ? getLastSyncDate($userEmail) : null;
                             messageItem.classList.remove('unread');
                         }
                     } else {
-                        alert('Error loading message: ' + data.error);
+                        showToast('Error loading message: ' + data.error, 'error');
                     }
                 })
                 .catch(err => {
-                    alert('Network error: ' + err.message);
+                    showToast('Network error: ' + err.message, 'error');
                 });
         }
 
+        // Display message
         function displayMessage(msg) {
             document.getElementById('readerSubject').textContent = msg.subject;
             document.getElementById('readerSenderName').textContent = msg.sender_name || msg.sender_email;
@@ -819,6 +1161,29 @@ $lastSyncDate = $hasImapSettings ? getLastSyncDate($userEmail) : null;
             document.getElementById('readerDate').textContent = formatDate(msg.received_date);
             document.getElementById('readerBody').innerHTML = formatMessageBody(msg.body);
             
+            // Display attachments
+            const attachContainer = document.getElementById('readerAttachmentsContainer');
+            if (msg.attachments && msg.attachments.length > 0) {
+                const attachHTML = `
+                    <div class="reader-attachments">
+                        <div class="attachments-title">📎 Attachments (${msg.attachments.length})</div>
+                        <div class="attachments-grid">
+                            ${msg.attachments.map(att => `
+                                <div class="attachment-card">
+                                    <div class="attachment-card-icon">${att.icon}</div>
+                                    <div class="attachment-card-name">${escapeHtml(att.filename)}</div>
+                                    <div class="attachment-card-size">${formatFileSize(att.size)}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                attachContainer.innerHTML = attachHTML;
+            } else {
+                attachContainer.innerHTML = '';
+            }
+            
+            // Update star icon
             const starIcon = document.getElementById('starIcon');
             const starText = document.getElementById('starText');
             if (msg.is_starred == 1) {
@@ -830,44 +1195,62 @@ $lastSyncDate = $hasImapSettings ? getLastSyncDate($userEmail) : null;
             }
         }
 
-        function formatMessageBody(body) {
-            return body.replace(/\n/g, '<br>');
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
         }
 
+        // Format message body
+        function formatMessageBody(body) {
+            return escapeHtml(body).replace(/\n/g, '<br>');
+        }
+
+        // Format date
         function formatDate(dateStr) {
             const date = new Date(dateStr);
-            const now = new Date();
-            const diff = now - date;
-            const hours = Math.floor(diff / 3600000);
-            
-            if (hours < 24) {
-                return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-            } else if (hours < 48) {
-                return 'Yesterday ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-            } else {
-                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + 
-                       ' ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-            }
+            return date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
         }
 
+        // Format short date
+        function formatShortDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Reply
         function replyToMessage() {
             if (!currentMessageData) return;
-            
             const recipient = currentMessageData.sender_email;
             const subject = 'Re: ' + currentMessageData.subject;
-            
             window.location.href = `index.php?reply_to=${encodeURIComponent(recipient)}&subject=${encodeURIComponent(subject)}`;
         }
 
+        // Forward
         function forwardMessage() {
             if (!currentMessageData) return;
-            
             const subject = 'Fwd: ' + currentMessageData.subject;
             const body = `\n\n---------- Forwarded message ---------\nFrom: ${currentMessageData.sender_email}\nDate: ${currentMessageData.received_date}\nSubject: ${currentMessageData.subject}\n\n${currentMessageData.body}`;
-            
             window.location.href = `index.php?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
         }
 
+        // Toggle star
         function toggleStar() {
             if (!currentMessageId) return;
             
@@ -892,9 +1275,9 @@ $lastSyncDate = $hasImapSettings ? getLastSyncDate($userEmail) : null;
             });
         }
 
+        // Delete
         function deleteMessage() {
             if (!currentMessageId) return;
-            
             if (!confirm('Move this message to trash?')) return;
             
             fetch('?action=delete', {
@@ -906,40 +1289,16 @@ $lastSyncDate = $hasImapSettings ? getLastSyncDate($userEmail) : null;
             .then(data => {
                 if (data.success) {
                     document.querySelector(`.message-item[data-id="${currentMessageId}"]`)?.remove();
-                    
                     document.getElementById('readerEmpty').style.display = 'flex';
                     document.getElementById('readerContent').style.display = 'none';
-                    
                     currentMessageId = null;
                     currentMessageData = null;
+                    showToast('Message moved to trash', 'success');
                 }
             });
         }
 
-        function syncMessages() {
-            const btn = event.target.closest('button');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="material-icons" style="font-size: 18px;">hourglass_empty</span> Syncing...';
-
-            fetch('?action=sync&limit=50')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        alert(`✅ ${data.message}`);
-                        location.reload();
-                    } else {
-                        alert(`❌ Error: ${data.error || 'Sync failed'}`);
-                        btn.disabled = false;
-                        btn.innerHTML = '<span class="material-icons" style="font-size: 18px;">sync</span> Sync';
-                    }
-                })
-                .catch(err => {
-                    alert('❌ Network error: ' + err.message);
-                    btn.disabled = false;
-                    btn.innerHTML = '<span class="material-icons" style="font-size: 18px;">sync</span> Sync';
-                });
-        }
-
+        // Filter messages
         function filterMessages(type) {
             if (type === 'unread') {
                 window.location.href = '?unread=1';
@@ -948,12 +1307,49 @@ $lastSyncDate = $hasImapSettings ? getLastSyncDate($userEmail) : null;
             }
         }
 
+        // Search
         document.getElementById('searchInput')?.addEventListener('input', function(e) {
             const searchTerm = e.target.value.toLowerCase();
             document.querySelectorAll('.message-item').forEach(item => {
                 const text = item.textContent.toLowerCase();
                 item.style.display = text.includes(searchTerm) ? 'block' : 'none';
             });
+        });
+
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+            
+            toast.className = `toast ${type}`;
+            toastMessage.textContent = message;
+            
+            if (type === 'success') {
+                toastIcon.textContent = 'check_circle';
+            } else if (type === 'error') {
+                toastIcon.textContent = 'error';
+            } else {
+                toastIcon.textContent = 'info';
+            }
+            
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 4000);
+        }
+
+        // Start auto-sync on page load
+        window.addEventListener('load', () => {
+            startAutoSync();
+        });
+
+        // Clear interval on page unload
+        window.addEventListener('beforeunload', () => {
+            if (autoSyncInterval) {
+                clearInterval(autoSyncInterval);
+            }
         });
     </script>
 </body>
