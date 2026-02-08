@@ -1,10 +1,11 @@
 <?php
-// /Applications/XAMPP/xamppfiles/htdocs/send.php
+
 session_start();
 require 'vendor/autoload.php';
 require 'config.php';
 require 'db_config.php';
 
+// Security check
 if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     header("Location: login.php");
     exit();
@@ -14,241 +15,304 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    
     $mail = new PHPMailer(true);
     
-    $successEmails = [];
-    $failedEmails = [];
-
     try {
-        // --- SMTP Configuration ---
+        // SMTP Configuration
         $mail->isSMTP();
-        $mail->SMTPDebug = 0; // Disable debug output for production
+        $mail->SMTPDebug = 0; // Disable debug output
+        
+        $settings = $_SESSION['user_settings'] ?? [];
+
+        // SMTP Host - Hostinger's SMTP server
         $mail->Host = "smtp.hostinger.com";
         $mail->SMTPAuth = true;
         $mail->Username = $_SESSION['smtp_user'];
         $mail->Password = $_SESSION['smtp_pass'];
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-        $mail->Port = 465;
 
-        // --- Recipients ---
-        $settings = $_SESSION['user_settings'] ?? [];
-        $displayName = !empty($settings['display_name']) ? $settings['display_name'] : "Holiday Seva";
+        // Port and Security Configuration
+        $mail->Port = 465;
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         
+        // Sender
+        $displayName = !empty($settings['display_name']) ? $settings['display_name'] : "Holiday Seva";
         $mail->setFrom($_SESSION['smtp_user'], $displayName);
         
-        // Main recipient
-        $recipient = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
-        if (filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
-            $mail->addAddress($recipient);
-            $successEmails[] = ['email' => $recipient, 'type' => 'To'];
-        } else {
-            $failedEmails[] = ['email' => $recipient, 'type' => 'To', 'reason' => 'Invalid email format'];
+        // Recipient
+        $recipient = filter_var(trim($_POST['email'] ?? ''), FILTER_SANITIZE_EMAIL);
+        
+        if (!$recipient) {
+            throw new Exception("Invalid email address");
         }
-
-        // --- Handle CC Recipients ---
-        $ccEmailsList = [];
-        if (!empty($_POST['cc'])) {
-            $ccEmails = parseEmailList($_POST['cc']);
-            foreach ($ccEmails as $ccEmail) {
-                if (filter_var($ccEmail, FILTER_VALIDATE_EMAIL)) {
-                    try {
-                        $mail->addCC($ccEmail);
-                        $successEmails[] = ['email' => $ccEmail, 'type' => 'CC'];
-                        $ccEmailsList[] = $ccEmail;
-                    } catch (Exception $e) {
-                        $failedEmails[] = ['email' => $ccEmail, 'type' => 'CC', 'reason' => $e->getMessage()];
-                    }
-                } else {
-                    $failedEmails[] = ['email' => $ccEmail, 'type' => 'CC', 'reason' => 'Invalid email format'];
-                }
-            }
-        }
-
-        // --- Handle BCC Recipients ---
-        $bccEmailsList = [];
-        if (!empty($_POST['bcc'])) {
-            $bccEmails = parseEmailList($_POST['bcc']);
-            foreach ($bccEmails as $bccEmail) {
-                if (filter_var($bccEmail, FILTER_VALIDATE_EMAIL)) {
-                    try {
-                        $mail->addBCC($bccEmail);
-                        $successEmails[] = ['email' => $bccEmail, 'type' => 'BCC'];
-                        $bccEmailsList[] = $bccEmail;
-                    } catch (Exception $e) {
-                        $failedEmails[] = ['email' => $bccEmail, 'type' => 'BCC', 'reason' => $e->getMessage()];
-                    }
-                } else {
-                    $failedEmails[] = ['email' => $bccEmail, 'type' => 'BCC', 'reason' => 'Invalid email format'];
-                }
-            }
-        }
-
-        // --- Handle Multiple File Attachments ---
-        $attachmentNames = [];
-        $attachmentDetails = [];
-        if (isset($_FILES['attachments']) && is_array($_FILES['attachments']['name'])) {
-            $fileCount = count($_FILES['attachments']['name']);
-            for ($i = 0; $i < $fileCount; $i++) {
-                if ($_FILES['attachments']['error'][$i] == UPLOAD_ERR_OK) {
-                    $mail->addAttachment(
-                        $_FILES['attachments']['tmp_name'][$i],
-                        $_FILES['attachments']['name'][$i]
-                    );
-                    $attachmentNames[] = $_FILES['attachments']['name'][$i];
-                    $attachmentDetails[] = [
-                        'name' => $_FILES['attachments']['name'][$i],
-                        'size' => formatFileSize($_FILES['attachments']['size'][$i])
-                    ];
-                }
-            }
-        }
-
-        // --- Content Processing ---
+        
+        $mail->addAddress($recipient);
+        
+        // Subject & Body
         $mail->isHTML(true);
-        
-        // Apply subject prefix if set
-        $subject = $_POST['subject'] ?? 'Notification';
-        if (!empty($settings['default_subject_prefix'])) {
-            $subject = $settings['default_subject_prefix'] . " " . $subject;
-        }
-        $mail->Subject = $subject;
-        
-        $messageBody = $_POST['message'] ?? '';
-        $articleTitle = $_POST['articletitle'] ?? '';
-        $isHtml = isset($_POST['message_is_html']) && $_POST['message_is_html'] === 'true';
-        
-        // Get signature components
-        $signatureWish = $_POST['signatureWish'] ?? '';
-        $signatureName = $_POST['signatureName'] ?? '';
-        $signatureDesignation = $_POST['signatureDesignation'] ?? '';
-        $signatureExtra = $_POST['signatureExtra'] ?? '';
-        
-        // Load template
-        $templatePath = 'templates/template1.html';
-        $finalHtml = '';
+        $mail->Subject = $_POST['subject'] ?? 'Notification';
+        $mail->Body = $_POST['message'] ?? 'Test Message';
 
-        if (file_exists($templatePath)) {
-            $htmlStructure = file_get_contents($templatePath);
-            
-            // If message is already HTML (from rich text editor), use it directly
-            // Otherwise, convert plain text to HTML
-            if ($isHtml) {
-                $formattedText = $messageBody;
-            } else {
-                $formattedText = nl2br(htmlspecialchars($messageBody));
-            }
-            
-            // Replace placeholders in template
-            $finalHtml = str_replace('{{MESSAGE}}', $formattedText, $htmlStructure);
-            $finalHtml = str_replace('{{SUBJECT}}', htmlspecialchars($subject), $finalHtml);
-            $finalHtml = str_replace('{{articletitle}}', htmlspecialchars($articleTitle), $finalHtml);
-            $finalHtml = str_replace('{{SENDER_NAME}}', htmlspecialchars($displayName), $finalHtml);
-            $finalHtml = str_replace('{{SENDER_EMAIL}}', htmlspecialchars($_SESSION['smtp_user']), $finalHtml);
-            $finalHtml = str_replace('{{RECIPIENT_EMAIL}}', htmlspecialchars($recipient), $finalHtml);
-            $finalHtml = str_replace('{{CURRENT_DATE}}', date('F j, Y'), $finalHtml);
-            $finalHtml = str_replace('{{CURRENT_YEAR}}', date('Y'), $finalHtml);
-            $finalHtml = str_replace('{{YEAR}}', date('Y'), $finalHtml);
-            $finalHtml = str_replace('{{ATTACHMENT}}', '', $finalHtml);
-            
-            // Replace signature components
-            $finalHtml = str_replace('{{SIGNATURE_WISH}}', htmlspecialchars($signatureWish), $finalHtml);
-            $finalHtml = str_replace('{{SIGNATURE_NAME}}', htmlspecialchars($signatureName), $finalHtml);
-            $finalHtml = str_replace('{{SIGNATURE_DESIGNATION}}', htmlspecialchars($signatureDesignation), $finalHtml);
-            $finalHtml = str_replace('{{SIGNATURE_EXTRA}}', nl2br(htmlspecialchars($signatureExtra)), $finalHtml);
-            
-            $mail->Body = $finalHtml;
-            $mail->AltBody = strip_tags($messageBody);
-        } else {
-            // Fallback if template doesn't exist
-            if ($isHtml) {
-                $finalHtml = $messageBody;
-                $mail->Body = $messageBody;
-                $mail->AltBody = strip_tags($messageBody);
-            } else {
-                $finalHtml = nl2br(htmlspecialchars($messageBody));
-                $mail->Body = $finalHtml;
-                $mail->AltBody = $messageBody;
-            }
+        // Send email
+        if ($mail->send()) {
+            echo '<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Sent Successfully</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .success-container {
+            max-width: 600px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            text-align: center;
+        }
+        .success-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+        }
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            animation: scaleIn 0.5s ease-out;
+        }
+        .success-icon i {
+            font-size: 40px;
+            color: white;
+        }
+        @keyframes scaleIn {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .success-body {
+            padding: 40px;
+        }
+        .email-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+        .email-info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .email-info-row:last-child {
+            border-bottom: none;
+        }
+        .label {
+            font-weight: 600;
+            color: #666;
+        }
+        .value {
+            color: #333;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="success-container">
+        <div class="success-header">
+            <div class="success-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h1>Email Sent Successfully!</h1>
+            <p>Your message has been delivered</p>
+        </div>
+        <div class="success-body">
+            <div class="email-info">
+                <div class="email-info-row">
+                    <span class="label">To:</span>
+                    <span class="value">' . htmlspecialchars($recipient) . '</span>
+                </div>
+                <div class="email-info-row">
+                    <span class="label">Subject:</span>
+                    <span class="value">' . htmlspecialchars($mail->Subject) . '</span>
+                </div>
+                <div class="email-info-row">
+                    <span class="label">Sent At:</span>
+                    <span class="value">' . date('M d, Y h:i A') . '</span>
+                </div>
+            </div>
+            <a href="index.php" class="btn">
+                <i class="fas fa-paper-plane"></i>
+                Send Another Email
+            </a>
+        </div>
+    </div>
+</body>
+</html>';
         }
         
-        // Send the email
-        $mail->send();
-        
-        // --- DATABASE LOGGING: Save sent email to database ---
-        $emailData = [
-            'sender_email' => $_SESSION['smtp_user'],
-            'recipient_email' => $recipient,
-            'cc_list' => !empty($ccEmailsList) ? implode(', ', $ccEmailsList) : '',
-            'bcc_list' => !empty($bccEmailsList) ? implode(', ', $bccEmailsList) : '',
-            'subject' => $subject,
-            'article_title' => $articleTitle,
-            'message_body' => $finalHtml,
-            'attachment_names' => !empty($attachmentNames) ? implode(', ', $attachmentNames) : ''
-        ];
-        
-        // Attempt to save to database (non-blocking - email already sent)
-        $dbSaved = saveSentEmail($emailData);
-        
-        // Prepare summary data
-        $summary = [
-            'subject' => $subject,
-            'article_title' => $articleTitle,
-            'sent_at' => date('M d, Y h:i A'),
-            'sender_name' => $displayName,
-            'cc_count' => count($ccEmailsList),
-            'bcc_count' => count($bccEmailsList),
-            'attachment_count' => count($attachmentDetails)
-        ];
-        
-        // Generate response HTML
-        showResultPage($subject, $successEmails, $failedEmails, $dbSaved, $attachmentDetails, $summary);
-
     } catch (Exception $e) {
-        showErrorPage("Message could not be sent. Mailer Error: {$mail->ErrorInfo}");
+        echo '<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Send Error</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .error-container {
+            max-width: 600px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        .error-header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        .error-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+        .error-icon i {
+            font-size: 40px;
+            color: white;
+        }
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .error-body {
+            padding: 40px;
+        }
+        .error-message {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin-bottom: 24px;
+            border-radius: 8px;
+            word-break: break-word;
+        }
+        .error-message strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #856404;
+        }
+        .error-message p {
+            color: #856404;
+            line-height: 1.6;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 32px;
+            background: #f5576c;
+            color: white;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            background: #e04555;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(245, 87, 108, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-header">
+            <div class="error-icon">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <h1>Email Sending Failed</h1>
+            <p>We encountered an error while sending your email</p>
+        </div>
+        <div class="error-body">
+            <div class="error-message">
+                <strong>Error Details:</strong>
+                <p>' . htmlspecialchars($e->getMessage()) . '</p>
+            </div>
+            <a href="index.php" class="btn">
+                <i class="fas fa-arrow-left"></i>
+                Try Again
+            </a>
+        </div>
+    </div>
+</body>
+</html>';
     }
 } else {
     header("Location: index.php");
     exit();
 }
 
-/**
- * Parse comma/semicolon/newline separated email list
- */
-function parseEmailList($emailString) {
-    $emails = preg_split('/[,;\n\r]+/', $emailString);
-    $emails = array_map('trim', $emails);
-    $emails = array_filter($emails, function($email) {
-        return !empty($email);
-    });
-    return array_unique($emails);
-}
-
-/**
- * Format file size
- */
-function formatFileSize($bytes) {
-    if ($bytes >= 1073741824) {
-        return number_format($bytes / 1073741824, 2) . ' GB';
-    } elseif ($bytes >= 1048576) {
-        return number_format($bytes / 1048576, 2) . ' MB';
-    } elseif ($bytes >= 1024) {
-        return number_format($bytes / 1024, 2) . ' KB';
-    } else {
-        return $bytes . ' bytes';
-    }
-}
-
-/**
- * Show result page with Nature.com-inspired design
- */
-function showResultPage($subject, $successEmails, $failedEmails, $dbSaved = true, $attachments = [], $summary = []) {
-    $totalEmails = count($successEmails) + count($failedEmails);
-    $successCount = count($successEmails);
-    $failureCount = count($failedEmails);
-    $timestamp = $summary['sent_at'] ?? date('d F Y, H:i');
-    
-    $userEmail = $_SESSION['smtp_user'];
-    $userInitial = strtoupper(substr($userEmail, 0, 1));
+function showSuccessPage($subject, $successEmails, $failedEmails, $dbSaved, $attachments, $summary) {
     ?>
 <!DOCTYPE html>
 <html lang="en">
