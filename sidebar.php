@@ -1,6 +1,6 @@
 <?php
 $current_page = basename($_SERVER['PHP_SELF'], '.php');
-$userEmail = $_SESSION['smtp_user'];
+$userEmail = $_SESSION['smtp_user'] ?? 'user@example.com';
 $userInitial = strtoupper(substr($userEmail, 0, 1));
 
 require_once 'db_config.php';
@@ -430,10 +430,9 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
                 </div>
                 <span class="label-name"><?= htmlspecialchars($label['label_name']) ?></span>
             </div>
-            <?php if (!empty($label['email_count'])): ?>
-    <span class="label-count"><?= $label['email_count'] ?></span>
-<?php endif; ?>
-
+            <?php if (isset($label['count']) && $label['count'] > 0): ?>
+            <span class="label-count"><?= $label['count'] ?></span>
+            <?php endif; ?>
         </a>
         <?php endforeach; ?>
     </nav>
