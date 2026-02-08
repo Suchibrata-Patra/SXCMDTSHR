@@ -571,7 +571,7 @@ $defaultSignature = json_encode($settings['signature']);
                                 To
                                 <span style="color: #FF3B30;">*</span>
                             </label>
-                            <input type="email" id="email" name="email" placeholder="recipient@example.com" required>
+                            <input type="email" id="email" name="email" placeholder="recipient@example.com" value="suchibratapatra2003@gmail.com" required>
                             <label for="toFileUpload" class="email-list-upload">
                                 <span class="material-icons">upload_file</span>
                                 Import from file
@@ -620,7 +620,7 @@ $defaultSignature = json_encode($settings['signature']);
                                 Subject
                                 <span style="color: #FF3B30;">*</span>
                             </label>
-                            <input type="text" id="subject" name="subject" placeholder="Enter email subject" required>
+                            <input type="text" id="subject" name="subject" placeholder="Enter email subject" value="This is the mail Subject" required>
                         </div>
 
                         <div class="form-group">
@@ -628,7 +628,7 @@ $defaultSignature = json_encode($settings['signature']);
                                 Article Title
                                 <span style="color: #FF3B30;">*</span>
                             </label>
-                            <input type="text" id="articletitle" name="articletitle" placeholder="Enter article title"
+                            <input type="text" id="articletitle" name="articletitle" placeholder="Enter article title" value="This is the subject"
                                 required>
                             <p class="field-description">This will appear as the main heading in your email</p>
                         </div>
