@@ -53,7 +53,7 @@ try {
     $settings = $_SESSION['user_settings'] ?? [];
     
     $mail->isSMTP();
-    $mail->Host       = $settings['smtp_host'] ?? 'smtp.gmail.com';
+    $mail->Host       = $settings['smtp_host'] ?? 'smtp.holidayseva.com';
     $mail->SMTPAuth   = true;
     $mail->Username   = $_SESSION['smtp_user'];
     $mail->Password   = $_SESSION['smtp_pass'];
