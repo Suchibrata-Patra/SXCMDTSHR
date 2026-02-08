@@ -59,11 +59,22 @@ try {
         $dotenv->load();
     }
     
+    // Log the configuration being used
+    error_log("=== SMTP Configuration Debug ===");
+    error_log("SMTP Host from settings: " . ($settings['smtp_host'] ?? 'NOT SET'));
+    error_log("SMTP Host from env: " . env("SMTP_HOST"));
+    error_log("SMTP Port from settings: " . ($settings['smtp_port'] ?? 'NOT SET'));
+    error_log("SMTP Port from env: " . env("SMTP_PORT"));
+    error_log("Username: " . $_SESSION['smtp_user']);
+    error_log("Password length: " . strlen($_SESSION['smtp_pass']));
+    
     $mail->isSMTP();
     $mail->Host       = $settings['smtp_host'] ?? env("SMTP_HOST");
     $mail->SMTPAuth   = true;
     $mail->Username   = $_SESSION['smtp_user'];
     $mail->Password   = $_SESSION['smtp_pass'];
+    
+    error_log("Final SMTP Host: " . $mail->Host);
     
     // Determine encryption and port
     $smtpPort = intval($settings['smtp_port'] ?? env("SMTP_PORT"));
@@ -75,8 +86,11 @@ try {
         $mail->Port = 587;
     }
     
-    // Debug mode (commented out for production)
-    // $mail->SMTPDebug = 2;
+    // Debug mode - ENABLED FOR TROUBLESHOOTING
+    $mail->SMTPDebug = 2;
+    $mail->Debugoutput = function($str, $level) {
+        error_log("SMTP Debug [$level]: $str");
+    };
     
     // Display name
     $displayName = !empty($settings['display_name']) 
