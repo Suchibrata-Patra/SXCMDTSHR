@@ -37,23 +37,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     try {
         // --- STEP 2: VERBOSE SMTP DEBUGGING ---
-        $mail->isSMTP();
-        $mail->SMTPDebug = 4; // LEVEL 4: Full low-level output
-        
-        $settings = $_SESSION['user_settings'] ?? [];
-        
-        $mail->Host = !empty($settings['smtp_host']) ? $settings['smtp_host'] : "smtp.holidayseva.com";
-        $mail->SMTPAuth = true;
-        $mail->Username = $_SESSION['smtp_user'];
-        $mail->Password = $_SESSION['smtp_pass'];
-        
-        // Match Security to Port
-        if ($mail->Port == 465) {
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-        } else {
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port = 587;
-        }
+      // --- STEP 2: SMTP CONFIGURATION ---
+$mail->isSMTP();
+$mail->SMTPDebug = 4; // LEVEL 4: Full low-level output
+
+$settings = $_SESSION['user_settings'] ?? [];
+
+// SMTP Host
+$mail->Host = !empty($settings['smtp_host']) ? $settings['smtp_host'] : "smtp.holidayseva.com";
+$mail->SMTPAuth = true;
+$mail->Username = $_SESSION['smtp_user'];
+$mail->Password = $_SESSION['smtp_pass'];
+
+// **FIX: Set Port FIRST, then configure security based on it**
+$mail->Port = !empty($settings['smtp_port']) ? (int)$settings['smtp_port'] : 587;
+
+// Match Security to Port
+if ($mail->Port == 465) {
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+} else {
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+    $mail->Port = 587; // Ensure port is 587 for STARTTLS
+}
         
         $displayName = !empty($settings['display_name']) ? $settings['display_name'] : "Mail Sender";
         $mail->setFrom($_SESSION['smtp_user'], $displayName);
