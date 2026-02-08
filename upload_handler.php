@@ -1,5 +1,5 @@
 <?php
-// upload_handler.php - AJAX File Upload Handler with Sender Tracking
+// upload_handler.php - AJAX File Upload Handler (Simplified for existing schema)
 session_start();
 
 // Security check
@@ -18,28 +18,6 @@ define('MAX_FILE_SIZE', 20 * 1024 * 1024); // 20MB per file
 define('MAX_TOTAL_SIZE', 25 * 1024 * 1024); // 25MB total
 define('UPLOAD_DIR', 'uploads/attachments/');
 
-// Encryption for download links
-define('ENCRYPTION_KEY', 'your-32-char-secret-key-here!!'); // Change this!
-define('ENCRYPTION_METHOD', 'AES-256-CBC');
-
-/**
- * Encrypt email UUID for secure download links
- */
-function encryptEmailUuid($emailUuid) {
-    $iv_length = openssl_cipher_iv_length(ENCRYPTION_METHOD);
-    $iv = openssl_random_pseudo_bytes($iv_length);
-    
-    $encrypted = openssl_encrypt(
-        $emailUuid,
-        ENCRYPTION_METHOD,
-        ENCRYPTION_KEY,
-        0,
-        $iv
-    );
-    
-    return base64_encode($iv . $encrypted);
-}
-
 class UploadHandler {
     private $pdo;
     private $uploadDir;
@@ -55,7 +33,7 @@ class UploadHandler {
     }
     
     /**
-     * Process uploaded file and track sender
+     * Process uploaded file
      */
     public function processUpload($uploadedFile) {
         try {
@@ -72,9 +50,9 @@ class UploadHandler {
             // Validate file type (basic security)
             $allowedExtensions = [
                 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
-                'jpg', 'jpeg', 'png', 'gif', 'webp',
+                'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg',
                 'zip', 'rar', '7z',
-                'txt', 'csv', 'json', 'xml'
+                'txt', 'csv', 'json', 'xml', 'md'
             ];
             
             $extension = strtolower(pathinfo($uploadedFile['name'], PATHINFO_EXTENSION));
@@ -90,23 +68,20 @@ class UploadHandler {
             $existing = $this->findByHash($fileHash);
             
             if ($existing) {
-                // File already exists - create access record for this user
-                $attachmentId = $existing['id'];
-                
-                // Check if user already has access to this file
-                $hasAccess = $this->checkUserAccess($this->userId, $attachmentId);
+                // File already exists - check if user already has access
+                $hasAccess = $this->checkUserAccess($this->userId, $existing['id']);
                 
                 if (!$hasAccess) {
-                    // Create new access record
-                    $this->createAccessRecord($attachmentId, null);
+                    // Create new access record (simplified - no sender_id)
+                    $this->createAccessRecord($existing['id'], null);
                     
                     // Store metadata
-                    $this->storeMetadata($attachmentId, $uploadedFile['name'], $extension, $uploadedFile['type']);
+                    $this->storeMetadata($existing['id'], $uploadedFile['name'], $extension, $uploadedFile['type']);
                 }
                 
                 return [
                     'success' => true,
-                    'id' => $attachmentId,
+                    'id' => $existing['id'],
                     'path' => $existing['storage_path'],
                     'original_name' => $uploadedFile['name'],
                     'file_size' => $uploadedFile['size'],
@@ -135,7 +110,7 @@ class UploadHandler {
                 throw new Exception("Failed to save file");
             }
             
-            // Insert into attachments table (simplified schema)
+            // Insert into attachments table
             $stmt = $this->pdo->prepare("
                 INSERT INTO attachments (
                     file_uuid, file_hash, file_size, 
@@ -152,7 +127,7 @@ class UploadHandler {
             
             $attachmentId = $this->pdo->lastInsertId();
             
-            // Create access record with sender_id
+            // Create access record (simplified)
             $this->createAccessRecord($attachmentId, null);
             
             // Store metadata
@@ -171,6 +146,7 @@ class UploadHandler {
             ];
             
         } catch (Exception $e) {
+            error_log("Upload error: " . $e->getMessage());
             return [
                 'success' => false,
                 'error' => $e->getMessage()
@@ -179,27 +155,57 @@ class UploadHandler {
     }
     
     /**
-     * Create access record in user_attachment_access
-     * Sets sender_id immediately, receiver_id and email_uuid are NULL until sent
+     * Create simplified access record
+     * Only stores user_id and attachment_id - no sender_id/receiver_id until email is sent
      */
     private function createAccessRecord($attachmentId, $emailUuid = null) {
-        $stmt = $this->pdo->prepare("
-            INSERT INTO user_attachment_access (
-                user_id, attachment_id, sender_id, receiver_id, 
-                email_uuid, access_type, created_at
-            ) VALUES (?, ?, ?, NULL, ?, 'upload', NOW())
-        ");
-        
-        return $stmt->execute([
-            $this->userId,
-            $attachmentId,
-            $this->userId,
-            $emailUuid
-        ]);
+        try {
+            // Check what columns exist in user_attachment_access
+            $stmt = $this->pdo->query("SHOW COLUMNS FROM user_attachment_access");
+            $columns = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            
+            // Build INSERT based on available columns
+            if (in_array('sender_id', $columns) && in_array('receiver_id', $columns)) {
+                // New schema with sender_id and receiver_id
+                $stmt = $this->pdo->prepare("
+                    INSERT INTO user_attachment_access (
+                        user_id, attachment_id, sender_id, receiver_id,
+                        email_uuid, access_type, created_at
+                    ) VALUES (?, ?, ?, NULL, ?, 'upload', NOW())
+                ");
+                
+                $stmt->execute([
+                    $this->userId,
+                    $attachmentId,
+                    $this->userId, // sender_id
+                    $emailUuid
+                ]);
+            } else {
+                // Old schema without sender_id/receiver_id
+                $stmt = $this->pdo->prepare("
+                    INSERT INTO user_attachment_access (
+                        user_id, attachment_id, email_uuid, 
+                        access_type, created_at
+                    ) VALUES (?, ?, ?, 'upload', NOW())
+                ");
+                
+                $stmt->execute([
+                    $this->userId,
+                    $attachmentId,
+                    $emailUuid
+                ]);
+            }
+            
+            return true;
+            
+        } catch (Exception $e) {
+            error_log("Error creating access record: " . $e->getMessage());
+            return false;
+        }
     }
     
     /**
-     * Store file metadata separately
+     * Store file metadata
      */
     private function storeMetadata($attachmentId, $filename, $extension, $mimeType) {
         try {
@@ -223,7 +229,8 @@ class UploadHandler {
             ]);
         } catch (Exception $e) {
             error_log("Error storing metadata: " . $e->getMessage());
-            return false;
+            // Don't fail upload if metadata fails
+            return true;
         }
     }
     
@@ -305,13 +312,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
             error_log("Created user in database during upload: " . $_SESSION['smtp_user'] . " (ID: $userId)");
         }
         
-        // Check if we already have session attachments array
+        // Initialize session attachments array if needed
         if (!isset($_SESSION['temp_attachments'])) {
             $_SESSION['temp_attachments'] = [];
         }
         
         // Calculate current total size
-        $currentTotalSize = array_sum(array_column($_SESSION['temp_attachments'], 'file_size'));
+        $currentTotalSize = 0;
+        foreach ($_SESSION['temp_attachments'] as $att) {
+            $currentTotalSize += $att['file_size'];
+        }
+        
         $newFileSize = $_FILES['file']['size'];
         
         // Check total size limit
@@ -330,12 +341,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         if ($result['success']) {
             // Store in session for later use when sending
             $_SESSION['temp_attachments'][] = $result;
+            
+            error_log("File uploaded successfully: " . $result['original_name'] . " (ID: " . $result['id'] . ")");
         }
         
         echo json_encode($result);
         
     } catch (Exception $e) {
-        error_log("Upload error: " . $e->getMessage());
+        error_log("Upload handler error: " . $e->getMessage());
         echo json_encode([
             'success' => false,
             'error' => $e->getMessage()
