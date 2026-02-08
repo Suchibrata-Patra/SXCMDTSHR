@@ -291,11 +291,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
             throw new Exception("Database connection failed");
         }
         
-        // Get user ID
+        // Get or create user ID
         $userId = getUserId($pdo, $_SESSION['smtp_user']);
         
         if (!$userId) {
-            throw new Exception("User not found");
+            // User doesn't exist - create them
+            $userId = createUserIfNotExists($pdo, $_SESSION['smtp_user'], null);
+            
+            if (!$userId) {
+                throw new Exception("Could not create user in database");
+            }
+            
+            error_log("Created user in database during upload: " . $_SESSION['smtp_user'] . " (ID: $userId)");
         }
         
         // Check if we already have session attachments array
@@ -328,6 +335,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         echo json_encode($result);
         
     } catch (Exception $e) {
+        error_log("Upload error: " . $e->getMessage());
         echo json_encode([
             'success' => false,
             'error' => $e->getMessage()

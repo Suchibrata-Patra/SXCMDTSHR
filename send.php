@@ -174,68 +174,79 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $pdo = getDatabaseConnection();
         
         if ($pdo) {
-            // Get sender user ID
+            // Get sender user ID - create if doesn't exist
             $senderId = getUserId($pdo, $_SESSION['smtp_user']);
             
-            // Generate UUID for this email
-            $emailUuid = generateUuidV4();
+            if (!$senderId) {
+                // Create user if they don't exist
+                $senderId = createUserIfNotExists($pdo, $_SESSION['smtp_user'], $displayName);
+                error_log("Created user in database during send: " . $_SESSION['smtp_user'] . " (ID: $senderId)");
+            }
             
-            error_log("Generated email UUID: " . $emailUuid);
-            error_log("Sender ID: " . $senderId);
-            
-            // Get label ID if set
-            $labelId = isset($_POST['label_id']) && !empty($_POST['label_id']) ? $_POST['label_id'] : null;
-            
-            // Insert into emails table
-            $emailData = [
-                'email_uuid' => $emailUuid,
-                'sender_email' => $_SESSION['smtp_user'],
-                'sender_name' => $displayName,
-                'recipient_email' => $recipient,
-                'cc_list' => !empty($ccEmailsList) ? implode(', ', $ccEmailsList) : null,
-                'bcc_list' => !empty($bccEmailsList) ? implode(', ', $bccEmailsList) : null,
-                'subject' => $subject,
-                'body_text' => strip_tags($messageBody),
-                'body_html' => $finalHtml,
-                'article_title' => $articleTitle,
-                'email_type' => 'sent',
-                'has_attachments' => !empty($_SESSION['temp_attachments']) ? 1 : 0
-            ];
-            
-            $emailId = saveEmailToDatabase($pdo, $emailData);
-            
-            if ($emailId) {
-                error_log("Email saved to database. ID: $emailId, UUID: $emailUuid");
-                
-                // Create sender access record
-                createEmailAccess($pdo, $emailId, $senderId, 'sender', $labelId);
-                
-                // Create receiver access records
-                $recipientId = getUserIdByEmail($pdo, $recipient);
-                if ($recipientId) {
-                    createEmailAccess($pdo, $emailId, $recipientId, 'recipient', null);
-                }
-                
-                // Process CC recipients
-                foreach ($ccEmailsList as $ccEmail) {
-                    $ccUserId = getUserIdByEmail($pdo, $ccEmail);
-                    if ($ccUserId) {
-                        createEmailAccess($pdo, $emailId, $ccUserId, 'cc', null);
-                    }
-                }
-                
-                // Process attachments from session
-                if (!empty($_SESSION['temp_attachments'])) {
-                    processAttachments($pdo, $emailId, $emailUuid, $senderId, $recipientId, $_SESSION['temp_attachments']);
-                }
-                
-                // Clear temp attachments from session
-                unset($_SESSION['temp_attachments']);
-                
-                $dbSaved = true;
-            } else {
-                error_log("=== DATABASE SAVE FAILED ===");
+            if (!$senderId) {
+                error_log("ERROR: Could not get or create sender user ID");
                 $dbSaved = false;
+            } else {
+                // Generate UUID for this email
+                $emailUuid = generateUuidV4();
+                
+                error_log("Generated email UUID: " . $emailUuid);
+                error_log("Sender ID: " . $senderId);
+                
+                // Get label ID if set
+                $labelId = isset($_POST['label_id']) && !empty($_POST['label_id']) ? $_POST['label_id'] : null;
+                
+                // Insert into emails table
+                $emailData = [
+                    'email_uuid' => $emailUuid,
+                    'sender_email' => $_SESSION['smtp_user'],
+                    'sender_name' => $displayName,
+                    'recipient_email' => $recipient,
+                    'cc_list' => !empty($ccEmailsList) ? implode(', ', $ccEmailsList) : null,
+                    'bcc_list' => !empty($bccEmailsList) ? implode(', ', $bccEmailsList) : null,
+                    'subject' => $subject,
+                    'body_text' => strip_tags($messageBody),
+                    'body_html' => $finalHtml,
+                    'article_title' => $articleTitle,
+                    'email_type' => 'sent',
+                    'has_attachments' => !empty($_SESSION['temp_attachments']) ? 1 : 0
+                ];
+                
+                $emailId = saveEmailToDatabase($pdo, $emailData);
+                
+                if ($emailId) {
+                    error_log("Email saved to database. ID: $emailId, UUID: $emailUuid");
+                    
+                    // Create sender access record
+                    createEmailAccess($pdo, $emailId, $senderId, 'sender', $labelId);
+                    
+                    // Create receiver access records - only if recipient is a registered user
+                    $recipientId = getUserIdByEmail($pdo, $recipient);
+                    if ($recipientId) {
+                        createEmailAccess($pdo, $emailId, $recipientId, 'recipient', null);
+                    }
+                    
+                    // Process CC recipients
+                    foreach ($ccEmailsList as $ccEmail) {
+                        $ccUserId = getUserIdByEmail($pdo, $ccEmail);
+                        if ($ccUserId) {
+                            createEmailAccess($pdo, $emailId, $ccUserId, 'cc', null);
+                        }
+                    }
+                    
+                    // Process attachments from session
+                    if (!empty($_SESSION['temp_attachments'])) {
+                        processAttachments($pdo, $emailId, $emailUuid, $senderId, $recipientId, $_SESSION['temp_attachments']);
+                    }
+                    
+                    // Clear temp attachments from session
+                    unset($_SESSION['temp_attachments']);
+                    
+                    $dbSaved = true;
+                } else {
+                    error_log("=== DATABASE SAVE FAILED ===");
+                    $dbSaved = false;
+                }
             }
         } else {
             error_log("=== DATABASE CONNECTION FAILED ===");
