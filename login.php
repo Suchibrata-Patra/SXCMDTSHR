@@ -39,9 +39,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['smtp_pass'] = $user_pass;
             $_SESSION['authenticated'] = true;
             
-            // CRITICAL: Load IMAP configuration into session
+            // CRITICAL: Load database config and create user if needed
             require_once 'db_config.php';
             require_once 'settings_helper.php';
+            
+            // Create user in database if they don't exist
+            $pdo = getDatabaseConnection();
+            if ($pdo) {
+                $userId = createUserIfNotExists($pdo, $user_email, null);
+                if ($userId) {
+                    error_log("User created/verified in database: $user_email (ID: $userId)");
+                } else {
+                    error_log("Warning: Could not create/verify user in database: $user_email");
+                }
+            }
             
             // Load IMAP settings from database into session
             loadImapConfigToSession($user_email, $user_pass);
