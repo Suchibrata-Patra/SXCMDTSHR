@@ -44,7 +44,7 @@ $mail->SMTPDebug = 4; // LEVEL 4: Full low-level output
 $settings = $_SESSION['user_settings'] ?? [];
 
 // SMTP Host
-$mail->Host = !empty($settings['smtp_host']) ? $settings['smtp_host'] : "smtp.holidayseva.com";
+$mail->Host = !empty($settings['smtp_host']) ? $settings['smtp_host'] : "smtp.hostinger.com";
 $mail->SMTPAuth = true;
 $mail->Username = $_SESSION['smtp_user'];
 $mail->Password = $_SESSION['smtp_pass'];
