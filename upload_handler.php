@@ -40,6 +40,24 @@ function encryptFileId($fileId) {
     return base64_encode($iv . $encrypted);
 }
 
+/**
+ * Decrypt file ID from download link
+ */
+function decryptFileId($encryptedId) {
+    $data = base64_decode($encryptedId);
+    $iv_length = openssl_cipher_iv_length(ENCRYPTION_METHOD);
+    $iv = substr($data, 0, $iv_length);
+    $encrypted = substr($data, $iv_length);
+    
+    return openssl_decrypt(
+        $encrypted,
+        ENCRYPTION_METHOD,
+        ENCRYPTION_KEY,
+        0,
+        $iv
+    );
+}
+
 class UploadHandler {
     private $pdo;
     private $uploadDir;
@@ -93,11 +111,12 @@ class UploadHandler {
                     'success' => true,
                     'id' => $existing['id'],
                     'encrypted_id' => encryptFileId($existing['id']),
-                    'path' => $this->uploadDir . $existing['storage_path'],
+                    'path' => $existing['storage_path'],
                     'original_name' => $uploadedFile['name'],
                     'file_size' => $uploadedFile['size'],
                     'formatted_size' => $this->formatBytes($uploadedFile['size']),
                     'extension' => $extension,
+                    'mime_type' => $uploadedFile['type'] ?? 'application/octet-stream',
                     'deduplicated' => true
                 ];
             }
@@ -150,6 +169,7 @@ class UploadHandler {
                 'file_size' => $uploadedFile['size'],
                 'formatted_size' => $this->formatBytes($uploadedFile['size']),
                 'extension' => $extension,
+                'mime_type' => $uploadedFile['type'] ?? 'application/octet-stream',
                 'deduplicated' => false
             ];
             
@@ -217,6 +237,12 @@ class UploadHandler {
 // Main upload processing
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
     try {
+        $pdo = getDatabaseConnection();
+        
+        if (!$pdo) {
+            throw new Exception("Database connection failed");
+        }
+        
         // Check if we already have session attachments array
         if (!isset($_SESSION['temp_attachments'])) {
             $_SESSION['temp_attachments'] = [];
@@ -240,21 +266,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         $result = $handler->processUpload($_FILES['file']);
         
         if ($result['success']) {
-            // Get user ID and grant access
-            $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
-            $stmt->execute([$_SESSION['smtp_user']]);
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if ($user) {
-                // Grant access to this file
-                $stmt = $pdo->prepare("
-                    INSERT INTO user_attachment_access (user_id, attachment_id, access_type)
-                    VALUES (?, ?, 'owner')
-                    ON DUPLICATE KEY UPDATE access_type = 'owner'
-                ");
-                $stmt->execute([$user['id'], $result['id']]);
-            }
-            
             // Store in session for later use
             $_SESSION['temp_attachments'][] = $result;
         }
