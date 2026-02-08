@@ -648,7 +648,7 @@ $defaultSignature = json_encode($settings['signature']);
                     <!-- Signature Section -->
                     <!-- Signature Section -->
                     <div class="form-section">
-                        <div class="section-toggle collapsed" onclick="toggleSection('signatureSection')">
+                        <div class="section-toggle" onclick="toggleSection('signatureSection')">
                             <span class="material-icons">expand_more</span>
                             <h2 class="section-title" style="margin: 0;">Email Signature</h2>
                         </div>
