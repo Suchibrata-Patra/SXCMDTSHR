@@ -348,20 +348,7 @@ $defaultSignature = json_encode($settings['signature']);
             border-color: var(--apple-blue);
             box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
         }
-
-        /* Fix for Quill toolbar select boxes stacking */
-        .ql-toolbar select {
-            width: auto !important;
-            display: inline-block !important;
-        }
-
-        /* Ensure the toolbar doesn't hide behind other elements */
-        .ql-toolbar.ql-snow {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
+        
         .ql-toolbar {
             border: none;
             border-bottom: 1px solid var(--border);
