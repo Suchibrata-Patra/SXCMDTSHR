@@ -50,41 +50,20 @@ $deliveryReport = [
 
 try {
     // ==================== SMTP CONFIGURATION ====================
-    $settings = $_SESSION['user_settings'] ?? [];
-    
-    // Load environment config for SMTP (same as login.php)
+    // Using same simple configuration as login.php
     require 'config.php';
     if (file_exists(__DIR__ . '/.env')) {
         $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
         $dotenv->load();
     }
     
-    // Log the configuration being used
-    error_log("=== SMTP Configuration Debug ===");
-    error_log("SMTP Host from settings: " . ($settings['smtp_host'] ?? 'NOT SET'));
-    error_log("SMTP Host from env: " . env("SMTP_HOST"));
-    error_log("SMTP Port from settings: " . ($settings['smtp_port'] ?? 'NOT SET'));
-    error_log("SMTP Port from env: " . env("SMTP_PORT"));
-    error_log("Username: " . $_SESSION['smtp_user']);
-    error_log("Password length: " . strlen($_SESSION['smtp_pass']));
-    
     $mail->isSMTP();
-    $mail->Host       = $settings['smtp_host'] ?? env("SMTP_HOST");
+    $mail->Host       = env("SMTP_HOST"); 
     $mail->SMTPAuth   = true;
     $mail->Username   = $_SESSION['smtp_user'];
     $mail->Password   = $_SESSION['smtp_pass'];
-    
-    error_log("Final SMTP Host: " . $mail->Host);
-    
-    // Determine encryption and port
-    $smtpPort = intval($settings['smtp_port'] ?? env("SMTP_PORT"));
-    if ($smtpPort == 465) {
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-        $mail->Port = 465;
-    } else {
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = 587;
-    }
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+    $mail->Port       = env("SMTP_PORT");
     
     // Debug mode - ENABLED FOR TROUBLESHOOTING
     $mail->SMTPDebug = 2;
@@ -92,7 +71,8 @@ try {
         error_log("SMTP Debug [$level]: $str");
     };
     
-    // Display name
+    // Get display name from settings or use default
+    $settings = $_SESSION['user_settings'] ?? [];
     $displayName = !empty($settings['display_name']) 
         ? $settings['display_name'] 
         : 'MailDash Sender';
