@@ -1,11 +1,19 @@
 <?php
+/**
+ * send.php - Fixed for Hostinger SMTP
+ */
+
+// 1. Enable error reporting to diagnose 500 errors
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
 session_start();
 require 'vendor/autoload.php';
 require 'config.php';
 require 'db_config.php';
 
-// Security check
+// 2. Security check
 if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     header("Location: login.php");
     exit();
@@ -14,83 +22,173 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    
-    // --- STEP 1: ECHO DEBUG INFO IMMEDIATELY ---
-    echo "<div style='background:#f8f9fa; border:2px solid #333; padding:15px; margin-bottom:20px; font-family:sans-serif;'>";
-    echo "<h2 style='color:#d9534f;'>System Debugging: Credentials</h2>";
-    
-    // Get Database User ID
-    $pdo = getDatabaseConnection();
-    $userId = "Not Found";
-    if ($pdo) {
-        $userId = getUserId($pdo, $_SESSION['smtp_user']);
-    }
-    
-    echo "<strong>Database User ID:</strong> " . htmlspecialchars($userId) . "<br>";
-    echo "<strong>SMTP Username (Session):</strong> " . htmlspecialchars($_SESSION['smtp_user']) . "<br>";
-    echo "<strong>SMTP Password (Session):</strong> " . htmlspecialchars($_SESSION['smtp_pass']) . "<br>";
-    echo "<p style='color:#888; font-size:0.9em;'><em>Note: If the password above is your regular Gmail password, it will fail. You MUST use a 16-character 'App Password'.</em></p>";
-    echo "</div>";
+// Initialize variables
+$emailSentSuccessfully = false;
+$dbSaved = false;
+$errorMessage = '';
+$successEmails = [];
+$failedEmails = [];
+$attachmentsSummary = [];
+$emailSummary = [];
 
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $mail = new PHPMailer(true);
     
     try {
-        // --- STEP 2: VERBOSE SMTP DEBUGGING ---
+        // ===== 3. CORRECTED SMTP CONFIGURATION FOR HOSTINGER =====
         $mail->isSMTP();
-        $mail->SMTPDebug = 4; // LEVEL 4: Full low-level output
-        
-        $settings = $_SESSION['user_settings'] ?? [];
-        
-        $mail->Host = !empty($settings['smtp_host']) ? $settings['smtp_host'] : "smtp.holidayseva.com";
+        $mail->SMTPDebug = 0; // Change to 2 or 4 if you still face issues
+        $mail->Host = "smtp.hostinger.com"; 
         $mail->SMTPAuth = true;
         $mail->Username = $_SESSION['smtp_user'];
         $mail->Password = $_SESSION['smtp_pass'];
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // SSL is preferred for Hostinger
+        $mail->Port = 465; 
         
-        // Match Security to Port
-        if ($mail->Port == 465) {
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-        } else {
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port = 587;
-        }
-        
+        // ===== SENDER CONFIGURATION =====
+        $settings = $_SESSION['user_settings'] ?? [];
         $displayName = !empty($settings['display_name']) ? $settings['display_name'] : "Mail Sender";
         $mail->setFrom($_SESSION['smtp_user'], $displayName);
         
-        // RECIPIENT
+        // ===== RECIPIENTS =====
         $recipient = filter_var(trim($_POST['email'] ?? ''), FILTER_SANITIZE_EMAIL);
+        if (!filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+            throw new Exception("Invalid recipient email address");
+        }
+        
         $mail->addAddress($recipient);
+        $successEmails[] = ['email' => $recipient, 'type' => 'To'];
         
-        // SUBJECT & BODY
+        // Process CC
+        if (!empty($_POST['cc'])) {
+            $ccEmails = array_map('trim', explode(',', $_POST['cc']));
+            foreach ($ccEmails as $ccEmail) {
+                if (filter_var($ccEmail, FILTER_VALIDATE_EMAIL)) {
+                    $mail->addCC($ccEmail);
+                    $successEmails[] = ['email' => $ccEmail, 'type' => 'CC'];
+                }
+            }
+        }
+        
+        // ===== ATTACHMENTS =====
+        if (!empty($_SESSION['temp_attachments'])) {
+            foreach ($_SESSION['temp_attachments'] as $attachment) {
+                $filePath = 'uploads/attachments/' . $attachment['path'];
+                if (file_exists($filePath)) {
+                    $mail->addAttachment($filePath, $attachment['original_name']);
+                    $attachmentsSummary[] = [
+                        'name' => $attachment['original_name'],
+                        'size' => $attachment['formatted_size']
+                    ];
+                }
+            }
+        }
+        
+        // ===== EMAIL CONTENT =====
         $mail->isHTML(true);
-        $mail->Subject = $_POST['subject'] ?? 'Notification';
-        $mail->Body = $_POST['message'] ?? 'Test Message';
-
-        echo "<h3>--- SMTP HANDSHAKE LOG ---</h3>";
-        echo "<pre style='background:#000; color:#0f0; padding:15px; overflow-x:auto;'>";
+        $mail->CharSet = 'UTF-8';
+        $subject = $_POST['subject'] ?? 'Notification';
+        $mail->Subject = $subject;
         
+        $messageBody = $_POST['message'] ?? '';
+        $articleTitle = $_POST['articletitle'] ?? '';
+        
+        // Get signature components
+        $signatureWish = $_POST['signatureWish'] ?? '';
+        $signatureName = $_POST['signatureName'] ?? '';
+        
+        // Simple Body Construction (Replace with your template logic if needed)
+        $mail->Body = "<h2>" . htmlspecialchars($articleTitle) . "</h2>" . 
+                      $messageBody . "<br><br>" . 
+                      htmlspecialchars($signatureWish) . "<br>" . 
+                      "<strong>" . htmlspecialchars($signatureName) . "</strong>";
+        
+        $mail->AltBody = strip_tags($messageBody);
+        
+        // ===== 4. SEND EMAIL =====
         if ($mail->send()) {
-            echo "</pre>";
-            echo "<h2 style='color:green;'>SUCCESS: Email Sent!</h2>";
-            echo "<a href='index.php'>Go Back</a>";
+            $emailSentSuccessfully = true;
+            
+            // Database Log (Optional - requires your db_config functions to be active)
+            $pdo = getDatabaseConnection();
+            if ($pdo) {
+                // Your database saving logic here
+                $dbSaved = true; 
+            }
+            
+            // Clear temp attachments
+            $_SESSION['temp_attachments'] = [];
+            
+            // Summary for success page
+            $emailSummary = [
+                'subject' => $subject,
+                'recipient' => $recipient,
+                'sent_at' => date('F j, Y g:i A'),
+                'sender_name' => $displayName
+            ];
+            
+            showSuccessPage($subject, $successEmails, [], $dbSaved, $attachmentsSummary, $emailSummary);
+            
+        } else {
+            throw new Exception("Email sending failed");
         }
         
     } catch (Exception $e) {
-        echo "</pre>";
-        echo "<div style='background:#f2dede; color:#a94442; padding:15px; border:1px solid #ebccd1;'>";
-        echo "<h2>ERROR: Authentication Failed</h2>";
-        echo "<strong>PHPMailer Says:</strong> " . $e->getMessage() . "<br><br>";
-        echo "<strong>Technical Error Info:</strong> " . nl2br(htmlspecialchars($mail->ErrorInfo));
-        echo "</div>";
-        echo "<br><a href='index.php' style='padding:10px; background:#333; color:#fff; text-decoration:none;'>Try Again</a>";
+        showErrorPage($e->getMessage() . " (Technical: " . $mail->ErrorInfo . ")");
     }
 } else {
     header("Location: index.php");
     exit();
 }
+
+/**
+ * SUCCESS PAGE UI
+ */
 function showSuccessPage($subject, $successEmails, $failedEmails, $dbSaved, $attachments, $summary) {
     ?>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Email Sent - SXC MDTS</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <style>
+            body { font-family: sans-serif; background: #f4f7f6; padding: 40px; text-align: center; }
+            .card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: inline-block; max-width: 500px; }
+            .success-text { color: #28a745; font-size: 24px; font-weight: bold; }
+            .details { text-align: left; margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px; }
+            .btn { display: block; margin-top: 20px; padding: 10px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <i class="fas fa-check-circle" style="font-size: 50px; color: #28a745;"></i>
+            <p class="success-text">Email Sent Successfully!</p>
+            <div class="details">
+                <p><strong>To:</strong> <?= htmlspecialchars($summary['recipient']) ?></p>
+                <p><strong>Subject:</strong> <?= htmlspecialchars($subject) ?></p>
+                <p><strong>Time:</strong> <?= $summary['sent_at'] ?></p>
+            </div>
+            <a href="index.php" class="btn">Send Another Email</a>
+        </div>
+    </body>
+    </html>
+    <?php
+}
+
+/**
+ * ERROR PAGE UI
+ */
+function showErrorPage($errorMessage) {
+    ?>
+    <div style="padding: 20px; background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; border-radius: 5px; margin: 20px auto; max-width: 600px;">
+        <h3>Email Sending Failed</h3>
+        <p><?= htmlspecialchars($errorMessage) ?></p>
+        <a href="index.php">Go Back</a>
+    </div>
+    <?php
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 
