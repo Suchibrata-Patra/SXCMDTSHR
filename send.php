@@ -1,17 +1,17 @@
 <?php
 // /Applications/XAMPP/xamppfiles/htdocs/send.php
-session_start();
-require 'vendor/autoload.php';
-require 'config.php';
-require 'db_config.php'; // Include database configuration
+// session_start();
+// require 'vendor/autoload.php';
+// require 'config.php';
+// require 'db_config.php'; // Include database configuration
 
-if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
-    header("Location: login.php");
-    exit();
-}
+// if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
+//     header("Location: login.php");
+//     exit();
+// }
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
+// use PHPMailer\PHPMailer\PHPMailer;
+// use PHPMailer\PHPMailer\Exception;
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $mail = new PHPMailer(true);
