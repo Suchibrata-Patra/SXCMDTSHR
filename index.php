@@ -513,7 +513,7 @@ $_SESSION['user_settings'] = $settings;
 
             <!-- Compose Form -->
             <div class="compose-container">
-                <form id="composeForm" method="POST" action="preview.php" enctype="multipart/form-data">
+                <form id="composeForm" method="POST" action="send.php" enctype="multipart/form-data">
                     
                     <!-- Recipients Section -->
                     <div class="form-section">
