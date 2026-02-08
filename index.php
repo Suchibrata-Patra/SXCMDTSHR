@@ -975,25 +975,144 @@ $defaultSignature = json_encode($settings['signature']);
             reader.readAsText(file);
         }
 
-        // Form submission - combine message + signature
-        document.getElementById('composeForm').addEventListener('submit', function (e) {
-            // Get message content
-            const messageHtml = quillMessage.root.innerHTML;
+    /**
+ * IMPROVED FORM SUBMISSION SCRIPT
+ * Add this to index.php to fix the "subject is empty" issue
+ * 
+ * Place this script AFTER the existing form submission handler
+ */
 
-            // Get signature content
-            const signatureHtml = quillSignature.root.innerHTML;
+// Replace the existing form submission handler with this improved version
+document.getElementById('composeForm').addEventListener('submit', function (e) {
+    // === STEP 1: Validate Required Fields ===
+    const subjectField = document.querySelector('input[name="subject"]');
+    const emailField = document.querySelector('input[name="email"]');
+    const articleField = document.querySelector('input[name="articletitle"]');
+    
+    const subject = subjectField ? subjectField.value.trim() : '';
+    const email = emailField ? emailField.value.trim() : '';
+    const article = articleField ? articleField.value.trim() : '';
+    
+    // Validate subject (most critical)
+    if (!subject) {
+        e.preventDefault();
+        alert('❌ Subject field is required! Please enter a subject for your email.');
+        if (subjectField) subjectField.focus();
+        return false;
+    }
+    
+    // Validate recipient
+    if (!email) {
+        e.preventDefault();
+        alert('❌ Recipient email is required!');
+        if (emailField) emailField.focus();
+        return false;
+    }
+    
+    // Validate article title
+    if (!article) {
+        e.preventDefault();
+        alert('❌ Article title is required!');
+        if (articleField) articleField.focus();
+        return false;
+    }
+    
+    // === STEP 2: Process Message Content ===
+    console.log('✓ Form validation passed');
+    console.log('  Subject:', subject);
+    console.log('  Recipient:', email);
+    console.log('  Article:', article);
+    
+    // Get message content from Quill editor
+    const messageHtml = quillMessage.root.innerHTML;
+    
+    // Get signature content (if signature editor exists)
+    let signatureHtml = '';
+    if (typeof quillSignature !== 'undefined') {
+        signatureHtml = quillSignature.root.innerHTML;
+    }
+    
+    // Combine message and signature
+    let finalHtml = messageHtml;
+    
+    // Only add signature if it's not empty
+    if (signatureHtml.trim() && signatureHtml !== '<p><br></p>') {
+        finalHtml += '<br><br>' + signatureHtml;
+    }
+    
+    // === STEP 3: Set Hidden Fields ===
+    // Set the combined HTML to hidden input
+    const messageInput = document.getElementById('messageInput');
+    if (messageInput) {
+        messageInput.value = finalHtml;
+    }
+    
+    // Add HTML flag if not already present
+    if (!document.querySelector('input[name="message_is_html"]')) {
+        const htmlFlag = document.createElement('input');
+        htmlFlag.type = 'hidden';
+        htmlFlag.name = 'message_is_html';
+        htmlFlag.value = 'true';
+        this.appendChild(htmlFlag);
+    }
+    
+    // === STEP 4: Debug Logging ===
+    console.log('📧 Submitting email with the following data:');
+    const formData = new FormData(this);
+    
+    // Log each field
+    for (let [key, value] of formData.entries()) {
+        if (key === 'message') {
+            console.log(`  ${key}:`, value.substring(0, 100) + '...');
+        } else {
+            console.log(`  ${key}:`, value);
+        }
+    }
+    
+    // Count attachments
+    const attachments = formData.getAll('attachments[]');
+    console.log(`  Attachments: ${attachments.filter(f => f.size > 0).length} file(s)`);
+    
+    // === STEP 5: Allow submission ===
+    console.log('✓ Form submitting to send.php...');
+    return true;
+});
 
-            // Combine message and signature
-            let finalHtml = messageHtml;
-
-            // Only add signature if it's not empty
-            if (signatureHtml.trim() && signatureHtml !== '<p><br></p>') {
-                finalHtml += '<br><br>' + signatureHtml;
+/**
+ * ADDITIONAL: Add real-time subject validation
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    const subjectField = document.querySelector('input[name="subject"]');
+    
+    if (subjectField) {
+        // Add visual feedback for empty subject
+        subjectField.addEventListener('blur', function() {
+            if (!this.value.trim()) {
+                this.style.borderColor = '#ff3b30';
+                this.style.backgroundColor = '#fff5f5';
+            } else {
+                this.style.borderColor = '';
+                this.style.backgroundColor = '';
             }
-
-            // Set the combined HTML to hidden input
-            document.getElementById('messageInput').value = finalHtml;
         });
+        
+        // Clear error styling when typing
+        subjectField.addEventListener('input', function() {
+            if (this.value.trim()) {
+                this.style.borderColor = '';
+                this.style.backgroundColor = '';
+            }
+        });
+    }
+});
+
+/**
+ * DEBUGGING: Add this to check if form data is being captured
+ */
+console.log('Form submission script loaded successfully');
+console.log('Subject field exists:', !!document.querySelector('input[name="subject"]'));
+console.log('Email field exists:', !!document.querySelector('input[name="email"]'));
+console.log('Form exists:', !!document.getElementById('composeForm'));
 
         // Preview Email Functionality
         document.getElementById('previewBtn').addEventListener('click', () => {
