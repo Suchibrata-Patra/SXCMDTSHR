@@ -46,14 +46,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $mail->SMTPAuth = true;
         $mail->Username = $_SESSION['smtp_user'];
         $mail->Password = $_SESSION['smtp_pass'];
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         
-        // Match Security to Port
-        if ($mail->Port == 465) {
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-        } else {
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port = 587;
-        }
         
         $displayName = !empty($settings['display_name']) ? $settings['display_name'] : "Mail Sender";
         $mail->setFrom($_SESSION['smtp_user'], $displayName);
