@@ -87,7 +87,14 @@ $defaults = [
     'session_timeout' => '60',
     'ip_lock' => false,
     'debug_logs' => false,
-    'activity_report' => 'weekly'
+    'activity_report' => 'weekly',
+    
+    // IMAP Configuration
+    'imap_server' => 'imap.hostinger.com',
+    'imap_port' => '993',
+    'imap_encryption' => 'ssl',
+    'imap_username' => '',
+    'settings_locked' => false
 ];
 
 $s = array_merge($defaults, $userSettings);
@@ -524,6 +531,10 @@ $s = array_merge($defaults, $userSettings);
             <span class="material-icons">gavel</span>
             Compliance
         </a>
+        <a href="#imap" class="nav-link">
+            <span class="material-icons">mail</span>
+            Mail Server
+        </a>
         
         <div class="nav-group-label">Application</div>
         <a href="#composition" class="nav-link">
@@ -680,6 +691,104 @@ $s = array_merge($defaults, $userSettings);
                         <span class="setting-desc">Maximum file size in MB per email</span>
                     </div>
                     <input type="number" name="attach_size_limit" value="<?= htmlspecialchars($s['attach_size_limit']) ?>" min="1" max="100">
+                </div>
+            </div>
+
+            <!-- IMAP MAIL SERVER SECTION -->
+            <h2 id="imap">📧 Mail Server Configuration (IMAP)</h2>
+            <div class="section-card">
+                <?php 
+                $isLocked = isset($s['settings_locked']) && ($s['settings_locked'] === true || $s['settings_locked'] === 'true' || $s['settings_locked'] === '1');
+                ?>
+                
+                <?php if ($isLocked): ?>
+                <div style="background: #fff7ed; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                    <div style="font-weight: 600; color: #92400e; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                        <span class="material-icons" style="font-size: 20px;">lock</span>
+                        Settings Locked
+                    </div>
+                    <p style="font-size: 14px; color: #78350f; line-height: 1.6; margin: 0;">
+                        Your IMAP settings have been configured and locked for security. 
+                        These settings can only be modified by a super administrator. 
+                        If you need to change your mail server configuration, please contact 
+                        the system administrator.
+                    </p>
+                </div>
+                <?php else: ?>
+                <div style="background: #f0f9ff; border-left: 4px solid #0284c7; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                    <div style="font-weight: 600; color: #0c4a6e; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                        <span class="material-icons" style="font-size: 20px;">info</span>
+                        Important Notice
+                    </div>
+                    <p style="font-size: 14px; color: #0c4a6e; line-height: 1.6; margin: 0;">
+                        You can configure these IMAP settings <strong>only once</strong>. 
+                        After saving, the settings will be locked and cannot be changed 
+                        without super administrator authorization. Please ensure all 
+                        information is correct before saving.
+                    </p>
+                </div>
+                <?php endif; ?>
+
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-title">IMAP Server Address</span>
+                        <span class="setting-desc">The hostname of your IMAP mail server</span>
+                    </div>
+                    <input type="text" 
+                           name="imap_server" 
+                           value="<?= htmlspecialchars($s['imap_server']) ?>" 
+                           placeholder="imap.hostinger.com"
+                           <?= $isLocked ? 'readonly style="background: #f5f5f7; cursor: not-allowed;"' : '' ?>>
+                </div>
+
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-title">IMAP Port</span>
+                        <span class="setting-desc">Common ports: 993 (SSL), 143 (TLS)</span>
+                    </div>
+                    <input type="number" 
+                           name="imap_port" 
+                           value="<?= htmlspecialchars($s['imap_port']) ?>" 
+                           placeholder="993"
+                           min="1" 
+                           max="65535"
+                           <?= $isLocked ? 'readonly style="background: #f5f5f7; cursor: not-allowed;"' : '' ?>>
+                </div>
+
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-title">Encryption Type</span>
+                        <span class="setting-desc">SSL/TLS provides the highest security</span>
+                    </div>
+                    <select name="imap_encryption" <?= $isLocked ? 'disabled style="background: #f5f5f7; cursor: not-allowed;"' : '' ?>>
+                        <option value="ssl" <?= ($s['imap_encryption'] ?? 'ssl') === 'ssl' ? 'selected' : '' ?>>SSL/TLS (Recommended)</option>
+                        <option value="tls" <?= ($s['imap_encryption'] ?? '') === 'tls' ? 'selected' : '' ?>>STARTTLS</option>
+                        <option value="none" <?= ($s['imap_encryption'] ?? '') === 'none' ? 'selected' : '' ?>>None (Not Recommended)</option>
+                    </select>
+                </div>
+
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-title">IMAP Username (Email)</span>
+                        <span class="setting-desc">Usually your full email address</span>
+                    </div>
+                    <input type="email" 
+                           name="imap_username" 
+                           value="<?= htmlspecialchars($s['imap_username'] ?: $userEmail) ?>" 
+                           placeholder="<?= htmlspecialchars($userEmail) ?>"
+                           <?= $isLocked ? 'readonly style="background: #f5f5f7; cursor: not-allowed;"' : '' ?>>
+                </div>
+
+                <div style="background: #f0f9ff; border-left: 4px solid #0284c7; padding: 16px; border-radius: 8px; margin-top: 20px;">
+                    <div style="font-weight: 600; color: #0c4a6e; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                        <span class="material-icons" style="font-size: 20px;">lock</span>
+                        Password Information
+                    </div>
+                    <p style="font-size: 14px; color: #0c4a6e; line-height: 1.6; margin: 0;">
+                        Your email password is <strong>not stored in the database</strong>. 
+                        It is securely obtained during login and kept only in your session. 
+                        The same password you use to login will be used for IMAP access.
+                    </p>
                 </div>
             </div>
 
@@ -1025,6 +1134,33 @@ Your Title"><?= htmlspecialchars($s['signature']) ?></textarea>
             
             const formData = new FormData(this);
             
+            // Check if IMAP settings are being modified
+            const isLocked = <?= $isLocked ? 'true' : 'false' ?>;
+            const hasImapChanges = formData.has('imap_server') || formData.has('imap_port') || 
+                                   formData.has('imap_encryption') || formData.has('imap_username');
+            
+            // Warn user if configuring IMAP for the first time
+            if (!isLocked && hasImapChanges) {
+                const imapServer = formData.get('imap_server');
+                const imapPort = formData.get('imap_port');
+                const imapUsername = formData.get('imap_username');
+                
+                if (imapServer || imapPort || imapUsername) {
+                    const confirmMsg = '⚠️ WARNING: IMAP Settings Lock\n\n' +
+                                     'After saving, your IMAP settings will be LOCKED and cannot be changed ' +
+                                     'without super administrator authorization.\n\n' +
+                                     'Please verify:\n' +
+                                     '• IMAP Server: ' + (imapServer || 'Not set') + '\n' +
+                                     '• IMAP Port: ' + (imapPort || 'Not set') + '\n' +
+                                     '• IMAP Username: ' + (imapUsername || 'Not set') + '\n\n' +
+                                     'Are you sure all information is correct?';
+                    
+                    if (!confirm(confirmMsg)) {
+                        return false;
+                    }
+                }
+            }
+            
             // Add unchecked checkboxes as 'false'
             const checkboxes = this.querySelectorAll('input[type="checkbox"]');
             checkboxes.forEach(checkbox => {
@@ -1046,11 +1182,26 @@ Your Title"><?= htmlspecialchars($s['signature']) ?></textarea>
                     const toast = document.getElementById('successToast');
                     toast.classList.add('show');
                     
+                    // If IMAP settings were locked, show additional message
+                    if (result.locked) {
+                        setTimeout(() => {
+                            alert('🔒 IMAP Settings Locked\n\nYour IMAP configuration has been saved and locked for security. Only a super administrator can modify these settings now.');
+                        }, 500);
+                    }
+                    
                     setTimeout(() => {
                         toast.classList.remove('show');
+                        // Reload page to reflect locked state
+                        if (result.locked) {
+                            location.reload();
+                        }
                     }, 3000);
                 } else {
-                    alert('Error saving settings: ' + (result.message || 'Unknown error'));
+                    if (result.locked) {
+                        alert('🔒 Settings Locked\n\n' + (result.message || 'IMAP settings are locked and can only be modified by a super administrator.'));
+                    } else {
+                        alert('Error saving settings: ' + (result.message || 'Unknown error'));
+                    }
                 }
             } catch (error) {
                 console.error('Error:', error);
