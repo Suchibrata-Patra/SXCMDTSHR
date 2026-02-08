@@ -30,32 +30,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     echo "<strong>Database User ID:</strong> " . htmlspecialchars($userId) . "<br>";
     echo "<strong>SMTP Username (Session):</strong> " . htmlspecialchars($_SESSION['smtp_user']) . "<br>";
     echo "<strong>SMTP Password (Session):</strong> " . htmlspecialchars($_SESSION['smtp_pass']) . "<br>";
-    echo "<p style='color:#888; font-size:0.9em;'><em>Note: If the password above is your regular Gmail password, it will fail. You MUST use a 16-character 'App Password'.</em></p>";
+    echo "<p style='color:#888; font-size:0.9em;'><em>Using Hostinger SMTP: smtp.hostinger.com:465</em></p>";
     echo "</div>";
 
     $mail = new PHPMailer(true);
     
     try {
-        // --- STEP 2: VERBOSE SMTP DEBUGGING ---
-      // --- STEP 2: SMTP CONFIGURATION ---
-$mail->isSMTP();
-$mail->SMTPDebug = 4; // LEVEL 4: Full low-level output
+        // --- STEP 2: SMTP CONFIGURATION ---
+        $mail->isSMTP();
+        $mail->SMTPDebug = 4; // LEVEL 4: Full low-level output
 
-$settings = $_SESSION['user_settings'] ?? [];
+        $settings = $_SESSION['user_settings'] ?? [];
 
-// SMTP Host
-$mail->Host = !empty($settings['smtp_host']) ? $settings['smtp_host'] : "smtp.hostinger.com";
-$mail->SMTPAuth = true;
-$mail->Username = $_SESSION['smtp_user'];
-$mail->Password = $_SESSION['smtp_pass'];
+        // SMTP Host - CORRECTED to Hostinger's SMTP server
+        $mail->Host = "smtp.hostinger.com";
+        $mail->SMTPAuth = true;
+        $mail->Username = $_SESSION['smtp_user'];  // info.official@holidayseva.com
+        $mail->Password = $_SESSION['smtp_pass'];  // Your email password
 
-// **FIX: Set Port FIRST, then configure security based on it**
-
-// Match Security to Port
-$mail->Port = 465;
-$mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+        // Port and Security Configuration (Hostinger uses 465 with SSL)
+        $mail->Port = 465;
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         
-        $displayName = !empty($settings['display_name']) ? $settings['display_name'] : "Mail Sender";
+        $displayName = !empty($settings['display_name']) ? $settings['display_name'] : "Holiday Seva";
         $mail->setFrom($_SESSION['smtp_user'], $displayName);
         
         // RECIPIENT
@@ -89,6 +86,7 @@ $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
     header("Location: index.php");
     exit();
 }
+
 function showSuccessPage($subject, $successEmails, $failedEmails, $dbSaved, $attachments, $summary) {
     ?>
 <!DOCTYPE html>
