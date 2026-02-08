@@ -349,11 +349,24 @@ $defaultSignature = json_encode($settings['signature']);
             box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
         }
         
+        /* FIX: Ensure toolbar buttons display correctly */
         .ql-toolbar {
-            border: none;
-            border-bottom: 1px solid var(--border);
-            background: #FAFAFA;
-            padding: 12px;
+            border: none !important;
+            border-bottom: 1px solid var(--border) !important;
+            background: #FAFAFA !important;
+            padding: 12px !important;
+        }
+
+        .ql-toolbar .ql-stroke {
+            stroke: #1c1c1e !important;
+        }
+
+        .ql-toolbar .ql-fill {
+            fill: #1c1c1e !important;
+        }
+
+        .ql-toolbar .ql-picker-label {
+            color: #1c1c1e !important;
         }
 
         .ql-container {
@@ -388,12 +401,20 @@ $defaultSignature = json_encode($settings['signature']);
         }
 
         .ql-toolbar button:hover {
-            background: rgba(0, 122, 255, 0.1);
+            background: rgba(0, 122, 255, 0.1) !important;
         }
 
         .ql-toolbar button.ql-active {
-            background: rgba(0, 122, 255, 0.15);
-            color: var(--apple-blue);
+            background: rgba(0, 122, 255, 0.15) !important;
+            color: var(--apple-blue) !important;
+        }
+
+        .ql-toolbar button.ql-active .ql-stroke {
+            stroke: var(--apple-blue) !important;
+        }
+
+        .ql-toolbar button.ql-active .ql-fill {
+            fill: var(--apple-blue) !important;
         }
 
         /* ========== ACTION BUTTONS ========== */
@@ -645,15 +666,14 @@ $defaultSignature = json_encode($settings['signature']);
                         </div>
                     </div>
 
-                    <!-- Signature Section -->
-                    <!-- Signature Section -->
+                    <!-- Signature Section - COLLAPSED BY DEFAULT -->
                     <div class="form-section">
-                        <div class="section-toggle" onclick="toggleSection('signatureSection')">
+                        <div class="section-toggle collapsed" onclick="toggleSection('signatureSection')">
                             <span class="material-icons">expand_more</span>
                             <h2 class="section-title" style="margin: 0;">Email Signature</h2>
                         </div>
 
-                        <div class="section-content" id="signatureSection">
+                        <div class="section-content collapsed" id="signatureSection">
                             <div class="form-group" style="margin-top: 16px;">
                                 <label for="signatureWish">Closing Wish</label>
                                 <input type="text" id="signatureWish" name="signatureWish" class="form-input"
@@ -799,7 +819,7 @@ $defaultSignature = json_encode($settings['signature']);
         });
 
         // Load default signature from settings
-        const defaultSignature = <? php echo $defaultSignature; ?>;
+        const defaultSignature = <?php echo $defaultSignature; ?>;
         if (defaultSignature) {
             quillSignature.root.innerHTML = defaultSignature;
         }
