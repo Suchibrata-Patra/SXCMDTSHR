@@ -42,7 +42,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         $settings = $_SESSION['user_settings'] ?? [];
         
-        $mail->Host = !empty($settings['smtp_host']) ? $settings['smtp_host'] : "smtp.gmail.com";
+        $mail->Host = !empty($settings['smtp_host']) ? $settings['smtp_host'] : "smtp.hostinger.com";
         $mail->SMTPAuth = true;
         $mail->Username = $_SESSION['smtp_user'];
         $mail->Password = $_SESSION['smtp_pass'];
