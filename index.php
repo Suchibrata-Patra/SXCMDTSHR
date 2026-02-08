@@ -79,12 +79,12 @@ $defaultSignature = json_encode($settings['signature']);
         .content-area {
             flex: 1;
             overflow-y: auto;
-            background: #fff;
+            background: #f2f2f7;
         }
 
         /* Nature.com style header */
         .page-header {
-            background: #fff;
+            background: #f2f2f7;
             /* border-bottom: 1px solid #e0e0e0; */
             padding: 0;
             position: sticky;
