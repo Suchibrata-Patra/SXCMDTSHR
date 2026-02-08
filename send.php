@@ -1,8 +1,4 @@
 <?php
-/**
- * send.php - Complete Email Sending System with Summary
- * Completely rewritten from scratch
- */
 
 session_start();
 require 'vendor/autoload.php';
@@ -32,14 +28,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     try {
         // ===== SMTP CONFIGURATION =====
-        $mail->isSMTP();
-        $mail->SMTPDebug = 0; // Set to 2 for debugging
-        $mail->Host = env("SMTP_HOST", "smtp.holidayseva.com");
-        $mail->SMTPAuth = true;
-        $mail->Username = $_SESSION['smtp_user'];
-        $mail->Password = $_SESSION['smtp_pass'];
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-        $mail->Port = env("SMTP_PORT", 465);
+        // ===== SMTP CONFIGURATION =====
+$settings = $_SESSION['user_settings'] ?? []; // Load user settings from session
+
+$mail->isSMTP();
+$mail->SMTPDebug = 0; 
+// Use session settings if available, otherwise fallback to defaults
+$mail->Host = !empty($settings['smtp_host']) ? $settings['smtp_host'] : "smtp.holidayseva.com";
+$mail->SMTPAuth = true;
+$mail->Username = $_SESSION['smtp_user']; // Already using session
+$mail->Password = $_SESSION['smtp_pass']; // Already using session
+$mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // Usually 587 uses STARTTLS
+$mail->Port = !empty($settings['smtp_port']) ? $settings['smtp_port'] : 465;
         
         // ===== SENDER CONFIGURATION =====
         $settings = $_SESSION['user_settings'] ?? [];
