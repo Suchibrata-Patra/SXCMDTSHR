@@ -18,8 +18,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $user_pass = $_POST['app_password'];
 
     $mail = new PHPMailer(true);
-    $mail->SMTPDebug = 2;
-    $mail->Debugoutput = 'html';
+    $mail->SMTPDebug = 0; // Disable debug output
     try {
         $mail->isSMTP();
         $mail->Host       = env("SMTP_HOST"); 
@@ -39,11 +38,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['smtp_user'] = $user_email;
             $_SESSION['smtp_pass'] = $user_pass;
             $_SESSION['authenticated'] = true;
+            
+            // CRITICAL: Load IMAP configuration into session
+            require_once 'db_config.php';
+            require_once 'settings_helper.php';
+            
+            // Load IMAP settings from database into session
+            loadImapConfigToSession($user_email, $user_pass);
+            
+            // Check user role (for super admin features)
+            // You can add this to your database if needed
+            // For now, we'll use a simple check
+            $superAdmins = ['admin@sxccal.edu', 'hod@sxccal.edu']; // Add your super admin emails
+            if (in_array($user_email, $superAdmins)) {
+                $_SESSION['user_role'] = 'super_admin';
+            } else {
+                $_SESSION['user_role'] = 'user';
+            }
+            
             header("Location: index.php");
             exit();
         }
     } catch (Exception $e) {
-        $error = "Authentication Failed. Please verify credentials.";
+        $error = "Authentication Failed. Please verify credentials. Error: " . $mail->ErrorInfo;
+        error_log("Login error for $user_email: " . $mail->ErrorInfo);
     }
 }
 ?>
@@ -89,7 +107,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         .login-card {
             width: 100%;
             max-width: 420px;
-            /* Original width restored */
             padding: 40px;
             background: #ffffff;
             border-radius: 12px;
@@ -98,7 +115,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             box-sizing: border-box;
         }
 
-        /* Institutional Header */
         .brand-header {
             display: flex;
             align-items: center;
@@ -110,14 +126,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         .brand-logo {
             width: 60px;
-            /* Sized to fit narrow container */
             height: auto;
             flex-shrink: 0;
         }
 
         .brand-details {
             font-size: 0.6rem;
-            /* Scaled down for the 420px width */
             line-height: 1.3;
             color: #666;
             font-weight: 500;
@@ -250,7 +264,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             <?php if ($error): ?>
             <div class="error-toast">
-                <?php echo $error; ?>
+                <?php echo htmlspecialchars($error); ?>
+            </div>
+            <?php endif; ?>
+
+            <?php if (isset($_GET['error']) && $_GET['error'] === 'session_expired'): ?>
+            <div class="error-toast">
+                Your session has expired. Please login again.
             </div>
             <?php endif; ?>
 
@@ -270,13 +290,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </label>
                 </div>
 
-                <button type="submit">Verify & Proceeed</button>
+                <button type="submit">Verify & Proceed</button>
             </form>
-
-            <!-- <footer>
-                &copy;
-                <?php echo date("Y"); ?> Dept. of Data Science | SXC
-            </footer> -->
         </div>
     </div>
 

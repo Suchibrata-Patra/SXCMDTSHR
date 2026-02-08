@@ -1,4 +1,10 @@
 <?php
+/**
+ * SAVE SETTINGS - UPDATED VERSION
+ * Now separates IMAP settings from regular settings
+ * IMAP settings should be saved via imap_settings.php
+ */
+
 session_start();
 header('Content-Type: application/json');
 
@@ -13,8 +19,8 @@ require_once 'settings_helper.php';
 
 $userEmail = $_SESSION['smtp_user'];
 
-// Define all possible settings keys
-$validSettings = [
+// Define regular settings (non-IMAP)
+$regularSettings = [
     // Identity & Authority
     'display_name', 'designation', 'dept', 'hod_email', 'staff_id', 'room_no', 'ext_no',
     
@@ -35,7 +41,7 @@ $validSettings = [
     'ip_lock', 'debug_logs', 'activity_report'
 ];
 
-// IMAP-related settings that can only be changed once (or by super admin)
+// IMAP settings - should NOT be saved through this script
 $imapSettings = [
     'imap_server', 'imap_port', 'imap_encryption', 'imap_username'
 ];
@@ -46,57 +52,48 @@ try {
         throw new Exception('Database connection failed');
     }
     
-    // Check if settings are locked
-    $settingsLocked = areSettingsLocked($userEmail);
-    
-    // Check if user is trying to modify IMAP settings
-    $isModifyingImapSettings = false;
-    foreach ($imapSettings as $imapKey) {
-        if (isset($_POST[$imapKey])) {
-            $isModifyingImapSettings = true;
+    // Check if user is trying to modify IMAP settings through this script
+    $hasImapSettings = false;
+    foreach ($imapSettings as $key) {
+        if (isset($_POST[$key])) {
+            $hasImapSettings = true;
             break;
         }
     }
     
-    // If settings are locked and user is trying to modify IMAP settings
-    if ($settingsLocked && $isModifyingImapSettings) {
-        // Check if user is super admin
+    if ($hasImapSettings) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'IMAP settings must be configured through the dedicated IMAP Settings page.',
+            'redirect' => 'imap_settings.php'
+        ]);
+        exit();
+    }
+    
+    // Handle unlock request (super admin only)
+    if (isset($_POST['settings_locked']) && $_POST['settings_locked'] === 'false') {
         if (!isSuperAdmin()) {
             echo json_encode([
                 'success' => false,
-                'message' => 'IMAP settings are locked. Super admin authorization required to modify.',
-                'locked' => true
+                'message' => 'Unauthorized: Super admin access required'
             ]);
             exit();
         }
         
-        // Log super admin override
+        unlockSettings($userEmail);
+        
         logSuperAdminAction(
+            $_SESSION['smtp_user'],
+            'SETTINGS_UNLOCK',
             $userEmail,
-            'IMAP_SETTINGS_OVERRIDE',
-            $userEmail,
-            ['action' => 'Modified locked IMAP settings', 'timestamp' => date('Y-m-d H:i:s')]
+            ['timestamp' => date('Y-m-d H:i:s')]
         );
-    }
-    
-    // If user is saving IMAP settings for the first time, validate them
-    if ($isModifyingImapSettings && !$settingsLocked) {
-        $imapData = [];
-        foreach ($imapSettings as $key) {
-            if (isset($_POST[$key])) {
-                $imapData[$key] = $_POST[$key];
-            }
-        }
         
-        $validation = validateImapSettings($imapData);
-        if (!$validation['valid']) {
-            echo json_encode([
-                'success' => false,
-                'message' => 'Invalid IMAP settings: ' . implode(', ', $validation['errors']),
-                'errors' => $validation['errors']
-            ]);
-            exit();
-        }
+        echo json_encode([
+            'success' => true,
+            'message' => 'Settings unlocked successfully'
+        ]);
+        exit();
     }
     
     // Begin transaction
@@ -112,18 +109,17 @@ try {
     ");
     
     $savedCount = 0;
-    $imapSettingsSaved = false;
     
     // Process each POST parameter
     foreach ($_POST as $key => $value) {
-        // Check if it's a valid setting
-        if (!in_array($key, $validSettings) && !in_array($key, $imapSettings)) {
+        // Skip if it's an IMAP setting
+        if (in_array($key, $imapSettings)) {
             continue;
         }
         
-        // Track if IMAP settings are being saved
-        if (in_array($key, $imapSettings)) {
-            $imapSettingsSaved = true;
+        // Check if it's a valid regular setting
+        if (!in_array($key, $regularSettings)) {
+            continue;
         }
         
         // Convert boolean values
@@ -137,23 +133,24 @@ try {
         $value = trim($value);
         
         // Additional validation for specific fields
-        if ($key === 'imap_port') {
-            if (!is_numeric($value) || $value < 1 || $value > 65535) {
-                $pdo->rollBack();
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Invalid IMAP port number'
-                ]);
-                exit();
-            }
-        }
-        
-        if ($key === 'imap_username' || $key === 'hod_email' || $key === 'default_cc' || $key === 'default_bcc') {
+        if ($key === 'hod_email' || $key === 'default_cc' || $key === 'default_bcc') {
             if (!empty($value) && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
                 $pdo->rollBack();
                 echo json_encode([
                     'success' => false,
                     'message' => "Invalid email format for $key"
+                ]);
+                exit();
+            }
+        }
+        
+        // Validate numeric fields
+        if (in_array($key, ['font_size', 'session_timeout', 'attach_size_limit', 'undo_send_delay'])) {
+            if (!empty($value) && !is_numeric($value)) {
+                $pdo->rollBack();
+                echo json_encode([
+                    'success' => false,
+                    'message' => "$key must be a number"
                 ]);
                 exit();
             }
@@ -169,34 +166,16 @@ try {
         $savedCount++;
     }
     
-    // If IMAP settings were saved for the first time and settings weren't already locked,
-    // lock the settings
-    if ($imapSettingsSaved && !$settingsLocked && !isSuperAdmin()) {
-        $stmt->execute([
-            ':email' => $userEmail,
-            ':key' => 'settings_locked',
-            ':value' => 'true'
-        ]);
-        
-        error_log("Settings locked for user: $userEmail");
-    }
-    
     // Commit transaction
     $pdo->commit();
     
-    // Update session IMAP config if IMAP settings were changed
-    if ($imapSettingsSaved) {
-        loadImapConfigToSession($userEmail, $_SESSION['smtp_pass']);
-    }
-    
     // Log the activity
-    error_log("Settings saved for user: $userEmail ($savedCount settings updated)");
+    error_log("Regular settings saved for user: $userEmail ($savedCount settings updated)");
     
     echo json_encode([
         'success' => true,
         'message' => 'Settings saved successfully',
-        'count' => $savedCount,
-        'locked' => $imapSettingsSaved && !isSuperAdmin()
+        'count' => $savedCount
     ]);
     
 } catch (PDOException $e) {
