@@ -26,6 +26,7 @@ if (empty($emailIds) || !is_array($emailIds)) {
     exit();
 }
 
+
 // Sanitize email IDs
 $emailIds = array_map('intval', $emailIds);
 $emailIds = array_filter($emailIds, function($id) { return $id > 0; });

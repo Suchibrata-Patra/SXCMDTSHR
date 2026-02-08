@@ -1,5 +1,5 @@
 <?php
-// deleted_items.php - Premium Trash Archive with Restore & Permanent Delete
+// deleted_items.php - Ultra-Premium Trash Archive
 session_start();
 require 'config.php';
 require 'db_config.php';
@@ -145,62 +145,78 @@ $hasActiveFilters = !empty(array_filter($filters));
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trash — SXC MDTS</title>
+    <title>Trash · SXC MDTS</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Premium Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=SF+Pro+Display:wght@300;400;500;600;700&family=Crimson+Pro:wght@200;300;400;500;600&family=Newsreader:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 
     <style>
         :root {
-            /* Dark Sophisticated Palette */
-            --primary: #0a0a0a;
-            --primary-soft: #1a1a1a;
-            --accent: #c41e3a;
-            --accent-hover: #a01629;
-            --accent-light: #fef2f4;
+            /* Apple-inspired Neutral Palette */
+            --neutral-50: #fafaf9;
+            --neutral-100: #f5f5f4;
+            --neutral-200: #e7e5e4;
+            --neutral-300: #d6d3d1;
+            --neutral-400: #a8a29e;
+            --neutral-500: #78716c;
+            --neutral-600: #57534e;
+            --neutral-700: #44403c;
+            --neutral-800: #292524;
+            --neutral-900: #1c1917;
+
+            /* Nature-inspired Organic Colors */
+            --sage-50: #f6f7f6;
+            --sage-100: #e8ebe8;
+            --sage-200: #d1d8d1;
+            --sage-300: #a8b5a8;
+            --sage-400: #7d927d;
+            --sage-500: #5a6f5a;
+            --sage-600: #4a5d4a;
+            --sage-700: #3d4c3d;
             
-            /* Trash-specific colors */
-            --trash-primary: #dc2626;
-            --trash-hover: #b91c1c;
-            --trash-light: #fee2e2;
-            --restore-primary: #059669;
-            --restore-hover: #047857;
-            --restore-light: #d1fae5;
+            /* Uber-inspired Sophisticated Accents */
+            --charcoal: #000000;
+            --charcoal-soft: #0a0a0a;
+            --charcoal-light: #1a1a1a;
             
-            /* Grays */
-            --gray-50: #fafafa;
-            --gray-100: #f4f4f5;
-            --gray-200: #e4e4e7;
-            --gray-300: #d4d4d8;
-            --gray-400: #a1a1aa;
-            --gray-500: #71717a;
-            --gray-600: #52525b;
-            --gray-700: #3f3f46;
-            --gray-800: #27272a;
-            --gray-900: #18181b;
+            /* Premium Action Colors */
+            --restore-primary: #34c759;
+            --restore-hover: #2fb350;
+            --delete-primary: #ff3b30;
+            --delete-hover: #e63329;
             
-            /* Semantic */
+            /* Semantic Colors */
             --background: #ffffff;
-            --surface: #fafafa;
-            --border: #e4e4e7;
-            --text-primary: #0a0a0a;
-            --text-secondary: #52525b;
-            --text-tertiary: #a1a1aa;
+            --surface: #fafaf9;
+            --surface-elevated: #ffffff;
+            --border-subtle: rgba(0, 0, 0, 0.06);
+            --border: rgba(0, 0, 0, 0.1);
+            --border-strong: rgba(0, 0, 0, 0.18);
             
-            /* Effects */
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            /* Text Hierarchy */
+            --text-primary: #1c1917;
+            --text-secondary: #57534e;
+            --text-tertiary: #a8a29e;
+            --text-quaternary: #d6d3d1;
             
-            --radius-sm: 6px;
-            --radius: 8px;
-            --radius-lg: 12px;
-            --radius-xl: 16px;
+            /* Glass Effects */
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.18);
             
-            --transition: cubic-bezier(0.4, 0, 0.2, 1);
+            /* Shadows - Apple-style refined */
+            --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+            --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.16);
+            
+            /* Transitions */
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+            --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
         * {
@@ -210,7 +226,7 @@ $hasActiveFilters = !empty(array_filter($filters));
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
             background: var(--surface);
             color: var(--text-primary);
             display: flex;
@@ -218,6 +234,7 @@ $hasActiveFilters = !empty(array_filter($filters));
             overflow: hidden;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            letter-spacing: -0.011em;
         }
 
         /* Main Wrapper */
@@ -227,29 +244,38 @@ $hasActiveFilters = !empty(array_filter($filters));
             flex-direction: column;
             height: 100vh;
             overflow: hidden;
+            position: relative;
         }
 
-        /* ========== HEADER ========== */
-        .page-header {
-            background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
-            border-bottom: 1px solid var(--border);
-            padding: 28px 36px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .page-header::before {
+        /* Organic Background Pattern */
+        #main-wrapper::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--trash-primary) 0%, var(--accent) 100%);
+            height: 400px;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(138, 180, 138, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(106, 142, 106, 0.02) 0%, transparent 50%),
+                linear-gradient(180deg, var(--sage-50) 0%, transparent 100%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ========== PREMIUM HEADER ========== */
+        .page-header {
+            background: var(--surface-elevated);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 32px 48px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 10;
         }
 
         .header-left {
@@ -259,45 +285,74 @@ $hasActiveFilters = !empty(array_filter($filters));
         }
 
         .page-title {
-            font-family: 'Instrument Serif', serif;
-            font-size: 32px;
-            font-weight: 400;
+            font-family: 'Crimson Pro', Georgia, serif;
+            font-size: 48px;
+            font-weight: 300;
             color: var(--text-primary);
+            letter-spacing: -0.03em;
+            line-height: 1.1;
             display: flex;
             align-items: center;
             gap: 16px;
-            letter-spacing: -0.02em;
+            animation: fadeInUp 0.6s var(--ease-out);
         }
-        
-        .page-title .material-icons-round {
-            font-size: 36px;
-            color: var(--trash-primary);
-            animation: gentleFloat 3s ease-in-out infinite;
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-        
-        @keyframes gentleFloat {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-4px); }
+
+        .title-icon {
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(255, 59, 48, 0.08) 0%, rgba(255, 59, 48, 0.04) 100%);
+            border-radius: 12px;
+            color: var(--delete-primary);
+            animation: iconFloat 4s var(--ease-in-out) infinite;
+        }
+
+        @keyframes iconFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-6px) rotate(-2deg); }
+        }
+
+        .title-icon .material-icons-round {
+            font-size: 24px;
         }
 
         .page-subtitle {
-            font-size: 14px;
-            color: var(--text-secondary);
+            font-family: 'Newsreader', Georgia, serif;
+            font-size: 16px;
             font-weight: 400;
-            padding-left: 52px;
+            color: var(--text-secondary);
+            letter-spacing: -0.01em;
+            padding-left: 58px;
+            line-height: 1.5;
+            animation: fadeInUp 0.6s var(--ease-out) 0.1s both;
         }
 
         .email-count-badge {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 6px 14px;
-            background: var(--trash-light);
-            border: 1px solid rgba(220, 38, 38, 0.2);
-            border-radius: 20px;
+            margin-left: 12px;
+            padding: 4px 12px;
+            background: rgba(0, 0, 0, 0.04);
+            border-radius: 8px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
             font-size: 13px;
-            font-weight: 600;
-            color: var(--trash-primary);
+            font-weight: 590;
+            color: var(--text-secondary);
+            letter-spacing: -0.01em;
         }
 
         /* Header Actions */
@@ -305,6 +360,7 @@ $hasActiveFilters = !empty(array_filter($filters));
             display: flex;
             gap: 12px;
             align-items: center;
+            animation: fadeInUp 0.6s var(--ease-out) 0.2s both;
         }
 
         .search-container {
@@ -312,27 +368,34 @@ $hasActiveFilters = !empty(array_filter($filters));
         }
 
         .search-input {
-            width: 340px;
-            padding: 11px 18px 11px 46px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            font-size: 14px;
-            font-family: 'Inter', sans-serif;
+            width: 380px;
+            padding: 12px 20px 12px 48px;
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            font-size: 15px;
+            font-weight: 400;
+            letter-spacing: -0.01em;
             color: var(--text-primary);
-            background: var(--background);
-            transition: all 0.3s var(--transition);
+            background: var(--surface-elevated);
+            transition: all 0.3s var(--ease-out);
+            box-shadow: var(--shadow-xs);
         }
 
         .search-input:focus {
             outline: none;
-            border-color: var(--trash-primary);
-            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+            border-color: var(--sage-400);
+            box-shadow: 0 0 0 4px rgba(90, 111, 90, 0.08), var(--shadow-sm);
             transform: translateY(-1px);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-tertiary);
         }
 
         .search-icon {
             position: absolute;
-            left: 16px;
+            left: 18px;
             top: 50%;
             transform: translateY(-50%);
             color: var(--text-tertiary);
@@ -344,43 +407,62 @@ $hasActiveFilters = !empty(array_filter($filters));
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 11px 20px;
-            background: var(--background);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
+            padding: 12px 20px;
+            background: var(--surface-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
             color: var(--text-primary);
-            font-size: 14px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            font-size: 15px;
             font-weight: 500;
+            letter-spacing: -0.01em;
             cursor: pointer;
-            transition: all 0.3s var(--transition);
+            transition: all 0.3s var(--ease-out);
+            box-shadow: var(--shadow-xs);
         }
 
         .btn-filter-toggle:hover {
-            background: var(--gray-50);
-            border-color: var(--gray-300);
+            background: var(--neutral-50);
+            border-color: var(--border);
             transform: translateY(-1px);
             box-shadow: var(--shadow-sm);
         }
 
         .btn-filter-toggle.active {
-            background: var(--accent-light);
-            border-color: var(--accent);
-            color: var(--accent);
+            background: var(--sage-100);
+            border-color: var(--sage-300);
+            color: var(--sage-700);
         }
 
-        /* ========== BULK ACTION TOOLBAR ========== */
+        .filter-count-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            background: var(--sage-600);
+            color: white;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        /* ========== UBER-INSPIRED BULK TOOLBAR ========== */
         .bulk-action-toolbar {
-            background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 16px 36px;
+            background: var(--charcoal);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 16px 48px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-shrink: 0;
             transform: translateY(-100%);
             opacity: 0;
-            transition: all 0.4s var(--transition);
+            transition: all 0.5s var(--ease-out);
             box-shadow: var(--shadow-lg);
+            position: relative;
+            z-index: 9;
         }
 
         .bulk-action-toolbar.active {
@@ -391,29 +473,32 @@ $hasActiveFilters = !empty(array_filter($filters));
         .toolbar-left {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 20px;
         }
 
         .selection-info {
             display: flex;
             align-items: center;
-            gap: 10px;
-            color: #ffffff;
+            gap: 12px;
+            color: rgba(255, 255, 255, 0.9);
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            font-size: 15px;
             font-weight: 500;
-            font-size: 14px;
+            letter-spacing: -0.01em;
         }
 
         .selection-count {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 28px;
-            height: 28px;
-            padding: 0 10px;
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 14px;
-            font-weight: 700;
-            font-size: 13px;
+            min-width: 32px;
+            height: 32px;
+            padding: 0 12px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            color: white;
         }
 
         .toolbar-actions {
@@ -425,98 +510,113 @@ $hasActiveFilters = !empty(array_filter($filters));
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 10px 20px;
+            padding: 11px 20px;
             border: none;
-            border-radius: var(--radius);
-            font-size: 14px;
+            border-radius: 10px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            font-size: 15px;
             font-weight: 600;
+            letter-spacing: -0.01em;
             cursor: pointer;
-            transition: all 0.3s var(--transition);
-            font-family: 'Inter', sans-serif;
+            transition: all 0.3s var(--ease-out);
         }
 
         .btn-toolbar-restore {
             background: var(--restore-primary);
-            color: #ffffff;
+            color: white;
         }
 
         .btn-toolbar-restore:hover {
             background: var(--restore-hover);
             transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(5, 150, 105, 0.3);
+            box-shadow: 0 8px 24px rgba(52, 199, 89, 0.3);
+        }
+
+        .btn-toolbar-restore:active {
+            transform: translateY(0);
         }
 
         .btn-toolbar-delete {
-            background: var(--trash-primary);
-            color: #ffffff;
+            background: var(--delete-primary);
+            color: white;
         }
 
         .btn-toolbar-delete:hover {
-            background: var(--trash-hover);
+            background: var(--delete-hover);
             transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(220, 38, 38, 0.3);
+            box-shadow: 0 8px 24px rgba(255, 59, 48, 0.3);
+        }
+
+        .btn-toolbar-delete:active {
+            transform: translateY(0);
         }
 
         .btn-toolbar-clear {
             background: rgba(255, 255, 255, 0.1);
-            color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.12);
         }
 
         .btn-toolbar-clear:hover {
             background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.2);
         }
 
         /* ========== FILTER PANEL ========== */
         .filter-panel {
-            background: var(--background);
-            border-bottom: 1px solid var(--border);
+            background: var(--surface-elevated);
+            border-bottom: 1px solid var(--border-subtle);
             padding: 0;
             max-height: 0;
             overflow: hidden;
-            transition: all 0.4s var(--transition);
+            transition: all 0.5s var(--ease-out);
+            position: relative;
+            z-index: 8;
         }
 
         .filter-panel.active {
-            max-height: 400px;
-            padding: 24px 36px;
+            max-height: 500px;
+            padding: 32px 48px;
         }
 
         .filter-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin-bottom: 20px;
+            gap: 24px;
+            margin-bottom: 28px;
         }
 
         .filter-group label {
             display: block;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
             font-size: 13px;
             font-weight: 600;
             color: var(--text-secondary);
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.06em;
         }
 
         .filter-input,
         .filter-select {
             width: 100%;
-            padding: 10px 14px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            font-size: 14px;
-            font-family: 'Inter', sans-serif;
+            padding: 12px 16px;
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            font-size: 15px;
+            font-weight: 400;
+            letter-spacing: -0.01em;
             color: var(--text-primary);
             background: var(--background);
-            transition: all 0.2s var(--transition);
+            transition: all 0.3s var(--ease-out);
         }
 
         .filter-input:focus,
         .filter-select:focus {
             outline: none;
-            border-color: var(--trash-primary);
-            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+            border-color: var(--sage-400);
+            box-shadow: 0 0 0 4px rgba(90, 111, 90, 0.08);
         }
 
         .filter-actions {
@@ -527,108 +627,135 @@ $hasActiveFilters = !empty(array_filter($filters));
 
         .btn-apply,
         .btn-clear {
-            padding: 10px 24px;
+            padding: 12px 28px;
             border: none;
-            border-radius: var(--radius);
-            font-size: 14px;
+            border-radius: 10px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            font-size: 15px;
             font-weight: 600;
+            letter-spacing: -0.01em;
             cursor: pointer;
-            transition: all 0.3s var(--transition);
-            font-family: 'Inter', sans-serif;
+            transition: all 0.3s var(--ease-out);
         }
 
         .btn-apply {
-            background: var(--trash-primary);
-            color: #ffffff;
+            background: var(--charcoal);
+            color: white;
         }
 
         .btn-apply:hover {
-            background: var(--trash-hover);
+            background: var(--charcoal-light);
             transform: translateY(-1px);
             box-shadow: var(--shadow-md);
         }
 
         .btn-clear {
-            background: var(--gray-100);
+            background: var(--neutral-100);
             color: var(--text-primary);
         }
 
         .btn-clear:hover {
-            background: var(--gray-200);
+            background: var(--neutral-200);
         }
 
         /* Active Filters */
         .active-filters {
-            padding: 16px 36px;
-            background: var(--gray-50);
-            border-bottom: 1px solid var(--border);
+            padding: 20px 48px;
+            background: var(--sage-50);
+            border-bottom: 1px solid var(--border-subtle);
             display: flex;
             align-items: center;
             gap: 12px;
             flex-wrap: wrap;
+            position: relative;
+            z-index: 7;
+        }
+
+        .active-filters-label {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
         }
 
         .filter-badge {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 6px 12px;
-            background: var(--background);
-            border: 1px solid var(--border);
+            padding: 8px 14px;
+            background: white;
+            border: 1px solid var(--border-subtle);
             border-radius: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
             font-size: 13px;
+            font-weight: 500;
             color: var(--text-secondary);
+            box-shadow: var(--shadow-xs);
         }
 
         .filter-badge-close {
             cursor: pointer;
             color: var(--text-tertiary);
-            transition: color 0.2s;
+            transition: all 0.2s var(--ease-out);
+            display: flex;
+            align-items: center;
         }
 
         .filter-badge-close:hover {
-            color: var(--trash-primary);
+            color: var(--delete-primary);
+            transform: scale(1.1);
         }
 
         .btn-clear-all {
-            padding: 6px 16px;
-            background: var(--trash-primary);
-            color: #ffffff;
+            padding: 8px 18px;
+            background: var(--charcoal);
+            color: white;
             border: none;
             border-radius: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
             font-size: 13px;
             font-weight: 600;
+            letter-spacing: -0.01em;
             cursor: pointer;
-            transition: all 0.3s var(--transition);
+            transition: all 0.3s var(--ease-out);
+            box-shadow: var(--shadow-xs);
         }
 
         .btn-clear-all:hover {
-            background: var(--trash-hover);
+            background: var(--charcoal-light);
             transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
         }
 
-        /* ========== EMAIL LIST ========== */
+        /* ========== NATURE-INSPIRED EMAIL LIST ========== */
         .email-list-container {
             flex: 1;
             overflow-y: auto;
             background: var(--surface);
+            position: relative;
+            z-index: 1;
         }
 
         .email-list {
-            padding: 8px 0;
+            padding: 16px 0;
         }
 
         .email-item {
             display: grid;
-            grid-template-columns: 48px 260px 1fr auto 120px;
-            gap: 20px;
+            grid-template-columns: 56px 280px 1fr auto 140px;
+            gap: 24px;
             align-items: center;
-            padding: 16px 36px;
-            background: var(--background);
-            border-bottom: 1px solid var(--border);
-            transition: all 0.2s var(--transition);
+            padding: 20px 48px;
+            background: var(--surface-elevated);
+            border-bottom: 1px solid var(--border-subtle);
+            margin: 0 24px 8px;
+            border-radius: 16px;
+            transition: all 0.4s var(--ease-out);
             cursor: pointer;
             position: relative;
+            box-shadow: var(--shadow-xs);
         }
 
         .email-item::before {
@@ -638,22 +765,28 @@ $hasActiveFilters = !empty(array_filter($filters));
             top: 0;
             bottom: 0;
             width: 0;
-            background: var(--trash-primary);
-            transition: width 0.3s var(--transition);
+            background: linear-gradient(180deg, var(--sage-500) 0%, var(--sage-600) 100%);
+            border-radius: 16px 0 0 16px;
+            transition: width 0.4s var(--ease-out);
         }
 
         .email-item:hover {
-            background: var(--gray-50);
-            transform: translateX(4px);
+            transform: translateX(8px);
+            box-shadow: var(--shadow-md);
         }
 
         .email-item:hover::before {
-            width: 3px;
+            width: 4px;
         }
 
         .email-item.selected {
-            background: var(--trash-light);
-            border-left: 3px solid var(--trash-primary);
+            background: linear-gradient(135deg, rgba(90, 111, 90, 0.04) 0%, rgba(90, 111, 90, 0.02) 100%);
+            border-color: var(--sage-300);
+            box-shadow: 0 0 0 2px rgba(90, 111, 90, 0.12), var(--shadow-sm);
+        }
+
+        .email-item.selected::before {
+            width: 4px;
         }
 
         /* Checkbox Column */
@@ -664,17 +797,20 @@ $hasActiveFilters = !empty(array_filter($filters));
         }
 
         .email-checkbox {
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             cursor: pointer;
-            accent-color: var(--trash-primary);
+            accent-color: var(--sage-600);
+            border-radius: 6px;
         }
 
         /* Recipient Column */
         .col-recipient {
-            font-size: 14px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            font-size: 15px;
             font-weight: 500;
             color: var(--text-primary);
+            letter-spacing: -0.01em;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -683,19 +819,24 @@ $hasActiveFilters = !empty(array_filter($filters));
         /* Subject & Preview Column */
         .col-subject {
             min-width: 0;
+            line-height: 1.5;
         }
 
         .subject-text {
-            font-weight: 600;
-            font-size: 14px;
+            font-family: 'Newsreader', Georgia, serif;
+            font-weight: 500;
+            font-size: 16px;
             color: var(--text-primary);
-            margin-right: 8px;
+            margin-right: 10px;
+            letter-spacing: -0.01em;
         }
 
         .snippet-text {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
             color: var(--text-tertiary);
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 400;
+            letter-spacing: -0.01em;
         }
 
         /* Label Column */
@@ -706,90 +847,116 @@ $hasActiveFilters = !empty(array_filter($filters));
         }
 
         .label-badge {
-            padding: 4px 12px;
+            padding: 6px 14px;
             border-radius: 12px;
-            font-size: 11px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            font-size: 12px;
             font-weight: 600;
-            color: #ffffff;
+            color: white;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.05em;
+            box-shadow: var(--shadow-xs);
         }
 
         /* Date Column */
         .col-date {
             text-align: right;
-            font-size: 13px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
             color: var(--text-secondary);
+            letter-spacing: -0.01em;
             white-space: nowrap;
             display: flex;
             align-items: center;
             justify-content: flex-end;
-            gap: 8px;
+            gap: 10px;
         }
 
         .attachment-icon {
             color: var(--text-tertiary);
-            font-size: 14px;
+            font-size: 16px;
         }
 
-        /* ========== EMPTY STATE ========== */
+        /* ========== ORGANIC EMPTY STATE ========== */
         .empty-state {
             text-align: center;
             padding: 120px 40px;
-            color: var(--text-secondary);
+            animation: fadeIn 0.8s var(--ease-out);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         .empty-state-icon {
-            width: 120px;
-            height: 120px;
-            margin: 0 auto 24px;
-            background: linear-gradient(135deg, var(--trash-light) 0%, var(--gray-100) 100%);
+            width: 140px;
+            height: 140px;
+            margin: 0 auto 32px;
+            background: linear-gradient(135deg, rgba(90, 111, 90, 0.06) 0%, rgba(90, 111, 90, 0.02) 100%);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            animation: pulseGlow 3s ease-in-out infinite;
+            position: relative;
+            animation: breathe 4s var(--ease-in-out) infinite;
+        }
+
+        @keyframes breathe {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(90, 111, 90, 0.15);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 30px rgba(90, 111, 90, 0);
+            }
+        }
+
+        .empty-state-icon::before {
+            content: '';
+            position: absolute;
+            inset: 12px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(90, 111, 90, 0.08) 0%, transparent 100%);
         }
 
         .empty-state-icon .material-icons-round {
             font-size: 64px;
-            color: var(--trash-primary);
-        }
-
-        @keyframes pulseGlow {
-            0%, 100% {
-                transform: scale(1);
-                box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.2);
-            }
-            50% {
-                transform: scale(1.05);
-                box-shadow: 0 0 0 20px rgba(220, 38, 38, 0);
-            }
+            color: var(--sage-500);
+            position: relative;
+            z-index: 1;
         }
 
         .empty-state h3 {
-            font-size: 24px;
-            font-weight: 600;
+            font-family: 'Crimson Pro', Georgia, serif;
+            font-size: 32px;
+            font-weight: 400;
             color: var(--text-primary);
-            margin-bottom: 12px;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
         }
 
         .empty-state p {
-            font-size: 15px;
+            font-family: 'Newsreader', Georgia, serif;
+            font-size: 17px;
+            font-weight: 300;
             color: var(--text-secondary);
-            max-width: 400px;
+            max-width: 460px;
             margin: 0 auto;
             line-height: 1.6;
+            letter-spacing: -0.01em;
         }
 
-        /* ========== PAGINATION ========== */
+        /* ========== REFINED PAGINATION ========== */
         .pagination {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             justify-content: center;
-            padding: 24px 36px;
-            background: var(--background);
-            border-top: 1px solid var(--border);
+            padding: 28px 48px;
+            background: var(--surface-elevated);
+            border-top: 1px solid var(--border-subtle);
         }
 
         .page-link {
@@ -799,56 +966,73 @@ $hasActiveFilters = !empty(array_filter($filters));
             min-width: 40px;
             height: 40px;
             padding: 0 12px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
             color: var(--text-primary);
             text-decoration: none;
-            font-size: 14px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            font-size: 15px;
             font-weight: 500;
-            transition: all 0.2s var(--transition);
+            letter-spacing: -0.01em;
+            transition: all 0.3s var(--ease-out);
+            background: var(--background);
         }
 
         .page-link:hover {
-            background: var(--gray-50);
-            border-color: var(--gray-300);
+            background: var(--neutral-50);
+            border-color: var(--border);
             transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
         }
 
         .page-link.active {
-            background: var(--trash-primary);
-            color: #ffffff;
-            border-color: var(--trash-primary);
+            background: var(--charcoal);
+            color: white;
+            border-color: var(--charcoal);
+            box-shadow: var(--shadow-sm);
         }
 
-        /* ========== SCROLLBAR ========== */
+        /* ========== PREMIUM SCROLLBAR ========== */
         .email-list-container::-webkit-scrollbar {
-            width: 10px;
+            width: 12px;
         }
 
         .email-list-container::-webkit-scrollbar-track {
-            background: var(--gray-100);
+            background: transparent;
+            margin: 16px 0;
         }
 
         .email-list-container::-webkit-scrollbar-thumb {
-            background: var(--gray-400);
+            background: rgba(0, 0, 0, 0.12);
             border-radius: 10px;
+            border: 3px solid var(--surface);
         }
 
         .email-list-container::-webkit-scrollbar-thumb:hover {
-            background: var(--gray-500);
+            background: rgba(0, 0, 0, 0.2);
         }
 
-        /* ========== RESPONSIVE ========== */
-        @media (max-width: 1200px) {
+        /* ========== RESPONSIVE DESIGN ========== */
+        @media (max-width: 1400px) {
             .filter-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 1024px) {
+            .page-header {
+                padding: 24px 32px 20px;
+            }
+
+            .page-title {
+                font-size: 38px;
+            }
+
             .email-item {
-                grid-template-columns: 48px 1fr 80px;
-                gap: 12px;
+                grid-template-columns: 56px 1fr 100px;
+                gap: 16px;
+                padding: 16px 32px;
+                margin: 0 16px 6px;
             }
 
             .col-recipient,
@@ -860,6 +1044,28 @@ $hasActiveFilters = !empty(array_filter($filters));
                 grid-template-columns: 1fr;
             }
         }
+
+        /* ========== STAGGERED ENTRANCE ANIMATIONS ========== */
+        .email-item {
+            animation: slideInRight 0.5s var(--ease-out) backwards;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        <?php for ($i = 0; $i < min(20, count($sentEmails)); $i++): ?>
+        .email-item:nth-child(<?= $i + 1 ?>) {
+            animation-delay: <?= $i * 0.03 ?>s;
+        }
+        <?php endfor; ?>
     </style>
 </head>
 
@@ -867,18 +1073,19 @@ $hasActiveFilters = !empty(array_filter($filters));
     <?php include 'sidebar.php'; ?>
 
     <div id="main-wrapper">
-        <!-- Header -->
+        <!-- Premium Header -->
         <div class="page-header">
             <div class="header-left">
                 <h1 class="page-title">
-                    <span class="material-icons-round">delete</span>
+                    <div class="title-icon">
+                        <span class="material-icons-round">delete</span>
+                    </div>
                     Trash
                 </h1>
                 <p class="page-subtitle">
                     Items deleted 30 days ago are permanently removed
                     <span class="email-count-badge">
-                        <span class="material-icons-round">inventory_2</span>
-                        <?= $totalEmails ?> items
+                        <?= $totalEmails ?> <?= $totalEmails === 1 ? 'item' : 'items' ?>
                     </span>
                 </p>
             </div>
@@ -886,41 +1093,38 @@ $hasActiveFilters = !empty(array_filter($filters));
             <div class="header-actions">
                 <div class="search-container">
                     <span class="material-icons-round search-icon">search</span>
-                    <input type="text" class="search-input" placeholder="Search trash..." 
+                    <input type="text" class="search-input" placeholder="Search in trash..." 
                            value="<?= htmlspecialchars($filters['search']) ?>"
                            onchange="handleSearch(this.value)">
                 </div>
                 <button class="btn-filter-toggle <?= $hasActiveFilters ? 'active' : '' ?>" onclick="toggleFilters()">
-                    <span class="material-icons-round">tune</span>
+                    <span class="material-icons-round" style="font-size: 20px;">tune</span>
                     Filters
                     <?php if ($hasActiveFilters): ?>
-                    <span style="background: var(--accent); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700;">
-                        <?= count(array_filter($filters)) ?>
-                    </span>
+                    <span class="filter-count-badge"><?= count(array_filter($filters)) ?></span>
                     <?php endif; ?>
                 </button>
             </div>
         </div>
 
-        <!-- Bulk Action Toolbar -->
+        <!-- Uber-inspired Bulk Toolbar -->
         <div class="bulk-action-toolbar" id="bulkActionToolbar">
             <div class="toolbar-left">
                 <div class="selection-info">
                     <span class="selection-count" id="selectedCount">0</span>
-                    <span>items selected</span>
+                    <span>selected</span>
                 </div>
             </div>
             <div class="toolbar-actions">
                 <button class="btn-toolbar btn-toolbar-restore" onclick="bulkRestore()">
-                    <span class="material-icons-round" style="font-size: 18px;">restore</span>
+                    <span class="material-icons-round" style="font-size: 20px;">restore</span>
                     Restore
                 </button>
                 <button class="btn-toolbar btn-toolbar-delete" onclick="bulkDeleteForever()">
-                    <span class="material-icons-round" style="font-size: 18px;">delete_forever</span>
+                    <span class="material-icons-round" style="font-size: 20px;">delete_forever</span>
                     Delete Forever
                 </button>
                 <button class="btn-toolbar btn-toolbar-clear" onclick="clearSelection()">
-                    <span class="material-icons-round" style="font-size: 18px;">close</span>
                     Clear
                 </button>
             </div>
@@ -933,13 +1137,13 @@ $hasActiveFilters = !empty(array_filter($filters));
                     <div class="filter-group">
                         <label>Recipient Email</label>
                         <input type="text" name="recipient" class="filter-input" 
-                               placeholder="Enter recipient email"
+                               placeholder="Filter by recipient"
                                value="<?= htmlspecialchars($filters['recipient']) ?>">
                     </div>
                     <div class="filter-group">
                         <label>Subject</label>
                         <input type="text" name="subject" class="filter-input" 
-                               placeholder="Enter subject"
+                               placeholder="Filter by subject"
                                value="<?= htmlspecialchars($filters['subject']) ?>">
                     </div>
                     <div class="filter-group">
@@ -977,23 +1181,23 @@ $hasActiveFilters = !empty(array_filter($filters));
         <!-- Active Filters -->
         <?php if ($hasActiveFilters): ?>
         <div class="active-filters">
-            <span style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">Active Filters:</span>
+            <span class="active-filters-label">Active Filters</span>
             <?php if (!empty($filters['search'])): ?>
             <div class="filter-badge">
                 Search: <?= htmlspecialchars($filters['search']) ?>
-                <span class="material-icons-round filter-badge-close" onclick="removeFilter('search')" style="font-size: 16px;">close</span>
+                <span class="material-icons-round filter-badge-close" onclick="removeFilter('search')" style="font-size: 18px;">close</span>
             </div>
             <?php endif; ?>
             <?php if (!empty($filters['recipient'])): ?>
             <div class="filter-badge">
                 Recipient: <?= htmlspecialchars($filters['recipient']) ?>
-                <span class="material-icons-round filter-badge-close" onclick="removeFilter('recipient')" style="font-size: 16px;">close</span>
+                <span class="material-icons-round filter-badge-close" onclick="removeFilter('recipient')" style="font-size: 18px;">close</span>
             </div>
             <?php endif; ?>
             <?php if (!empty($filters['subject'])): ?>
             <div class="filter-badge">
                 Subject: <?= htmlspecialchars($filters['subject']) ?>
-                <span class="material-icons-round filter-badge-close" onclick="removeFilter('subject')" style="font-size: 16px;">close</span>
+                <span class="material-icons-round filter-badge-close" onclick="removeFilter('subject')" style="font-size: 18px;">close</span>
             </div>
             <?php endif; ?>
             <?php if (!empty($filters['label_id'])): ?>
@@ -1010,31 +1214,30 @@ $hasActiveFilters = !empty(array_filter($filters));
                         }
                     }
                 ?>
-                <span class="material-icons-round filter-badge-close" onclick="removeFilter('label_id')" style="font-size: 16px;">close</span>
+                <span class="material-icons-round filter-badge-close" onclick="removeFilter('label_id')" style="font-size: 18px;">close</span>
             </div>
             <?php endif; ?>
             <?php if (!empty($filters['date_from']) || !empty($filters['date_to'])): ?>
             <div class="filter-badge">
-                Date Range: <?= htmlspecialchars($filters['date_from'] ?: 'Any') ?> - <?= htmlspecialchars($filters['date_to'] ?: 'Any') ?>
-                <span class="material-icons-round filter-badge-close" onclick="clearDateFilters()" style="font-size: 16px;">close</span>
+                Date: <?= htmlspecialchars($filters['date_from'] ?: 'Any') ?> – <?= htmlspecialchars($filters['date_to'] ?: 'Any') ?>
+                <span class="material-icons-round filter-badge-close" onclick="clearDateFilters()" style="font-size: 18px;">close</span>
             </div>
             <?php endif; ?>
             <button class="btn-clear-all" onclick="clearAllFilters()">
-                <span class="material-icons-round" style="font-size: 14px; vertical-align: middle;">clear_all</span>
                 Clear All
             </button>
         </div>
         <?php endif; ?>
 
-        <!-- Email List -->
+        <!-- Nature-inspired Email List -->
         <div class="email-list-container">
             <?php if (empty($sentEmails)): ?>
             <div class="empty-state">
                 <div class="empty-state-icon">
                     <span class="material-icons-round">delete_sweep</span>
                 </div>
-                <h3>Trash is empty</h3>
-                <p>Items you delete will appear here. They'll be permanently removed after 30 days.</p>
+                <h3>No items in trash</h3>
+                <p>When you delete emails, they'll appear here for 30 days before being permanently removed.</p>
             </div>
             <?php else: ?>
             <div class="email-list">
@@ -1052,7 +1255,7 @@ $hasActiveFilters = !empty(array_filter($filters));
                     <div class="col-subject" onclick="openEmail(<?= $email['id'] ?>)">
                         <span class="subject-text"><?= htmlspecialchars($email['subject']) ?></span>
                         <span class="snippet-text">
-                            — <?= htmlspecialchars(mb_substr(strip_tags($email['message_body']), 0, 100)) ?>...
+                            — <?= htmlspecialchars(mb_substr(strip_tags($email['message_body']), 0, 120)) ?>...
                         </span>
                     </div>
 
@@ -1066,7 +1269,7 @@ $hasActiveFilters = !empty(array_filter($filters));
 
                     <div class="col-date" onclick="openEmail(<?= $email['id'] ?>)">
                         <?php if (!empty($email['attachment_names'])): ?>
-                        <i class="fa-solid fa-paperclip attachment-icon"></i>
+                        <span class="material-icons-round attachment-icon">attach_file</span>
                         <?php endif; ?>
                         <?= date('M j, Y', strtotime($email['sent_at'])) ?>
                     </div>
@@ -1076,7 +1279,7 @@ $hasActiveFilters = !empty(array_filter($filters));
             <?php endif; ?>
         </div>
 
-        <!-- Pagination -->
+        <!-- Refined Pagination -->
         <?php if ($totalPages > 1): ?>
         <div class="pagination">
             <?php
@@ -1086,7 +1289,7 @@ $hasActiveFilters = !empty(array_filter($filters));
                 $currentParams['page'] = 1;
                 echo '<a href="?' . http_build_query($currentParams) . '" class="page-link">1</a>';
                 if ($page > 4) {
-                    echo '<span class="page-link" style="border: none; background: none;">...</span>';
+                    echo '<span class="page-link" style="border: none; background: none; cursor: default;">···</span>';
                 }
             }
             
@@ -1098,7 +1301,7 @@ $hasActiveFilters = !empty(array_filter($filters));
             
             if ($page < $totalPages - 2) {
                 if ($page < $totalPages - 3) {
-                    echo '<span class="page-link" style="border: none; background: none;">...</span>';
+                    echo '<span class="page-link" style="border: none; background: none; cursor: default;">···</span>';
                 }
                 $currentParams['page'] = $totalPages;
                 echo '<a href="?' . http_build_query($currentParams) . '" class="page-link">' . $totalPages . '</a>';
@@ -1148,11 +1351,11 @@ $hasActiveFilters = !empty(array_filter($filters));
             const emailIds = Array.from(checkedBoxes).map(cb => cb.value);
 
             if (emailIds.length === 0) {
-                alert('Please select at least one email to restore');
+                showNotification('Please select at least one email to restore', 'error');
                 return;
             }
 
-            if (!confirm(`Restore ${emailIds.length} email(s) back to inbox?`)) {
+            if (!confirm(`Restore ${emailIds.length} ${emailIds.length === 1 ? 'email' : 'emails'} to inbox?`)) {
                 return;
             }
 
@@ -1169,14 +1372,14 @@ $hasActiveFilters = !empty(array_filter($filters));
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification('Emails restored successfully', 'success');
-                    setTimeout(() => location.reload(), 1000);
+                    showNotification(`Successfully restored ${emailIds.length} ${emailIds.length === 1 ? 'email' : 'emails'}`, 'success');
+                    setTimeout(() => location.reload(), 1500);
                 } else {
-                    alert('Failed to restore emails: ' + (result.message || 'Unknown error'));
+                    showNotification('Failed to restore emails: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('An error occurred while restoring emails');
+                showNotification('An error occurred while restoring emails', 'error');
             }
         }
 
@@ -1186,16 +1389,16 @@ $hasActiveFilters = !empty(array_filter($filters));
             const emailIds = Array.from(checkedBoxes).map(cb => cb.value);
 
             if (emailIds.length === 0) {
-                alert('Please select at least one email to delete permanently');
+                showNotification('Please select at least one email to delete permanently', 'error');
                 return;
             }
 
-            if (!confirm(`⚠️ PERMANENT DELETE\n\nDelete ${emailIds.length} email(s) forever? This action cannot be undone!`)) {
+            if (!confirm(`⚠️ PERMANENT DELETE\n\nDelete ${emailIds.length} ${emailIds.length === 1 ? 'email' : 'emails'} forever?\nThis action cannot be undone.`)) {
                 return;
             }
 
             // Double confirmation for permanent deletion
-            if (!confirm('Are you absolutely sure? This will permanently delete the selected emails.')) {
+            if (!confirm('Are you absolutely sure? This will permanently delete the selected emails and they cannot be recovered.')) {
                 return;
             }
 
@@ -1212,14 +1415,14 @@ $hasActiveFilters = !empty(array_filter($filters));
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification('Emails permanently deleted', 'success');
-                    setTimeout(() => location.reload(), 1000);
+                    showNotification(`Permanently deleted ${emailIds.length} ${emailIds.length === 1 ? 'email' : 'emails'}`, 'success');
+                    setTimeout(() => location.reload(), 1500);
                 } else {
-                    alert('Failed to delete emails: ' + (result.message || 'Unknown error'));
+                    showNotification('Failed to delete emails: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('An error occurred while deleting emails');
+                showNotification('An error occurred while deleting emails', 'error');
             }
         }
 
@@ -1271,37 +1474,43 @@ $hasActiveFilters = !empty(array_filter($filters));
 
         function showNotification(message, type) {
             const notification = document.createElement('div');
+            const bgColor = type === 'success' ? 'var(--restore-primary)' : 'var(--delete-primary)';
+            
             notification.style.cssText = `
                 position: fixed;
-                top: 24px;
-                right: 24px;
-                padding: 16px 24px;
-                background: ${type === 'success' ? '#059669' : '#dc2626'};
+                top: 28px;
+                right: 28px;
+                padding: 18px 28px;
+                background: ${bgColor};
                 color: white;
-                border-radius: 12px;
-                box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+                border-radius: 14px;
+                box-shadow: var(--shadow-xl);
                 z-index: 10000;
+                font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+                font-size: 15px;
                 font-weight: 600;
-                animation: slideIn 0.3s ease-out;
+                letter-spacing: -0.01em;
+                animation: slideInNotification 0.4s var(--ease-out);
+                backdrop-filter: blur(10px);
             `;
             notification.textContent = message;
             document.body.appendChild(notification);
 
             setTimeout(() => {
-                notification.style.animation = 'slideOut 0.3s ease-out';
-                setTimeout(() => notification.remove(), 300);
+                notification.style.animation = 'slideOutNotification 0.4s var(--ease-out)';
+                setTimeout(() => notification.remove(), 400);
             }, 3000);
         }
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
-            // Ctrl/Cmd + K to focus search
+            // Cmd/Ctrl + K to focus search
             if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
                 e.preventDefault();
                 document.querySelector('.search-input').focus();
             }
 
-            // Ctrl/Cmd + F to toggle filters
+            // Cmd/Ctrl + F to toggle filters
             if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
                 e.preventDefault();
                 toggleFilters();
@@ -1317,7 +1526,7 @@ $hasActiveFilters = !empty(array_filter($filters));
             }
 
             // Delete key for permanent delete
-            if (e.key === 'Delete' || e.key === 'Backspace') {
+            if (e.key === 'Delete' || (e.key === 'Backspace' && (e.metaKey || e.ctrlKey))) {
                 const checkedBoxes = document.querySelectorAll('.email-checkbox:checked');
                 if (checkedBoxes.length > 0 && !e.target.matches('input[type="text"], input[type="date"], select')) {
                     e.preventDefault();
@@ -1326,16 +1535,28 @@ $hasActiveFilters = !empty(array_filter($filters));
             }
         });
 
-        // Add CSS animations
+        // Add notification animations
         const style = document.createElement('style');
         style.textContent = `
-            @keyframes slideIn {
-                from { transform: translateX(400px); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
+            @keyframes slideInNotification {
+                from {
+                    transform: translateX(400px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
             }
-            @keyframes slideOut {
-                from { transform: translateX(0); opacity: 1; }
-                to { transform: translateX(400px); opacity: 0; }
+            @keyframes slideOutNotification {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(400px);
+                    opacity: 0;
+                }
             }
         `;
         document.head.appendChild(style);
