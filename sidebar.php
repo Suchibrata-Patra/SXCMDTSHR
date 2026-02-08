@@ -368,7 +368,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         }
     }
 </style>
-
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 <div class="sidebar" id="mainSidebar">
     <!-- ========== HEADER / LOGO ========== -->
     <div class="sidebar-header">
