@@ -575,14 +575,9 @@ $s = array_merge($defaults, $userSettings);
                         <span class="setting-desc">Your academic/administrative department</span>
                     </div>
                     <select name="dept">
+                        <option value="statistics" <?= $s['dept']=='statistics'?'selected':'' ?>>Statistics</option>
+                        <option value="data_science" <?= $s['dept']=='data_science'?'selected':'' ?>>Data Science</option>
                         <option value="CS" <?= $s['dept']=='CS'?'selected':'' ?>>Computer Science</option>
-                        <option value="Math" <?= $s['dept']=='Math'?'selected':'' ?>>Mathematics</option>
-                        <option value="Physics" <?= $s['dept']=='Physics'?'selected':'' ?>>Physics</option>
-                        <option value="Chemistry" <?= $s['dept']=='Chemistry'?'selected':'' ?>>Chemistry</option>
-                        <option value="English" <?= $s['dept']=='English'?'selected':'' ?>>English</option>
-                        <option value="History" <?= $s['dept']=='History'?'selected':'' ?>>History</option>
-                        <option value="Admin" <?= $s['dept']=='Admin'?'selected':'' ?>>Administration</option>
-                    </select>
                 </div>
                 <div class="setting-row">
                     <div class="setting-info">
