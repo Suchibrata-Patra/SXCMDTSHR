@@ -124,16 +124,7 @@ function getDefaultSettings() {
         'session_timeout' => '60',
         'ip_lock' => false,
         'debug_logs' => false,
-        'activity_report' => 'weekly',
-        
-        // IMAP Configuration (defaults)
-        'imap_server' => 'imap.hostinger.com',
-        'imap_port' => '993',
-        'imap_encryption' => 'ssl',
-        'imap_username' => '', // Will be set to user's email if not configured
-        
-        // Settings Lock
-        'settings_locked' => false
+        'activity_report' => 'weekly'
     ];
 }
 
@@ -146,12 +137,6 @@ function getDefaultSettings() {
 function getSettingsWithDefaults($email) {
     $defaults = getDefaultSettings();
     $userSettings = getUserSettings($email);
-    
-    // If imap_username is not set, default to user's email
-    if (empty($userSettings['imap_username'])) {
-        $userSettings['imap_username'] = $email;
-    }
-    
     return array_merge($defaults, $userSettings);
 }
 
@@ -190,164 +175,6 @@ function saveSetting($email, $key, $value) {
         error_log("Error saving setting: " . $e->getMessage());
         return false;
     }
-}
-
-/**
- * Check if settings are locked for a user
- * 
- * @param string $email User's email address
- * @return bool True if settings are locked
- */
-function areSettingsLocked($email) {
-    $locked = getUserSetting($email, 'settings_locked', false);
-    return $locked === true || $locked === 'true' || $locked === '1';
-}
-
-/**
- * Lock settings for a user
- * 
- * @param string $email User's email address
- * @return bool Success status
- */
-function lockSettings($email) {
-    return saveSetting($email, 'settings_locked', true);
-}
-
-/**
- * Unlock settings for a user (super admin only)
- * 
- * @param string $email User's email address
- * @return bool Success status
- */
-function unlockSettings($email) {
-    return saveSetting($email, 'settings_locked', false);
-}
-
-/**
- * Check if current session user is super admin
- * 
- * @return bool True if super admin
- */
-function isSuperAdmin() {
-    if (!isset($_SESSION['user_role'])) {
-        return false;
-    }
-    return $_SESSION['user_role'] === 'super_admin';
-}
-
-/**
- * Get IMAP configuration from session
- * 
- * @return array|null IMAP configuration or null if not set
- */
-function getImapConfigFromSession() {
-    if (!isset($_SESSION['imap_config'])) {
-        return null;
-    }
-    
-    $config = $_SESSION['imap_config'];
-    
-    // Validate required fields
-    if (empty($config['imap_server']) || empty($config['imap_port']) || 
-        empty($config['imap_username']) || empty($config['imap_password'])) {
-        return null;
-    }
-    
-    return $config;
-}
-
-/**
- * Load IMAP configuration into session from database
- * This should be called during login
- * 
- * @param string $email User's email address
- * @param string $password User's email password (from login)
- * @return bool Success status
- */
-function loadImapConfigToSession($email, $password) {
-    $settings = getSettingsWithDefaults($email);
-    
-    $_SESSION['imap_config'] = [
-        'imap_server' => $settings['imap_server'] ?? 'imap.hostinger.com',
-        'imap_port' => intval($settings['imap_port'] ?? 993),
-        'imap_encryption' => $settings['imap_encryption'] ?? 'ssl',
-        'imap_username' => $settings['imap_username'] ?? $email,
-        'imap_password' => $password // From login credentials
-    ];
-    
-    return true;
-}
-
-/**
- * Log super admin actions for audit trail
- * 
- * @param string $admin_email Admin's email
- * @param string $action Action performed
- * @param string $target_user User affected by action
- * @param array $details Additional details
- * @return bool Success status
- */
-function logSuperAdminAction($admin_email, $action, $target_user, $details = []) {
-    $pdo = getDatabaseConnection();
-    if (!$pdo) return false;
-    
-    try {
-        $stmt = $pdo->prepare("
-            INSERT INTO admin_audit_log 
-            (admin_email, action, target_user, details, ip_address, created_at)
-            VALUES 
-            (:admin_email, :action, :target_user, :details, :ip_address, NOW())
-        ");
-        
-        return $stmt->execute([
-            ':admin_email' => $admin_email,
-            ':action' => $action,
-            ':target_user' => $target_user,
-            ':details' => json_encode($details),
-            ':ip_address' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
-        ]);
-    } catch (PDOException $e) {
-        error_log("Error logging admin action: " . $e->getMessage());
-        return false;
-    }
-}
-
-/**
- * Validate IMAP settings before saving
- * 
- * @param array $settings IMAP settings to validate
- * @return array Array with 'valid' boolean and 'errors' array
- */
-function validateImapSettings($settings) {
-    $errors = [];
-    
-    // Required fields
-    if (empty($settings['imap_server'])) {
-        $errors[] = 'IMAP server is required';
-    }
-    
-    if (empty($settings['imap_port'])) {
-        $errors[] = 'IMAP port is required';
-    } elseif (!is_numeric($settings['imap_port']) || $settings['imap_port'] < 1 || $settings['imap_port'] > 65535) {
-        $errors[] = 'IMAP port must be a valid number between 1 and 65535';
-    }
-    
-    if (empty($settings['imap_encryption'])) {
-        $errors[] = 'IMAP encryption is required';
-    } elseif (!in_array(strtolower($settings['imap_encryption']), ['ssl', 'tls', 'none'])) {
-        $errors[] = 'IMAP encryption must be SSL, TLS, or none';
-    }
-    
-    if (empty($settings['imap_username'])) {
-        $errors[] = 'IMAP username is required';
-    } elseif (!filter_var($settings['imap_username'], FILTER_VALIDATE_EMAIL)) {
-        $errors[] = 'IMAP username must be a valid email address';
-    }
-    
-    return [
-        'valid' => empty($errors),
-        'errors' => $errors
-    ];
 }
 
 /**
@@ -446,5 +273,24 @@ function importSettings($email, $json) {
         error_log("Error importing settings: " . $e->getMessage());
         return false;
     }
+}
+?><?php
+/**
+ * settings_helper.php - User Settings Helper Functions
+ */
+
+/**
+ * Load IMAP configuration to session
+ */
+function loadImapConfigToSession($email, $password) {
+    // Load IMAP settings from database or use defaults
+    $_SESSION['imap_host'] = env('IMAP_HOST', 'imap.gmail.com');
+    $_SESSION['imap_port'] = env('IMAP_PORT', '993');
+    $_SESSION['imap_encryption'] = 'ssl';
+    $_SESSION['imap_configured'] = true;
+    
+    error_log("IMAP config loaded for: $email");
+    
+    return true;
 }
 ?>

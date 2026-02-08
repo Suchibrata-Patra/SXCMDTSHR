@@ -1,5 +1,9 @@
 <?php
-// upload_handler.php - AJAX File Upload Handler (Simplified for existing schema)
+/**
+ * upload_handler.php - AJAX File Upload Handler with Encryption
+ * Handles file uploads with deduplication and encrypted download links
+ */
+
 session_start();
 
 // Security check
@@ -9,7 +13,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     exit();
 }
 
-require 'db_config.php';
+require_once 'db_config.php';
 
 header('Content-Type: application/json');
 
@@ -72,16 +76,20 @@ class UploadHandler {
                 $hasAccess = $this->checkUserAccess($this->userId, $existing['id']);
                 
                 if (!$hasAccess) {
-                    // Create new access record (simplified - no sender_id)
+                    // Create new access record
                     $this->createAccessRecord($existing['id'], null);
                     
                     // Store metadata
                     $this->storeMetadata($existing['id'], $uploadedFile['name'], $extension, $uploadedFile['type']);
                 }
                 
+                // Generate encrypted ID for download
+                $encryptedId = encryptFileId($existing['id']);
+                
                 return [
                     'success' => true,
                     'id' => $existing['id'],
+                    'encrypted_id' => $encryptedId,
                     'path' => $existing['storage_path'],
                     'original_name' => $uploadedFile['name'],
                     'file_size' => $uploadedFile['size'],
@@ -113,29 +121,37 @@ class UploadHandler {
             // Insert into attachments table
             $stmt = $this->pdo->prepare("
                 INSERT INTO attachments (
-                    file_uuid, file_hash, file_size, 
+                    file_uuid, file_hash, original_filename, 
+                    file_extension, mime_type, file_size, 
                     storage_path, storage_type, uploaded_at
-                ) VALUES (?, ?, ?, ?, 'local', NOW())
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'local', NOW())
             ");
             
             $stmt->execute([
                 $fileUuid,
                 $fileHash,
+                $uploadedFile['name'],
+                $extension,
+                $uploadedFile['type'] ?? 'application/octet-stream',
                 $uploadedFile['size'],
                 $storagePath
             ]);
             
             $attachmentId = $this->pdo->lastInsertId();
             
-            // Create access record (simplified)
+            // Create access record
             $this->createAccessRecord($attachmentId, null);
             
             // Store metadata
             $this->storeMetadata($attachmentId, $uploadedFile['name'], $extension, $uploadedFile['type']);
             
+            // Generate encrypted ID for download
+            $encryptedId = encryptFileId($attachmentId);
+            
             return [
                 'success' => true,
                 'id' => $attachmentId,
+                'encrypted_id' => $encryptedId,
                 'path' => $storagePath,
                 'original_name' => $uploadedFile['name'],
                 'file_size' => $uploadedFile['size'],
@@ -156,7 +172,6 @@ class UploadHandler {
     
     /**
      * Create simplified access record
-     * Only stores user_id and attachment_id - no sender_id/receiver_id until email is sent
      */
     private function createAccessRecord($attachmentId, $emailUuid = null) {
         try {
@@ -342,7 +357,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
             // Store in session for later use when sending
             $_SESSION['temp_attachments'][] = $result;
             
-            error_log("File uploaded successfully: " . $result['original_name'] . " (ID: " . $result['id'] . ")");
+            error_log("File uploaded successfully: " . $result['original_name'] . " (ID: " . $result['id'] . ", Encrypted: " . $result['encrypted_id'] . ")");
         }
         
         echo json_encode($result);

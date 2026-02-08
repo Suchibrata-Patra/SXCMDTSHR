@@ -1,42 +1,17 @@
 <?php
-// download_file.php - Secure file download with encrypted IDs
+/**
+ * download_file.php - Secure file download with encrypted IDs
+ */
+
 session_start();
 
 // Security check
 if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     http_response_code(401);
-    die('Unauthorized');
+    die('Unauthorized - Please login');
 }
 
-require 'db_config.php';
-
-// Encryption key - store this in environment variable in production
-define('ENCRYPTION_KEY', 'your-32-char-secret-key-here!!'); // Change this!
-define('ENCRYPTION_METHOD', 'AES-256-CBC');
-
-/**
- * Decrypt file ID
- */
-function decryptFileId($encrypted) {
-    try {
-        $data = base64_decode($encrypted);
-        $iv_length = openssl_cipher_iv_length(ENCRYPTION_METHOD);
-        $iv = substr($data, 0, $iv_length);
-        $encrypted_data = substr($data, $iv_length);
-        
-        $decrypted = openssl_decrypt(
-            $encrypted_data,
-            ENCRYPTION_METHOD,
-            ENCRYPTION_KEY,
-            0,
-            $iv
-        );
-        
-        return $decrypted !== false ? (int)$decrypted : null;
-    } catch (Exception $e) {
-        return null;
-    }
-}
+require_once 'db_config.php';
 
 /**
  * Verify user has access to this file
@@ -61,10 +36,17 @@ if (isset($_GET['fid'])) {
     
     if (!$fileId) {
         http_response_code(400);
-        die('Invalid file ID');
+        die('Invalid file ID - decryption failed');
     }
     
     try {
+        $pdo = getDatabaseConnection();
+        
+        if (!$pdo) {
+            http_response_code(500);
+            die('Database connection failed');
+        }
+        
         // Get user ID
         $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
         $stmt->execute([$_SESSION['smtp_user']]);
@@ -80,7 +62,7 @@ if (isset($_GET['fid'])) {
         // Verify access
         if (!verifyFileAccess($pdo, $userId, $fileId)) {
             http_response_code(403);
-            die('Access denied');
+            die('Access denied - You do not have permission to download this file');
         }
         
         // Get file details
@@ -90,26 +72,35 @@ if (isset($_GET['fid'])) {
         
         if (!$attachment) {
             http_response_code(404);
-            die('File not found');
+            die('File not found in database');
         }
         
         $filePath = 'uploads/attachments/' . $attachment['storage_path'];
         
         if (!file_exists($filePath)) {
             http_response_code(404);
-            die('File not found on disk');
+            die('File not found on disk: ' . $attachment['storage_path']);
         }
         
         // Update last accessed
         $stmt = $pdo->prepare("UPDATE attachments SET last_accessed = NOW() WHERE id = ?");
         $stmt->execute([$fileId]);
         
+        // Determine MIME type
+        $mimeType = $attachment['mime_type'] ?? 'application/octet-stream';
+        
         // Send file
-        header('Content-Type: ' . $attachment['mime_type']);
+        header('Content-Type: ' . $mimeType);
         header('Content-Disposition: attachment; filename="' . $attachment['original_filename'] . '"');
         header('Content-Length: ' . filesize($filePath));
         header('Cache-Control: no-cache, must-revalidate');
         header('Pragma: no-cache');
+        header('Expires: 0');
+        
+        // Clear output buffer to prevent corruption
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
         
         readfile($filePath);
         exit();
@@ -117,10 +108,10 @@ if (isset($_GET['fid'])) {
     } catch (Exception $e) {
         error_log("Download error: " . $e->getMessage());
         http_response_code(500);
-        die('Download failed');
+        die('Download failed: ' . $e->getMessage());
     }
 } else {
     http_response_code(400);
-    die('Missing file ID');
+    die('Missing file ID parameter');
 }
 ?>
