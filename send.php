@@ -52,8 +52,8 @@ $mail->Password = $_SESSION['smtp_pass'];
 // **FIX: Set Port FIRST, then configure security based on it**
 
 // Match Security to Port
-$mail->Port == 465
-    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+$mail->Port == 465;
+$mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         
         $displayName = !empty($settings['display_name']) ? $settings['display_name'] : "Mail Sender";
         $mail->setFrom($_SESSION['smtp_user'], $displayName);
