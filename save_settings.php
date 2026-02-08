@@ -1,44 +1,115 @@
 <?php
 session_start();
-
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['smtp_user'])) {
-    echo json_encode(["success" => false, "message" => "Not logged in"]);
+// Check authentication
+if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
+    echo json_encode(['success' => false, 'message' => 'Not authenticated']);
     exit();
 }
 
-$settingsFile = 'settings.json';
+require_once 'db_config.php';
 
-// Load existing settings
-$allSettings = [];
-if (file_exists($settingsFile)) {
-    $json = file_get_contents($settingsFile);
-    $allSettings = json_decode($json, true);
-    if (!is_array($allSettings)) {
-        $allSettings = [];
-    }
-}
+$userEmail = $_SESSION['smtp_user'];
 
-// Build user settings
-$user = $_SESSION['smtp_user'];
-
-$allSettings[$user] = [
-    "display_name" => $_POST['display_name'] ?? "",
-    "signature" => $_POST['signature'] ?? "",
-    "default_subject_prefix" => $_POST['default_subject_prefix'] ?? "",
-    "cc_yourself" => isset($_POST['cc_yourself']) && $_POST['cc_yourself'] == '1',
-    "email_preview" => isset($_POST['email_preview']) && $_POST['email_preview'] == '1',
-    "smtp_host" => $_POST['smtp_host'] ?? "smtp.gmail.com",
-    "smtp_port" => $_POST['smtp_port'] ?? "587",
-    "theme" => $_POST['theme'] ?? "light",
-    "auto_save_drafts" => isset($_POST['auto_save_drafts']) && $_POST['auto_save_drafts'] == '1'
+// Define all possible settings keys
+$validSettings = [
+    // Identity & Authority
+    'display_name', 'designation', 'dept', 'hod_email', 'staff_id', 'room_no', 'ext_no',
+    
+    // Automation & Compliance
+    'auto_bcc_hod', 'archive_sent', 'read_receipts', 'delayed_send', 'attach_size_limit',
+    'auto_label_sent', 'priority_level', 'mandatory_subject',
+    
+    // Editor & Composition
+    'font_family', 'font_size', 'spell_check', 'auto_correct', 'smart_reply', 'rich_text',
+    'default_cc', 'default_bcc', 'undo_send_delay', 'signature',
+    
+    // Interface Personalization
+    'sidebar_color', 'compact_mode', 'dark_mode', 'show_avatars', 'anim_speed',
+    'blur_effects', 'density', 'font_weight',
+    
+    // Notifications & Security
+    'push_notif', 'sound_alerts', 'browser_notif', 'two_factor', 'session_timeout',
+    'ip_lock', 'debug_logs', 'activity_report'
 ];
 
-// Save to file
-if (file_put_contents($settingsFile, json_encode($allSettings, JSON_PRETTY_PRINT))) {
-    echo json_encode(["success" => true]);
-} else {
-    echo json_encode(["success" => false, "message" => "Failed to write to settings file"]);
+try {
+    $pdo = getDatabaseConnection();
+    if (!$pdo) {
+        throw new Exception('Database connection failed');
+    }
+    
+    // Begin transaction
+    $pdo->beginTransaction();
+    
+    // Prepare statement for insert/update
+    $stmt = $pdo->prepare("
+        INSERT INTO user_settings (user_email, setting_key, setting_value, updated_at)
+        VALUES (:email, :key, :value, NOW())
+        ON DUPLICATE KEY UPDATE 
+            setting_value = VALUES(setting_value),
+            updated_at = NOW()
+    ");
+    
+    $savedCount = 0;
+    
+    // Process each POST parameter
+    foreach ($_POST as $key => $value) {
+        // Only save valid settings
+        if (!in_array($key, $validSettings)) {
+            continue;
+        }
+        
+        // Convert boolean values
+        if ($value === 'on') {
+            $value = 'true';
+        } elseif ($value === 'false') {
+            $value = 'false';
+        }
+        
+        // Sanitize value
+        $value = trim($value);
+        
+        // Execute insert/update
+        $stmt->execute([
+            ':email' => $userEmail,
+            ':key' => $key,
+            ':value' => $value
+        ]);
+        
+        $savedCount++;
+    }
+    
+    // Commit transaction
+    $pdo->commit();
+    
+    // Log the activity
+    error_log("Settings saved for user: $userEmail ($savedCount settings updated)");
+    
+    echo json_encode([
+        'success' => true,
+        'message' => 'Settings saved successfully',
+        'count' => $savedCount
+    ]);
+    
+} catch (PDOException $e) {
+    // Rollback on error
+    if ($pdo && $pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    
+    error_log("Database error saving settings: " . $e->getMessage());
+    echo json_encode([
+        'success' => false,
+        'message' => 'Database error: ' . $e->getMessage()
+    ]);
+    
+} catch (Exception $e) {
+    error_log("Error saving settings: " . $e->getMessage());
+    echo json_encode([
+        'success' => false,
+        'message' => $e->getMessage()
+    ]);
 }
 ?>
