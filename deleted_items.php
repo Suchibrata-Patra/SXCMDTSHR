@@ -752,7 +752,7 @@ $hasActiveFilters = !empty(array_filter($filters));
             if (type === 'sent') {
                 window.open('view_sent_email.php?id=' + emailId, '_blank');
             } else {
-                window.open('view_inbox_email.php?id=' + emailId, '_blank');
+                window.open('view_sent_email.php?id=' + emailId, '_blank');
             }
         }
 
