@@ -94,7 +94,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
         
         // Load the email template
-        $templatePath = __DIR__ . '/templates/template1.html';
+        $templatePath = __DIR__ . '/template1.html';
         
         if (!file_exists($templatePath)) {
             throw new Exception("Email template not found");
@@ -213,7 +213,7 @@ function showSuccessPage($successEmails, $attachments, $summary, $dbSaved) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Email Sent Successfully - SXC MDTS</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -223,26 +223,40 @@ function showSuccessPage($successEmails, $attachments, $summary, $dbSaved) {
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f8f9fa;
             color: #1c1c1e;
             min-height: 100vh;
-            padding: 20px;
+            display: flex;
         }
 
-        .success-container {
+        .app-container {
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        .success-wrapper {
             max-width: 900px;
-            margin: 40px auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-            animation: slideUp 0.5s ease-out;
+            margin: 0 auto;
         }
 
-        @keyframes slideUp {
+        /* Success Header */
+        .success-header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.6s ease-out;
+        }
+
+        @keyframes fadeInDown {
             from {
                 opacity: 0;
-                transform: translateY(30px);
+                transform: translateY(-20px);
             }
             to {
                 opacity: 1;
@@ -250,28 +264,17 @@ function showSuccessPage($successEmails, $attachments, $summary, $dbSaved) {
             }
         }
 
-        .success-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 50px 40px;
-            text-align: center;
-        }
-
-        .success-icon {
-            width: 100px;
-            height: 100px;
-            background: rgba(255, 255, 255, 0.2);
+        .success-icon-wrapper {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 24px;
-            animation: scaleIn 0.6s ease-out;
-        }
-
-        .success-icon i {
-            font-size: 50px;
-            color: white;
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+            animation: scaleIn 0.5s ease-out 0.2s both;
         }
 
         @keyframes scaleIn {
@@ -283,151 +286,194 @@ function showSuccessPage($successEmails, $attachments, $summary, $dbSaved) {
             }
         }
 
-        h1 {
+        .success-icon-wrapper i {
+            font-size: 40px;
+            color: white;
+        }
+
+        .success-title {
             font-size: 32px;
             font-weight: 700;
-            margin-bottom: 12px;
+            color: #1c1c1e;
+            margin-bottom: 10px;
         }
 
         .success-subtitle {
             font-size: 16px;
-            opacity: 0.95;
+            color: #6b7280;
+            font-weight: 400;
         }
 
-        .success-body {
-            padding: 40px;
-        }
-
-        .summary-card {
-            background: #f8f9fa;
+        /* Cards */
+        .card {
+            background: white;
             border-radius: 16px;
             padding: 30px;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e5e7eb;
+            animation: fadeInUp 0.6s ease-out;
         }
 
-        .summary-title {
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card-title {
             font-size: 18px;
             font-weight: 700;
-            color: #333;
+            color: #1c1c1e;
             margin-bottom: 20px;
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
-        .summary-title i {
-            color: #667eea;
+        .card-title i {
+            color: #007AFF;
+            font-size: 20px;
         }
 
-        .summary-full {
-            background: white;
-            padding: 16px;
+        /* Summary Details */
+        .summary-item {
+            background: #f8f9fa;
+            padding: 16px 20px;
             border-radius: 12px;
-            margin-bottom: 16px;
-            border-left: 4px solid #667eea;
+            margin-bottom: 12px;
+            border-left: 4px solid #007AFF;
         }
 
-        .summary-full-label {
+        .summary-label {
             font-size: 12px;
             font-weight: 600;
-            color: #666;
+            color: #6b7280;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 6px;
         }
 
-        .summary-full-value {
-            font-size: 16px;
+        .summary-value {
+            font-size: 15px;
             font-weight: 600;
             color: #1c1c1e;
             word-break: break-word;
         }
 
-        .summary-grid {
+        /* Stats Grid */
+        .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 16px;
-            margin-top: 16px;
-        }
-
-        .summary-item {
-            background: white;
-            padding: 16px;
-            border-radius: 12px;
-            transition: transform 0.2s;
-        }
-
-        .summary-item:hover {
-            transform: translateY(-2px);
-        }
-
-        .summary-item-label {
-            font-size: 12px;
-            font-weight: 600;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 6px;
-        }
-
-        .summary-item-value {
-            font-size: 18px;
-            font-weight: 700;
-            color: #667eea;
-        }
-
-        .recipients-card {
-            background: #f8f9fa;
-            border-radius: 16px;
-            padding: 30px;
-            margin-bottom: 30px;
-        }
-
-        .email-list {
-            list-style: none;
             margin-top: 20px;
         }
 
-        .email-list li {
-            background: white;
+        .stat-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .stat-box:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #007AFF;
+        }
+
+        .stat-subtext {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 4px;
+        }
+
+        /* Recipients List */
+        .recipient-list {
+            list-style: none;
+        }
+
+        .recipient-item {
+            background: #f8f9fa;
             padding: 14px 18px;
             border-radius: 10px;
             margin-bottom: 10px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            justify-content: space-between;
             transition: all 0.2s;
         }
 
-        .email-list li:hover {
-            transform: translateX(5px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        .recipient-item:hover {
+            background: #e5e7eb;
+            transform: translateX(4px);
         }
 
-        .email-list li i {
-            color: #28a745;
-            font-size: 16px;
+        .recipient-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
-        .email-badge {
-            margin-left: auto;
-            background: #667eea;
+        .recipient-icon {
+            width: 36px;
+            height: 36px;
+            background: #007AFF;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+
+        .recipient-email {
+            font-size: 14px;
+            font-weight: 500;
+            color: #1c1c1e;
+        }
+
+        .recipient-badge {
+            background: #007AFF;
             color: white;
             padding: 4px 12px;
             border-radius: 20px;
             font-size: 11px;
             font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .attachments-list {
-            margin-top: 20px;
+        /* Attachments */
+        .attachments-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             gap: 12px;
+            margin-top: 16px;
         }
 
-        .attachment-item {
-            background: white;
+        .attachment-card {
+            background: #f8f9fa;
             padding: 16px;
             border-radius: 10px;
             display: flex;
@@ -436,14 +482,22 @@ function showSuccessPage($successEmails, $attachments, $summary, $dbSaved) {
             transition: all 0.2s;
         }
 
-        .attachment-item:hover {
+        .attachment-card:hover {
+            background: #e5e7eb;
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
 
-        .attachment-item i {
-            font-size: 24px;
-            color: #667eea;
+        .attachment-icon {
+            width: 44px;
+            height: 44px;
+            background: #007AFF;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            flex-shrink: 0;
         }
 
         .attachment-info {
@@ -454,52 +508,67 @@ function showSuccessPage($successEmails, $attachments, $summary, $dbSaved) {
         .attachment-name {
             font-weight: 600;
             font-size: 14px;
-            color: #333;
+            color: #1c1c1e;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            margin-bottom: 4px;
         }
 
         .attachment-size {
             font-size: 12px;
-            color: #888;
-            margin-top: 2px;
+            color: #6b7280;
         }
 
+        /* Warning Box */
         .warning-box {
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
             padding: 16px 20px;
             border-radius: 10px;
-            margin-bottom: 30px;
             display: flex;
             gap: 12px;
             align-items: flex-start;
+            margin-bottom: 24px;
         }
 
         .warning-box i {
-            color: #856404;
+            color: #d97706;
             font-size: 20px;
             margin-top: 2px;
+            flex-shrink: 0;
         }
 
-        .warning-box strong {
-            color: #856404;
+        .warning-content {
+            flex: 1;
         }
 
+        .warning-content strong {
+            color: #92400e;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .warning-content p {
+            color: #78350f;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* Action Buttons */
         .action-buttons {
             display: flex;
             gap: 16px;
-            flex-wrap: wrap;
             justify-content: center;
-            margin-top: 30px;
+            margin-top: 40px;
+            flex-wrap: wrap;
         }
 
         .btn {
             display: inline-flex;
             align-items: center;
             gap: 10px;
-            padding: 16px 32px;
+            padding: 14px 28px;
             border-radius: 12px;
             text-decoration: none;
             font-weight: 600;
@@ -510,46 +579,41 @@ function showSuccessPage($successEmails, $attachments, $summary, $dbSaved) {
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #007AFF;
             color: white;
         }
 
         .btn-primary:hover {
+            background: #0056b3;
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 6px 20px rgba(0, 122, 255, 0.3);
         }
 
         .btn-secondary {
             background: white;
-            color: #667eea;
-            border: 2px solid #667eea;
+            color: #1c1c1e;
+            border: 2px solid #e5e7eb;
         }
 
         .btn-secondary:hover {
-            background: #667eea;
-            color: white;
+            background: #f8f9fa;
+            border-color: #d1d5db;
             transform: translateY(-2px);
         }
 
-        @media (max-width: 768px) {
-            .success-header {
-                padding: 40px 20px;
-            }
-
-            .success-body {
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-content {
                 padding: 30px 20px;
             }
+        }
 
-            h1 {
+        @media (max-width: 768px) {
+            .success-title {
                 font-size: 26px;
             }
 
-            .summary-card,
-            .recipients-card {
-                padding: 20px;
-            }
-
-            .summary-grid {
+            .stats-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -565,137 +629,136 @@ function showSuccessPage($successEmails, $attachments, $summary, $dbSaved) {
     </style>
 </head>
 <body>
-    <div class="success-container">
-        <div class="success-header">
-            <div class="success-icon">
-                <i class="fas fa-check-circle"></i>
-            </div>
-            <h1>Email Sent Successfully!</h1>
-            <p class="success-subtitle">Your message has been delivered to all recipients</p>
-        </div>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <?php include 'sidebar.php'; ?>
 
-        <div class="success-body">
-            <!-- Summary Card -->
-            <div class="summary-card">
-                <div class="summary-title">
-                    <i class="fas fa-info-circle"></i>
-                    Email Summary
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="success-wrapper">
+                <!-- Success Header -->
+                <div class="success-header">
+                    <div class="success-icon-wrapper">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <h1 class="success-title">Email Sent Successfully!</h1>
+                    <p class="success-subtitle">Your message has been delivered to all recipients</p>
                 </div>
 
-                <div class="summary-full">
-                    <div class="summary-full-label">Subject</div>
-                    <div class="summary-full-value">
-                        <?= htmlspecialchars($summary['subject']) ?>
+                <!-- Email Summary Card -->
+                <div class="card">
+                    <div class="card-title">
+                        <i class="fas fa-info-circle"></i>
+                        Email Summary
+                    </div>
+
+                    <div class="summary-item">
+                        <div class="summary-label">Subject</div>
+                        <div class="summary-value"><?= htmlspecialchars($summary['subject']) ?></div>
+                    </div>
+
+                    <?php if (!empty($summary['article_title'])): ?>
+                    <div class="summary-item">
+                        <div class="summary-label">Article Title</div>
+                        <div class="summary-value"><?= htmlspecialchars($summary['article_title']) ?></div>
+                    </div>
+                    <?php endif; ?>
+
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-label">Sent At</div>
+                            <div class="stat-value" style="font-size: 16px;"><?= $summary['sent_at'] ?></div>
+                        </div>
+
+                        <div class="stat-box">
+                            <div class="stat-label">From</div>
+                            <div class="stat-value" style="font-size: 16px; word-break: break-word;"><?= htmlspecialchars($summary['sender_name']) ?></div>
+                        </div>
+
+                        <div class="stat-box">
+                            <div class="stat-label">Recipients</div>
+                            <div class="stat-value"><?= count($successEmails) ?></div>
+                            <?php if ($summary['cc_count'] > 0 || $summary['bcc_count'] > 0): ?>
+                            <div class="stat-subtext"><?= $summary['cc_count'] ?> CC • <?= $summary['bcc_count'] ?> BCC</div>
+                            <?php endif; ?>
+                        </div>
+
+                        <div class="stat-box">
+                            <div class="stat-label">Attachments</div>
+                            <div class="stat-value"><?= $summary['attachment_count'] ?></div>
+                            <div class="stat-subtext">file<?= $summary['attachment_count'] != 1 ? 's' : '' ?></div>
+                        </div>
                     </div>
                 </div>
 
-                <?php if (!empty($summary['article_title'])): ?>
-                <div class="summary-full">
-                    <div class="summary-full-label">Article Title</div>
-                    <div class="summary-full-value">
-                        <?= htmlspecialchars($summary['article_title']) ?>
+                <!-- Recipients Card -->
+                <div class="card">
+                    <div class="card-title">
+                        <i class="fas fa-users"></i>
+                        Recipients (<?= count($successEmails) ?>)
+                    </div>
+                    <ul class="recipient-list">
+                        <?php foreach ($successEmails as $email): ?>
+                        <li class="recipient-item">
+                            <div class="recipient-info">
+                                <div class="recipient-icon">
+                                    <i class="fas fa-envelope"></i>
+                                </div>
+                                <span class="recipient-email"><?= htmlspecialchars($email['email']) ?></span>
+                            </div>
+                            <span class="recipient-badge"><?= htmlspecialchars($email['type']) ?></span>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+
+                <!-- Attachments Card -->
+                <?php if (!empty($attachments)): ?>
+                <div class="card">
+                    <div class="card-title">
+                        <i class="fas fa-paperclip"></i>
+                        Attachments (<?= count($attachments) ?>)
+                    </div>
+                    <div class="attachments-grid">
+                        <?php foreach ($attachments as $att): ?>
+                        <div class="attachment-card">
+                            <div class="attachment-icon">
+                                <i class="fas fa-file"></i>
+                            </div>
+                            <div class="attachment-info">
+                                <div class="attachment-name" title="<?= htmlspecialchars($att['name']) ?>">
+                                    <?= htmlspecialchars($att['name']) ?>
+                                </div>
+                                <div class="attachment-size"><?= $att['size'] ?></div>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
                     </div>
                 </div>
                 <?php endif; ?>
 
-                <div class="summary-grid">
-                    <div class="summary-item">
-                        <div class="summary-item-label">Sent At</div>
-                        <div class="summary-item-value">
-                            <?= $summary['sent_at'] ?>
-                        </div>
-                    </div>
-
-                    <div class="summary-item">
-                        <div class="summary-item-label">From</div>
-                        <div class="summary-item-value">
-                            <?= htmlspecialchars($summary['sender_name']) ?>
-                        </div>
-                    </div>
-
-                    <div class="summary-item">
-                        <div class="summary-item-label">Total Recipients</div>
-                        <div class="summary-item-value">
-                            <?= count($successEmails) ?>
-                            <?php if ($summary['cc_count'] > 0 || $summary['bcc_count'] > 0): ?>
-                            <span style="font-size: 12px; color: #666;">
-                                (<?= $summary['cc_count'] ?> CC, <?= $summary['bcc_count'] ?> BCC)
-                            </span>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-
-                    <div class="summary-item">
-                        <div class="summary-item-label">Attachments</div>
-                        <div class="summary-item-value">
-                            <?= $summary['attachment_count'] ?> file<?= $summary['attachment_count'] != 1 ? 's' : '' ?>
-                        </div>
+                <!-- Warning if DB not saved -->
+                <?php if (!$dbSaved): ?>
+                <div class="warning-box">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div class="warning-content">
+                        <strong>Note:</strong>
+                        <p>Email was sent successfully but could not be saved to the database. This won't affect delivery.</p>
                     </div>
                 </div>
-            </div>
+                <?php endif; ?>
 
-            <!-- Recipients -->
-            <div class="recipients-card">
-                <div class="summary-title">
-                    <i class="fas fa-users"></i>
-                    Recipients (<?= count($successEmails) ?>)
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <a href="index.php" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i>
+                        Send Another Email
+                    </a>
+                    <a href="sent_history.php" class="btn btn-secondary">
+                        <i class="fas fa-history"></i>
+                        View Sent History
+                    </a>
                 </div>
-                <ul class="email-list">
-                    <?php foreach ($successEmails as $email): ?>
-                    <li>
-                        <i class="fas fa-check-circle"></i>
-                        <span><?= htmlspecialchars($email['email']) ?></span>
-                        <span class="email-badge"><?= htmlspecialchars($email['type']) ?></span>
-                    </li>
-                    <?php endforeach; ?>
-                </ul>
-            </div>
-
-            <!-- Attachments -->
-            <?php if (!empty($attachments)): ?>
-            <div class="recipients-card">
-                <div class="summary-title">
-                    <i class="fas fa-paperclip"></i>
-                    Attachments (<?= count($attachments) ?>)
-                </div>
-                <div class="attachments-list">
-                    <?php foreach ($attachments as $att): ?>
-                    <div class="attachment-item">
-                        <i class="fas fa-file"></i>
-                        <div class="attachment-info">
-                            <div class="attachment-name" title="<?= htmlspecialchars($att['name']) ?>">
-                                <?= htmlspecialchars($att['name']) ?>
-                            </div>
-                            <div class="attachment-size">
-                                <?= $att['size'] ?>
-                            </div>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-            <?php endif; ?>
-
-            <!-- Warning if DB not saved -->
-            <?php if (!$dbSaved): ?>
-            <div class="warning-box">
-                <i class="fas fa-exclamation-triangle"></i>
-                <div>
-                    <strong>Note:</strong> Email was sent successfully but could not be saved to the database. This won't affect delivery.
-                </div>
-            </div>
-            <?php endif; ?>
-
-            <!-- Action Buttons -->
-            <div class="action-buttons">
-                <a href="index.php" class="btn btn-primary">
-                    <i class="fas fa-paper-plane"></i>
-                    Send Another Email
-                </a>
-                <a href="sent_history.php" class="btn btn-secondary">
-                    <i class="fas fa-history"></i>
-                    View Sent History
-                </a>
             </div>
         </div>
     </div>
@@ -716,7 +779,7 @@ function showErrorPage($errorMessage) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Send Error - SXC MDTS</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -726,28 +789,41 @@ function showErrorPage($errorMessage) {
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            background: #f8f9fa;
             color: #1c1c1e;
             min-height: 100vh;
-            padding: 20px;
+            display: flex;
+        }
+
+        .app-container {
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        .error-container {
+        .error-wrapper {
             max-width: 600px;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-            animation: slideUp 0.5s ease-out;
+            width: 100%;
         }
 
-        @keyframes slideUp {
+        .error-header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.6s ease-out;
+        }
+
+        @keyframes fadeInDown {
             from {
                 opacity: 0;
-                transform: translateY(30px);
+                transform: translateY(-20px);
             }
             to {
                 opacity: 1;
@@ -755,28 +831,17 @@ function showErrorPage($errorMessage) {
             }
         }
 
-        .error-header {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            padding: 50px 40px;
-            text-align: center;
-        }
-
-        .error-icon {
-            width: 100px;
-            height: 100px;
-            background: rgba(255, 255, 255, 0.2);
+        .error-icon-wrapper {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 24px;
+            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.3);
             animation: shake 0.5s ease-out;
-        }
-
-        .error-icon i {
-            font-size: 50px;
-            color: white;
         }
 
         @keyframes shake {
@@ -785,49 +850,74 @@ function showErrorPage($errorMessage) {
             75% { transform: translateX(10px); }
         }
 
-        h1 {
+        .error-icon-wrapper i {
+            font-size: 40px;
+            color: white;
+        }
+
+        .error-title {
             font-size: 32px;
             font-weight: 700;
-            margin-bottom: 12px;
+            color: #1c1c1e;
+            margin-bottom: 10px;
         }
 
         .error-subtitle {
             font-size: 16px;
-            opacity: 0.95;
+            color: #6b7280;
+            font-weight: 400;
         }
 
-        .error-body {
-            padding: 40px;
+        .error-card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e5e7eb;
+            animation: fadeInUp 0.6s ease-out;
         }
 
-        .error-message {
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .error-message-box {
+            background: #fef2f2;
+            border-left: 4px solid #ef4444;
             padding: 20px 24px;
+            border-radius: 10px;
             margin-bottom: 30px;
-            border-radius: 12px;
-            word-break: break-word;
         }
 
-        .error-message strong {
+        .error-message-box strong {
             display: block;
             margin-bottom: 10px;
-            color: #856404;
+            color: #991b1b;
             font-size: 15px;
+            font-weight: 600;
         }
 
-        .error-message p {
-            color: #856404;
+        .error-message-box p {
+            color: #7f1d1d;
             line-height: 1.6;
             font-size: 14px;
+            word-break: break-word;
         }
 
         .btn {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 10px;
-            padding: 16px 32px;
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 14px 28px;
+            background: #007AFF;
             color: white;
             border-radius: 12px;
             text-decoration: none;
@@ -835,49 +925,57 @@ function showErrorPage($errorMessage) {
             font-size: 15px;
             transition: all 0.3s;
             width: 100%;
-            justify-content: center;
         }
 
         .btn:hover {
+            background: #0056b3;
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(245, 87, 108, 0.4);
+            box-shadow: 0 6px 20px rgba(0, 122, 255, 0.3);
         }
 
         @media (max-width: 768px) {
-            .error-header {
-                padding: 40px 20px;
+            .main-content {
+                padding: 20px;
             }
 
-            .error-body {
-                padding: 30px 20px;
-            }
-
-            h1 {
+            .error-title {
                 font-size: 26px;
+            }
+
+            .error-card {
+                padding: 24px 20px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="error-container">
-        <div class="error-header">
-            <div class="error-icon">
-                <i class="fas fa-exclamation-circle"></i>
-            </div>
-            <h1>Email Sending Failed</h1>
-            <p class="error-subtitle">We encountered an error while sending your email</p>
-        </div>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <?php include 'sidebar.php'; ?>
 
-        <div class="error-body">
-            <div class="error-message">
-                <strong>Error Details:</strong>
-                <p><?= htmlspecialchars($errorMessage) ?></p>
-            </div>
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="error-wrapper">
+                <div class="error-header">
+                    <div class="error-icon-wrapper">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <h1 class="error-title">Email Sending Failed</h1>
+                    <p class="error-subtitle">We encountered an error while sending your email</p>
+                </div>
 
-            <a href="index.php" class="btn">
-                <i class="fas fa-arrow-left"></i>
-                Try Again
-            </a>
+                <div class="error-card">
+                    <div class="error-message-box">
+                        <strong>Error Details:</strong>
+                        <p><?= htmlspecialchars($errorMessage) ?></p>
+                    </div>
+
+                    <a href="index.php" class="btn">
+                        <i class="fas fa-arrow-left"></i>
+                        Try Again
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 </body>
