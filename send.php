@@ -1,5 +1,7 @@
 <?php
-
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 session_start();
 require 'vendor/autoload.php';
 require 'config.php';
@@ -16,82 +18,96 @@ use PHPMailer\PHPMailer\Exception;
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
-    // --- STEP 1: ECHO DEBUG INFO IMMEDIATELY ---
-    echo "<div style='background:#f8f9fa; border:2px solid #333; padding:15px; margin-bottom:20px; font-family:sans-serif;'>";
-    echo "<h2 style='color:#d9534f;'>System Debugging: Credentials</h2>";
-    
-    // Get Database User ID
-    $pdo = getDatabaseConnection();
-    $userId = "Not Found";
-    if ($pdo) {
-        $userId = getUserId($pdo, $_SESSION['smtp_user']);
-    }
-    
-    echo "<strong>Database User ID:</strong> " . htmlspecialchars($userId) . "<br>";
-    echo "<strong>SMTP Username (Session):</strong> " . htmlspecialchars($_SESSION['smtp_user']) . "<br>";
-    echo "<strong>SMTP Password (Session):</strong> " . htmlspecialchars($_SESSION['smtp_pass']) . "<br>";
-    echo "<p style='color:#888; font-size:0.9em;'><em>Note: If the password above is your regular Gmail password, it will fail. You MUST use a 16-character 'App Password'.</em></p>";
-    echo "</div>";
-
     $mail = new PHPMailer(true);
     
     try {
-        // --- STEP 2: VERBOSE SMTP DEBUGGING ---
+        // --- SMTP CONFIGURATION FOR HOSTINGER ---
         $mail->isSMTP();
-        $mail->SMTPDebug = 4; // LEVEL 4: Full low-level output
+        $mail->SMTPDebug = 0; // Set to 4 for troubleshooting
         
         $settings = $_SESSION['user_settings'] ?? [];
         
-        $mail->Host = !empty($settings['smtp_host']) ? $settings['smtp_host'] : "smtp.holidayseva.com";
-        $mail->SMTPAuth = true;
-        $mail->Username = $_SESSION['smtp_user'];
-        $mail->Password = $_SESSION['smtp_pass'];
-        
-        // Match Security to Port
-        if ($mail->Port == 465) {
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-        } else {
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port = 587;
-        }
-        
+        // Hostinger specific settings
+        $mail->Host       = 'smtp.hostinger.com';             
+        $mail->SMTPAuth   = true;                             
+        $mail->Username   = $_SESSION['smtp_user'];           
+        $mail->Password   = $_SESSION['smtp_pass'];           
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;      
+        $mail->Port       = 465;                              
+
+        // Sender Configuration
         $displayName = !empty($settings['display_name']) ? $settings['display_name'] : "Mail Sender";
         $mail->setFrom($_SESSION['smtp_user'], $displayName);
         
-        // RECIPIENT
+        // Recipient
         $recipient = filter_var(trim($_POST['email'] ?? ''), FILTER_SANITIZE_EMAIL);
         $mail->addAddress($recipient);
         
-        // SUBJECT & BODY
+        // Content
         $mail->isHTML(true);
+        $mail->CharSet = 'UTF-8';
         $mail->Subject = $_POST['subject'] ?? 'Notification';
-        $mail->Body = $_POST['message'] ?? 'Test Message';
+        $mail->Body    = $_POST['message'] ?? 'Test Message';
 
-        echo "<h3>--- SMTP HANDSHAKE LOG ---</h3>";
-        echo "<pre style='background:#000; color:#0f0; padding:15px; overflow-x:auto;'>";
-        
         if ($mail->send()) {
-            echo "</pre>";
-            echo "<h2 style='color:green;'>SUCCESS: Email Sent!</h2>";
-            echo "<a href='index.php'>Go Back</a>";
+            // Prepare summary for the success page
+            $summary = [
+                'subject' => $mail->Subject,
+                'sender_name' => $displayName,
+                'sent_at' => date('F j, Y g:i A'),
+                'attachment_count' => 0 
+            ];
+            $successEmails = [['email' => $recipient, 'type' => 'To']];
+            
+            showSuccessPage($mail->Subject, $successEmails, [], true, [], $summary);
         }
         
     } catch (Exception $e) {
-        echo "</pre>";
-        echo "<div style='background:#f2dede; color:#a94442; padding:15px; border:1px solid #ebccd1;'>";
-        echo "<h2>ERROR: Authentication Failed</h2>";
-        echo "<strong>PHPMailer Says:</strong> " . $e->getMessage() . "<br><br>";
-        echo "<strong>Technical Error Info:</strong> " . nl2br(htmlspecialchars($mail->ErrorInfo));
-        echo "</div>";
-        echo "<br><a href='index.php' style='padding:10px; background:#333; color:#fff; text-decoration:none;'>Try Again</a>";
+        showErrorPage($e->getMessage());
     }
 } else {
     header("Location: index.php");
     exit();
 }
+
+/**
+ * Success Page Function
+ */
 function showSuccessPage($subject, $successEmails, $failedEmails, $dbSaved, $attachments, $summary) {
     ?>
-<!DOCTYPE html>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Success - Email Sent</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <style>
+            body { font-family: 'Inter', sans-serif; background: #f4f7f6; padding: 40px; text-align: center; }
+            .card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: inline-block; }
+            .icon { color: #28a745; font-size: 48px; margin-bottom: 20px; }
+            .btn { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <div class="icon"><i class="fas fa-check-circle"></i></div>
+            <h1>Email Sent Successfully!</h1>
+            <p>Subject: <?php echo htmlspecialchars($subject); ?></p>
+            <a href="index.php" class="btn">Send Another</a>
+        </div>
+    </body>
+    </html>
+    <?php
+}
+
+/**
+ * Error Page Function
+ */
+function showErrorPage($errorMessage) {
+    echo "<h1>Error Sending Email</h1><p>$errorMessage</p><a href='index.php'>Try Again</a>";
+}
+
+?><!DOCTYPE html>
 <html lang="en">
 
 <head>
