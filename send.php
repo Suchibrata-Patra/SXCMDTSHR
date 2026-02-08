@@ -284,9 +284,16 @@ $mail->Port = !empty($settings['smtp_port']) ? $settings['smtp_port'] : 465;
         }
         
     } catch (Exception $e) {
+        // Echo the direct error for immediate debugging
+        echo "<div style='background:#000; color:#0f0; padding:20px; font-family:monospace; border:2px solid red;'>";
+        echo "<h3>--- SMTP DEBUG LOG ---</h3>";
+        echo "<strong>PHPMailer Error:</strong> " . $e->getMessage() . "<br><br>";
+        echo "<strong>Technical Trace:</strong> " . nl2br(htmlspecialchars($mail->ErrorInfo));
+        echo "</div>";
+        
         $errorMessage = $e->getMessage();
         error_log("✗✗✗ Email send error: " . $errorMessage);
-        showErrorPage($errorMessage);
+        // showErrorPage($errorMessage); // Temporarily comment this out to see the echo above
     }
 } else {
     // Not a POST request
