@@ -22,22 +22,21 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         padding: 0;
         box-sizing: border-box;
     }
-
-    /* ========== SIDEBAR CONTAINER ========== */
     .sidebar {
-        width: 20%;
-        height: auto;
-        background: #fbfbfd;
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border-right: 1px solid var(--border);
-        display: flex;
-        flex-direction: column;
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-        overflow: hidden;
-    }
+    width: 240px;
+    position: sticky;
+    top: 0;
+    bottom: 0;  /* <-- ensures it stretches to bottom */
+    background: #fbfbfd;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+    overflow: hidden;
+}
+
 
     /* ========== LOGO / HEADER AREA ========== */
     .sidebar-header {
