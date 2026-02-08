@@ -25,8 +25,8 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
 
     /* ========== SIDEBAR CONTAINER ========== */
     .sidebar {
-        width: 240px;
-        height: 90vh;
+        width: 20%;
+        height: auto;
         background: #fbfbfd;
         backdrop-filter: blur(20px) saturate(180%);
         -webkit-backdrop-filter: blur(20px) saturate(180%);
