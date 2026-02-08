@@ -329,6 +329,7 @@ function getUserLabels($userEmail) {
 
 /**
  * Get label counts for a user
+ * FIXED: Changed 'email_count' to 'count' to match sidebar.php expectations
  */
 function getLabelCounts($userEmail) {
     try {
@@ -347,7 +348,7 @@ function getLabelCounts($userEmail) {
                     l.label_name, 
                     l.label_color,
                     l.created_at,
-                    COUNT(uea.email_id) as email_count
+                    COUNT(uea.email_id) as count
                 FROM labels l
                 LEFT JOIN user_email_access uea ON l.id = uea.label_id 
                     AND uea.user_id = :user_id
