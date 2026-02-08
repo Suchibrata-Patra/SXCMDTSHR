@@ -115,7 +115,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         gap: 10px;
         padding: 8px 15px;
         text-decoration: none;
-        color: #1c1c1e;
+        color: black;
         font-size: 13px;
         font-weight: 500;
         letter-spacing: -0.08px;
