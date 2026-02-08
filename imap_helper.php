@@ -46,7 +46,7 @@ function connectToIMAP($server, $port, $email, $password) {
  */
 function fetchNewMessages($userEmail, $imapConfig, $limit = 50) {
     // Get IMAP connection details
-    $server = $imapConfig['imap_server'] ?? 'imap.gmail.com';
+    $server = $imapConfig['imap_server'] ?? 'imap.hostinger.com';
     $port = $imapConfig['imap_port'] ?? 993;
     $password = $imapConfig['imap_password'] ?? '';
     
@@ -319,7 +319,7 @@ function extractName($from) {
  * @return array Status with unread count
  */
 function quickSyncCheck($userEmail, $imapConfig) {
-    $server = $imapConfig['imap_server'] ?? 'imap.gmail.com';
+    $server = $imapConfig['imap_server'] ?? 'imap.hostinger.com';
     $port = $imapConfig['imap_port'] ?? 993;
     $password = $imapConfig['imap_password'] ?? '';
     

@@ -39,7 +39,7 @@ try {
     
     // Prepare IMAP config
     $imapConfig = [
-        'imap_server' => $settings['imap_server'] ?? 'imap.gmail.com',
+        'imap_server' => $settings['imap_server'] ?? 'imap.hostinger.com',
         'imap_port' => $settings['imap_port'] ?? 993,
         'imap_password' => $imapPassword
     ];
