@@ -34,7 +34,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // ===== SMTP CONFIGURATION =====
         $mail->isSMTP();
         $mail->SMTPDebug = 0; // Set to 2 for debugging
-        $mail->Host = env("SMTP_HOST", "smtp.gmail.com");
+        $mail->Host = env("SMTP_HOST", "smtp.holidayseva.com");
         $mail->SMTPAuth = true;
         $mail->Username = $_SESSION['smtp_user'];
         $mail->Password = $_SESSION['smtp_pass'];
