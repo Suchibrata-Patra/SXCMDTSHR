@@ -8,9 +8,6 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     exit();
 }
 
-// Clear temp attachments on page load (fresh start)
-$_SESSION['temp_attachments'] = [];
-
 // Load settings from JSON file
 $settingsFile = 'settings.json';
 $settings = [];
@@ -34,6 +31,9 @@ $settings = array_merge([
 
 // Update session settings for immediate use
 $_SESSION['user_settings'] = $settings;
+
+// Prepare signature for JavaScript (escape for JSON)
+$defaultSignature = json_encode($settings['signature']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -59,7 +59,6 @@ $_SESSION['user_settings'] = $settings;
             --glass: rgba(255, 255, 255, 0.7);
             --border: #E5E5EA;
             --success-green: #34C759;
-            --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
         * {
@@ -177,7 +176,6 @@ $_SESSION['user_settings'] = $settings;
         /* ========== INPUT FIELDS ========== */
         input[type="email"],
         input[type="text"],
-        textarea,
         select {
             width: 100%;
             padding: 10px 14px;
@@ -190,22 +188,15 @@ $_SESSION['user_settings'] = $settings;
             transition: all 0.2s;
         }
 
-        textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-
         input[type="email"]:focus,
         input[type="text"]:focus,
-        textarea:focus,
         select:focus {
             outline: none;
             border-color: var(--apple-blue);
             box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
         }
 
-        input::placeholder,
-        textarea::placeholder {
+        input::placeholder {
             color: var(--apple-gray);
         }
 
@@ -227,8 +218,7 @@ $_SESSION['user_settings'] = $settings;
             cursor: pointer;
         }
 
-        .file-upload-area:hover,
-        .file-upload-area.drag-over {
+        .file-upload-area:hover {
             border-color: var(--apple-blue);
             background: #F5F9FF;
         }
@@ -255,226 +245,257 @@ $_SESSION['user_settings'] = $settings;
             display: none;
         }
 
-        /* ========== UPLOAD PROGRESS (Individual file) ========== */
-        .upload-item {
+        /* ========== FILE PREVIEW GRID ========== */
+        .file-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .file-preview-item {
             background: white;
             border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 12px 16px;
-            margin-top: 12px;
-            display: none;
+            padding: 12px;
+            position: relative;
+            transition: all 0.2s;
         }
 
-        .upload-item.active {
-            display: block;
+        .file-preview-item:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
-        .upload-item-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .file-preview-icon {
+            font-size: 32px;
+            color: var(--apple-blue);
             margin-bottom: 8px;
         }
 
-        .upload-filename {
-            font-size: 14px;
-            font-weight: 500;
-            color: #1c1c1e;
-        }
-
-        .upload-percentage {
-            font-size: 13px;
-            color: var(--apple-gray);
-        }
-
-        .upload-progress-bar-container {
-            height: 4px;
-            background: #f0f0f0;
-            border-radius: 2px;
-            overflow: hidden;
-        }
-
-        .upload-progress-bar {
-            height: 100%;
-            background: var(--apple-blue);
-            transition: width 0.3s;
-            width: 0%;
-        }
-
-        /* ========== FILE PREVIEW CARDS ========== */
-        .file-cards-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 16px;
-            margin-top: 20px;
-        }
-
-        .file-card {
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
-            position: relative;
-            transition: all 0.2s;
-            cursor: pointer;
-            text-align: center;
-        }
-
-        .file-card:hover {
-            box-shadow: var(--card-shadow);
-            transform: translateY(-2px);
-        }
-
-        .file-card-icon {
-            font-size: 48px;
-            color: var(--apple-blue);
-            margin-bottom: 12px;
-        }
-
-        .file-card-name {
-            font-size: 13px;
+        .file-preview-name {
+            font-size: 12px;
             color: #1c1c1e;
             font-weight: 500;
+            white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            white-space: nowrap;
             margin-bottom: 4px;
         }
 
-        .file-card-size {
-            font-size: 12px;
-            color: var(--apple-gray);
-            margin-bottom: 8px;
-        }
-
-        .file-card-badge {
-            display: inline-block;
+        .file-preview-size {
             font-size: 11px;
-            padding: 4px 8px;
-            background: #E8F5E9;
-            color: var(--success-green);
-            border-radius: 4px;
-            font-weight: 500;
+            color: var(--apple-gray);
         }
 
-        .file-card-remove {
+        .file-remove-btn {
             position: absolute;
             top: 8px;
             right: 8px;
-            width: 24px;
-            height: 24px;
-            background: rgba(255, 59, 48, 0.95);
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
+            background: #FF3B30;
+            color: white;
+            border: none;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
+            font-size: 12px;
             opacity: 0;
             transition: opacity 0.2s;
         }
 
-        .file-card:hover .file-card-remove {
+        .file-preview-item:hover .file-remove-btn {
             opacity: 1;
         }
 
-        .file-card-remove .material-icons {
-            font-size: 16px;
-            color: white;
-        }
-
-        .file-card-download {
-            margin-top: 8px;
-            font-size: 12px;
-            color: var(--apple-blue);
-            display: flex;
+        /* ========== EMAIL LIST UPLOAD ========== */
+        .email-list-upload {
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            gap: 4px;
-        }
-
-        .file-card-download .material-icons {
-            font-size: 16px;
-        }
-
-        .size-warning {
-            background: #fff3cd;
-            border: 1px solid #ffc107;
-            border-radius: 8px;
-            padding: 12px;
-            margin-top: 12px;
+            gap: 8px;
+            padding: 6px 14px;
+            background: #F2F2F7;
+            border-radius: 6px;
             font-size: 13px;
-            color: #856404;
-            display: none;
+            color: var(--apple-blue);
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            font-weight: 500;
+            margin-top: 8px;
         }
 
-        .size-warning.active {
-            display: block;
+        .email-list-upload:hover {
+            background: #E5E5EA;
+        }
+
+        .email-list-upload .material-icons {
+            font-size: 16px;
         }
 
         /* ========== RICH TEXT EDITOR ========== */
         .editor-wrapper {
             border: 1px solid var(--border);
             border-radius: 8px;
-            overflow: hidden;
             background: white;
+            transition: all 0.2s;
+            overflow: hidden;
         }
 
+        .editor-wrapper.focused {
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+        
+        /* FIX: Ensure toolbar buttons display correctly */
         .ql-toolbar {
-            border: none;
-            border-bottom: 1px solid var(--border);
-            background: #FAFAFA;
+            border: none !important;
+            border-bottom: 1px solid var(--border) !important;
+            background: #FAFAFA !important;
+            padding: 12px !important;
+        }
+
+        .ql-toolbar .ql-stroke {
+            stroke: #1c1c1e !important;
+        }
+
+        .ql-toolbar .ql-fill {
+            fill: #1c1c1e !important;
+        }
+
+        .ql-toolbar .ql-picker-label {
+            color: #1c1c1e !important;
         }
 
         .ql-container {
             border: none;
-            font-family: 'Inter', sans-serif;
             font-size: 15px;
-            min-height: 200px;
+            font-family: 'Inter', sans-serif;
+            min-height: 250px;
+        }
+
+        .ql-editor {
+            min-height: 250px;
+            padding: 16px;
+        }
+
+        .ql-editor.ql-blank::before {
+            color: var(--apple-gray);
+            font-style: normal;
+        }
+
+        /* Signature editor smaller */
+        #signatureContainer .ql-container {
+            min-height: 120px;
+        }
+
+        #signatureContainer .ql-editor {
+            min-height: 120px;
+        }
+
+        /* Quill toolbar buttons */
+        .ql-toolbar button {
+            border-radius: 4px;
+        }
+
+        .ql-toolbar button:hover {
+            background: rgba(0, 122, 255, 0.1) !important;
+        }
+
+        .ql-toolbar button.ql-active {
+            background: rgba(0, 122, 255, 0.15) !important;
+            color: var(--apple-blue) !important;
+        }
+
+        .ql-toolbar button.ql-active .ql-stroke {
+            stroke: var(--apple-blue) !important;
+        }
+
+        .ql-toolbar button.ql-active .ql-fill {
+            fill: var(--apple-blue) !important;
         }
 
         /* ========== ACTION BUTTONS ========== */
-        .action-buttons {
+        .form-actions {
             display: flex;
             gap: 12px;
+            justify-content: flex-end;
             margin-top: 30px;
         }
 
         .btn {
-            flex: 1;
-            padding: 14px 28px;
-            border: none;
-            border-radius: 8px;
+            padding: 12px 24px;
+            border-radius: 10px;
             font-size: 15px;
             font-weight: 600;
-            font-family: 'Inter', sans-serif;
             cursor: pointer;
             transition: all 0.2s;
-            display: flex;
+            border: none;
+            font-family: 'Inter', sans-serif;
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
             gap: 8px;
-        }
-
-        .btn-primary {
-            background: var(--apple-blue);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #0066CC;
-        }
-
-        .btn-secondary {
-            background: #F2F2F7;
-            color: #1c1c1e;
-        }
-
-        .btn-secondary:hover {
-            background: #E5E5EA;
         }
 
         .btn .material-icons {
             font-size: 18px;
+        }
+
+        .btn-preview {
+            background: white;
+            color: #1c1c1e;
+            border: 1px solid var(--border);
+        }
+
+        .btn-preview:hover {
+            background: #F2F2F7;
+        }
+
+        .btn-send {
+            background: var(--apple-blue);
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+        }
+
+        .btn-send:hover {
+            background: #0051D5;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .btn-send:active {
+            transform: translateY(0);
+        }
+
+        /* ========== COLLAPSIBLE SECTIONS ========== */
+        .section-toggle {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-toggle .material-icons {
+            font-size: 20px;
+            color: var(--apple-gray);
+            transition: transform 0.2s;
+        }
+
+        .section-toggle.collapsed .material-icons {
+            transform: rotate(-90deg);
+        }
+
+        .section-content {
+            max-height: 2000px;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .section-content.collapsed {
+            max-height: 0;
         }
 
         /* ========== RESPONSIVE ========== */
@@ -483,17 +504,44 @@ $_SESSION['user_settings'] = $settings;
                 padding: 20px;
             }
 
+            .page-header {
+                padding: 20px;
+            }
+
             .form-grid {
                 grid-template-columns: 1fr;
             }
 
-            .action-buttons {
+            .form-actions {
                 flex-direction: column;
             }
 
-            .file-cards-container {
-                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            .btn {
+                width: 100%;
+                justify-content: center;
             }
+
+            .file-preview-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+        }
+
+        /* ========== SCROLLBAR ========== */
+        .content-area::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .content-area::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .content-area::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+
+        .content-area::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.2);
         }
     </style>
 </head>
@@ -506,61 +554,73 @@ $_SESSION['user_settings'] = $settings;
             <!-- Header -->
             <div class="page-header">
                 <div class="header-container">
-                    <h1 class="page-title">Compose New Email</h1>
-                    <p class="page-subtitle">Send professional emails with templates and signatures</p>
+                    <h1 class="page-title">Compose Email</h1>
+                    <p class="page-subtitle">Create and send professional emails to your contacts</p>
                 </div>
             </div>
 
             <!-- Compose Form -->
             <div class="compose-container">
-                <form id="composeForm" method="POST" action="send.php" enctype="multipart/form-data">
-                    
+                <form id="composeForm" action="send.php" method="POST" enctype="multipart/form-data">
                     <!-- Recipients Section -->
                     <div class="form-section">
-                        <h3 class="section-title">Recipients</h3>
-                        
+                        <h2 class="section-title">Recipients</h2>
+
                         <div class="form-group">
                             <label for="email">
                                 To
                                 <span style="color: #FF3B30;">*</span>
                             </label>
-                            <input type="email" name="email" id="email" 
-                                   placeholder="recipient@example.com" required>
-                            <p class="field-description">Primary recipient email address</p>
+                            <input type="email" id="email" name="email" placeholder="recipient@example.com" required>
+                            <label for="toFileUpload" class="email-list-upload">
+                                <span class="material-icons">upload_file</span>
+                                Import from file
+                            </label>
+                            <input type="file" id="toFileUpload" accept=".txt,.csv"
+                                onchange="handleEmailListUpload(this, 'email')">
                         </div>
 
                         <div class="form-grid">
                             <div class="form-group">
                                 <label for="cc">
                                     CC
-                                    <span class="label-optional">(optional)</span>
+                                    <span class="label-optional">(Optional)</span>
                                 </label>
-                                <input type="text" name="cc" id="cc" 
-                                       placeholder="cc1@example.com, cc2@example.com">
+                                <input type="text" id="cc" name="cc" placeholder="cc@example.com">
+                                <label for="ccFileUpload" class="email-list-upload">
+                                    <span class="material-icons">upload_file</span>
+                                    Import from file
+                                </label>
+                                <input type="file" id="ccFileUpload" accept=".txt,.csv"
+                                    onchange="handleEmailListUpload(this, 'cc')">
                             </div>
 
                             <div class="form-group">
                                 <label for="bcc">
                                     BCC
-                                    <span class="label-optional">(optional)</span>
+                                    <span class="label-optional">(Optional)</span>
                                 </label>
-                                <input type="text" name="bcc" id="bcc" 
-                                       placeholder="bcc@example.com">
+                                <input type="text" id="bcc" name="bcc" placeholder="bcc@example.com">
+                                <label for="bccFileUpload" class="email-list-upload">
+                                    <span class="material-icons">upload_file</span>
+                                    Import from file
+                                </label>
+                                <input type="file" id="bccFileUpload" accept=".txt,.csv"
+                                    onchange="handleEmailListUpload(this, 'bcc')">
                             </div>
                         </div>
                     </div>
 
                     <!-- Email Details Section -->
                     <div class="form-section">
-                        <h3 class="section-title">Email Details</h3>
-                        
+                        <h2 class="section-title">Email Details</h2>
+
                         <div class="form-group">
                             <label for="subject">
                                 Subject
                                 <span style="color: #FF3B30;">*</span>
                             </label>
-                            <input type="text" name="subject" id="subject" 
-                                   placeholder="Enter email subject" required>
+                            <input type="text" id="subject" name="subject" placeholder="Enter email subject" required>
                         </div>
 
                         <div class="form-group">
@@ -568,617 +628,166 @@ $_SESSION['user_settings'] = $settings;
                                 Article Title
                                 <span style="color: #FF3B30;">*</span>
                             </label>
-                            <input type="text" name="articletitle" id="articletitle" 
-                                   placeholder="Article or document title" required>
+                            <input type="text" id="articletitle" name="articletitle" placeholder="Enter article title"
+                                required>
+                            <p class="field-description">This will appear as the main heading in your email</p>
                         </div>
                     </div>
 
                     <!-- Message Section -->
                     <div class="form-section">
-                        <h3 class="section-title">Message</h3>
-                        
+                        <h2 class="section-title">Message</h2>
+
                         <div class="form-group">
-                            <label>Email Body</label>
-                            <div class="editor-wrapper">
-                                <div id="quillMessage"></div>
+                            <div class="editor-wrapper" id="editorContainer">
+                                <div id="toolbar">
+                                    <select class="ql-header">
+                                        <option value="1">Heading 1</option>
+                                        <option value="2">Heading 2</option>
+                                        <option value="3">Heading 3</option>
+                                        <option selected>Normal</option>
+                                    </select>
+                                    <button class="ql-bold"></button>
+                                    <button class="ql-italic"></button>
+                                    <button class="ql-underline"></button>
+                                    <button class="ql-strike"></button>
+                                    <select class="ql-color"></select>
+                                    <select class="ql-background"></select>
+                                    <button class="ql-list" value="ordered"></button>
+                                    <button class="ql-list" value="bullet"></button>
+                                    <select class="ql-align"></select>
+                                    <button class="ql-link"></button>
+                                    <button class="ql-image"></button>
+                                    <button class="ql-clean"></button>
+                                </div>
+                                <div id="editor"></div>
                             </div>
                             <input type="hidden" name="message" id="messageInput">
                         </div>
                     </div>
 
-                    <!-- Signature Section -->
+                    <!-- Signature Section - COLLAPSED BY DEFAULT -->
                     <div class="form-section">
-                        <h3 class="section-title">Email Signature</h3>
-                        
-                        <div class="form-grid">
-                            <div class="form-group">
+                        <div class="section-toggle collapsed" onclick="toggleSection('signatureSection')">
+                            <span class="material-icons">expand_more</span>
+                            <h2 class="section-title" style="margin: 0;">Email Signature</h2>
+                        </div>
+
+                        <div class="section-content collapsed" id="signatureSection">
+                            <div class="form-group" style="margin-top: 16px;">
                                 <label for="signatureWish">Closing Wish</label>
-                                <input type="text" id="signatureWish" name="signatureWish"
-                                    placeholder="e.g., Best Regards, Warm Wishes">
+                                <input type="text" id="signatureWish" name="signatureWish" class="form-input"
+                                    placeholder="e.g., Best Regards, Warm Wishes, Sincerely">
                                 <p class="field-description">Your closing greeting</p>
                             </div>
 
                             <div class="form-group">
                                 <label for="signatureName">Name</label>
-                                <input type="text" id="signatureName" name="signatureName"
+                                <input type="text" id="signatureName" name="signatureName" class="form-input"
                                     placeholder="e.g., Durba Bhattacharya">
                                 <p class="field-description">Your full name</p>
                             </div>
-                        </div>
 
-                        <div class="form-group">
-                            <label for="signatureDesignation">Designation</label>
-                            <input type="text" id="signatureDesignation" name="signatureDesignation"
-                                placeholder="e.g., H.O.D of SXC MDTS">
-                            <p class="field-description">Your title or position</p>
-                        </div>
+                            <div class="form-group">
+                                <label for="signatureDesignation">Designation</label>
+                                <input type="text" id="signatureDesignation" name="signatureDesignation"
+                                    class="form-input" placeholder="e.g., H.O.D of SXC MDTS">
+                                <p class="field-description">Your title or position</p>
+                            </div>
 
-                        <div class="form-group">
-                            <label for="signatureExtra">Additional Information <span class="label-optional">(optional)</span></label>
-                            <textarea id="signatureExtra" name="signatureExtra" rows="3"
-                                placeholder="Any extra details like contact info, department, etc."></textarea>
-                            <p class="field-description">Additional text that will appear in your signature</p>
+                            <div class="form-group">
+                                <label for="signatureExtra">Additional Text (Optional)</label>
+                                <textarea id="signatureExtra" name="signatureExtra" class="form-input" rows="3"
+                                    placeholder="Any additional information"></textarea>
+                                <p class="field-description">Extra details like contact info, department, etc.</p>
+                            </div>
                         </div>
                     </div>
 
+                    <script>
+                        // Add to your existing form submission logic
+                        document.addEventListener('DOMContentLoaded', function () {
+                            const form = document.getElementById('emailForm'); // Adjust to your form ID
+
+                            if (form) {
+                                const originalSubmit = form.onsubmit;
+
+                                form.onsubmit = function (e) {
+                                    // Build signature from components
+                                    const wish = document.getElementById('signatureWish').value.trim();
+                                    const name = document.getElementById('signatureName').value.trim();
+                                    const designation = document.getElementById('signatureDesignation').value.trim();
+                                    const extra = document.getElementById('signatureExtra').value.trim();
+
+                                    // Create formatted signature
+                                    let signature = '';
+                                    if (wish) signature += wish + '\n';
+                                    if (name) signature += name + '\n';
+                                    if (designation) signature += designation + '\n';
+                                    if (extra) signature += '\n' + extra;
+
+                                    // Create hidden input for signature if it doesn't exist
+                                    let signatureInput = document.getElementById('hiddenSignature');
+                                    if (!signatureInput) {
+                                        signatureInput = document.createElement('input');
+                                        signatureInput.type = 'hidden';
+                                        signatureInput.id = 'hiddenSignature';
+                                        signatureInput.name = 'signature';
+                                        form.appendChild(signatureInput);
+                                    }
+                                    signatureInput.value = signature;
+
+                                    // Also send individual components
+                                    const components = ['signatureWish', 'signatureName', 'signatureDesignation', 'signatureExtra'];
+                                    components.forEach(comp => {
+                                        let input = document.getElementById('hidden_' + comp);
+                                        if (!input) {
+                                            input = document.createElement('input');
+                                            input.type = 'hidden';
+                                            input.id = 'hidden_' + comp;
+                                            input.name = comp;
+                                            form.appendChild(input);
+                                        }
+                                        input.value = document.getElementById(comp).value;
+                                    });
+
+                                    // Call original submit handler if exists
+                                    if (originalSubmit) {
+                                        return originalSubmit.call(form, e);
+                                    }
+                                };
+                            }
+                        });
+                    </script>
+
                     <!-- Attachments Section -->
-                    <!-- File Upload Section - Add this to your index.php form -->
-
-<!-- Add after the message editor section and before the submit button -->
-
-<!-- Attachments Section -->
-<div class="form-section">
-    <label class="form-label">
-        <i class="material-icons">attach_file</i>
-        Attachments
-        <span class="optional-tag">Optional</span>
-    </label>
-
-    <!-- Drop Zone -->
-    <div class="drop-zone" id="dropZone">
-        <div class="drop-zone-icon">
-            <i class="fas fa-cloud-upload-alt"></i>
-        </div>
-        <div class="drop-zone-text">
-            <strong>Click to upload</strong> or drag and drop
-        </div>
-        <div class="drop-zone-hint">
-            PDF, DOC, XLS, PPT, Images, ZIP (Max 20MB per file, 25MB total)
-        </div>
-    </div>
-
-    <!-- Hidden file input -->
-    <input type="file" id="fileUpload" style="display: none;" multiple>
-
-    <!-- Hidden input for attachment IDs -->
-    <input type="hidden" name="attachment_ids" id="attachmentIds" value="">
-
-    <!-- Attachment Cards Container -->
-    <div id="attachmentCards" class="attachment-cards" style="display: none;"></div>
-</div>
-
-<!-- CSS Styles - Add this to the <style> section -->
-<style>
-    /* Drop Zone Styles */
-    .drop-zone {
-        border: 2px dashed var(--border);
-        border-radius: 12px;
-        padding: 40px 20px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        background: white;
-        margin-bottom: 20px;
-    }
-
-    .drop-zone:hover {
-        border-color: var(--apple-blue);
-        background: rgba(0, 122, 255, 0.02);
-    }
-
-    .drop-zone.drag-over {
-        border-color: var(--apple-blue);
-        background: rgba(0, 122, 255, 0.05);
-        transform: scale(1.02);
-    }
-
-    .drop-zone-icon {
-        font-size: 48px;
-        color: var(--apple-blue);
-        margin-bottom: 15px;
-    }
-
-    .drop-zone-text {
-        font-size: 16px;
-        color: #1c1c1e;
-        margin-bottom: 8px;
-    }
-
-    .drop-zone-text strong {
-        color: var(--apple-blue);
-    }
-
-    .drop-zone-hint {
-        font-size: 13px;
-        color: var(--apple-gray);
-    }
-
-    /* Attachment Cards */
-    .attachment-cards {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        margin-top: 15px;
-    }
-
-    .attachment-card {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        padding: 15px;
-        background: white;
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        transition: all 0.2s ease;
-        animation: slideIn 0.3s ease-out;
-    }
-
-    @keyframes slideIn {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .attachment-card:hover {
-        border-color: var(--apple-blue);
-        box-shadow: 0 2px 12px rgba(0, 122, 255, 0.1);
-    }
-
-    .attachment-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 10px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 24px;
-        flex-shrink: 0;
-    }
-
-    .attachment-icon.uploading {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        animation: pulse 1.5s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-
-        0%,
-        100% {
-            opacity: 1;
-        }
-
-        50% {
-            opacity: 0.6;
-        }
-    }
-
-    .attachment-info {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .attachment-name {
-        font-size: 14px;
-        font-weight: 500;
-        color: #1c1c1e;
-        margin-bottom: 4px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .attachment-size {
-        font-size: 12px;
-        color: var(--apple-gray);
-    }
-
-    .attachment-actions {
-        display: flex;
-        gap: 8px;
-        flex-shrink: 0;
-    }
-
-    .btn-download,
-    .btn-remove {
-        width: 36px;
-        height: 36px;
-        border-radius: 8px;
-        border: none;
-        background: var(--apple-bg);
-        color: var(--apple-gray);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-        text-decoration: none;
-    }
-
-    .btn-download:hover {
-        background: rgba(0, 122, 255, 0.1);
-        color: var(--apple-blue);
-    }
-
-    .btn-remove:hover {
-        background: rgba(255, 59, 48, 0.1);
-        color: #ff3b30;
-    }
-
-    /* Notifications */
-    .notification {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: white;
-        padding: 15px 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        min-width: 300px;
-        opacity: 0;
-        transform: translateX(400px);
-        transition: all 0.3s ease;
-        z-index: 10000;
-    }
-
-    .notification.show {
-        opacity: 1;
-        transform: translateX(0);
-    }
-
-    .notification-success {
-        border-left: 4px solid var(--success-green);
-    }
-
-    .notification-success i {
-        color: var(--success-green);
-        font-size: 20px;
-    }
-
-    .notification-error {
-        border-left: 4px solid #ff3b30;
-    }
-
-    .notification-error i {
-        color: #ff3b30;
-        font-size: 20px;
-    }
-
-    .notification span {
-        font-size: 14px;
-        color: #1c1c1e;
-        flex: 1;
-    }
-
-    /* Optional tag in form labels */
-    .optional-tag {
-        font-size: 11px;
-        color: var(--apple-gray);
-        font-weight: 400;
-        margin-left: 8px;
-    }
-</style>
-
-<!-- JavaScript - Add before closing </body> tag -->
-<script src="attachment-upload.js"></script>
-
-<!-- Or include inline if preferred -->
-<script>
-    // attachment-upload.js - File Upload Handler with Card UI
-
-    class AttachmentUploader {
-        constructor() {
-            this.uploadedFiles = [];
-            this.maxFileSize = 20 * 1024 * 1024; // 20MB
-            this.maxTotalSize = 25 * 1024 * 1024; // 25MB
-            this.allowedExtensions = [
-                'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
-                'jpg', 'jpeg', 'png', 'gif', 'webp',
-                'zip', 'rar', '7z',
-                'txt', 'csv', 'json', 'xml'
-            ];
-
-            this.init();
-        }
-
-        init() {
-            const fileInput = document.getElementById('fileUpload');
-            const dropZone = document.getElementById('dropZone');
-            const attachmentContainer = document.getElementById('attachmentCards');
-
-            // File input change handler
-            fileInput.addEventListener('change', (e) => {
-                this.handleFiles(e.target.files);
-                e.target.value = ''; // Reset input
-            });
-
-            // Drag and drop handlers
-            dropZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                dropZone.classList.add('drag-over');
-            });
-
-            dropZone.addEventListener('dragleave', () => {
-                dropZone.classList.remove('drag-over');
-            });
-
-            dropZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                dropZone.classList.remove('drag-over');
-                this.handleFiles(e.dataTransfer.files);
-            });
-
-            // Click to upload
-            dropZone.addEventListener('click', () => {
-                fileInput.click();
-            });
-        }
-
-        handleFiles(files) {
-            Array.from(files).forEach(file => {
-                // Validate file extension
-                const extension = file.name.split('.').pop().toLowerCase();
-                if (!this.allowedExtensions.includes(extension)) {
-                    this.showError(`File type .${extension} is not allowed`);
-                    return;
-                }
-
-                // Validate file size
-                if (file.size > this.maxFileSize) {
-                    this.showError(`File ${file.name} exceeds 20MB limit`);
-                    return;
-                }
-
-                // Check total size
-                const currentTotalSize = this.uploadedFiles.reduce((sum, f) => sum + f.file_size, 0);
-                if (currentTotalSize + file.size > this.maxTotalSize) {
-                    this.showError('Total upload size exceeds 25MB limit');
-                    return;
-                }
-
-                // Upload file
-                this.uploadFile(file);
-            });
-        }
-
-        uploadFile(file) {
-            const formData = new FormData();
-            formData.append('file', file);
-
-            // Create temporary card with progress
-            const tempId = 'temp-' + Date.now();
-            this.createFileCard({
-                id: tempId,
-                original_name: file.name,
-                formatted_size: this.formatBytes(file.size),
-                extension: file.name.split('.').pop().toLowerCase(),
-                uploading: true
-            });
-
-            // Upload via AJAX
-            fetch('upload_handler.php', {
-                method: 'POST',
-                body: formData
-            })
-                .then(response => response.json())
-                .then(data => {
-                    // Remove temporary card
-                    this.removeCard(tempId);
-
-                    if (data.success) {
-                        // Add to uploaded files
-                        this.uploadedFiles.push(data);
-
-                        // Create permanent card
-                        this.createFileCard(data);
-
-                        // Update hidden input with attachment IDs
-                        this.updateAttachmentIds();
-
-                        this.showSuccess(`${file.name} uploaded successfully`);
-                    } else {
-                        this.showError(data.error || 'Upload failed');
-                    }
-                })
-                .catch(error => {
-                    this.removeCard(tempId);
-                    this.showError('Upload error: ' + error.message);
-                });
-        }
-
-        createFileCard(fileData) {
-            const container = document.getElementById('attachmentCards');
-
-            const card = document.createElement('div');
-            card.className = 'attachment-card';
-            card.setAttribute('data-file-id', fileData.id);
-
-            if (fileData.uploading) {
-                card.innerHTML = `
-                <div class="attachment-icon uploading">
-                    <i class="fas fa-spinner fa-spin"></i>
-                </div>
-                <div class="attachment-info">
-                    <div class="attachment-name">${this.escapeHtml(fileData.original_name)}</div>
-                    <div class="attachment-size">Uploading...</div>
-                </div>
-            `;
-            } else {
-                const icon = this.getFileIcon(fileData.extension);
-                const downloadUrl = `download.php?id=${encodeURIComponent(fileData.encrypted_id)}`;
-
-                card.innerHTML = `
-                <div class="attachment-icon">
-                    <i class="fas ${icon}"></i>
-                </div>
-                <div class="attachment-info">
-                    <div class="attachment-name">${this.escapeHtml(fileData.original_name)}</div>
-                    <div class="attachment-size">${fileData.formatted_size}</div>
-                </div>
-                <div class="attachment-actions">
-                    <a href="${downloadUrl}" class="btn-download" title="Download" target="_blank">
-                        <i class="fas fa-download"></i>
-                    </a>
-                    <button class="btn-remove" onclick="attachmentUploader.removeFile('${fileData.encrypted_id}')" title="Remove">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            `;
-            }
-
-            container.appendChild(card);
-            container.style.display = 'flex';
-        }
-
-        removeFile(encryptedId) {
-            // Find and remove from array
-            this.uploadedFiles = this.uploadedFiles.filter(f => f.encrypted_id !== encryptedId);
-
-            // Remove card from DOM
-            const cards = document.querySelectorAll('.attachment-card');
-            cards.forEach(card => {
-                const cardId = card.getAttribute('data-file-id');
-                const fileData = this.uploadedFiles.find(f => f.id == cardId) ||
-                    this.uploadedFiles.find(f => f.encrypted_id === cardId);
-                if (fileData && fileData.encrypted_id === encryptedId) {
-                    card.remove();
-                }
-            });
-
-            // Update hidden input
-            this.updateAttachmentIds();
-
-            // Hide container if empty
-            const container = document.getElementById('attachmentCards');
-            if (this.uploadedFiles.length === 0) {
-                container.style.display = 'none';
-            }
-
-            this.showSuccess('File removed');
-        }
-
-        removeCard(cardId) {
-            const card = document.querySelector(`[data-file-id="${cardId}"]`);
-            if (card) {
-                card.remove();
-            }
-        }
-
-        updateAttachmentIds() {
-            const input = document.getElementById('attachmentIds');
-            const ids = this.uploadedFiles.map(f => f.encrypted_id).join(',');
-            input.value = ids;
-
-            console.log('Updated attachment IDs:', ids);
-        }
-
-        getFileIcon(extension) {
-            const icons = {
-                'pdf': 'fa-file-pdf',
-                'doc': 'fa-file-word',
-                'docx': 'fa-file-word',
-                'xls': 'fa-file-excel',
-                'xlsx': 'fa-file-excel',
-                'ppt': 'fa-file-powerpoint',
-                'pptx': 'fa-file-powerpoint',
-                'jpg': 'fa-file-image',
-                'jpeg': 'fa-file-image',
-                'png': 'fa-file-image',
-                'gif': 'fa-file-image',
-                'webp': 'fa-file-image',
-                'zip': 'fa-file-archive',
-                'rar': 'fa-file-archive',
-                '7z': 'fa-file-archive',
-                'txt': 'fa-file-alt',
-                'csv': 'fa-file-csv',
-                'json': 'fa-file-code',
-                'xml': 'fa-file-code'
-            };
-
-            return icons[extension] || 'fa-file';
-        }
-
-        formatBytes(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-        }
-
-        escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        showSuccess(message) {
-            this.showNotification(message, 'success');
-        }
-
-        showError(message) {
-            this.showNotification(message, 'error');
-        }
-
-        showNotification(message, type) {
-            // Create notification element
-            const notification = document.createElement('div');
-            notification.className = `notification notification-${type}`;
-            notification.innerHTML = `
-            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
-            <span>${this.escapeHtml(message)}</span>
-        `;
-
-            document.body.appendChild(notification);
-
-            // Show notification
-            setTimeout(() => {
-                notification.classList.add('show');
-            }, 10);
-
-            // Remove after 3 seconds
-            setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => {
-                    notification.remove();
-                }, 300);
-            }, 3000);
-        }
-    }
-
-    // Initialize when DOM is ready
-    let attachmentUploader;
-    document.addEventListener('DOMContentLoaded', () => {
-        attachmentUploader = new AttachmentUploader();
-    });</script>
+                    <div class="form-section">
+                        <div class="section-toggle" onclick="toggleSection('attachmentsSection')">
+                            <span class="material-icons">expand_more</span>
+                            <h2 class="section-title" style="margin: 0;">Attachments</h2>
+                        </div>
+
+                        <div class="section-content" id="attachmentsSection">
+                            <div class="form-group" style="margin-top: 16px;">
+                                <label for="attachments" class="file-upload-area">
+                                    <div class="material-icons file-upload-icon">cloud_upload</div>
+                                    <div class="file-upload-text">Click to upload or drag files here</div>
+                                    <div class="file-upload-hint">Supported: PDF, DOC, XLS, Images, ZIP (Max 25MB)</div>
+                                </label>
+                                <input type="file" id="attachments" name="attachments[]" multiple
+                                    onchange="handleFileSelect(event)">
+                                <div id="filePreviewGrid" class="file-preview-grid"></div>
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- Action Buttons -->
-                    <div class="action-buttons">
-                        <button type="button" class="btn btn-secondary" id="previewBtn">
-                            <span class="material-icons">preview</span>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-preview" id="previewBtn">
+                            <span class="material-icons">visibility</span>
                             Preview Email
                         </button>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-send">
                             <span class="material-icons">send</span>
                             Send Email
                         </button>
@@ -1189,225 +798,116 @@ $_SESSION['user_settings'] = $settings;
     </div>
 
     <!-- Quill Rich Text Editor JS -->
-    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 
     <script>
-        // Initialize Quill editor
-        const quillMessage = new Quill('#quillMessage', {
-            theme: 'snow',
+        // Initialize Quill editors
+        const quillMessage = new Quill('#editor', {
             modules: {
-                toolbar: [
-                    [{ 'header': [1, 2, 3, false] }],
-                    ['bold', 'italic', 'underline', 'strike'],
-                    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                    [{ 'color': [] }, { 'background': [] }],
-                    ['link'],
-                    ['clean']
-                ]
+                toolbar: '#toolbar'
             },
+            theme: 'snow',
             placeholder: 'Type your message here...'
         });
 
-        // ========== FILE UPLOAD FUNCTIONALITY ==========
-        const fileInput = document.getElementById('fileInput');
-        const fileUploadArea = document.getElementById('fileUploadArea');
-        const fileCardsContainer = document.getElementById('fileCardsContainer');
-        const uploadItem = document.getElementById('uploadItem');
-        const uploadFilename = document.getElementById('uploadFilename');
-        const uploadPercentage = document.getElementById('uploadPercentage');
-        const uploadProgressBar = document.getElementById('uploadProgressBar');
-        const sizeWarning = document.getElementById('sizeWarning');
-        const sizeWarningText = document.getElementById('sizeWarningText');
-        const attachmentIdsInput = document.getElementById('attachmentIds');
-
-        let uploadedFiles = [];
-        let totalSize = 0;
-        const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
-        const MAX_TOTAL_SIZE = 25 * 1024 * 1024; // 25MB
-
-        // Click to upload
-        fileUploadArea.addEventListener('click', () => {
-            fileInput.click();
+        const quillSignature = new Quill('#signatureEditor', {
+            modules: {
+                toolbar: '#signatureToolbar'
+            },
+            theme: 'snow',
+            placeholder: 'Your professional signature...'
         });
 
-        // Drag and drop
-        fileUploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            fileUploadArea.classList.add('drag-over');
-        });
-
-        fileUploadArea.addEventListener('dragleave', () => {
-            fileUploadArea.classList.remove('drag-over');
-        });
-
-        fileUploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            fileUploadArea.classList.remove('drag-over');
-            const files = e.dataTransfer.files;
-            handleFiles(files);
-        });
-
-        // File selection
-        fileInput.addEventListener('change', (e) => {
-            handleFiles(e.target.files);
-        });
-
-        // Handle file uploads
-        async function handleFiles(files) {
-            for (let file of files) {
-                // Check individual file size
-                if (file.size > MAX_FILE_SIZE) {
-                    alert(`File "${file.name}" exceeds 20MB limit`);
-                    continue;
-                }
-
-                // Check total size
-                if (totalSize + file.size > MAX_TOTAL_SIZE) {
-                    showSizeWarning(totalSize, file.size);
-                    break;
-                }
-
-                await uploadFile(file);
-            }
-            
-            // Clear file input
-            fileInput.value = '';
+        // Load default signature from settings
+        const defaultSignature = <?php echo $defaultSignature; ?>;
+        if (defaultSignature) {
+            quillSignature.root.innerHTML = defaultSignature;
         }
 
-        // Upload single file with progress
-        async function uploadFile(file) {
-            const formData = new FormData();
-            formData.append('file', file);
+        // Focus effects for editor containers
+        const editorContainer = document.getElementById('editorContainer');
+        const signatureContainer = document.getElementById('signatureContainer');
 
-            // Show progress
-            uploadItem.classList.add('active');
-            uploadFilename.textContent = file.name;
-            uploadPercentage.textContent = '0%';
-            uploadProgressBar.style.width = '0%';
-
-            try {
-                const xhr = new XMLHttpRequest();
-
-                // Progress tracking
-                xhr.upload.addEventListener('progress', (e) => {
-                    if (e.lengthComputable) {
-                        const percentComplete = Math.round((e.loaded / e.total) * 100);
-                        uploadProgressBar.style.width = percentComplete + '%';
-                        uploadPercentage.textContent = percentComplete + '%';
-                    }
-                });
-
-                // Upload complete
-                xhr.addEventListener('load', () => {
-                    if (xhr.status === 200) {
-                        const response = JSON.parse(xhr.responseText);
-                        
-                        if (response.success) {
-                            uploadedFiles.push(response);
-                            totalSize += response.file_size;
-                            addFileCard(response);
-                            updateAttachmentIds();
-                            
-                            // Hide progress after 500ms
-                            setTimeout(() => {
-                                uploadItem.classList.remove('active');
-                            }, 500);
-                        } else {
-                            alert('Upload failed: ' + response.error);
-                            uploadItem.classList.remove('active');
-                        }
-                    }
-                });
-
-                xhr.open('POST', 'upload_handler.php');
-                xhr.send(formData);
-
-            } catch (error) {
-                console.error('Upload error:', error);
-                alert('Upload failed: ' + error.message);
-                uploadItem.classList.remove('active');
+        quillMessage.on('selection-change', function (range) {
+            if (range) {
+                editorContainer.classList.add('focused');
+            } else {
+                editorContainer.classList.remove('focused');
             }
+        });
+
+        quillSignature.on('selection-change', function (range) {
+            if (range) {
+                signatureContainer.classList.add('focused');
+            } else {
+                signatureContainer.classList.remove('focused');
+            }
+        });
+
+        // Section toggle functionality
+        function toggleSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            const toggle = section.previousElementSibling;
+
+            section.classList.toggle('collapsed');
+            toggle.classList.toggle('collapsed');
         }
 
-        // Add file card
-        function addFileCard(fileData) {
-            const card = document.createElement('div');
-            card.className = 'file-card';
-            card.dataset.fileId = fileData.id;
-            card.dataset.encryptedId = fileData.encrypted_id;
+        // File handling variables
+        let selectedFiles = [];
 
-            const icon = getFileIcon(fileData.extension);
-            
-            card.innerHTML = `
-                <div class="material-icons file-card-icon">${icon}</div>
-                <div class="file-card-name" title="${fileData.original_name}">${fileData.original_name}</div>
-                <div class="file-card-size">${fileData.formatted_size}</div>
-                ${fileData.deduplicated ? '<div class="file-card-badge">✓ Reused</div>' : ''}
-                <div class="file-card-download">
-                    <span class="material-icons">download</span>
-                    <span>Click to download</span>
-                </div>
-                <div class="file-card-remove">
-                    <span class="material-icons">close</span>
-                </div>
-            `;
+        // Handle file selection
+        function handleFileSelect(event) {
+            const files = Array.from(event.target.files);
+            selectedFiles = [...selectedFiles, ...files];
+            renderFilePreview();
+        }
 
-            // Click to download
-            card.addEventListener('click', (e) => {
-                if (!e.target.closest('.file-card-remove')) {
-                    downloadFile(fileData.encrypted_id, fileData.original_name);
-                }
+        // Render file preview grid
+        function renderFilePreview() {
+            const grid = document.getElementById('filePreviewGrid');
+            grid.innerHTML = '';
+
+            selectedFiles.forEach((file, index) => {
+                const item = document.createElement('div');
+                item.className = 'file-preview-item';
+
+                const icon = getFileIcon(file.name);
+                const size = formatFileSize(file.size);
+
+                item.innerHTML = `
+                    <span class="material-icons file-preview-icon">${icon}</span>
+                    <div class="file-preview-name">${escapeHtml(file.name)}</div>
+                    <div class="file-preview-size">${size}</div>
+                    <button type="button" class="file-remove-btn" onclick="removeFile(${index})" title="Remove file">
+                        <span class="material-icons" style="font-size: 14px;">close</span>
+                    </button>
+                `;
+
+                grid.appendChild(item);
             });
 
-            // Remove file handler
-            card.querySelector('.file-card-remove').addEventListener('click', (e) => {
-                e.stopPropagation();
-                removeFile(fileData.id);
-                card.remove();
-            });
-
-            fileCardsContainer.appendChild(card);
+            // Update the file input with a DataTransfer object
+            updateFileInput();
         }
 
-        // Download file
-        function downloadFile(encryptedId, originalName) {
-            window.location.href = `download_file.php?fid=${encodeURIComponent(encryptedId)}`;
+        // Remove file from selection
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            renderFilePreview();
         }
 
-        // Remove file
-        function removeFile(fileId) {
-            const index = uploadedFiles.findIndex(f => f.id === fileId);
-            if (index > -1) {
-                totalSize -= uploadedFiles[index].file_size;
-                uploadedFiles.splice(index, 1);
-                updateAttachmentIds();
-                hideSizeWarning();
-            }
+        // Update the actual file input with selected files
+        function updateFileInput() {
+            const input = document.getElementById('attachments');
+            const dt = new DataTransfer();
+            selectedFiles.forEach(file => dt.items.add(file));
+            input.files = dt.files;
         }
 
-        // Update hidden input with attachment IDs
-        function updateAttachmentIds() {
-            const ids = uploadedFiles.map(f => f.id).join(',');
-            attachmentIdsInput.value = ids;
-        }
-
-        // Show size warning
-        function showSizeWarning(currentSize, attemptedSize) {
-            const currentMB = (currentSize / 1024 / 1024).toFixed(2);
-            const attemptedMB = (attemptedSize / 1024 / 1024).toFixed(2);
-            sizeWarningText.textContent = `Cannot add file. Current total: ${currentMB}MB, attempted: ${attemptedMB}MB. Maximum is 25MB.`;
-            sizeWarning.classList.add('active');
-        }
-
-        // Hide size warning
-        function hideSizeWarning() {
-            if (totalSize < MAX_TOTAL_SIZE * 0.9) {
-                sizeWarning.classList.remove('active');
-            }
-        }
-
-        // Get file icon
-        function getFileIcon(extension) {
+        // Get appropriate icon for file type
+        function getFileIcon(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
             const iconMap = {
                 'pdf': 'picture_as_pdf',
                 'doc': 'description',
@@ -1425,25 +925,203 @@ $_SESSION['user_settings'] = $settings;
                 'txt': 'text_snippet',
                 'csv': 'table_view'
             };
-            return iconMap[extension] || 'insert_drive_file';
+            return iconMap[ext] || 'insert_drive_file';
         }
 
-        // ========== FORM SUBMISSION ==========
-        document.getElementById('composeForm').addEventListener('submit', function(e) {
-            // Get message content from Quill
-            const messageHtml = quillMessage.root.innerHTML;
-            
-            // Set hidden input
-            document.getElementById('messageInput').value = messageHtml;
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Handle Email List File Upload
+        function handleEmailListUpload(fileInput, targetInputId) {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const content = e.target.result;
+
+                // Parse emails from file
+                let emails = content
+                    .split(/[,;\n\r]+/)
+                    .map(email => email.trim())
+                    .filter(email => email.length > 0);
+
+                // Set the emails in the target input
+                const targetInput = document.getElementById(targetInputId);
+                const currentValue = targetInput.value.trim();
+
+                if (currentValue) {
+                    targetInput.value = currentValue + ', ' + emails.join(', ');
+                } else {
+                    targetInput.value = emails.join(', ');
+                }
+
+                alert(`✓ Successfully loaded ${emails.length} email address${emails.length !== 1 ? 'es' : ''} from file`);
+            };
+
+            reader.readAsText(file);
+        }
+
+    /**
+ * IMPROVED FORM SUBMISSION SCRIPT
+ * Add this to index.php to fix the "subject is empty" issue
+ * 
+ * Place this script AFTER the existing form submission handler
+ */
+
+// Replace the existing form submission handler with this improved version
+document.getElementById('composeForm').addEventListener('submit', function (e) {
+    // === STEP 1: Validate Required Fields ===
+    const subjectField = document.querySelector('input[name="subject"]');
+    const emailField = document.querySelector('input[name="email"]');
+    const articleField = document.querySelector('input[name="articletitle"]');
+    
+    const subject = subjectField ? subjectField.value.trim() : '';
+    const email = emailField ? emailField.value.trim() : '';
+    const article = articleField ? articleField.value.trim() : '';
+    
+    // Validate subject (most critical)
+    if (!subject) {
+        e.preventDefault();
+        alert('❌ Subject field is required! Please enter a subject for your email.');
+        if (subjectField) subjectField.focus();
+        return false;
+    }
+    
+    // Validate recipient
+    if (!email) {
+        e.preventDefault();
+        alert('❌ Recipient email is required!');
+        if (emailField) emailField.focus();
+        return false;
+    }
+    
+    // Validate article title
+    if (!article) {
+        e.preventDefault();
+        alert('❌ Article title is required!');
+        if (articleField) articleField.focus();
+        return false;
+    }
+    
+    // === STEP 2: Process Message Content ===
+    console.log('✓ Form validation passed');
+    console.log('  Subject:', subject);
+    console.log('  Recipient:', email);
+    console.log('  Article:', article);
+    
+    // Get message content from Quill editor
+    const messageHtml = quillMessage.root.innerHTML;
+    
+    // Get signature content (if signature editor exists)
+    let signatureHtml = '';
+    if (typeof quillSignature !== 'undefined') {
+        signatureHtml = quillSignature.root.innerHTML;
+    }
+    
+    // Combine message and signature
+    let finalHtml = messageHtml;
+    
+    // Only add signature if it's not empty
+    if (signatureHtml.trim() && signatureHtml !== '<p><br></p>') {
+        finalHtml += '<br><br>' + signatureHtml;
+    }
+    
+    // === STEP 3: Set Hidden Fields ===
+    // Set the combined HTML to hidden input
+    const messageInput = document.getElementById('messageInput');
+    if (messageInput) {
+        messageInput.value = finalHtml;
+    }
+    
+    // Add HTML flag if not already present
+    if (!document.querySelector('input[name="message_is_html"]')) {
+        const htmlFlag = document.createElement('input');
+        htmlFlag.type = 'hidden';
+        htmlFlag.name = 'message_is_html';
+        htmlFlag.value = 'true';
+        this.appendChild(htmlFlag);
+    }
+    
+    // === STEP 4: Debug Logging ===
+    console.log('📧 Submitting email with the following data:');
+    const formData = new FormData(this);
+    
+    // Log each field
+    for (let [key, value] of formData.entries()) {
+        if (key === 'message') {
+            console.log(`  ${key}:`, value.substring(0, 100) + '...');
+        } else {
+            console.log(`  ${key}:`, value);
+        }
+    }
+    
+    // Count attachments
+    const attachments = formData.getAll('attachments[]');
+    console.log(`  Attachments: ${attachments.filter(f => f.size > 0).length} file(s)`);
+    
+    // === STEP 5: Allow submission ===
+    console.log('✓ Form submitting to send.php...');
+    return true;
+});
+
+/**
+ * ADDITIONAL: Add real-time subject validation
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    const subjectField = document.querySelector('input[name="subject"]');
+    
+    if (subjectField) {
+        // Add visual feedback for empty subject
+        subjectField.addEventListener('blur', function() {
+            if (!this.value.trim()) {
+                this.style.borderColor = '#ff3b30';
+                this.style.backgroundColor = '#fff5f5';
+            } else {
+                this.style.borderColor = '';
+                this.style.backgroundColor = '';
+            }
         });
+        
+        // Clear error styling when typing
+        subjectField.addEventListener('input', function() {
+            if (this.value.trim()) {
+                this.style.borderColor = '';
+                this.style.backgroundColor = '';
+            }
+        });
+    }
+});
 
-        // Preview button
+/**
+ * DEBUGGING: Add this to check if form data is being captured
+ */
+console.log('Form submission script loaded successfully');
+console.log('Subject field exists:', !!document.querySelector('input[name="subject"]'));
+console.log('Email field exists:', !!document.querySelector('input[name="email"]'));
+console.log('Form exists:', !!document.getElementById('composeForm'));
+
+        // Preview Email Functionality
         document.getElementById('previewBtn').addEventListener('click', () => {
-            const email = document.getElementById('email').value;
-            const subject = document.getElementById('subject').value;
-            const articletitle = document.getElementById('articletitle').value;
+            const recipientEmail = document.querySelector('input[name="email"]').value;
+            const subject = document.querySelector('input[name="subject"]').value;
+            const articletitle = document.querySelector('input[name="articletitle"]').value;
 
-            if (!email || !subject || !articletitle) {
+            // Validate required fields
+            if (!recipientEmail || !subject || !articletitle) {
                 alert('Please fill in all required fields (To, Subject, and Article Title) before previewing.');
                 return;
             }
@@ -1451,27 +1129,27 @@ $_SESSION['user_settings'] = $settings;
             // Get message content
             const messageHtml = quillMessage.root.innerHTML;
 
-            // Get signature components
-            const signatureWish = document.getElementById('signatureWish').value;
-            const signatureName = document.getElementById('signatureName').value;
-            const signatureDesignation = document.getElementById('signatureDesignation').value;
-            const signatureExtra = document.getElementById('signatureExtra').value;
+            // Get signature content
+            const signatureHtml = quillSignature.root.innerHTML;
 
-            // Create preview form
+            // Combine message and signature
+            let finalHtml = messageHtml;
+            if (signatureHtml.trim() && signatureHtml !== '<p><br></p>') {
+                finalHtml += '<br><br>' + signatureHtml;
+            }
+
+            // Create a form to submit to preview.php
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = 'preview.php';
             form.target = '_blank';
 
+            // Add form fields
             const fields = {
-                'email': email,
+                'email': recipientEmail,
                 'subject': subject,
                 'articletitle': articletitle,
-                'message': messageHtml,
-                'signatureWish': signatureWish,
-                'signatureName': signatureName,
-                'signatureDesignation': signatureDesignation,
-                'signatureExtra': signatureExtra
+                'message': finalHtml
             };
 
             for (const [key, value] of Object.entries(fields)) {
@@ -1482,11 +1160,11 @@ $_SESSION['user_settings'] = $settings;
                 form.appendChild(input);
             }
 
+            // Add form to body and submit
             document.body.appendChild(form);
             form.submit();
             document.body.removeChild(form);
         });
-        
     </script>
 </body>
 
