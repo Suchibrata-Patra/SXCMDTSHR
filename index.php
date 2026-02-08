@@ -657,30 +657,39 @@ $defaultSignature = json_encode($settings['signature']);
                             <div class="form-group" style="margin-top: 16px;">
                                 <label for="signatureWish">Closing Wish</label>
                                 <input type="text" id="signatureWish" name="signatureWish" class="form-input"
-                                    placeholder="e.g., Best Regards, Warm Wishes, Sincerely">
+                                    placeholder="e.g., Best Regards, Warm Wishes, Sincerely etc." value="Best Regards">
                                 <p class="field-description">Your closing greeting</p>
                             </div>
 
                             <div class="form-group">
                                 <label for="signatureName">Name</label>
                                 <input type="text" id="signatureName" name="signatureName" class="form-input"
-                                    placeholder="e.g., Durba Bhattacharya">
+                                    placeholder="e.g., Durba Bhattacharya" value="Prof. Dr. Durba Bhattacharya">
                                 <p class="field-description">Your full name</p>
                             </div>
 
                             <div class="form-group">
                                 <label for="signatureDesignation">Designation</label>
                                 <input type="text" id="signatureDesignation" name="signatureDesignation"
-                                    class="form-input" placeholder="e.g., H.O.D of SXC MDTS">
+                                    class="form-input" placeholder="e.g., H.O.D of SXC MDTS"
+                                    value="H.O.D Department of Data Science">
                                 <p class="field-description">Your title or position</p>
                             </div>
 
-                            <div class="form-group">
-                                <label for="signatureExtra">Additional Text (Optional)</label>
-                                <textarea id="signatureExtra" name="signatureExtra" class="form-input" rows="3"
-                                    placeholder="Any additional information"></textarea>
-                                <p class="field-description">Extra details like contact info, department, etc.</p>
+                            <div style="margin-bottom: 20px; font-family: Arial, sans-serif;">
+                                <label for="signatureExtra"
+                                    style="display: block; font-weight: bold; margin-bottom: 8px; color: #333;">
+                                    Additional Text (Optional)
+                                </label>
+                                <textarea id="signatureExtra" name="signatureExtra" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; 
+                     font-size: 14px; resize: vertical; box-sizing: border-box;" rows="3"
+                                    placeholder="Any additional information">
+    </textarea>
+                                <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                                    Extra details like contact info, department, etc.
+                                </p>
                             </div>
+
                         </div>
                     </div>
 
