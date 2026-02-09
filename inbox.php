@@ -575,14 +575,13 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .badge-new {
-            display: none;
-            /* background: rgba(52, 199, 89, 0.15); */
-            /* color: var(--success-green); */
+            background: rgba(52, 199, 89, 0.15);
+            color: var(--success-green);
         }
 
         .badge-attachment {
-            background: rgba(142, 142, 147, 0.15);
-            color: var(--apple-gray);
+            background: rgba(0, 0, 0);
+            color: white;
         }
 
         .badge-attachment .material-icons {
