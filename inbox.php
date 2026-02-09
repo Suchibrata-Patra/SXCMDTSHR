@@ -340,7 +340,7 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .message-view-pane {
-            width: 50%;
+            width: 60%;
             display: flex;
             flex-direction: column;
             background: #FAFAFA;
