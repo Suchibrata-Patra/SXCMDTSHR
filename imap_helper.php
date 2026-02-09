@@ -170,43 +170,43 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = fa
 /**
  * Save inbox message to database
  */
-function saveInboxMessage($messageData) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) return false;
+// function saveInboxMessage($messageData) {
+//     try {
+//         $pdo = getDatabaseConnection();
+//         if (!$pdo) return false;
         
-        $stmt = $pdo->prepare("
-            INSERT INTO inbox_messages (
-                message_id, user_email, sender_email, sender_name, 
-                subject, body, received_date, has_attachments, 
-                attachment_data, is_read, is_deleted, created_at
-            ) VALUES (
-                :message_id, :user_email, :sender_email, :sender_name,
-                :subject, :body, :received_date, :has_attachments, 
-                :attachment_data, 0, 0, NOW()
-            )
-            ON DUPLICATE KEY UPDATE
-                subject = VALUES(subject),
-                body = VALUES(body),
-                attachment_data = VALUES(attachment_data)
-        ");
+//         $stmt = $pdo->prepare("
+//             INSERT INTO inbox_messages (
+//                 message_id, user_email, sender_email, sender_name, 
+//                 subject, body, received_date, has_attachments, 
+//                 attachment_data, is_read, is_deleted, created_at
+//             ) VALUES (
+//                 :message_id, :user_email, :sender_email, :sender_name,
+//                 :subject, :body, :received_date, :has_attachments, 
+//                 :attachment_data, 0, 0, NOW()
+//             )
+//             ON DUPLICATE KEY UPDATE
+//                 subject = VALUES(subject),
+//                 body = VALUES(body),
+//                 attachment_data = VALUES(attachment_data)
+//         ");
         
-        return $stmt->execute([
-            ':message_id' => $messageData['message_id'],
-            ':user_email' => $messageData['user_email'],
-            ':sender_email' => $messageData['sender_email'],
-            ':sender_name' => $messageData['sender_name'],
-            ':subject' => $messageData['subject'],
-            ':body' => $messageData['body'],
-            ':received_date' => $messageData['received_date'],
-            ':has_attachments' => $messageData['has_attachments'],
-            ':attachment_data' => $messageData['attachment_data']
-        ]);
-    } catch (Exception $e) {
-        error_log("DATABASE ERROR: " . $e->getMessage()); // This will tell you EXACTLY why it failed
-        return false;
-    }
-}
+//         return $stmt->execute([
+//             ':message_id' => $messageData['message_id'],
+//             ':user_email' => $messageData['user_email'],
+//             ':sender_email' => $messageData['sender_email'],
+//             ':sender_name' => $messageData['sender_name'],
+//             ':subject' => $messageData['subject'],
+//             ':body' => $messageData['body'],
+//             ':received_date' => $messageData['received_date'],
+//             ':has_attachments' => $messageData['has_attachments'],
+//             ':attachment_data' => $messageData['attachment_data']
+//         ]);
+//     } catch (Exception $e) {
+//         error_log("DATABASE ERROR: " . $e->getMessage()); // This will tell you EXACTLY why it failed
+//         return false;
+//     }
+// }
 
 /**
  * Get last sync date for user
