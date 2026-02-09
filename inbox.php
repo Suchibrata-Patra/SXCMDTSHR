@@ -126,7 +126,12 @@ if (isset($_GET['action'])) {
             exit();
     }
 }
-
+function getImapConfigFromSession() {
+    if (isset($_SESSION['imap_config'])) {
+        return $_SESSION['imap_config'];
+    }
+    return false;
+}
 $filters = [
     'search' => $_GET['search'] ?? '',
     'unread_only' => isset($_GET['unread']) && $_GET['unread'] === '1'

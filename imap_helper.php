@@ -494,10 +494,5 @@ function quickSyncCheck($userEmail, $imapConfig = []) {
     error_log("DEPRECATED: quickSyncCheck() called. Using session config instead.");
     return quickSyncCheckFromSession($userEmail);
 }
-function getImapConfigFromSession() {
-    if (isset($_SESSION['imap_config'])) {
-        return $_SESSION['imap_config'];
-    }
-    return false;
-}
+
 ?>
