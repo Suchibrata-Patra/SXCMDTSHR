@@ -1,6 +1,12 @@
 <?php
+/**
+ * IMAP Helper - OPTIMIZED VERSION
+ * Includes body_preview generation for fast inbox queries
+ */
+
 require_once 'db_config.php';
 require_once 'settings_helper.php';
+require_once 'inbox_functions.php';
 
 function connectToIMAPFromSession() {
     $config = getImapConfigFromSession();
@@ -28,7 +34,9 @@ function connectToIMAP($server, $port, $email, $password, $encryption = 'ssl') {
     } else {
         $encryptionFlag = '/imap/notls';
     }
+    
     $mailbox = "{" . $server . ":" . $port . $encryptionFlag . "}INBOX";
+    
     try {
         $connection = @imap_open($mailbox, $email, $password);
         
@@ -45,6 +53,10 @@ function connectToIMAP($server, $port, $email, $password, $encryption = 'ssl') {
     }
 }
 
+/**
+ * Fetch new messages from IMAP - OPTIMIZED VERSION
+ * Now generates body_preview automatically
+ */
 function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = false) {
     $connection = connectToIMAPFromSession();
     
@@ -111,6 +123,9 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = fa
                 $body = getMessageBody($connection, $msgNum);
                 $cleanBody = stripHtmlFromBody($body);
                 
+                // Generate preview (first 500 chars)
+                $bodyPreview = substr($cleanBody, 0, 500);
+                
                 // Get attachments with metadata
                 $attachments = getAttachmentMetadata($connection, $msgNum);
                 $hasAttachments = !empty($attachments);
@@ -119,7 +134,7 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = fa
                 // Get received date
                 $receivedDate = isset($info->date) ? date('Y-m-d H:i:s', strtotime($info->date)) : date('Y-m-d H:i:s');
                 
-                // Save to database
+                // Save to database - NOW WITH BODY PREVIEW
                 $messageData = [
                     'message_id' => $messageId,
                     'user_email' => $userEmail,
@@ -127,6 +142,7 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = fa
                     'sender_name' => $senderName,
                     'subject' => $subject,
                     'body' => $cleanBody,
+                    'body_preview' => $bodyPreview,  // NEW: Preview for fast queries
                     'received_date' => $receivedDate,
                     'has_attachments' => $hasAttachments ? 1 : 0,
                     'attachment_data' => $attachmentData
@@ -369,40 +385,6 @@ function extractName($from) {
 }
 
 /**
- * Check if message already exists in database
- */
-function messageExists($userEmail, $messageId) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) return false;
-        
-        $stmt = $pdo->prepare("SELECT id FROM inbox_messages WHERE user_email = :email AND message_id = :message_id");
-        $stmt->execute([':email' => $userEmail, ':message_id' => $messageId]);
-        
-        return $stmt->fetch() !== false;
-    } catch (Exception $e) {
-        error_log("Error checking message existence: " . $e->getMessage());
-        return false;
-    }
-}
-
-/**
- * Clear all inbox messages for user (for force refresh)
- */
-function clearInboxMessages($userEmail) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) return false;
-        
-        $stmt = $pdo->prepare("DELETE FROM inbox_messages WHERE user_email = :email");
-        return $stmt->execute([':email' => $userEmail]);
-    } catch (Exception $e) {
-        error_log("Error clearing inbox messages: " . $e->getMessage());
-        return false;
-    }
-}
-
-/**
  * Quick sync check
  */
 function quickSyncCheckFromSession($userEmail) {
@@ -428,8 +410,6 @@ function quickSyncCheckFromSession($userEmail) {
         return ['success' => false, 'unread' => 0];
     }
 }
-
-
 
 /**
  * Strip HTML from message body and clean text

@@ -1,7 +1,7 @@
 <?php
 /**
- * GET MESSAGE API
- * Fetches a single message by ID
+ * GET MESSAGE API - OPTIMIZED
+ * Fetches a single message by ID with FULL body
  */
 
 session_start();
@@ -14,6 +14,7 @@ if (!isset($_SESSION['authenticated']) || $_SESSION['authenticated'] !== true) {
 }
 
 require_once 'db_config.php';
+require_once 'inbox_functions.php';
 
 $userEmail = $_SESSION['smtp_user'];
 $messageId = isset($_GET['id']) ? intval($_GET['id']) : 0;
@@ -24,23 +25,8 @@ if ($messageId === 0) {
 }
 
 try {
-    $pdo = getDatabaseConnection();
-    if (!$pdo) {
-        echo json_encode(['error' => 'Database connection failed']);
-        exit();
-    }
-    
-    $stmt = $pdo->prepare("
-        SELECT * FROM inbox_messages 
-        WHERE id = :id AND user_email = :user_email AND is_deleted = 0
-    ");
-    
-    $stmt->execute([
-        ':id' => $messageId,
-        ':user_email' => $userEmail
-    ]);
-    
-    $message = $stmt->fetch(PDO::FETCH_ASSOC);
+    // Use the optimized function to get full message
+    $message = getInboxMessageById($messageId, $userEmail);
     
     if ($message) {
         echo json_encode($message);

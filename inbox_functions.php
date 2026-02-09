@@ -1,25 +1,29 @@
 <?php
 /**
- * Enhanced Inbox Functions
- * Supports new vs unread email distinction
+ * Enhanced Inbox Functions - OPTIMIZED VERSION
+ * Supports body_preview for fast queries
+ * New vs unread email distinction
  */
 
 require_once 'db_config.php';
 
 /**
- * Save inbox message to database
+ * Save inbox message to database - WITH BODY PREVIEW
  */
 function saveInboxMessage($messageData) {
     try {
         $pdo = getDatabaseConnection();
         if (!$pdo) return false;
         
+        // Generate preview if not provided
+        $bodyPreview = $messageData['body_preview'] ?? substr($messageData['body'] ?? '', 0, 500);
+        
         $stmt = $pdo->prepare("
             INSERT INTO inbox_messages (
                 message_id, user_email, sender_email, sender_name,
-                subject, body, received_date, fetched_at,
+                subject, body, body_preview, received_date, fetched_at,
                 has_attachments, attachment_data, is_read
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, 0)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, 0)
         ");
         
         return $stmt->execute([
@@ -29,6 +33,7 @@ function saveInboxMessage($messageData) {
             $messageData['sender_name'] ?? null,
             $messageData['subject'],
             $messageData['body'],
+            $bodyPreview,
             $messageData['received_date'],
             $messageData['has_attachments'] ?? 0,
             $messageData['attachment_data'] ?? null
@@ -41,73 +46,94 @@ function saveInboxMessage($messageData) {
 }
 
 /**
- * Get inbox messages with filters
- * NEW vs UNREAD distinction:
- * - NEW: fetched_at within last 5 minutes AND is_read = 0
- * - UNREAD: is_read = 0 (includes new)
+ * Get inbox messages with filters - OPTIMIZED VERSION
+ * Uses body_preview instead of full body
  */
-// function getInboxMessages($userEmail, $limit = 50, $offset = 0, $filters = []) {
-//     try {
-//         $pdo = getDatabaseConnection();
-//         if (!$pdo) return [];
+function getInboxMessages($userEmail, $limit = 50, $offset = 0, $filters = []) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return [];
         
-//         $sql = "SELECT 
-//                     id, message_id, sender_email, sender_name, 
-//                     subject, body, received_date, fetched_at,
-//                     is_read, read_at, has_attachments, attachment_data,
-//                     is_starred, is_important,
-//                     CASE 
-//                         WHEN is_read = 0 AND TIMESTAMPDIFF(MINUTE, fetched_at, NOW()) <= 5 
-//                         THEN 1 
-//                         ELSE 0 
-//                     END as is_new
-//                 FROM inbox_messages 
-//                 WHERE user_email = :email 
-//                 AND is_deleted = 0";
+        $sql = "SELECT 
+                    id, message_id, sender_email, sender_name, 
+                    subject, body_preview, received_date, fetched_at,
+                    is_read, read_at, has_attachments, attachment_data,
+                    is_starred, is_important,
+                    CASE 
+                        WHEN is_read = 0 AND TIMESTAMPDIFF(MINUTE, fetched_at, NOW()) <= 5 
+                        THEN 1 
+                        ELSE 0 
+                    END as is_new
+                FROM inbox_messages 
+                WHERE user_email = :email 
+                AND is_deleted = 0";
         
-//         $params = [':email' => $userEmail];
+        $params = [':email' => $userEmail];
         
-//         // Apply filters
-//         if (!empty($filters['search'])) {
-//             $sql .= " AND (subject LIKE :search OR sender_email LIKE :search OR body LIKE :search)";
-//             $params[':search'] = '%' . $filters['search'] . '%';
-//         }
+        // Apply filters
+        if (!empty($filters['search'])) {
+            $sql .= " AND (subject LIKE :search OR sender_email LIKE :search OR body_preview LIKE :search)";
+            $params[':search'] = '%' . $filters['search'] . '%';
+        }
         
-//         if (!empty($filters['unread_only'])) {
-//             $sql .= " AND is_read = 0";
-//         }
+        if (!empty($filters['unread_only'])) {
+            $sql .= " AND is_read = 0";
+        }
         
-//         if (!empty($filters['starred_only'])) {
-//             $sql .= " AND is_starred = 1";
-//         }
+        if (!empty($filters['starred_only'])) {
+            $sql .= " AND is_starred = 1";
+        }
         
-//         if (!empty($filters['new_only'])) {
-//             $sql .= " AND is_read = 0 AND TIMESTAMPDIFF(MINUTE, fetched_at, NOW()) <= 5";
-//         }
+        if (!empty($filters['new_only'])) {
+            $sql .= " AND is_read = 0 AND TIMESTAMPDIFF(MINUTE, fetched_at, NOW()) <= 5";
+        }
         
-//         $sql .= " ORDER BY received_date DESC LIMIT :limit OFFSET :offset";
+        $sql .= " ORDER BY received_date DESC LIMIT :limit OFFSET :offset";
         
-//         $stmt = $pdo->prepare($sql);
+        $stmt = $pdo->prepare($sql);
         
-//         // Bind limit and offset separately (PDO quirk)
-//         $stmt->bindValue(':email', $userEmail, PDO::PARAM_STR);
-//         foreach ($params as $key => $value) {
-//             if ($key !== ':email') {
-//                 $stmt->bindValue($key, $value, PDO::PARAM_STR);
-//             }
-//         }
-//         $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
-//         $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+        // Bind parameters
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value, PDO::PARAM_STR);
+        }
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
         
-//         $stmt->execute();
+        $stmt->execute();
         
-//         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-//     } catch (PDOException $e) {
-//         error_log("Error getting inbox messages: " . $e->getMessage());
-//         return [];
-//     }
-// }
+    } catch (PDOException $e) {
+        error_log("Error getting inbox messages: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Get single message with FULL body (for viewing)
+ */
+function getInboxMessageById($messageId, $userEmail) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return null;
+        
+        $stmt = $pdo->prepare("
+            SELECT * FROM inbox_messages 
+            WHERE id = :id AND user_email = :email AND is_deleted = 0
+        ");
+        
+        $stmt->execute([
+            ':id' => $messageId,
+            ':email' => $userEmail
+        ]);
+        
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+        
+    } catch (PDOException $e) {
+        error_log("Error getting message by ID: " . $e->getMessage());
+        return null;
+    }
+}
 
 /**
  * Get total message count
@@ -125,7 +151,7 @@ function getInboxMessageCount($userEmail, $filters = []) {
         $params = [':email' => $userEmail];
         
         if (!empty($filters['search'])) {
-            $sql .= " AND (subject LIKE :search OR sender_email LIKE :search OR body LIKE :search)";
+            $sql .= " AND (subject LIKE :search OR sender_email LIKE :search OR body_preview LIKE :search)";
             $params[':search'] = '%' . $filters['search'] . '%';
         }
         
@@ -150,7 +176,7 @@ function getInboxMessageCount($userEmail, $filters = []) {
 }
 
 /**
- * Get unread count
+ * Get unread count - OPTIMIZED with covering index
  */
 function getUnreadCount($userEmail) {
     try {
@@ -353,6 +379,40 @@ function updateLastSyncDate($userEmail, $lastMessageId = null) {
         
     } catch (PDOException $e) {
         error_log("Error updating last sync date: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Check if message exists in database
+ */
+function messageExists($userEmail, $messageId) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return false;
+        
+        $stmt = $pdo->prepare("SELECT id FROM inbox_messages WHERE user_email = :email AND message_id = :message_id");
+        $stmt->execute([':email' => $userEmail, ':message_id' => $messageId]);
+        
+        return $stmt->fetch() !== false;
+    } catch (Exception $e) {
+        error_log("Error checking message existence: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Clear all inbox messages for user (for force refresh)
+ */
+function clearInboxMessages($userEmail) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return false;
+        
+        $stmt = $pdo->prepare("DELETE FROM inbox_messages WHERE user_email = :email");
+        return $stmt->execute([':email' => $userEmail]);
+    } catch (Exception $e) {
+        error_log("Error clearing inbox messages: " . $e->getMessage());
         return false;
     }
 }
