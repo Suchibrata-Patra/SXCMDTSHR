@@ -8,7 +8,7 @@
 session_start();
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['authenticated']) || $_SESSION['authenticated'] !== true) {
+if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     echo json_encode(['success' => false, 'error' => 'Unauthorized']);
     exit;
 }

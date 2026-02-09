@@ -50,7 +50,7 @@ function getSentEmailsWithTracking($userEmail, $limit = 100, $offset = 0, $filte
         $userId = getUserId($pdo, $userEmail);
         if (!$userId) return [];
 
-        // Query with LEFT JOIN to read tracking
+        // Query with LEFT JOIN to read tracking (FIXED: use sent_emails with negative email_id)
         $sql = "SELECT 
         se.*,
         rt.tracking_token,
@@ -61,10 +61,10 @@ function getSentEmailsWithTracking($userEmail, $limit = 100, $offset = 0, $filte
         rt.device_type,
         rt.browser,
         rt.os
-    FROM emails se
-    LEFT JOIN email_read_tracking rt ON rt.email_id = se.id
+    FROM sent_emails se
+    LEFT JOIN email_read_tracking rt ON (rt.email_id = -se.id AND rt.sender_email = se.sender_email)
     WHERE se.sender_email = :email
-    AND se.email_type = 'sent'";
+    AND se.current_status = 1";
         
         $params = [':email' => $userEmail];
 

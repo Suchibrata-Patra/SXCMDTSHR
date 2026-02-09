@@ -1,89 +1,89 @@
 <?php
-// Debug script to test label retrieval
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+/**
+ * Check Read Status Endpoint
+ * Returns read statuses for multiple emails
+ * Used by sent_history.php for real-time updates
+ */
 
-// Include the db_config
+session_start();
+header('Content-Type: application/json');
+
+if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
+    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+    exit;
+}
+
 require_once 'db_config.php';
+require_once 'read_tracking_helper.php';
 
-// Test with your email
-$userEmail = 'info.official@holidayseva.com';
+$userEmail = $_SESSION['smtp_user'];
 
-echo "<h2>Debug: Testing Label Retrieval</h2>";
-echo "<hr>";
+// Get input
+$input = file_get_contents('php://input');
+$data = json_decode($input, true);
 
-// Test 1: Check database connection
-echo "<h3>Test 1: Database Connection</h3>";
-$pdo = getDatabaseConnection();
-if ($pdo) {
-    echo "✓ Database connected successfully<br>";
-} else {
-    echo "✗ Database connection failed<br>";
-    die();
+if (!isset($data['tokens']) || !is_array($data['tokens'])) {
+    echo json_encode(['success' => false, 'error' => 'Invalid request']);
+    exit;
 }
 
-// Test 2: Check if user exists
-echo "<h3>Test 2: User Check</h3>";
-$userId = getUserId($pdo, $userEmail);
-if ($userId) {
-    echo "✓ User found with ID: $userId<br>";
-} else {
-    echo "✗ User not found for email: $userEmail<br>";
+$trackingTokens = $data['tokens'];
+
+if (empty($trackingTokens)) {
+    echo json_encode(['success' => true, 'read_statuses' => []]);
+    exit;
 }
 
-// Test 3: Check labels table directly
-echo "<h3>Test 3: Direct Labels Query</h3>";
-$stmt = $pdo->prepare("SELECT * FROM labels WHERE user_email = ?");
-$stmt->execute([$userEmail]);
-$directLabels = $stmt->fetchAll();
-echo "Labels found: " . count($directLabels) . "<br>";
-echo "<pre>";
-print_r($directLabels);
-echo "</pre>";
-
-// Test 4: Test getLabelCounts function
-echo "<h3>Test 4: getLabelCounts() Function</h3>";
-$sidebarLabels = getLabelCounts($userEmail);
-echo "Labels from function: " . count($sidebarLabels) . "<br>";
-echo "<pre>";
-print_r($sidebarLabels);
-echo "</pre>";
-
-// Test 5: Check the exact query being run
-echo "<h3>Test 5: Manual Query with Debug</h3>";
-$sql = "SELECT 
-            l.id, 
-            l.label_name, 
-            l.label_color,
-            l.created_at,
-            COUNT(uea.email_id) as count
-        FROM labels l
-        LEFT JOIN user_email_access uea ON l.id = uea.label_id 
-            AND uea.user_id = :user_id
-            AND uea.is_deleted = 0
-        WHERE l.user_email = :user_email OR l.user_email IS NULL
-        GROUP BY l.id, l.label_name, l.label_color, l.created_at
-        ORDER BY l.label_name ASC";
-
-$stmt = $pdo->prepare($sql);
-$stmt->execute([
-    ':user_id' => $userId,
-    ':user_email' => $userEmail
-]);
-$manualResults = $stmt->fetchAll();
-echo "Manual query results: " . count($manualResults) . "<br>";
-echo "<pre>";
-print_r($manualResults);
-echo "</pre>";
-
-// Test 6: Check if there are any labels with NULL user_email
-echo "<h3>Test 6: Check for NULL user_email labels</h3>";
-$stmt = $pdo->prepare("SELECT * FROM labels WHERE user_email IS NULL");
-$stmt->execute();
-$nullLabels = $stmt->fetchAll();
-echo "Labels with NULL user_email: " . count($nullLabels) . "<br>";
-echo "<pre>";
-print_r($nullLabels);
-echo "</pre>";
-
+try {
+    $pdo = getDatabaseConnection();
+    if (!$pdo) {
+        echo json_encode(['success' => false, 'error' => 'Database connection failed']);
+        exit;
+    }
+    
+    // Build IN clause with placeholders
+    $placeholders = str_repeat('?,', count($trackingTokens) - 1) . '?';
+    
+    // Query read statuses
+    $sql = "
+        SELECT 
+            tracking_token,
+            is_read,
+            first_read_at,
+            total_opens,
+            valid_opens,
+            device_type,
+            browser,
+            os,
+            ip_address,
+            country,
+            city
+        FROM email_read_tracking
+        WHERE tracking_token IN ($placeholders)
+        AND sender_email = ?
+    ";
+    
+    $stmt = $pdo->prepare($sql);
+    
+    // Bind tracking tokens
+    $bindParams = $trackingTokens;
+    $bindParams[] = $userEmail; // Add sender email
+    
+    $stmt->execute($bindParams);
+    
+    $readStatuses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    echo json_encode([
+        'success' => true,
+        'read_statuses' => $readStatuses,
+        'timestamp' => date('Y-m-d H:i:s')
+    ]);
+    
+} catch (PDOException $e) {
+    error_log("Error checking read statuses: " . $e->getMessage());
+    echo json_encode([
+        'success' => false,
+        'error' => 'Database error'
+    ]);
+}
 ?>
