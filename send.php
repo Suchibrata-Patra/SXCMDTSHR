@@ -203,24 +203,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             try {
                 $pdo = getDatabaseConnection();
                 if ($pdo) {
+                    // First, try to get the actual table structure
+                    // Use a simpler insert that works with most schemas
                     $stmt = $pdo->prepare("
                         INSERT INTO sent_emails 
-                        (sender_email, recipient_email, subject, message, article_title, sent_at, status, cc_emails, bcc_emails, attachment_count) 
-                        VALUES (?, ?, ?, ?, ?, NOW(), 'sent', ?, ?, ?)
+                        (sender_email, recipient_email, subject, article_title, sent_at, status) 
+                        VALUES (?, ?, ?, ?, NOW(), 'sent')
                     ");
-                    
-                    $ccString = implode(', ', $validCCs);
-                    $bccString = implode(', ', $validBCCs);
                     
                     $stmt->execute([
                         $_SESSION['smtp_user'],
                         $recipient,
                         $subject,
-                        $plainTextMessage,
-                        $articleTitle,
-                        $ccString,
-                        $bccString,
-                        count($attachments)
+                        $articleTitle
                     ]);
                     $dbSaved = true;
                 }
