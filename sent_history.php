@@ -124,108 +124,108 @@ function getSentEmailsWithTracking($userEmail, $limit = 100, $offset = 0, $filte
 }
 
 // Include rest of original helper functions from sent_history.php
-function getSentEmailCount($userEmail, $filters = []) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) return 0;
+// function getSentEmailCount($userEmail, $filters = []) {
+//     try {
+//         $pdo = getDatabaseConnection();
+//         if (!$pdo) return 0;
 
-        $sql = "SELECT COUNT(*) as count FROM sent_emails WHERE sender_email = :email AND current_status = 1";
-        $params = [':email' => $userEmail];
+//         $sql = "SELECT COUNT(*) as count FROM sent_emails WHERE sender_email = :email AND current_status = 1";
+//         $params = [':email' => $userEmail];
 
-        if (!empty($filters['search'])) {
-            $sql .= " AND (recipient_email LIKE :search OR subject LIKE :search OR message_body LIKE :search)";
-            $params[':search'] = '%' . $filters['search'] . '%';
-        }
+//         if (!empty($filters['search'])) {
+//             $sql .= " AND (recipient_email LIKE :search OR subject LIKE :search OR message_body LIKE :search)";
+//             $params[':search'] = '%' . $filters['search'] . '%';
+//         }
 
-        if (!empty($filters['recipient'])) {
-            $sql .= " AND recipient_email LIKE :recipient";
-            $params[':recipient'] = '%' . $filters['recipient'] . '%';
-        }
+//         if (!empty($filters['recipient'])) {
+//             $sql .= " AND recipient_email LIKE :recipient";
+//             $params[':recipient'] = '%' . $filters['recipient'] . '%';
+//         }
 
-        if (!empty($filters['label_id'])) {
-            if ($filters['label_id'] === 'unlabeled') {
-                $sql .= " AND label_id IS NULL";
-            } else {
-                $sql .= " AND label_id = :label_id";
-                $params[':label_id'] = $filters['label_id'];
-            }
-        }
+//         if (!empty($filters['label_id'])) {
+//             if ($filters['label_id'] === 'unlabeled') {
+//                 $sql .= " AND label_id IS NULL";
+//             } else {
+//                 $sql .= " AND label_id = :label_id";
+//                 $params[':label_id'] = $filters['label_id'];
+//             }
+//         }
 
-        if (!empty($filters['date_from'])) {
-            $sql .= " AND DATE(sent_at) >= :date_from";
-            $params[':date_from'] = $filters['date_from'];
-        }
-        if (!empty($filters['date_to'])) {
-            $sql .= " AND DATE(sent_at) <= :date_to";
-            $params[':date_to'] = $filters['date_to'];
-        }
+//         if (!empty($filters['date_from'])) {
+//             $sql .= " AND DATE(sent_at) >= :date_from";
+//             $params[':date_from'] = $filters['date_from'];
+//         }
+//         if (!empty($filters['date_to'])) {
+//             $sql .= " AND DATE(sent_at) <= :date_to";
+//             $params[':date_to'] = $filters['date_to'];
+//         }
 
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+//         $stmt = $pdo->prepare($sql);
+//         $stmt->execute($params);
+//         $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        return $result['count'] ?? 0;
+//         return $result['count'] ?? 0;
 
-    } catch (PDOException $e) {
-        error_log("Error counting sent emails: " . $e->getMessage());
-        return 0;
-    }
-}
+//     } catch (PDOException $e) {
+//         error_log("Error counting sent emails: " . $e->getMessage());
+//         return 0;
+//     }
+// }
 
-function getLabelCounts($userEmail) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) return [];
+// function getLabelCounts($userEmail) {
+//     try {
+//         $pdo = getDatabaseConnection();
+//         if (!$pdo) return [];
 
-        $userId = getUserId($pdo, $userEmail);
-        if (!$userId) return [];
+//         $userId = getUserId($pdo, $userEmail);
+//         if (!$userId) return [];
 
-        $stmt = $pdo->prepare("
-            SELECT l.*, COUNT(se.id) as email_count
-            FROM labels l
-            LEFT JOIN sent_emails se ON se.label_id = l.id AND se.sender_email = :email AND se.current_status = 1
-            WHERE l.user_id = :user_id
-            GROUP BY l.id
-            ORDER BY l.label_name
-        ");
+//         $stmt = $pdo->prepare("
+//             SELECT l.*, COUNT(se.id) as email_count
+//             FROM labels l
+//             LEFT JOIN sent_emails se ON se.label_id = l.id AND se.sender_email = :email AND se.current_status = 1
+//             WHERE l.user_id = :user_id
+//             GROUP BY l.id
+//             ORDER BY l.label_name
+//         ");
 
-        $stmt->execute([':user_id' => $userId, ':email' => $userEmail]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+//         $stmt->execute([':user_id' => $userId, ':email' => $userEmail]);
+//         return $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    } catch (PDOException $e) {
-        error_log("Error getting label counts: " . $e->getMessage());
-        return [];
-    }
-}
+//     } catch (PDOException $e) {
+//         error_log("Error getting label counts: " . $e->getMessage());
+//         return [];
+//     }
+// }
 
-function getUnlabeledEmailCount($userEmail) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) return 0;
+// function getUnlabeledEmailCount($userEmail) {
+//     try {
+//         $pdo = getDatabaseConnection();
+//         if (!$pdo) return 0;
 
-        $stmt = $pdo->prepare("
-            SELECT COUNT(*) as count
-            FROM sent_emails
-            WHERE sender_email = :email AND label_id IS NULL AND current_status = 1
-        ");
+//         $stmt = $pdo->prepare("
+//             SELECT COUNT(*) as count
+//             FROM sent_emails
+//             WHERE sender_email = :email AND label_id IS NULL AND current_status = 1
+//         ");
 
-        $stmt->execute([':email' => $userEmail]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+//         $stmt->execute([':email' => $userEmail]);
+//         $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        return $result['count'] ?? 0;
+//         return $result['count'] ?? 0;
 
-    } catch (PDOException $e) {
-        error_log("Error getting unlabeled count: " . $e->getMessage());
-        return 0;
-    }
-}
+//     } catch (PDOException $e) {
+//         error_log("Error getting unlabeled count: " . $e->getMessage());
+//         return 0;
+//     }
+// }
 
-function getUserId($pdo, $email) {
-    $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
-    $stmt->execute([$email]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-    return $user['id'] ?? null;
-}
+// function getUserId($pdo, $email) {
+//     $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+//     $stmt->execute([$email]);
+//     $user = $stmt->fetch(PDO::FETCH_ASSOC);
+//     return $user['id'] ?? null;
+// }
 ?>
 <!DOCTYPE html>
 <html lang="en">
