@@ -1,76 +1,57 @@
 <?php
 /**
- * Mark Message Read/Unread API
- * Updates message read status instantly
+ * MARK AS READ API
+ * Marks a message as read
  */
 
 session_start();
 header('Content-Type: application/json');
 
 // Check authentication
-if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['authenticated']) || $_SESSION['authenticated'] !== true) {
-    echo json_encode([
-        'success' => false,
-        'error' => 'Unauthorized'
-    ]);
-    exit;
+if (!isset($_SESSION['authenticated']) || $_SESSION['authenticated'] !== true) {
+    echo json_encode(['success' => false, 'error' => 'Not authenticated']);
+    exit();
 }
 
 require_once 'db_config.php';
 
 $userEmail = $_SESSION['smtp_user'];
 
+// Get POST data
+$input = json_decode(file_get_contents('php://input'), true);
+$messageId = isset($input['message_id']) ? intval($input['message_id']) : 0;
+
+if ($messageId === 0) {
+    echo json_encode(['success' => false, 'error' => 'Invalid message ID']);
+    exit();
+}
+
 try {
-    // Get JSON input
-    $input = json_decode(file_get_contents('php://input'), true);
-    
-    if (!isset($input['message_id']) || !isset($input['action'])) {
-        echo json_encode([
-            'success' => false,
-            'error' => 'Missing required parameters'
-        ]);
-        exit;
+    $pdo = getDatabaseConnection();
+    if (!$pdo) {
+        echo json_encode(['success' => false, 'error' => 'Database connection failed']);
+        exit();
     }
     
-    $messageId = intval($input['message_id']);
-    $action = $input['action']; // 'read' or 'unread'
+    $stmt = $pdo->prepare("
+        UPDATE inbox_messages 
+        SET is_read = 1 
+        WHERE id = :id AND user_email = :user_email
+    ");
     
-    // Validate action
-    if (!in_array($action, ['read', 'unread'])) {
-        echo json_encode([
-            'success' => false,
-            'error' => 'Invalid action'
-        ]);
-        exit;
-    }
+    $success = $stmt->execute([
+        ':id' => $messageId,
+        ':user_email' => $userEmail
+    ]);
     
-    // Update message status
-    if ($action === 'read') {
-        $result = markMessageAsRead($messageId, $userEmail);
-        $message = 'Message marked as read';
+    if ($success) {
+        echo json_encode(['success' => true, 'message' => 'Message marked as read']);
     } else {
-        $result = markMessageAsUnread($messageId, $userEmail);
-        $message = 'Message marked as unread';
-    }
-    
-    if ($result) {
-        echo json_encode([
-            'success' => true,
-            'message' => $message
-        ]);
-    } else {
-        echo json_encode([
-            'success' => false,
-            'error' => 'Could not update message status'
-        ]);
+        echo json_encode(['success' => false, 'error' => 'Failed to update message']);
     }
     
 } catch (Exception $e) {
-    error_log("Error in mark_read.php: " . $e->getMessage());
-    
-    echo json_encode([
-        'success' => false,
-        'error' => 'An error occurred while updating message'
-    ]);
+    error_log("Error marking message as read: " . $e->getMessage());
+    echo json_encode(['success' => false, 'error' => 'Server error occurred']);
 }
 ?>
