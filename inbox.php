@@ -435,7 +435,7 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .message-item {
-            padding: 14px 20px;
+            padding: 6px 20px;
             border-bottom: 1px solid var(--border);
             cursor: pointer;
             transition: all 0.2s;
@@ -456,7 +456,7 @@ $lastSync = getLastSyncDate($userEmail);
         .message-item.selected {
             background: #F0F7FF;
             border-left: 3px solid var(--apple-blue);
-            padding-left: 17px;
+            /* padding-left: 17px; */
         }
 
         .message-item.unread {
