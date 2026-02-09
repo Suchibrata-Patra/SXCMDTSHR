@@ -638,8 +638,8 @@ $lastSync = getLastSyncDate($userEmail);
 }
 
 .unread-dot {
-    width: 6px;
-    height: 6px;
+    width: 10px;
+    height: 10px;
     background-color: #1a73e8; /* nice Google-ish blue */
     border-radius: 50%;
 }
