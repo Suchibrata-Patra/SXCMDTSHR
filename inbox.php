@@ -631,6 +631,18 @@ $lastSync = getLastSyncDate($userEmail);
             overflow-y: auto;
             padding: 20px;
         }
+        .message-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.unread-dot {
+    width: 6px;
+    height: 6px;
+    background-color: #1a73e8; /* nice Google-ish blue */
+    border-radius: 50%;
+}
 
         .message-detail {
             background: white;
@@ -1002,10 +1014,15 @@ $lastSync = getLastSyncDate($userEmail);
 
                 return `
                     <div class="${classes.join(' ')}" onclick="viewMessage(${msg.id}, event)">
-                        <span class="material-icons message-star ${msg.is_starred == 1 ? 'starred' : ''}" 
-                              onclick="toggleStar(${msg.id}, event)">
-                            ${msg.is_starred == 1 ? 'star' : 'star_border'}
-                        </span>
+                    <span class="message-meta">
+    <span class="material-icons message-star ${msg.is_starred == 1 ? 'starred' : ''}"
+          onclick="toggleStar(${msg.id}, event)">
+        ${msg.is_starred == 1 ? 'star' : 'star_border'}
+    </span>
+
+    ${msg.is_read == 0 ? '<span class="unread-dot"></span>' : ''}
+</span>
+
                         <div class="message-content">
                             <div class="message-header">
                                 <span class="message-sender">${escapeHtml(msg.sender)}</span>
