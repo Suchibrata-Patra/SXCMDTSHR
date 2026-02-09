@@ -195,10 +195,12 @@ function saveInboxMessage($messageData) {
         $stmt = $pdo->prepare("
             INSERT INTO inbox_messages (
                 message_id, user_email, sender_email, sender_name, 
-                subject, body, received_date, has_attachments, attachment_data, created_at
+                subject, body, received_date, has_attachments, 
+                attachment_data, is_read, is_deleted, created_at
             ) VALUES (
                 :message_id, :user_email, :sender_email, :sender_name,
-                :subject, :body, :received_date, :has_attachments, :attachment_data, NOW()
+                :subject, :body, :received_date, :has_attachments, 
+                :attachment_data, 0, 0, NOW()
             )
             ON DUPLICATE KEY UPDATE
                 subject = VALUES(subject),
@@ -217,9 +219,8 @@ function saveInboxMessage($messageData) {
             ':has_attachments' => $messageData['has_attachments'],
             ':attachment_data' => $messageData['attachment_data']
         ]);
-        
     } catch (Exception $e) {
-        error_log("Error saving inbox message: " . $e->getMessage());
+        error_log("DATABASE ERROR: " . $e->getMessage()); // This will tell you EXACTLY why it failed
         return false;
     }
 }
