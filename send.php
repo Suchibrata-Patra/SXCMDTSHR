@@ -207,7 +207,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     // Use a simpler insert that works with most schemas
                     $stmt = $pdo->prepare("
                         INSERT INTO sent_emails 
-                        (sender_email, recipient_email, subject, article_title, sent_at, status) 
+                        (sender_email, recipient_email, subject, article_title, sent_at, current_status) 
                         VALUES (?, ?, ?, ?, NOW(), 'sent')
                     ");
                     
