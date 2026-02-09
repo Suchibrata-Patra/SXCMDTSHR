@@ -1213,3 +1213,449 @@ Your Title"><?= htmlspecialchars($s['signature']) ?></textarea>
     </script>
 </body>
 </html>
+<!-- ============================================================
+     INTEGRATED SETTINGS PAGE WITH IMAP
+     All settings in one place - no more separation!
+     ============================================================ -->
+
+     <?php
+// Get current settings
+$settings = getSettingsWithDefaults($userEmail);
+?>
+
+<style>
+.settings-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.settings-section {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.section-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1c1c1e;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group-full {
+    grid-column: 1 / -1;
+}
+
+.form-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #52525b;
+    margin-bottom: 8px;
+}
+
+.form-input, .form-select, .form-textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #e5e5ea;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+    outline: none;
+    border-color: #007AFF;
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+}
+
+.form-textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.form-help {
+    font-size: 12px;
+    color: #8e8e93;
+    margin-top: 6px;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 0;
+}
+
+.checkbox-input {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.info-box {
+    background: #f0f9ff;
+    border-left: 4px solid #0284c7;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.info-title {
+    font-weight: 600;
+    color: #0c4a6e;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.info-text {
+    font-size: 14px;
+    color: #0c4a6e;
+    line-height: 1.6;
+}
+
+.btn-save {
+    padding: 14px 32px;
+    background: #007AFF;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 16px;
+}
+
+.btn-save:hover {
+    background: #0051D5;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+}
+
+.save-footer {
+    position: sticky;
+    bottom: 0;
+    background: white;
+    padding: 20px 30px;
+    border-top: 2px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 0 0 12px 12px;
+    margin-top: 30px;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<div class="settings-container">
+    <form id="unifiedSettingsForm">
+        
+        <!-- IMAP Settings Section -->
+        <div class="settings-section">
+            <div class="section-header">
+                <h3 class="section-title">
+                    📧 Mail Server Configuration (IMAP)
+                </h3>
+            </div>
+
+            <div class="info-box">
+                <div class="info-title">
+                    🔐 Password Information
+                </div>
+                <p class="info-text">
+                    Your email password is <strong>not stored in the database</strong>. 
+                    It is securely obtained during login and kept only in your session. 
+                    The same password you use to login will be used for IMAP access.
+                </p>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="imap_server">
+                        IMAP Server Address *
+                    </label>
+                    <input 
+                        type="text" 
+                        id="imap_server" 
+                        name="imap_server" 
+                        class="form-input" 
+                        value="<?= htmlspecialchars($settings['imap_server'] ?? 'imap.hostinger.com') ?>"
+                        required
+                        placeholder="e.g., imap.hostinger.com"
+                    >
+                    <p class="form-help">The hostname of your IMAP mail server</p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="imap_port">
+                        IMAP Port *
+                    </label>
+                    <input 
+                        type="number" 
+                        id="imap_port" 
+                        name="imap_port" 
+                        class="form-input" 
+                        value="<?= htmlspecialchars($settings['imap_port'] ?? '993') ?>"
+                        min="1" 
+                        max="65535"
+                        required
+                        placeholder="993"
+                    >
+                    <p class="form-help">Common: 993 (SSL), 143 (TLS)</p>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="imap_encryption">
+                        Encryption Type *
+                    </label>
+                    <select 
+                        id="imap_encryption" 
+                        name="imap_encryption" 
+                        class="form-select"
+                        required
+                    >
+                        <option value="ssl" <?= ($settings['imap_encryption'] ?? 'ssl') === 'ssl' ? 'selected' : '' ?>>
+                            SSL/TLS (Recommended)
+                        </option>
+                        <option value="tls" <?= ($settings['imap_encryption'] ?? '') === 'tls' ? 'selected' : '' ?>>
+                            STARTTLS
+                        </option>
+                        <option value="none" <?= ($settings['imap_encryption'] ?? '') === 'none' ? 'selected' : '' ?>>
+                            None (Not Recommended)
+                        </option>
+                    </select>
+                    <p class="form-help">SSL/TLS provides the highest security</p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="imap_username">
+                        IMAP Username (Email) *
+                    </label>
+                    <input 
+                        type="email" 
+                        id="imap_username" 
+                        name="imap_username" 
+                        class="form-input" 
+                        value="<?= htmlspecialchars($settings['imap_username'] ?? $userEmail) ?>"
+                        required
+                        placeholder="user@example.com"
+                    >
+                    <p class="form-help">Usually your full email address</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Identity & Authority -->
+        <div class="settings-section">
+            <div class="section-header">
+                <h3 class="section-title">
+                    👤 Identity & Authority
+                </h3>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="display_name">Display Name</label>
+                    <input type="text" id="display_name" name="display_name" class="form-input" 
+                           value="<?= htmlspecialchars($settings['display_name'] ?? '') ?>" 
+                           placeholder="Dr. John Doe">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="designation">Designation</label>
+                    <input type="text" id="designation" name="designation" class="form-input" 
+                           value="<?= htmlspecialchars($settings['designation'] ?? '') ?>" 
+                           placeholder="Assistant Professor">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="dept">Department</label>
+                    <select id="dept" name="dept" class="form-select">
+                        <option value="CS" <?= ($settings['dept'] ?? 'CS') === 'CS' ? 'selected' : '' ?>>Computer Science</option>
+                        <option value="data_science" <?= ($settings['dept'] ?? '') === 'data_science' ? 'selected' : '' ?>>Data Science</option>
+                        <option value="IT" <?= ($settings['dept'] ?? '') === 'IT' ? 'selected' : '' ?>>Information Technology</option>
+                        <option value="ECE" <?= ($settings['dept'] ?? '') === 'ECE' ? 'selected' : '' ?>>Electronics</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="hod_email">HOD Email</label>
+                    <input type="email" id="hod_email" name="hod_email" class="form-input" 
+                           value="<?= htmlspecialchars($settings['hod_email'] ?? '') ?>" 
+                           placeholder="hod@example.com">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="staff_id">Staff ID</label>
+                    <input type="text" id="staff_id" name="staff_id" class="form-input" 
+                           value="<?= htmlspecialchars($settings['staff_id'] ?? '') ?>" 
+                           placeholder="24-500-5-08-0403">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="room_no">Room Number</label>
+                    <input type="text" id="room_no" name="room_no" class="form-input" 
+                           value="<?= htmlspecialchars($settings['room_no'] ?? '') ?>" 
+                           placeholder="44">
+                </div>
+            </div>
+        </div>
+
+        <!-- Editor & Composition -->
+        <div class="settings-section">
+            <div class="section-header">
+                <h3 class="section-title">
+                    ✍️ Editor & Composition
+                </h3>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="font_family">Font Family</label>
+                    <select id="font_family" name="font_family" class="form-select">
+                        <option value="Inter" <?= ($settings['font_family'] ?? 'Inter') === 'Inter' ? 'selected' : '' ?>>Inter</option>
+                        <option value="Arial" <?= ($settings['font_family'] ?? '') === 'Arial' ? 'selected' : '' ?>>Arial</option>
+                        <option value="Times New Roman" <?= ($settings['font_family'] ?? '') === 'Times New Roman' ? 'selected' : '' ?>>Times New Roman</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="font_size">Font Size (px)</label>
+                    <input type="number" id="font_size" name="font_size" class="form-input" 
+                           value="<?= htmlspecialchars($settings['font_size'] ?? '14') ?>" 
+                           min="10" max="24">
+                </div>
+            </div>
+
+            <div class="form-group form-group-full">
+                <label class="form-label" for="signature">Email Signature</label>
+                <textarea id="signature" name="signature" class="form-textarea" 
+                          placeholder="Best regards,&#10;Your Name"><?= htmlspecialchars($settings['signature'] ?? '') ?></textarea>
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="spell_check" name="spell_check" class="checkbox-input" 
+                       <?= ($settings['spell_check'] ?? true) ? 'checked' : '' ?>>
+                <label for="spell_check" class="form-label" style="margin: 0;">Enable Spell Check</label>
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="auto_correct" name="auto_correct" class="checkbox-input" 
+                       <?= ($settings['auto_correct'] ?? true) ? 'checked' : '' ?>>
+                <label for="auto_correct" class="form-label" style="margin: 0;">Auto-correct</label>
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="rich_text" name="rich_text" class="checkbox-input" 
+                       <?= ($settings['rich_text'] ?? true) ? 'checked' : '' ?>>
+                <label for="rich_text" class="form-label" style="margin: 0;">Rich Text Editor</label>
+            </div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="save-footer">
+            <div>
+                <small style="color: #8e8e93;">Last updated: <?= date('M d, Y H:i') ?></small>
+            </div>
+            <button type="submit" class="btn-save">
+                💾 Save All Settings
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.getElementById('unifiedSettingsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    // Convert checkboxes to boolean strings
+    const checkboxes = this.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+        if (!cb.checked) {
+            formData.set(cb.name, 'false');
+        } else {
+            formData.set(cb.name, 'true');
+        }
+    });
+    
+    // Show loading state
+    const saveBtn = this.querySelector('.btn-save');
+    const originalText = saveBtn.textContent;
+    saveBtn.textContent = '⏳ Saving...';
+    saveBtn.disabled = true;
+    
+    // Save settings
+    fetch('save_settings.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(result => {
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+        
+        if (result.success) {
+            // Show success message
+            const successMsg = document.createElement('div');
+            successMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 16px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999;';
+            successMsg.textContent = '✅ ' + result.message;
+            document.body.appendChild(successMsg);
+            
+            setTimeout(() => {
+                successMsg.remove();
+                if (result.imap_updated) {
+                    location.reload(); // Reload to update session
+                }
+            }, 2000);
+        } else {
+            alert('❌ Error: ' + result.message);
+        }
+    })
+    .catch(error => {
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+        alert('❌ Network error: ' + error.message);
+    });
+});
+</script>

@@ -22,15 +22,26 @@ function connectToIMAPFromSession() {
         $config['imap_server'],
         $config['imap_port'],
         $config['imap_username'],
-        $config['imap_password']
+        $config['imap_password'],
+        $config['imap_encryption']
     );
 }
 
 /**
  * Connect to IMAP server
  */
-function connectToIMAP($server, $port, $email, $password) {
-    $mailbox = "{" . $server . ":" . $port . "/imap/ssl}INBOX";
+function connectToIMAP($server, $port, $email, $password, $encryption = 'ssl') {
+    // Build mailbox string based on encryption type
+    $encryptionFlag = '';
+    if ($encryption === 'ssl') {
+        $encryptionFlag = '/imap/ssl';
+    } elseif ($encryption === 'tls') {
+        $encryptionFlag = '/imap/tls';
+    } else {
+        $encryptionFlag = '/imap/notls';
+    }
+    
+    $mailbox = "{" . $server . ":" . $port . $encryptionFlag . "}INBOX";
     
     try {
         $connection = @imap_open($mailbox, $email, $password);
@@ -170,6 +181,96 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = fa
             'error' => $e->getMessage(),
             'count' => 0
         ];
+    }
+}
+
+/**
+ * Save inbox message to database
+ */
+function saveInboxMessage($messageData) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return false;
+        
+        $stmt = $pdo->prepare("
+            INSERT INTO inbox_messages (
+                message_id, user_email, sender_email, sender_name, 
+                subject, body, received_date, has_attachments, attachment_data, created_at
+            ) VALUES (
+                :message_id, :user_email, :sender_email, :sender_name,
+                :subject, :body, :received_date, :has_attachments, :attachment_data, NOW()
+            )
+            ON DUPLICATE KEY UPDATE
+                subject = VALUES(subject),
+                body = VALUES(body),
+                attachment_data = VALUES(attachment_data)
+        ");
+        
+        return $stmt->execute([
+            ':message_id' => $messageData['message_id'],
+            ':user_email' => $messageData['user_email'],
+            ':sender_email' => $messageData['sender_email'],
+            ':sender_name' => $messageData['sender_name'],
+            ':subject' => $messageData['subject'],
+            ':body' => $messageData['body'],
+            ':received_date' => $messageData['received_date'],
+            ':has_attachments' => $messageData['has_attachments'],
+            ':attachment_data' => $messageData['attachment_data']
+        ]);
+        
+    } catch (Exception $e) {
+        error_log("Error saving inbox message: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Get last sync date for user
+ */
+function getLastSyncDate($userEmail) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return null;
+        
+        $stmt = $pdo->prepare("
+            SELECT MAX(received_date) as last_sync 
+            FROM inbox_messages 
+            WHERE user_email = :email
+        ");
+        $stmt->execute([':email' => $userEmail]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        return $result['last_sync'] ?? null;
+    } catch (Exception $e) {
+        error_log("Error getting last sync date: " . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Update last sync date
+ */
+function updateLastSyncDate($userEmail, $lastMessageId) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return false;
+        
+        // Store in user_settings or a separate sync_log table
+        $stmt = $pdo->prepare("
+            INSERT INTO user_settings (user_email, setting_key, setting_value, updated_at)
+            VALUES (:email, 'last_sync_message_id', :message_id, NOW())
+            ON DUPLICATE KEY UPDATE 
+                setting_value = VALUES(setting_value),
+                updated_at = NOW()
+        ");
+        
+        return $stmt->execute([
+            ':email' => $userEmail,
+            ':message_id' => $lastMessageId
+        ]);
+    } catch (Exception $e) {
+        error_log("Error updating last sync date: " . $e->getMessage());
+        return false;
     }
 }
 
@@ -377,33 +478,6 @@ function decodeBody($body, $encoding) {
 }
 
 /**
- * Check if message has attachments
- */
-function hasAttachments($connection, $msgNum) {
-    try {
-        $structure = imap_fetchstructure($connection, $msgNum);
-        
-        if (!isset($structure->parts) || !count($structure->parts)) {
-            return false;
-        }
-        
-        foreach ($structure->parts as $part) {
-            if (isset($part->disposition) && 
-                (strtolower($part->disposition) === 'attachment' || 
-                 strtolower($part->disposition) === 'inline')) {
-                return true;
-            }
-        }
-        
-        return false;
-        
-    } catch (Exception $e) {
-        error_log("Error checking attachments: " . $e->getMessage());
-        return false;
-    }
-}
-
-/**
  * Extract email address from "From" header
  */
 function extractEmail($from) {
@@ -484,15 +558,13 @@ function quickSyncCheckFromSession($userEmail) {
     }
 }
 
-// Legacy function for backward compatibility
-function fetchNewMessages($userEmail, $imapConfig = [], $limit = 50) {
-    error_log("DEPRECATED: fetchNewMessages() called. Using session config instead.");
-    return fetchNewMessagesFromSession($userEmail, $limit);
+/**
+ * Get IMAP config from session
+ */
+function getImapConfigFromSession() {
+    if (isset($_SESSION['imap_config'])) {
+        return $_SESSION['imap_config'];
+    }
+    return false;
 }
-
-function quickSyncCheck($userEmail, $imapConfig = []) {
-    error_log("DEPRECATED: quickSyncCheck() called. Using session config instead.");
-    return quickSyncCheckFromSession($userEmail);
-}
-
 ?>
