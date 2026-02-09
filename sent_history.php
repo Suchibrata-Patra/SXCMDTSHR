@@ -52,19 +52,19 @@ function getSentEmailsWithTracking($userEmail, $limit = 100, $offset = 0, $filte
 
         // Query with LEFT JOIN to read tracking
         $sql = "SELECT 
-                    se.*,
-                    rt.tracking_token,
-                    rt.is_read,
-                    rt.first_read_at,
-                    rt.total_opens,
-                    rt.valid_opens,
-                    rt.device_type,
-                    rt.browser,
-                    rt.os
-                FROM sent_emails se
-                LEFT JOIN email_read_tracking rt ON rt.tracking_token = se.tracking_token
-                WHERE se.sender_email = :email
-                AND se.current_status = 1";
+        se.*,
+        rt.tracking_token,
+        rt.is_read,
+        rt.first_read_at,
+        rt.total_opens,
+        rt.valid_opens,
+        rt.device_type,
+        rt.browser,
+        rt.os
+    FROM emails se
+    LEFT JOIN email_read_tracking rt ON rt.email_id = se.id
+    WHERE se.sender_email = :email
+    AND se.email_type = 'sent'";
         
         $params = [':email' => $userEmail];
 
