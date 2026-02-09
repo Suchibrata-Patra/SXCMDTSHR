@@ -467,16 +467,16 @@ $lastSync = getLastSyncDate($userEmail);
 
         .message-item.unread {
             /* background: linear-gradient(90deg, #F5F9FF 0%, #FFFFFF 100%); */
-            background: #f6f6f6;
+            /* background: #f6f6f6; */
             /* border-left:1px solid blue; */
         }
 
-        .message-item.unread:hover {
+        /* .message-item.unread:hover {
             background: linear-gradient(90deg, #EBF4FF 0%, #FAFAFA 100%);
-        }
+        } */
 
         .message-item.new {
-            background: linear-gradient(90deg, #E8F5E9 0%, #FFFFFF 100%);
+            /* background: linear-gradient(90deg, #E8F5E9 0%, #FFFFFF 100%); */
         }
 
         .message-item.new:hover {
