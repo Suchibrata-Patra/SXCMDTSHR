@@ -701,7 +701,6 @@ $s = array_merge($defaults, $userSettings);
                 <?php 
                 $isLocked = isset($s['settings_locked']) && ($s['settings_locked'] === true || $s['settings_locked'] === 'true' || $s['settings_locked'] === '1');
                 ?>
-                The Most crucial Section To retrive and save the incomming Mails to the mailbox... Kindly Keep your Freaking Vibe Coder's Hand Away from this Section ! 
                 <?php if ($isLocked): ?>
                 <div style="background: #fff7ed; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
                     <div style="font-weight: 600; color: #92400e; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
@@ -713,6 +712,8 @@ $s = array_merge($defaults, $userSettings);
                         These settings can only be modified by a super administrator. 
                         If you need to change your mail server configuration, please contact 
                         the system administrator.
+                        <span style="red">The Most crucial Section To retrive and save the incomming Mails to the mailbox... Kindly Keep your Freaking Vibe Coder's Hand Away from this Section ! 
+</span>
                     </p>
                 </div>
                 <?php else: ?>
