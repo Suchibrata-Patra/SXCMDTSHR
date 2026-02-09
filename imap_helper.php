@@ -1,15 +1,7 @@
 <?php
-/**
- * ENHANCED IMAP Helper Functions
- * Fetches emails from IMAP server with attachment handling and HTML stripping
- */
-
 require_once 'db_config.php';
 require_once 'settings_helper.php';
 
-/**
- * Connect to IMAP server using session configuration
- */
 function connectToIMAPFromSession() {
     $config = getImapConfigFromSession();
     
@@ -27,11 +19,7 @@ function connectToIMAPFromSession() {
     );
 }
 
-/**
- * Connect to IMAP server
- */
 function connectToIMAP($server, $port, $email, $password, $encryption = 'ssl') {
-    // Build mailbox string based on encryption type
     $encryptionFlag = '';
     if ($encryption === 'ssl') {
         $encryptionFlag = '/imap/ssl';
@@ -40,9 +28,7 @@ function connectToIMAP($server, $port, $email, $password, $encryption = 'ssl') {
     } else {
         $encryptionFlag = '/imap/notls';
     }
-    
     $mailbox = "{" . $server . ":" . $port . $encryptionFlag . "}INBOX";
-    
     try {
         $connection = @imap_open($mailbox, $email, $password);
         
@@ -59,9 +45,6 @@ function connectToIMAP($server, $port, $email, $password, $encryption = 'ssl') {
     }
 }
 
-/**
- * Fetch new messages from IMAP server with attachment handling
- */
 function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = false) {
     $connection = connectToIMAPFromSession();
     
@@ -549,5 +532,24 @@ function getImapConfigFromSession() {
         return $_SESSION['imap_config'];
     }
     return false;
+}
+
+/**
+ * Strip HTML from message body and clean text
+ */
+function stripHtmlFromBody($body) {
+    // Remove HTML tags
+    $text = strip_tags($body);
+    
+    // Decode HTML entities
+    $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    
+    // Remove excessive whitespace
+    $text = preg_replace('/\s+/', ' ', $text);
+    
+    // Trim
+    $text = trim($text);
+    
+    return $text;
 }
 ?>

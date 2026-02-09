@@ -1,7 +1,7 @@
 <?php
 /**
  * GET MESSAGE API
- * Returns message details as JSON
+ * Fetches a single message by ID
  */
 
 session_start();
@@ -32,8 +32,9 @@ try {
     
     $stmt = $pdo->prepare("
         SELECT * FROM inbox_messages 
-        WHERE id = :id AND user_email = :user_email
+        WHERE id = :id AND user_email = :user_email AND is_deleted = 0
     ");
+    
     $stmt->execute([
         ':id' => $messageId,
         ':user_email' => $userEmail
@@ -41,12 +42,11 @@ try {
     
     $message = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    if (!$message) {
+    if ($message) {
+        echo json_encode($message);
+    } else {
         echo json_encode(['error' => 'Message not found']);
-        exit();
     }
-    
-    echo json_encode($message);
     
 } catch (Exception $e) {
     error_log("Error fetching message: " . $e->getMessage());
