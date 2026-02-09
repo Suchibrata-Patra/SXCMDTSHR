@@ -2,6 +2,7 @@
 /**
  * upload_handler.php - AJAX File Upload Handler with Encryption
  * Handles file uploads with deduplication and encrypted download links
+ * ENHANCED VERSION - Guarantees proper file and database registration
  */
 
 session_start();
@@ -37,7 +38,7 @@ class UploadHandler {
     }
     
     /**
-     * Process uploaded file
+     * Process uploaded file - ENHANCED VERSION
      */
     public function processUpload($uploadedFile) {
         try {
@@ -68,23 +69,43 @@ class UploadHandler {
             // Calculate SHA256 hash for deduplication
             $fileHash = hash_file('sha256', $uploadedFile['tmp_name']);
             
+            error_log("Processing upload: " . $uploadedFile['name'] . " (Hash: $fileHash)");
+            
             // Check if this exact file already exists
             $existing = $this->findByHash($fileHash);
             
             if ($existing) {
+                error_log("File already exists in database (ID: " . $existing['id'] . ")");
+                
+                // Verify physical file exists
+                $physicalPath = $this->uploadDir . $existing['storage_path'];
+                if (!file_exists($physicalPath)) {
+                    error_log("WARNING: Database record exists but physical file missing. Re-uploading...");
+                    // Treat as new upload
+                    $existing = null;
+                }
+            }
+            
+            if ($existing && file_exists($this->uploadDir . $existing['storage_path'])) {
                 // File already exists - check if user already has access
                 $hasAccess = $this->checkUserAccess($this->userId, $existing['id']);
                 
                 if (!$hasAccess) {
                     // Create new access record
                     $this->createAccessRecord($existing['id'], null);
+                    error_log("Created access record for existing file");
                     
                     // Store metadata
                     $this->storeMetadata($existing['id'], $uploadedFile['name'], $extension, $uploadedFile['type']);
                 }
                 
+                // Update reference count
+                $this->incrementReferenceCount($existing['id']);
+                
                 // Generate encrypted ID for download
                 $encryptedId = encryptFileId($existing['id']);
+                
+                error_log("Deduplicated upload - using existing file ID: " . $existing['id']);
                 
                 return [
                     'success' => true,
@@ -110,24 +131,33 @@ class UploadHandler {
             // Ensure directory exists
             $dir = dirname($fullPath);
             if (!is_dir($dir)) {
-                mkdir($dir, 0755, true);
+                if (!mkdir($dir, 0755, true)) {
+                    throw new Exception("Failed to create upload directory");
+                }
             }
             
             // Move uploaded file to permanent storage
             if (!move_uploaded_file($uploadedFile['tmp_name'], $fullPath)) {
-                throw new Exception("Failed to save file");
+                throw new Exception("Failed to save file to: $fullPath");
             }
+            
+            // Verify file was saved
+            if (!file_exists($fullPath)) {
+                throw new Exception("File upload verification failed - file not found after move");
+            }
+            
+            error_log("File saved to: $fullPath");
             
             // Insert into attachments table
             $stmt = $this->pdo->prepare("
                 INSERT INTO attachments (
                     file_uuid, file_hash, original_filename, 
                     file_extension, mime_type, file_size, 
-                    storage_path, storage_type, uploaded_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'local', NOW())
+                    storage_path, storage_type, reference_count, uploaded_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'local', 1, NOW())
             ");
             
-            $stmt->execute([
+            $insertSuccess = $stmt->execute([
                 $fileUuid,
                 $fileHash,
                 $uploadedFile['name'],
@@ -137,16 +167,38 @@ class UploadHandler {
                 $storagePath
             ]);
             
+            if (!$insertSuccess) {
+                throw new Exception("Failed to insert attachment record into database");
+            }
+            
             $attachmentId = $this->pdo->lastInsertId();
             
+            if (!$attachmentId) {
+                throw new Exception("Failed to get attachment ID after insert");
+            }
+            
+            error_log("Attachment inserted into database with ID: $attachmentId");
+            
             // Create access record
-            $this->createAccessRecord($attachmentId, null);
+            $accessCreated = $this->createAccessRecord($attachmentId, null);
+            if (!$accessCreated) {
+                error_log("WARNING: Failed to create access record for attachment $attachmentId");
+            }
             
             // Store metadata
-            $this->storeMetadata($attachmentId, $uploadedFile['name'], $extension, $uploadedFile['type']);
+            $metadataCreated = $this->storeMetadata($attachmentId, $uploadedFile['name'], $extension, $uploadedFile['type']);
+            if (!$metadataCreated) {
+                error_log("WARNING: Failed to store metadata for attachment $attachmentId");
+            }
             
             // Generate encrypted ID for download
             $encryptedId = encryptFileId($attachmentId);
+            
+            if (!$encryptedId) {
+                error_log("WARNING: Failed to encrypt file ID $attachmentId");
+            }
+            
+            error_log("✓ Upload complete - ID: $attachmentId, Encrypted: $encryptedId");
             
             return [
                 'success' => true,
@@ -163,6 +215,7 @@ class UploadHandler {
             
         } catch (Exception $e) {
             error_log("Upload error: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
             return [
                 'success' => false,
                 'error' => $e->getMessage()
@@ -171,7 +224,25 @@ class UploadHandler {
     }
     
     /**
-     * Create simplified access record
+     * Increment reference count for existing file
+     */
+    private function incrementReferenceCount($attachmentId) {
+        try {
+            $stmt = $this->pdo->prepare("
+                UPDATE attachments 
+                SET reference_count = reference_count + 1,
+                    last_accessed = NOW()
+                WHERE id = ?
+            ");
+            return $stmt->execute([$attachmentId]);
+        } catch (Exception $e) {
+            error_log("Error incrementing reference count: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Create simplified access record - ENHANCED
      */
     private function createAccessRecord($attachmentId, $emailUuid = null) {
         try {
@@ -189,7 +260,7 @@ class UploadHandler {
                     ) VALUES (?, ?, ?, NULL, ?, 'upload', NOW())
                 ");
                 
-                $stmt->execute([
+                $success = $stmt->execute([
                     $this->userId,
                     $attachmentId,
                     $this->userId, // sender_id
@@ -204,14 +275,20 @@ class UploadHandler {
                     ) VALUES (?, ?, ?, 'upload', NOW())
                 ");
                 
-                $stmt->execute([
+                $success = $stmt->execute([
                     $this->userId,
                     $attachmentId,
                     $emailUuid
                 ]);
             }
             
-            return true;
+            if ($success) {
+                error_log("✓ Access record created for attachment $attachmentId");
+            } else {
+                error_log("✗ Failed to create access record for attachment $attachmentId");
+            }
+            
+            return $success;
             
         } catch (Exception $e) {
             error_log("Error creating access record: " . $e->getMessage());
@@ -220,10 +297,17 @@ class UploadHandler {
     }
     
     /**
-     * Store file metadata
+     * Store file metadata - ENHANCED
      */
     private function storeMetadata($attachmentId, $filename, $extension, $mimeType) {
         try {
+            // Check if attachment_metadata table exists
+            $stmt = $this->pdo->query("SHOW TABLES LIKE 'attachment_metadata'");
+            if ($stmt->rowCount() == 0) {
+                error_log("Note: attachment_metadata table does not exist");
+                return true; // Not an error if table doesn't exist
+            }
+            
             $stmt = $this->pdo->prepare("
                 INSERT INTO attachment_metadata (
                     attachment_id, user_id, original_filename, 
@@ -235,13 +319,22 @@ class UploadHandler {
                     mime_type = VALUES(mime_type)
             ");
             
-            return $stmt->execute([
+            $success = $stmt->execute([
                 $attachmentId,
                 $this->userId,
                 $filename,
                 $extension,
                 $mimeType ?? 'application/octet-stream'
             ]);
+            
+            if ($success) {
+                error_log("✓ Metadata stored for attachment $attachmentId");
+            } else {
+                error_log("✗ Failed to store metadata for attachment $attachmentId");
+            }
+            
+            return $success;
+            
         } catch (Exception $e) {
             error_log("Error storing metadata: " . $e->getMessage());
             // Don't fail upload if metadata fails
@@ -253,24 +346,34 @@ class UploadHandler {
      * Check if user already has access to this attachment
      */
     private function checkUserAccess($userId, $attachmentId) {
-        $stmt = $this->pdo->prepare("
-            SELECT COUNT(*) as count 
-            FROM user_attachment_access 
-            WHERE user_id = ? AND attachment_id = ?
-        ");
-        $stmt->execute([$userId, $attachmentId]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        return $result['count'] > 0;
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT COUNT(*) as count 
+                FROM user_attachment_access 
+                WHERE user_id = ? AND attachment_id = ?
+            ");
+            $stmt->execute([$userId, $attachmentId]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return $result['count'] > 0;
+        } catch (Exception $e) {
+            error_log("Error checking user access: " . $e->getMessage());
+            return false;
+        }
     }
     
     /**
      * Find existing file by hash
      */
     private function findByHash($hash) {
-        $stmt = $this->pdo->prepare("SELECT * FROM attachments WHERE file_hash = ? LIMIT 1");
-        $stmt->execute([$hash]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        try {
+            $stmt = $this->pdo->prepare("SELECT * FROM attachments WHERE file_hash = ? LIMIT 1");
+            $stmt->execute([$hash]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error finding by hash: " . $e->getMessage());
+            return null;
+        }
     }
     
     /**
@@ -297,9 +400,19 @@ class UploadHandler {
         return round($bytes / pow($k, $i), 2) . ' ' . $sizes[$i];
     }
     
+    /**
+     * Ensure upload directory exists
+     */
     private function ensureUploadDirectory() {
         if (!is_dir($this->uploadDir)) {
-            mkdir($this->uploadDir, 0755, true);
+            if (!mkdir($this->uploadDir, 0755, true)) {
+                error_log("ERROR: Could not create upload directory: " . $this->uploadDir);
+            }
+        }
+        
+        // Verify directory is writable
+        if (!is_writable($this->uploadDir)) {
+            error_log("ERROR: Upload directory is not writable: " . $this->uploadDir);
         }
     }
 }
@@ -354,16 +467,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         $result = $handler->processUpload($_FILES['file']);
         
         if ($result['success']) {
+            // Verify the file was actually saved before adding to session
+            $uploadDir = 'uploads/attachments/';
+            $fullPath = $uploadDir . $result['path'];
+            
+            if (!file_exists($fullPath)) {
+                error_log("CRITICAL ERROR: Upload reported success but file not found: $fullPath");
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'File upload verification failed'
+                ]);
+                exit();
+            }
+            
             // Store in session for later use when sending
             $_SESSION['temp_attachments'][] = $result;
             
-            error_log("File uploaded successfully: " . $result['original_name'] . " (ID: " . $result['id'] . ", Encrypted: " . $result['encrypted_id'] . ")");
+            error_log("✓ File uploaded successfully: " . $result['original_name'] . 
+                     " (ID: " . $result['id'] . ", Encrypted: " . $result['encrypted_id'] . ")");
+            error_log("✓ Session now has " . count($_SESSION['temp_attachments']) . " attachments");
         }
         
         echo json_encode($result);
         
     } catch (Exception $e) {
         error_log("Upload handler error: " . $e->getMessage());
+        error_log("Stack trace: " . $e->getTraceAsString());
         echo json_encode([
             'success' => false,
             'error' => $e->getMessage()

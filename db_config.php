@@ -1,7 +1,7 @@
 <?php
 /**
  * db_config.php - Database Configuration and Helper Functions
- * CORRECTED VERSION with proper session handling
+ * ENHANCED VERSION with improved attachment linking
  */
 
 // Start session if not already started
@@ -190,7 +190,15 @@ function saveEmailToDatabase($pdo, $emailData) {
             ]);
         }
         
-        return $pdo->lastInsertId();
+        $emailId = $pdo->lastInsertId();
+        
+        if ($emailId) {
+            error_log("✓ Email saved to database with ID: $emailId");
+        } else {
+            error_log("✗ Failed to save email to database");
+        }
+        
+        return $emailId;
         
     } catch (PDOException $e) {
         error_log("Error saving email: " . $e->getMessage());
@@ -235,7 +243,15 @@ function createEmailAccess($pdo, $emailId, $userId, $accessType = 'sender', $lab
             ");
         }
         
-        return $stmt->execute([$emailId, $userId, $accessType, $labelId]);
+        $success = $stmt->execute([$emailId, $userId, $accessType, $labelId]);
+        
+        if ($success) {
+            error_log("✓ Email access created for user $userId on email $emailId");
+        } else {
+            error_log("✗ Failed to create email access");
+        }
+        
+        return $success;
         
     } catch (PDOException $e) {
         error_log("Error creating email access: " . $e->getMessage());
@@ -244,38 +260,108 @@ function createEmailAccess($pdo, $emailId, $userId, $accessType = 'sender', $lab
 }
 
 /**
- * Link attachments to email
+ * Link attachments to email - ENHANCED VERSION
  */
 function linkAttachmentsToEmail($pdo, $emailId, $emailUuid, $senderId, $attachmentIds) {
     try {
         if (empty($attachmentIds)) {
+            error_log("No attachments to link");
             return true;
         }
         
-        foreach ($attachmentIds as $attachmentId) {
-            // Update user_attachment_access with email_uuid if columns exist
-            $stmt = $pdo->query("SHOW COLUMNS FROM user_attachment_access");
-            $columns = $stmt->fetchAll(PDO::FETCH_COLUMN);
-            
-            if (in_array('email_uuid', $columns) && in_array('sender_id', $columns)) {
+        error_log("Linking " . count($attachmentIds) . " attachments to email $emailId");
+        
+        $successCount = 0;
+        $failCount = 0;
+        
+        foreach ($attachmentIds as $index => $attachmentId) {
+            try {
+                // 1. Link to email_attachments table
                 $stmt = $pdo->prepare("
-                    UPDATE user_attachment_access 
-                    SET email_uuid = ?, sender_id = ?
-                    WHERE user_id = ? AND attachment_id = ?
+                    INSERT INTO email_attachments (
+                        email_id, attachment_id, attachment_order, 
+                        is_inline, created_at
+                    ) VALUES (?, ?, ?, 0, NOW())
                 ");
-                $stmt->execute([$emailUuid, $senderId, $senderId, $attachmentId]);
+                
+                $success = $stmt->execute([
+                    $emailId,
+                    $attachmentId,
+                    $index
+                ]);
+                
+                if ($success) {
+                    error_log("✓ Linked attachment $attachmentId to email $emailId in email_attachments");
+                } else {
+                    error_log("✗ Failed to link attachment $attachmentId to email_attachments");
+                    $failCount++;
+                    continue;
+                }
+                
+                // 2. Update user_attachment_access with email information
+                $stmt = $pdo->query("SHOW COLUMNS FROM user_attachment_access");
+                $columns = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                
+                // Check if email_id and email_uuid columns exist
+                $hasEmailId = in_array('email_id', $columns);
+                $hasEmailUuid = in_array('email_uuid', $columns);
+                $hasSenderId = in_array('sender_id', $columns);
+                
+                if ($hasEmailId && $hasEmailUuid && $hasSenderId) {
+                    // Update with all email information
+                    $stmt = $pdo->prepare("
+                        UPDATE user_attachment_access 
+                        SET email_id = ?, 
+                            email_uuid = ?,
+                            sender_id = ?,
+                            access_type = 'sent'
+                        WHERE attachment_id = ? AND user_id = ?
+                    ");
+                    
+                    $success = $stmt->execute([
+                        $emailId,
+                        $emailUuid,
+                        $senderId,
+                        $attachmentId,
+                        $senderId
+                    ]);
+                    
+                    if ($success) {
+                        error_log("✓ Updated user_attachment_access for attachment $attachmentId with email info");
+                    } else {
+                        error_log("✗ Failed to update user_attachment_access for attachment $attachmentId");
+                    }
+                } elseif ($hasEmailId) {
+                    // Update with just email_id
+                    $stmt = $pdo->prepare("
+                        UPDATE user_attachment_access 
+                        SET email_id = ?,
+                            access_type = 'sent'
+                        WHERE attachment_id = ? AND user_id = ?
+                    ");
+                    
+                    $success = $stmt->execute([
+                        $emailId,
+                        $attachmentId,
+                        $senderId
+                    ]);
+                    
+                    if ($success) {
+                        error_log("✓ Updated user_attachment_access for attachment $attachmentId");
+                    }
+                }
+                
+                $successCount++;
+                
+            } catch (PDOException $e) {
+                error_log("Error linking attachment $attachmentId: " . $e->getMessage());
+                $failCount++;
             }
-            
-            // Create email-attachment link
-            $stmt = $pdo->prepare("
-                INSERT INTO email_attachments (email_id, attachment_id, created_at)
-                VALUES (?, ?, NOW())
-                ON DUPLICATE KEY UPDATE email_id = email_id
-            ");
-            $stmt->execute([$emailId, $attachmentId]);
         }
         
-        return true;
+        error_log("Attachment linking complete: $successCount succeeded, $failCount failed");
+        
+        return $successCount > 0;
         
     } catch (PDOException $e) {
         error_log("Error linking attachments: " . $e->getMessage());
@@ -283,10 +369,12 @@ function linkAttachmentsToEmail($pdo, $emailId, $emailUuid, $senderId, $attachme
     }
 }
 
+// ==================== LABEL MANAGEMENT ====================
+
 /**
- * Get sent emails for current user
+ * Get label counts for user
  */
-function getSentEmails($userEmail, $limit = 100, $offset = 0, $filters = []) {
+function getLabelCounts($userEmail) {
     try {
         $pdo = getDatabaseConnection();
         if (!$pdo) {
@@ -298,111 +386,17 @@ function getSentEmails($userEmail, $limit = 100, $offset = 0, $filters = []) {
             return [];
         }
         
-        // Check if view exists
-        $stmt = $pdo->query("SHOW TABLES LIKE 'v_user_sent'");
-        $viewExists = $stmt->rowCount() > 0;
+        // Check if we can join with user_email_access
+        $stmt = $pdo->query("SHOW TABLES LIKE 'user_email_access'");
+        $hasUserEmailAccess = $stmt->rowCount() > 0;
         
-        if ($viewExists) {
-            $sql = "SELECT * FROM v_user_sent WHERE user_id = :user_id";
-        } else {
-            // Fallback to direct query
-            $sql = "SELECT e.*, uea.label_id 
-                    FROM emails e
-                    JOIN user_email_access uea ON e.id = uea.email_id
-                    WHERE uea.user_id = :user_id AND uea.access_type = 'sender'";
-        }
-        
-        $params = [':user_id' => $userId];
-        
-        // Add filters
-        if (!empty($filters['search'])) {
-            $sql .= " AND (
-                recipient_email LIKE :search 
-                OR subject LIKE :search 
-                OR body_text LIKE :search
-                OR article_title LIKE :search
-            )";
-            $params[':search'] = '%' . $filters['search'] . '%';
-        }
-        
-        if (!empty($filters['recipient'])) {
-            $sql .= " AND recipient_email LIKE :recipient";
-            $params[':recipient'] = '%' . $filters['recipient'] . '%';
-        }
-        
-        if (!empty($filters['label_id'])) {
-            if ($filters['label_id'] === 'unlabeled') {
-                $sql .= " AND label_id IS NULL";
-            } else {
-                $sql .= " AND label_id = :label_id";
-                $params[':label_id'] = $filters['label_id'];
-            }
-        }
-        
-        $sql .= " ORDER BY sent_at DESC LIMIT :limit OFFSET :offset";
-        
-        $stmt = $pdo->prepare($sql);
-        foreach ($params as $key => $value) {
-            $stmt->bindValue($key, $value, PDO::PARAM_STR);
-        }
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-        
-        $stmt->execute();
-        return $stmt->fetchAll();
-        
-    } catch (PDOException $e) {
-        error_log("Error fetching sent emails: " . $e->getMessage());
-        return [];
-    }
-}
-
-// ==================== LABEL MANAGEMENT ====================
-
-/**
- * Get all labels for a user
- */
-function getUserLabels($userEmail) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) {
-            return [];
-        }
-        
-        $sql = "SELECT * FROM labels 
-                WHERE user_email = :user_email OR user_email IS NULL
-                ORDER BY label_name ASC";
-        
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([':user_email' => $userEmail]);
-        
-        return $stmt->fetchAll();
-        
-    } catch (PDOException $e) {
-        error_log("Error fetching labels: " . $e->getMessage());
-        return [];
-    }
-}
-
-/**
- * Get label counts - works even if user doesn't exist in users table
- */
-function getLabelCounts($userEmail) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) {
-            return [];
-        }
-        
-        $userId = getUserId($pdo, $userEmail);
-        
-        if ($userId) {
+        if ($hasUserEmailAccess) {
             $sql = "SELECT 
                         l.id, 
                         l.label_name, 
                         l.label_color,
                         l.created_at,
-                        COUNT(uea.email_id) as count
+                        COUNT(DISTINCT uea.email_id) as count
                     FROM labels l
                     LEFT JOIN user_email_access uea ON l.id = uea.label_id 
                         AND uea.user_id = :user_id
@@ -417,6 +411,7 @@ function getLabelCounts($userEmail) {
                 ':user_email' => $userEmail
             ]);
         } else {
+            // Simple fallback
             $sql = "SELECT 
                         id, 
                         label_name, 
@@ -622,6 +617,7 @@ function getUnlabeledEmailCount($userEmail) {
         return 0;
     }
 }
+
 /**
  * Get the total count of sent emails for a user based on filters
  */
@@ -672,6 +668,7 @@ function getSentEmailCount($userEmail, $filters = []) {
         return 0;
     }
 }
+
 // Enable error display for debugging (remove in production)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);

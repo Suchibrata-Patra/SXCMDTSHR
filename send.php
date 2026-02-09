@@ -105,9 +105,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
         
-        // ==================== Handle Attachments from Session - FIXED VERSION ====================
+        // ==================== ENHANCED ATTACHMENT HANDLING ====================
         $attachments = [];
-        $uploadDir = 'uploads/attachments/'; // Base directory for attachments
+        $attachmentIdsForDB = [];
+        $uploadDir = 'uploads/attachments/';
+        
+        error_log("Processing attachments - IDs received: " . implode(',', $attachmentIds));
         
         if (!empty($attachmentIds) && isset($_SESSION['temp_attachments'])) {
             $sessionAttachments = $_SESSION['temp_attachments'];
@@ -118,32 +121,40 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 // Find attachment in session
                 foreach ($sessionAttachments as $attachment) {
                     if (isset($attachment['id']) && $attachment['id'] == $attachmentId) {
-                        // FIXED: Construct the full file path correctly
+                        // Construct the full file path
                         $relativePath = $attachment['path'] ?? '';
                         $fullFilePath = $uploadDir . $relativePath;
                         $fileName = $attachment['original_name'] ?? 'attachment';
                         
-                        // Check if file exists
+                        // CRITICAL: Check if file exists
                         if (file_exists($fullFilePath)) {
-                            // Add attachment to email
+                            // Add attachment to email - THIS IS GUARANTEED
                             $mail->addAttachment($fullFilePath, $fileName);
                             
                             $attachments[] = [
+                                'id' => $attachmentId,
                                 'name' => $fileName,
                                 'size' => formatFileSize($attachment['file_size'] ?? 0),
-                                'extension' => $attachment['extension'] ?? 'file'
+                                'extension' => $attachment['extension'] ?? 'file',
+                                'mime_type' => $attachment['mime_type'] ?? 'application/octet-stream'
                             ];
                             
-                            error_log("Attached file: $fullFilePath as $fileName");
+                            $attachmentIdsForDB[] = $attachmentId;
+                            
+                            error_log("✓ Successfully attached: $fullFilePath as $fileName");
                         } else {
-                            error_log("WARNING: Attachment file not found: $fullFilePath");
-                            // Continue processing - don't fail the whole email if one attachment is missing
+                            // File missing - this is critical error
+                            error_log("✗ CRITICAL ERROR: Attachment file not found: $fullFilePath");
+                            throw new Exception("Attachment file not found: $fileName. Please re-upload the file.");
                         }
                         break;
                     }
                 }
             }
         }
+        
+        // Log attachment summary
+        error_log("Total attachments added to email: " . count($attachments));
         
         // ==================== Load and Process Email Template ====================
         $templatePath = __DIR__ . '/templates/template1.html';
@@ -184,6 +195,110 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // ==================== Send Email ====================
         if ($mail->send()) {
+            error_log("✓ Email sent successfully with " . count($attachments) . " attachments");
+            
+            // ==================== DATABASE REGISTRATION ====================
+            try {
+                $pdo = getDatabaseConnection();
+                
+                if (!$pdo) {
+                    error_log("✗ Database connection failed - email sent but not recorded");
+                } else {
+                    // Get or create user ID
+                    $userId = getUserId($pdo, $_SESSION['smtp_user']);
+                    
+                    if (!$userId) {
+                        $userId = createUserIfNotExists($pdo, $_SESSION['smtp_user'], $displayName);
+                        error_log("Created new user: " . $_SESSION['smtp_user'] . " (ID: $userId)");
+                    }
+                    
+                    if ($userId) {
+                        // Generate UUIDs
+                        $emailUuid = generateUuidV4();
+                        $messageId = '<' . $emailUuid . '@' . parse_url($_SESSION['smtp_user'], PHP_URL_HOST) . '>';
+                        
+                        // Prepare email data
+                        $emailData = [
+                            'email_uuid' => $emailUuid,
+                            'message_id' => $messageId,
+                            'sender_email' => $_SESSION['smtp_user'],
+                            'sender_name' => $displayName,
+                            'recipient_email' => $recipient,
+                            'cc_list' => !empty($validCCs) ? implode(',', $validCCs) : null,
+                            'bcc_list' => !empty($validBCCs) ? implode(',', $validBCCs) : null,
+                            'reply_to' => $_SESSION['smtp_user'],
+                            'subject' => $subject,
+                            'body_text' => $plainTextMessage,
+                            'body_html' => $emailBody,
+                            'article_title' => $articleTitle,
+                            'email_type' => 'sent',
+                            'has_attachments' => count($attachmentIdsForDB) > 0 ? 1 : 0
+                        ];
+                        
+                        // Save email to database
+                        $emailId = saveEmailToDatabase($pdo, $emailData);
+                        
+                        if ($emailId) {
+                            error_log("✓ Email saved to database (ID: $emailId, UUID: $emailUuid)");
+                            
+                            // Create email access record for sender
+                            $accessCreated = createEmailAccess($pdo, $emailId, $userId, 'sender');
+                            
+                            if ($accessCreated) {
+                                error_log("✓ Email access created for sender");
+                            } else {
+                                error_log("✗ Failed to create email access");
+                            }
+                            
+                            // Link attachments to email
+                            if (!empty($attachmentIdsForDB)) {
+                                $attachmentsLinked = linkAttachmentsToEmail($pdo, $emailId, $emailUuid, $userId, $attachmentIdsForDB);
+                                
+                                if ($attachmentsLinked) {
+                                    error_log("✓ Successfully linked " . count($attachmentIdsForDB) . " attachments to email");
+                                } else {
+                                    error_log("✗ Failed to link attachments to email");
+                                }
+                            }
+                            
+                            // Also save to sent_emails table if it exists (backward compatibility)
+                            try {
+                                $stmt = $pdo->prepare("
+                                    INSERT INTO sent_emails 
+                                    (sender_email, recipient_email, subject, article_title, sent_at, current_status) 
+                                    VALUES (?, ?, ?, ?, NOW(), 'sent')
+                                ");
+                                
+                                $stmt->execute([
+                                    $_SESSION['smtp_user'],
+                                    $recipient,
+                                    $subject,
+                                    $articleTitle
+                                ]);
+                                
+                                error_log("✓ Also saved to sent_emails table (backward compatibility)");
+                            } catch (PDOException $e) {
+                                // Ignore if table doesn't exist
+                                error_log("Note: sent_emails table not available or error: " . $e->getMessage());
+                            }
+                            
+                        } else {
+                            error_log("✗ Failed to save email to database");
+                        }
+                        
+                    } else {
+                        error_log("✗ Could not get or create user ID");
+                    }
+                }
+                
+            } catch (Exception $e) {
+                error_log("Database error during email registration: " . $e->getMessage());
+                // Don't fail - email was sent successfully
+            }
+            
+            // Clear session attachments after successful send
+            unset($_SESSION['temp_attachments']);
+            
             // Prepare success data for display
             $successEmails = [
                 ['email' => $recipient, 'type' => 'TO']
@@ -210,51 +325,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 'signature_designation' => $signatureDesignation
             ];
             
-            // Try to save to database
-            $dbSaved = false;
-            try {
-                $pdo = getDatabaseConnection();
-                if ($pdo) {
-                    // First, try to get the actual table structure
-                    // Use a simpler insert that works with most schemas
-                    $stmt = $pdo->prepare("
-                        INSERT INTO sent_emails 
-                        (sender_email, recipient_email, subject, article_title, sent_at, current_status) 
-                        VALUES (?, ?, ?, ?, NOW(), 'sent')
-                    ");
-                    
-                    $stmt->execute([
-                        $_SESSION['smtp_user'],
-                        $recipient,
-                        $subject,
-                        $articleTitle
-                    ]);
-                    $dbSaved = true;
-                }
-            } catch (Exception $e) {
-                // Database save failed, but email was sent successfully
-                error_log("Database save failed: " . $e->getMessage());
-                $dbSaved = false;
-            }
+            showSuccessPage($successEmails, $summary, $attachments);
             
-            // Clear temp attachments after successful send
-            $_SESSION['temp_attachments'] = [];
-            
-            // Show success page
-            showSuccessPage($successEmails, $attachments, $summary, $dbSaved);
+        } else {
+            throw new Exception("Failed to send email");
         }
         
     } catch (Exception $e) {
-        // Show error page
+        error_log("Email send error: " . $e->getMessage());
         showErrorPage($e->getMessage());
     }
-} else {
-    header("Location: index.php");
-    exit();
 }
 
 /**
- * Format file size helper
+ * Format file size to human readable
  */
 function formatFileSize($bytes) {
     if ($bytes === 0) return '0 Bytes';
@@ -267,7 +351,7 @@ function formatFileSize($bytes) {
 /**
  * Show success page
  */
-function showSuccessPage($successEmails, $attachments, $summary, $dbSaved = false) {
+function showSuccessPage($emails, $summary, $attachments) {
     ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -307,7 +391,7 @@ function showSuccessPage($successEmails, $attachments, $summary, $dbSaved = fals
         }
 
         .success-wrapper {
-            max-width: 700px;
+            max-width: 800px;
             width: 100%;
         }
 
@@ -338,7 +422,7 @@ function showSuccessPage($successEmails, $attachments, $summary, $dbSaved = fals
             justify-content: center;
             margin: 0 auto 24px;
             box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
-            animation: scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: scaleIn 0.5s ease-out;
         }
 
         @keyframes scaleIn {
@@ -371,10 +455,10 @@ function showSuccessPage($successEmails, $attachments, $summary, $dbSaved = fals
         .success-card {
             background: white;
             border-radius: 16px;
-            padding: 0;
+            padding: 30px;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
             border: 1px solid #e5e7eb;
-            overflow: hidden;
+            margin-bottom: 20px;
             animation: fadeInUp 0.6s ease-out;
         }
 
@@ -390,154 +474,135 @@ function showSuccessPage($successEmails, $attachments, $summary, $dbSaved = fals
         }
 
         .summary-section {
-            padding: 30px;
-            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 30px;
         }
 
-        .summary-row {
+        .summary-item {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            padding: 14px 0;
+            padding: 12px 0;
             border-bottom: 1px solid #f3f4f6;
         }
 
-        .summary-row:last-child {
+        .summary-item:last-child {
             border-bottom: none;
         }
 
         .summary-label {
-            font-size: 14px;
-            color: #6b7280;
             font-weight: 500;
+            color: #6b7280;
         }
 
         .summary-value {
-            font-size: 14px;
-            color: #1c1c1e;
             font-weight: 600;
+            color: #1c1c1e;
             text-align: right;
         }
 
         .recipients-section {
-            padding: 30px;
-            border-bottom: 1px solid #e5e7eb;
+            margin-top: 30px;
         }
 
-        .section-title {
-            font-size: 16px;
+        .recipients-title {
+            font-size: 18px;
             font-weight: 600;
+            margin-bottom: 15px;
             color: #1c1c1e;
-            margin-bottom: 16px;
         }
 
         .recipient-item {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 12px 16px;
+            padding: 10px 15px;
             background: #f9fafb;
-            border-radius: 10px;
-            margin-bottom: 10px;
+            border-radius: 8px;
+            margin-bottom: 8px;
         }
 
-        .recipient-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .recipient-email {
-            font-size: 14px;
-            color: #1c1c1e;
-            font-weight: 500;
-        }
-
-        .recipient-type {
-            font-size: 12px;
+        .recipient-badge {
             padding: 4px 10px;
             border-radius: 6px;
+            font-size: 11px;
             font-weight: 600;
+            margin-right: 12px;
         }
 
-        .recipient-type.to {
+        .badge-to {
             background: #dbeafe;
             color: #1e40af;
         }
 
-        .recipient-type.cc {
+        .badge-cc {
             background: #fef3c7;
             color: #92400e;
         }
 
-        .recipient-type.bcc {
+        .badge-bcc {
             background: #e0e7ff;
             color: #3730a3;
         }
 
         .attachments-section {
-            padding: 30px;
-            border-bottom: 1px solid #e5e7eb;
+            margin-top: 30px;
         }
 
         .attachment-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
+            padding: 12px 15px;
             background: #f9fafb;
-            border-radius: 10px;
-            margin-bottom: 10px;
-        }
-
-        .attachment-item:last-child {
-            margin-bottom: 0;
+            border-radius: 8px;
+            margin-bottom: 8px;
         }
 
         .attachment-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-            border-radius: 8px;
+            width: 36px;
+            height: 36px;
+            background: #e0f2fe;
+            color: #0369a1;
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 18px;
+            margin-right: 12px;
         }
 
-        .attachment-details {
+        .attachment-info {
             flex: 1;
         }
 
         .attachment-name {
-            font-size: 14px;
-            color: #1c1c1e;
             font-weight: 500;
-            margin-bottom: 2px;
+            color: #1c1c1e;
+            font-size: 14px;
         }
 
         .attachment-size {
             font-size: 12px;
             color: #6b7280;
+            margin-top: 2px;
         }
 
         .action-buttons {
-            padding: 30px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
+            display: flex;
+            gap: 12px;
+            margin-top: 30px;
         }
 
         .btn {
-            display: flex;
+            flex: 1;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
-            padding: 14px 24px;
+            padding: 14px 28px;
             border-radius: 12px;
             text-decoration: none;
             font-weight: 600;
             font-size: 15px;
             transition: all 0.3s;
+            border: none;
+            cursor: pointer;
         }
 
         .btn-primary {
@@ -558,21 +623,6 @@ function showSuccessPage($successEmails, $attachments, $summary, $dbSaved = fals
 
         .btn-secondary:hover {
             background: #e5e7eb;
-            transform: translateY(-2px);
-        }
-
-        .db-warning {
-            background: #fef3c7;
-            border-left: 4px solid #f59e0b;
-            padding: 16px 20px;
-            border-radius: 10px;
-            margin: 20px 30px;
-        }
-
-        .db-warning p {
-            color: #92400e;
-            font-size: 13px;
-            line-height: 1.5;
         }
 
         @media (max-width: 768px) {
@@ -584,14 +634,21 @@ function showSuccessPage($successEmails, $attachments, $summary, $dbSaved = fals
                 font-size: 26px;
             }
 
-            .action-buttons {
-                grid-template-columns: 1fr;
+            .success-card {
+                padding: 24px 20px;
             }
 
-            .summary-section,
-            .recipients-section,
-            .attachments-section {
-                padding: 24px 20px;
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .summary-item {
+                flex-direction: column;
+                gap: 5px;
+            }
+
+            .summary-value {
+                text-align: left;
             }
         }
     </style>
@@ -609,63 +666,64 @@ function showSuccessPage($successEmails, $attachments, $summary, $dbSaved = fals
                         <i class="fas fa-check"></i>
                     </div>
                     <h1 class="success-title">Email Sent Successfully!</h1>
-                    <p class="success-subtitle">Your email has been delivered to all recipients</p>
+                    <p class="success-subtitle">Your message has been delivered with all attachments</p>
                 </div>
 
                 <div class="success-card">
-                    <!-- Summary Section -->
+                    <!-- Email Summary -->
                     <div class="summary-section">
-                        <div class="summary-row">
+                        <div class="summary-item">
                             <span class="summary-label">Subject</span>
                             <span class="summary-value"><?= htmlspecialchars($summary['subject']) ?></span>
                         </div>
-                        <div class="summary-row">
+                        <div class="summary-item">
                             <span class="summary-label">Article Title</span>
                             <span class="summary-value"><?= htmlspecialchars($summary['article_title']) ?></span>
                         </div>
-                        <div class="summary-row">
+                        <div class="summary-item">
                             <span class="summary-label">Sent At</span>
                             <span class="summary-value"><?= $summary['sent_at'] ?></span>
                         </div>
-                        <div class="summary-row">
+                        <div class="summary-item">
                             <span class="summary-label">From</span>
-                            <span class="summary-value"><?= htmlspecialchars($summary['sender_name']) ?></span>
+                            <span class="summary-value"><?= htmlspecialchars($summary['sender_name']) ?> &lt;<?= htmlspecialchars($summary['sender_email']) ?>&gt;</span>
                         </div>
+                        <?php if ($summary['attachment_count'] > 0): ?>
+                        <div class="summary-item">
+                            <span class="summary-label">Attachments</span>
+                            <span class="summary-value"><?= $summary['attachment_count'] ?> file(s)</span>
+                        </div>
+                        <?php endif; ?>
                     </div>
 
-                    <!-- Recipients Section -->
+                    <!-- Recipients -->
                     <div class="recipients-section">
-                        <h3 class="section-title">Recipients (<?= count($successEmails) ?>)</h3>
-                        <?php foreach ($successEmails as $email): ?>
+                        <h3 class="recipients-title">Recipients (<?= count($emails) ?>)</h3>
+                        <?php foreach ($emails as $email): ?>
                         <div class="recipient-item">
-                            <span class="recipient-email"><?= htmlspecialchars($email['email']) ?></span>
-                            <span class="recipient-type <?= strtolower($email['type']) ?>"><?= $email['type'] ?></span>
+                            <span class="recipient-badge badge-<?= strtolower($email['type']) ?>">
+                                <?= $email['type'] ?>
+                            </span>
+                            <span><?= htmlspecialchars($email['email']) ?></span>
                         </div>
                         <?php endforeach; ?>
                     </div>
 
-                    <!-- Attachments Section -->
+                    <!-- Attachments -->
                     <?php if (!empty($attachments)): ?>
                     <div class="attachments-section">
-                        <h3 class="section-title">Attachments (<?= count($attachments) ?>)</h3>
+                        <h3 class="recipients-title">Attachments (<?= count($attachments) ?>)</h3>
                         <?php foreach ($attachments as $attachment): ?>
                         <div class="attachment-item">
                             <div class="attachment-icon">
                                 <i class="fas fa-file"></i>
                             </div>
-                            <div class="attachment-details">
+                            <div class="attachment-info">
                                 <div class="attachment-name"><?= htmlspecialchars($attachment['name']) ?></div>
-                                <div class="attachment-size"><?= $attachment['size'] ?></div>
+                                <div class="attachment-size"><?= $attachment['size'] ?> • <?= strtoupper($attachment['extension']) ?></div>
                             </div>
                         </div>
                         <?php endforeach; ?>
-                    </div>
-                    <?php endif; ?>
-
-                    <!-- Database Warning -->
-                    <?php if (!$dbSaved): ?>
-                    <div class="db-warning">
-                        <p><strong>Note:</strong> Email was sent successfully, but could not be saved to the database. This doesn't affect delivery.</p>
                     </div>
                     <?php endif; ?>
 
