@@ -227,109 +227,81 @@ function formatDate($dateStr) {
             padding: 4px 10px;
             border-radius: 12px;
             font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .badge.unread {
-            background: #ffedd5;
-            color: #ea580c;
+            font-weight: 600;
         }
 
         .badge.new {
-            background: #dbeafe;
-            color: #0284c7;
+            background: linear-gradient(135deg, var(--success) 0%, #2ea44f 100%);
+            color: white;
         }
 
-        .list-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn-action {
-            flex: 1;
-            padding: 10px 16px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        .btn-refresh {
-            background: var(--apple-bg);
-            color: var(--text-primary);
-        }
-
-        .btn-refresh:hover {
-            background: #e5e5ea;
-        }
-
-        .btn-compose {
+        .badge.unread {
             background: var(--apple-blue);
             color: white;
         }
 
-        .btn-compose:hover {
-            background: #0051D5;
+        .search-box {
+            position: relative;
+            margin-bottom: 12px;
         }
 
-        .btn-action:disabled {
-            opacity: 0.5;
+        .search-box input {
+            width: 100%;
+            padding: 10px 40px 10px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+
+        .search-box .material-icons {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--apple-gray);
+            font-size: 20px;
+        }
+
+        .refresh-btn {
+            width: 100%;
+            padding: 10px;
+            background: var(--apple-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:hover:not(:disabled) {
+            background: #0051d5;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+        }
+
+        .refresh-btn:disabled {
+            opacity: 0.6;
             cursor: not-allowed;
         }
 
-        .sync-status {
-            padding: 12px 20px;
-            background: #f0f9ff;
-            border-bottom: 1px solid #bfdbfe;
-            display: none;
-            align-items: center;
-            gap: 10px;
-            font-size: 13px;
-            color: #0c4a6e;
-        }
-
-        .sync-status.active {
-            display: flex;
-        }
-
-        .spinner {
-            width: 16px;
-            height: 16px;
-            border: 2px solid #bfdbfe;
-            border-top-color: #0284c7;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* ========== MESSAGE LIST ========== */
         .message-list {
             flex: 1;
             overflow-y: auto;
-            overflow-x: hidden;
-        }
-
-        .message-list::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .message-list::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .message-list::-webkit-scrollbar-thumb {
-            background: rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
+            background: white;
         }
 
         .message-item {
@@ -337,7 +309,7 @@ function formatDate($dateStr) {
             border-bottom: 1px solid var(--border);
             cursor: pointer;
             transition: all 0.15s;
-            background: white;
+            position: relative;
         }
 
         .message-item:hover {
@@ -350,76 +322,77 @@ function formatDate($dateStr) {
         }
 
         .message-item.unread {
-            background: #fefce8;
+            background: #fafbfc;
+            font-weight: 600;
         }
 
-        .message-item.unread .message-subject {
-            font-weight: 700;
+        .message-item.unread::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 6px;
+            background: var(--apple-blue);
+            border-radius: 50%;
         }
 
-        .message-item-header {
+        .message-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .message-sender {
             font-size: 14px;
-            font-weight: 600;
             color: var(--text-primary);
-            flex: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            font-weight: 600;
+        }
+
+        .message-item.unread .message-sender {
+            font-weight: 700;
         }
 
         .message-date {
             font-size: 12px;
-            color: var(--apple-gray);
-            margin-left: 12px;
+            color: var(--text-secondary);
             white-space: nowrap;
         }
 
         .message-subject {
-            font-size: 14px;
+            font-size: 13px;
             color: var(--text-primary);
-            margin-bottom: 6px;
+            margin-bottom: 4px;
+            white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            white-space: nowrap;
         }
 
         .message-preview {
-            font-size: 13px;
-            color: var(--apple-gray);
+            font-size: 12px;
+            color: var(--text-secondary);
+            white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            white-space: nowrap;
         }
 
-        .message-badges {
-            display: flex;
-            gap: 6px;
-            margin-top: 8px;
-        }
-
-        .msg-badge {
+        .attachment-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
             padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
+            background: #e8f4ff;
+            color: var(--apple-blue);
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 4px;
         }
 
-        .msg-badge.new {
-            background: #dbeafe;
-            color: #0284c7;
-        }
-
-        .msg-badge.attachment {
-            background: #f0fdf4;
-            color: #15803d;
+        .attachment-badge .material-icons {
+            font-size: 14px;
         }
 
         /* ========== MESSAGE VIEWER ========== */
@@ -432,11 +405,11 @@ function formatDate($dateStr) {
         }
 
         .viewer-placeholder {
-            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            height: 100%;
             color: var(--apple-gray);
         }
 
@@ -452,11 +425,15 @@ function formatDate($dateStr) {
         }
 
         .viewer-header {
-            padding: 20px 30px;
+            padding: 20px 24px;
             border-bottom: 1px solid var(--border);
+            background: white;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         .viewer-actions {
@@ -467,9 +444,9 @@ function formatDate($dateStr) {
         .icon-btn {
             width: 40px;
             height: 40px;
-            border-radius: 8px;
             border: 1px solid var(--border);
             background: white;
+            border-radius: 8px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -479,22 +456,22 @@ function formatDate($dateStr) {
 
         .icon-btn:hover {
             background: var(--apple-bg);
+            border-color: var(--apple-gray);
         }
 
-        .icon-btn.delete {
+        .icon-btn.delete:hover {
+            background: #fee;
+            border-color: var(--error);
             color: var(--error);
         }
 
         .viewer-content {
+            padding: 24px;
             flex: 1;
-            padding: 30px;
-            overflow-y: auto;
         }
 
         .message-header-section {
-            margin-bottom: 30px;
-            padding-bottom: 24px;
-            border-bottom: 1px solid var(--border);
+            margin-bottom: 32px;
         }
 
         .message-subject-display {
@@ -502,7 +479,7 @@ function formatDate($dateStr) {
             font-weight: 700;
             color: var(--text-primary);
             margin-bottom: 20px;
-            letter-spacing: -0.5px;
+            line-height: 1.3;
         }
 
         .message-meta {
@@ -515,18 +492,18 @@ function formatDate($dateStr) {
             display: flex;
             align-items: flex-start;
             gap: 12px;
-            font-size: 14px;
         }
 
         .meta-label {
-            font-weight: 600;
-            color: var(--apple-gray);
+            font-size: 13px;
+            color: var(--text-secondary);
             min-width: 60px;
+            font-weight: 600;
         }
 
         .meta-value {
+            font-size: 14px;
             color: var(--text-primary);
-            flex: 1;
         }
 
         .sender-info {
@@ -553,64 +530,184 @@ function formatDate($dateStr) {
         }
 
         .sender-name {
+            font-size: 14px;
             font-weight: 600;
             color: var(--text-primary);
         }
 
         .sender-email {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* ========== ATTACHMENTS SECTION ========== */
+        .attachments-section {
+            margin: 24px 0;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .attachments-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .attachments-header .material-icons {
+            font-size: 18px;
+            color: var(--apple-blue);
+        }
+
+        .attachments-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .attachment-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+
+        .attachment-item:hover {
+            border-color: var(--apple-blue);
+            box-shadow: 0 2px 8px rgba(0, 122, 255, 0.1);
+        }
+
+        .attachment-icon {
+            font-size: 28px;
+            line-height: 1;
+        }
+
+        .attachment-info {
+            flex: 1;
+        }
+
+        .attachment-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            word-break: break-word;
+        }
+
+        .attachment-size {
             font-size: 12px;
-            color: var(--apple-gray);
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .download-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--apple-blue);
+            color: white;
+            text-decoration: none;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .download-btn:hover {
+            background: #0051d5;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+        }
+
+        .download-btn .material-icons {
+            font-size: 20px;
         }
 
         .message-body-section {
             font-size: 15px;
-            line-height: 1.8;
+            line-height: 1.7;
             color: var(--text-primary);
             white-space: pre-wrap;
             word-wrap: break-word;
         }
 
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--apple-gray);
-        }
-
-        .empty-state .material-icons {
-            font-size: 60px;
-            margin-bottom: 16px;
-            opacity: 0.3;
-        }
-
-        /* ========== TOAST ========== */
+        /* ========== TOAST NOTIFICATION ========== */
         .toast {
             position: fixed;
-            bottom: -100px;
-            left: 50%;
-            transform: translateX(-50%);
+            bottom: 24px;
+            right: 24px;
             padding: 16px 24px;
-            background: #1c1c1e;
-            color: white;
+            background: white;
+            border: 1px solid var(--border);
             border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
             font-size: 14px;
-            font-weight: 600;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            transition: bottom 0.3s;
-            z-index: 10000;
+            font-weight: 500;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s;
+            z-index: 1000;
+            max-width: 400px;
         }
 
         .toast.show {
-            bottom: 30px;
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .toast.success {
-            background: var(--success);
+            border-left: 4px solid var(--success);
         }
 
         .toast.error {
-            background: var(--error);
+            border-left: 4px solid var(--error);
         }
 
+        /* ========== SYNC STATUS INDICATOR ========== */
+        .sync-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            font-size: 13px;
+            font-weight: 600;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            z-index: 999;
+        }
+
+        .sync-status.active {
+            display: flex;
+        }
+
+        .sync-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border);
+            border-top-color: var(--apple-blue);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ========== MOBILE RESPONSIVE ========== */
         @media (max-width: 768px) {
             .message-list-panel {
                 width: 100%;
@@ -618,10 +715,6 @@ function formatDate($dateStr) {
 
             .message-viewer {
                 display: none;
-            }
-
-            .message-viewer.show {
-                display: flex;
                 position: fixed;
                 top: 0;
                 left: 0;
@@ -629,94 +722,80 @@ function formatDate($dateStr) {
                 bottom: 0;
                 z-index: 100;
             }
+
+            .message-viewer.show {
+                display: flex;
+            }
         }
     </style>
 </head>
 <body>
     <!-- Sync Status Banner -->
     <?php if ($syncStatus): ?>
-        <div class="sync-banner <?= $syncClass ?>">
-            <?php if ($syncClass === 'success'): ?>
-                ✓ <?= htmlspecialchars($syncStatus) ?>
-            <?php elseif ($syncClass === 'error'): ?>
-                ✗ <?= htmlspecialchars($syncStatus) ?>
-            <?php else: ?>
-                ⚠ <?= htmlspecialchars($syncStatus) ?>
-            <?php endif; ?>
-        </div>
+    <div class="sync-banner <?= $syncClass ?>">
+        <span class="material-icons" style="font-size: 16px;">
+            <?= $syncClass === 'success' ? 'check_circle' : ($syncClass === 'error' ? 'error' : 'info') ?>
+        </span>
+        <span><?= htmlspecialchars($syncStatus) ?></span>
+    </div>
     <?php endif; ?>
 
     <div class="app-container">
-        <?php include 'sidebar.php'; ?>
-
         <div class="content-wrapper">
             <!-- Message List Panel -->
             <div class="message-list-panel">
                 <div class="list-header">
-                    <h2 class="list-title">
-                        <span>Inbox</span>
+                    <div class="list-title">
+                        Inbox
                         <div class="inbox-badges">
-                            <?php if ($unreadCount > 0): ?>
-                                <span class="badge unread"><?= $unreadCount ?></span>
-                            <?php endif; ?>
                             <?php if ($totalNewCount > 0): ?>
-                                <span class="badge new"><?= $totalNewCount ?> New</span>
+                            <span class="badge new"><?= $totalNewCount ?> New</span>
+                            <?php endif; ?>
+                            <?php if ($unreadCount > 0): ?>
+                            <span class="badge unread"><?= $unreadCount ?> Unread</span>
                             <?php endif; ?>
                         </div>
-                    </h2>
-                    <div class="list-actions">
-                        <button class="btn-action btn-refresh" id="refreshBtn" onclick="refreshInbox()">
-                            <span class="material-icons" style="font-size: 18px;">refresh</span>
-                            Refresh
-                        </button>
-                        <button class="btn-action btn-compose" onclick="window.location.href='compose.php'">
-                            <span class="material-icons" style="font-size: 18px;">edit</span>
-                            Compose
-                        </button>
                     </div>
-                </div>
+                    
+                    <div class="search-box">
+                        <input type="text" placeholder="Search messages..." id="searchInput">
+                        <span class="material-icons">search</span>
+                    </div>
 
-                <div id="syncStatus" class="sync-status">
-                    <div class="spinner"></div>
-                    <span id="syncText">Syncing emails...</span>
+                    <button class="refresh-btn" id="refreshBtn" onclick="refreshInbox()">
+                        <span class="material-icons" style="font-size: 18px;">refresh</span>
+                        Refresh
+                    </button>
                 </div>
 
                 <div class="message-list">
                     <?php if (empty($messages)): ?>
-                        <div class="empty-state">
-                            <span class="material-icons">inbox</span>
-                            <p>No messages</p>
+                        <div class="viewer-placeholder">
+                            <span class="material-icons">mail_outline</span>
+                            <p class="viewer-placeholder-text">No messages yet</p>
                         </div>
                     <?php else: ?>
                         <?php foreach ($messages as $msg): ?>
-                            <div class="message-item <?= $msg['is_read'] == 0 ? 'unread' : '' ?>" 
-                                 data-message-id="<?= $msg['id'] ?>" 
-                                 onclick="loadMessage(<?= $msg['id'] ?>)">
-                                <div class="message-item-header">
-                                    <div class="message-sender">
-                                        <?= htmlspecialchars($msg['sender_name'] ?: $msg['sender_email']) ?>
-                                    </div>
-                                    <div class="message-date">
-                                        <?= formatDate($msg['received_date']) ?>
-                                    </div>
-                                </div>
-                                <div class="message-subject">
-                                    <?= htmlspecialchars($msg['subject']) ?>
-                                </div>
-                                <div class="message-preview">
-                                    <?= htmlspecialchars(mb_substr($msg['body'], 0, 100)) ?>...
-                                </div>
-                                <?php if ($msg['is_new'] == 1 || $msg['has_attachments']): ?>
-                                <div class="message-badges">
-                                    <?php if ($msg['is_new'] == 1): ?>
-                                        <span class="msg-badge new">New</span>
-                                    <?php endif; ?>
-                                    <?php if ($msg['has_attachments']): ?>
-                                        <span class="msg-badge attachment">📎</span>
-                                    <?php endif; ?>
-                                </div>
-                                <?php endif; ?>
+                        <div class="message-item <?= $msg['is_read'] == 0 ? 'unread' : '' ?>" 
+                             data-message-id="<?= $msg['id'] ?>"
+                             onclick="loadMessage(<?= $msg['id'] ?>)">
+                            <div class="message-header">
+                                <div class="message-sender"><?= htmlspecialchars($msg['sender_name'] ?: $msg['sender_email']) ?></div>
+                                <div class="message-date"><?= formatDate($msg['received_date']) ?></div>
                             </div>
+                            <div class="message-subject"><?= htmlspecialchars($msg['subject']) ?></div>
+                            <div class="message-preview"><?= htmlspecialchars(substr($msg['body'], 0, 100)) ?></div>
+                            <?php if ($msg['has_attachments']): ?>
+                            <div class="attachment-badge">
+                                <span class="material-icons">attach_file</span>
+                                <?php 
+                                    $attachmentData = json_decode($msg['attachment_data'], true);
+                                    $attachmentCount = is_array($attachmentData) ? count($attachmentData) : 0;
+                                    echo $attachmentCount . ' attachment' . ($attachmentCount > 1 ? 's' : '');
+                                ?>
+                            </div>
+                            <?php endif; ?>
+                        </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
@@ -730,6 +809,12 @@ function formatDate($dateStr) {
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Sync Status Indicator -->
+    <div class="sync-status" id="syncStatus">
+        <div class="sync-spinner"></div>
+        <span id="syncText">Syncing emails...</span>
     </div>
 
     <!-- Toast Notification -->
@@ -820,6 +905,43 @@ function formatDate($dateStr) {
         function displayMessage(message) {
             const viewer = document.getElementById('messageViewer');
             
+            // Parse attachments if they exist
+            let attachmentsHtml = '';
+            if (message.has_attachments && message.attachment_data) {
+                try {
+                    const attachments = JSON.parse(message.attachment_data);
+                    if (Array.isArray(attachments) && attachments.length > 0) {
+                        attachmentsHtml = `
+                            <div class="attachments-section">
+                                <div class="attachments-header">
+                                    <span class="material-icons">attach_file</span>
+                                    <span>${attachments.length} Attachment${attachments.length > 1 ? 's' : ''}</span>
+                                </div>
+                                <div class="attachments-list">
+                                    ${attachments.map(att => `
+                                        <div class="attachment-item">
+                                            <span class="attachment-icon">${att.icon || '📎'}</span>
+                                            <div class="attachment-info">
+                                                <div class="attachment-name">${escapeHtml(att.filename)}</div>
+                                                <div class="attachment-size">${formatFileSize(att.size)}</div>
+                                            </div>
+                                            <a href="download_attachment.php?message_id=${message.id}&filename=${encodeURIComponent(att.filename)}" 
+                                               class="download-btn" 
+                                               download="${att.filename}"
+                                               title="Download ${att.filename}">
+                                                <span class="material-icons">download</span>
+                                            </a>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+                } catch (e) {
+                    console.error('Error parsing attachments:', e);
+                }
+            }
+            
             viewer.innerHTML = `
                 <div class="viewer-header">
                     <div></div>
@@ -856,6 +978,7 @@ function formatDate($dateStr) {
                             </div>
                         </div>
                     </div>
+                    ${attachmentsHtml}
                     <div class="message-body-section">
                         ${escapeHtml(message.body).replace(/\n/g, '<br>')}
                     </div>
@@ -910,11 +1033,12 @@ function formatDate($dateStr) {
                         </div>
                     `;
                 } else {
-                    showToast('❌ Error deleting message', 'error');
+                    showToast('❌ ' + (result.error || 'Error deleting message'), 'error');
                 }
             })
             .catch(error => {
                 showToast('❌ Network error', 'error');
+                console.error('Delete error:', error);
             });
         }
 
@@ -948,6 +1072,13 @@ function formatDate($dateStr) {
             });
         }
 
+        function formatFileSize(bytes) {
+            if (!bytes || bytes === 0) return '0 B';
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
         // Auto-hide sync banner after 5 seconds
         setTimeout(() => {
             const banner = document.querySelector('.sync-banner');
@@ -957,6 +1088,24 @@ function formatDate($dateStr) {
                 setTimeout(() => banner.remove(), 500);
             }
         }, 5000);
+
+        // Search functionality
+        document.getElementById('searchInput')?.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const messageItems = document.querySelectorAll('.message-item');
+            
+            messageItems.forEach(item => {
+                const sender = item.querySelector('.message-sender').textContent.toLowerCase();
+                const subject = item.querySelector('.message-subject').textContent.toLowerCase();
+                const preview = item.querySelector('.message-preview').textContent.toLowerCase();
+                
+                if (sender.includes(searchTerm) || subject.includes(searchTerm) || preview.includes(searchTerm)) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
     </script>
 </body>
 </html>
