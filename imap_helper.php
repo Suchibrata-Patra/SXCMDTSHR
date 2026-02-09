@@ -208,28 +208,28 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = fa
 //     }
 // }
 
-/**
- * Get last sync date for user
- */
-function getLastSyncDate($userEmail) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) return null;
+// /**
+//  * Get last sync date for user
+//  */
+// function getLastSyncDate($userEmail) {
+//     try {
+//         $pdo = getDatabaseConnection();
+//         if (!$pdo) return null;
         
-        $stmt = $pdo->prepare("
-            SELECT MAX(received_date) as last_sync 
-            FROM inbox_messages 
-            WHERE user_email = :email
-        ");
-        $stmt->execute([':email' => $userEmail]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+//         $stmt = $pdo->prepare("
+//             SELECT MAX(received_date) as last_sync 
+//             FROM inbox_messages 
+//             WHERE user_email = :email
+//         ");
+//         $stmt->execute([':email' => $userEmail]);
+//         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        return $result['last_sync'] ?? null;
-    } catch (Exception $e) {
-        error_log("Error getting last sync date: " . $e->getMessage());
-        return null;
-    }
-}
+//         return $result['last_sync'] ?? null;
+//     } catch (Exception $e) {
+//         error_log("Error getting last sync date: " . $e->getMessage());
+//         return null;
+//     }
+// }
 
 /**
  * Update last sync date
