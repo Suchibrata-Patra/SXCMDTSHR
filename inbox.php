@@ -18,7 +18,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['authenticated']) || $_SE
 require_once 'db_config.php';
 require_once 'inbox_functions.php';
 require_once 'settings_helper.php';
-require_once 'imap_helper.php';
+// require_once 'imap_helper.php';
 
 $userEmail = $_SESSION['smtp_user'];
 
