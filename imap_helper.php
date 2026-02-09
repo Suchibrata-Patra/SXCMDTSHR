@@ -524,15 +524,7 @@ function quickSyncCheckFromSession($userEmail) {
     }
 }
 
-/**
- * Get IMAP config from session
- */
-function getImapConfigFromSession() {
-    if (isset($_SESSION['imap_config'])) {
-        return $_SESSION['imap_config'];
-    }
-    return false;
-}
+
 
 /**
  * Strip HTML from message body and clean text
