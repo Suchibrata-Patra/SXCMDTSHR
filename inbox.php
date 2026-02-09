@@ -460,7 +460,9 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .message-item.unread {
-            background: linear-gradient(90deg, #F5F9FF 0%, #FFFFFF 100%);
+            /* background: linear-gradient(90deg, #F5F9FF 0%, #FFFFFF 100%); */
+            background:#F5F9FF;
+            border-left:1px solid blue;
         }
 
         .message-item.unread:hover {
