@@ -575,8 +575,9 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .badge-new {
-            background: rgba(52, 199, 89, 0.15);
-            color: var(--success-green);
+            display: none;
+            /* background: rgba(52, 199, 89, 0.15); */
+            /* color: var(--success-green); */
         }
 
         .badge-attachment {
