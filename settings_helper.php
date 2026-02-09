@@ -293,4 +293,24 @@ function importSettings($email, $json) {
     
 //     return true;
 // }
+
+/**
+ * Checks if settings are locked for a specific user.
+ * * @param string $email User's email address
+ * @return bool True if locked, false otherwise
+ */
+function areSettingsLocked($email) {
+    // Check if the 'settings_locked' key is set to true in the database
+    return (bool)getUserSetting($email, 'settings_locked', false);
+}
+
+/**
+ * Checks if the current user has super admin privileges.
+ * * @return bool
+ */
+function isSuperAdmin() {
+    // Implement your super admin logic here. 
+    // Example: checking a session flag or a specific admin email.
+    return isset($_SESSION['is_super_admin']) && $_SESSION['is_super_admin'] === true;
+}
 ?>
