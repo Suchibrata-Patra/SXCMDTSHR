@@ -571,7 +571,7 @@ $s = array_merge($defaults, $userSettings);
                         <span class="setting-title">Display Name</span>
                         <span class="setting-desc">How your name appears in the 'From' field</span>
                     </div>
-                    <input type="text" name="display_name" value="<?= htmlspecialchars($s['display_name']) ?>" placeholder="Your Name" disabled>
+                    <input type="text" name="display_name" value="<?= htmlspecialchars($s['display_name']) ?>" placeholder="Your Name">
                 </div>
                 <div class="setting-row">
                     <div class="setting-info">
@@ -695,12 +695,13 @@ $s = array_merge($defaults, $userSettings);
             </div>
 
             <!-- IMAP MAIL SERVER SECTION -->
+            <!-- The Most crucial Section To retrive and save the incomming Mails to the mailbox... Kindly Keep your Freaking Vibe Coder's Hand Away from this Section ! -->
             <h2 id="imap">📧 Mail Server Configuration (IMAP)</h2>
             <div class="section-card">
                 <?php 
                 $isLocked = isset($s['settings_locked']) && ($s['settings_locked'] === true || $s['settings_locked'] === 'true' || $s['settings_locked'] === '1');
                 ?>
-                
+                The Most crucial Section To retrive and save the incomming Mails to the mailbox... Kindly Keep your Freaking Vibe Coder's Hand Away from this Section ! 
                 <?php if ($isLocked): ?>
                 <div style="background: #fff7ed; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
                     <div style="font-weight: 600; color: #92400e; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
