@@ -108,16 +108,17 @@ $lastSync = getLastSyncDate($userEmail);
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inbox — SXC MDTS</title>
-    
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    
+
     <style>
         :root {
             --apple-blue: #007AFF;
@@ -248,8 +249,13 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         /* ========== STATS BAR ========== */
@@ -461,8 +467,8 @@ $lastSync = getLastSyncDate($userEmail);
 
         .message-item.unread {
             /* background: linear-gradient(90deg, #F5F9FF 0%, #FFFFFF 100%); */
-            background:#F5F9FF;
-            border-left:1px solid blue;
+            background: #f6f6f6;
+            /* border-left:1px solid blue; */
         }
 
         .message-item.unread:hover {
@@ -631,18 +637,20 @@ $lastSync = getLastSyncDate($userEmail);
             overflow-y: auto;
             padding: 20px;
         }
-        .message-meta {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
 
-.unread-dot {
-    width: 10px;
-    height: 10px;
-    background-color: #1a73e8; /* nice Google-ish blue */
-    border-radius: 50%;
-}
+        .message-meta {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .unread-dot {
+            width: 10px;
+            height: 10px;
+            background-color: #1a73e8;
+            /* nice Google-ish blue */
+            border-radius: 50%;
+        }
 
         .message-detail {
             background: white;
@@ -774,7 +782,9 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .loading-text {
@@ -807,6 +817,7 @@ $lastSync = getLastSyncDate($userEmail);
                 transform: translateX(100%);
                 opacity: 0;
             }
+
             to {
                 transform: translateX(0);
                 opacity: 1;
@@ -826,6 +837,7 @@ $lastSync = getLastSyncDate($userEmail);
         }
     </style>
 </head>
+
 <body>
     <!-- ========== SIDEBAR (EXTERNAL) ========== -->
     <?php require 'sidebar.php'; ?>
@@ -859,7 +871,9 @@ $lastSync = getLastSyncDate($userEmail);
                     <span class="material-icons">mail</span>
                 </div>
                 <div class="stat-content">
-                    <div class="stat-number" id="totalCount"><?= $totalCount ?></div>
+                    <div class="stat-number" id="totalCount">
+                        <?= $totalCount ?>
+                    </div>
                     <div class="stat-label">Total</div>
                 </div>
             </div>
@@ -869,7 +883,9 @@ $lastSync = getLastSyncDate($userEmail);
                     <span class="material-icons">mark_email_unread</span>
                 </div>
                 <div class="stat-content">
-                    <div class="stat-number" id="unreadCount"><?= $unreadCount ?></div>
+                    <div class="stat-number" id="unreadCount">
+                        <?= $unreadCount ?>
+                    </div>
                     <div class="stat-label">Unread</div>
                 </div>
             </div>
@@ -879,7 +895,9 @@ $lastSync = getLastSyncDate($userEmail);
                     <span class="material-icons">fiber_new</span>
                 </div>
                 <div class="stat-content">
-                    <div class="stat-number" id="newCount"><?= $newCount ?></div>
+                    <div class="stat-number" id="newCount">
+                        <?= $newCount ?>
+                    </div>
                     <div class="stat-label">New Today</div>
                 </div>
             </div>
@@ -888,9 +906,10 @@ $lastSync = getLastSyncDate($userEmail);
                 <span class="material-icons">schedule</span>
                 <span id="lastSyncText">
                     <?php if ($lastSync): ?>
-                        Last synced: <?= date('g:i A', strtotime($lastSync)) ?>
+                    Last synced:
+                    <?= date('g:i A', strtotime($lastSync)) ?>
                     <?php else: ?>
-                        Never synced
+                    Never synced
                     <?php endif; ?>
                 </span>
             </div>
@@ -1046,7 +1065,7 @@ $lastSync = getLastSyncDate($userEmail);
                 if (selectedMessageElement) {
                     selectedMessageElement.classList.remove('selected');
                 }
-                
+
                 // Add selected class to clicked element
                 selectedMessageElement = event.currentTarget;
                 selectedMessageElement.classList.add('selected');
@@ -1066,7 +1085,7 @@ $lastSync = getLastSyncDate($userEmail);
                     if (msg.has_attachments && msg.attachment_data) {
                         try {
                             attachments = JSON.parse(msg.attachment_data);
-                        } catch (e) {}
+                        } catch (e) { }
                     }
 
                     // Build body HTML
@@ -1136,7 +1155,7 @@ $lastSync = getLastSyncDate($userEmail);
         async function syncMessages() {
             const btn = document.getElementById('syncBtn');
             btn.classList.add('rotating');
-            
+
             try {
                 const response = await fetch('inbox.php?action=sync&limit=50&force=false');
                 const data = await response.json();
@@ -1160,7 +1179,7 @@ $lastSync = getLastSyncDate($userEmail);
         async function forceRefresh() {
             const btn = document.getElementById('refreshBtn');
             btn.classList.add('rotating');
-            
+
             try {
                 const response = await fetch('inbox.php?action=sync&limit=50&force=true');
                 const data = await response.json();
@@ -1223,7 +1242,7 @@ $lastSync = getLastSyncDate($userEmail);
 
         async function toggleStarFromView() {
             if (!currentMessageId) return;
-            await toggleStar(currentMessageId, { stopPropagation: () => {} });
+            await toggleStar(currentMessageId, { stopPropagation: () => { } });
         }
 
         async function deleteMessageFromView() {
@@ -1270,7 +1289,7 @@ $lastSync = getLastSyncDate($userEmail);
                 if (data.success) {
                     document.getElementById('unreadCount').textContent = data.unread;
                     document.getElementById('newCount').textContent = data.new;
-                    
+
                     const sidebarBadge = document.getElementById('sidebarUnreadBadge');
                     if (sidebarBadge) {
                         sidebarBadge.textContent = data.unread;
@@ -1338,8 +1357,8 @@ $lastSync = getLastSyncDate($userEmail);
             toast.className = `toast ${type}`;
 
             const icon = type === 'success' ? 'check_circle' :
-                        type === 'error' ? 'error' :
-                        'info';
+                type === 'error' ? 'error' :
+                    'info';
 
             toast.innerHTML = `
                 <span class="material-icons">${icon}</span>
@@ -1367,4 +1386,5 @@ $lastSync = getLastSyncDate($userEmail);
         });
     </script>
 </body>
+
 </html>
