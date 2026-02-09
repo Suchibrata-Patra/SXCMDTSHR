@@ -35,7 +35,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         
         // Sender
-        $displayName = !empty($settings['display_name']) ? $settings['display_name'] : "St. Xavier's College";
+        $displayName = !empty($settings['display_name']) ? $settings['display_name'] : "`";
         $mail->setFrom($_SESSION['smtp_user'], $displayName);
         
         // Capture all form data
