@@ -814,7 +814,7 @@ $lastSync = getLastSyncDate($userEmail);
 </head>
 <body>
     <!-- ========== SIDEBAR (EXTERNAL) ========== -->
-    
+    <?php require 'sidebar.php'; ?>
 
     <!-- ========== MAIN CONTENT ========== -->
     <div class="main-content">
