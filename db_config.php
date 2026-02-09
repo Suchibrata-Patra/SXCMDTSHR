@@ -622,7 +622,56 @@ function getUnlabeledEmailCount($userEmail) {
         return 0;
     }
 }
+/**
+ * Get the total count of sent emails for a user based on filters
+ */
+function getSentEmailCount($userEmail, $filters = []) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return 0;
 
+        $userId = getUserId($pdo, $userEmail);
+        if (!$userId) return 0;
+
+        $sql = "SELECT COUNT(*) as count 
+                FROM emails e
+                JOIN user_email_access uea ON e.id = uea.email_id
+                WHERE uea.user_id = :user_id 
+                AND uea.access_type = 'sender' 
+                AND uea.is_deleted = 0";
+
+        $params = [':user_id' => $userId];
+
+        if (!empty($filters['search'])) {
+            $sql .= " AND (recipient_email LIKE :search OR subject LIKE :search OR body_text LIKE :search)";
+            $params[':search'] = '%' . $filters['search'] . '%';
+        }
+
+        if (!empty($filters['recipient'])) {
+            $sql .= " AND recipient_email LIKE :recipient";
+            $params[':recipient'] = '%' . $filters['recipient'] . '%';
+        }
+
+        if (!empty($filters['label_id'])) {
+            if ($filters['label_id'] === 'unlabeled') {
+                $sql .= " AND uea.label_id IS NULL";
+            } else {
+                $sql .= " AND uea.label_id = :label_id";
+                $params[':label_id'] = $filters['label_id'];
+            }
+        }
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $result = $stmt->fetch();
+        
+        return $result['count'] ?? 0;
+
+    } catch (PDOException $e) {
+        error_log("Error counting sent emails: " . $e->getMessage());
+        return 0;
+    }
+}
 // Enable error display for debugging (remove in production)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
