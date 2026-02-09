@@ -274,29 +274,94 @@ function importSettings($email, $json) {
         return false;
     }
 }
-?><?php
-/**
- * settings_helper.php - User Settings Helper Functions
- */
 
 /**
  * Load IMAP configuration to session
+ * FIXED: This function was commented out - now properly implemented
  */
-// function loadImapConfigToSession($email, $password) {
-//     // Load IMAP settings from database or use defaults
-//     $_SESSION['imap_host'] = env('IMAP_HOST', 'imap.gmail.com');
-//     $_SESSION['imap_port'] = env('IMAP_PORT', '993');
-//     $_SESSION['imap_encryption'] = 'ssl';
-//     $_SESSION['imap_configured'] = true;
+function loadImapConfigToSession($email, $password) {
+    // Detect mail provider from email domain
+    $domain = substr(strrchr($email, "@"), 1);
     
-//     error_log("IMAP config loaded for: $email");
+    // Default IMAP settings based on common providers
+    $imapSettings = [
+        'gmail.com' => [
+            'server' => 'imap.gmail.com',
+            'port' => 993,
+            'encryption' => 'ssl'
+        ],
+        'outlook.com' => [
+            'server' => 'outlook.office365.com',
+            'port' => 993,
+            'encryption' => 'ssl'
+        ],
+        'hotmail.com' => [
+            'server' => 'outlook.office365.com',
+            'port' => 993,
+            'encryption' => 'ssl'
+        ],
+        'yahoo.com' => [
+            'server' => 'imap.mail.yahoo.com',
+            'port' => 993,
+            'encryption' => 'ssl'
+        ],
+        'aol.com' => [
+            'server' => 'imap.aol.com',
+            'port' => 993,
+            'encryption' => 'ssl'
+        ],
+        'icloud.com' => [
+            'server' => 'imap.mail.me.com',
+            'port' => 993,
+            'encryption' => 'ssl'
+        ],
+        'zoho.com' => [
+            'server' => 'imap.zoho.com',
+            'port' => 993,
+            'encryption' => 'ssl'
+        ],
+        'mail.com' => [
+            'server' => 'imap.mail.com',
+            'port' => 993,
+            'encryption' => 'ssl'
+        ],
+        'sxccal.edu' => [
+            'server' => env('IMAP_HOST', 'imap.gmail.com'), // Assuming Gmail for Workspace
+            'port' => env('IMAP_PORT', 993),
+            'encryption' => 'ssl'
+        ],
+        'holidayseva.com' => [
+            'server' => env('IMAP_HOST', 'imap.hostinger.com'),
+            'port' => env('IMAP_PORT', 993),
+            'encryption' => 'ssl'
+        ]
+    ];
     
-//     return true;
-// }
+    // Get settings for this domain or use defaults
+    $config = $imapSettings[$domain] ?? [
+        'server' => env('IMAP_HOST', 'imap.gmail.com'),
+        'port' => env('IMAP_PORT', 993),
+        'encryption' => 'ssl'
+    ];
+    
+    // Store in session
+    $_SESSION['imap_config'] = [
+        'imap_server' => $config['server'],
+        'imap_port' => $config['port'],
+        'imap_username' => $email,
+        'imap_password' => $password,
+        'imap_encryption' => $config['encryption'],
+        'imap_configured' => true
+    ];
+    
+    error_log("IMAP config loaded for: $email (Server: {$config['server']}:{$config['port']})");
+    
+    return true;
+}
 
 /**
  * Checks if settings are locked for a specific user.
- * * @param string $email User's email address
+ * @param string $email User's email address
  * @return bool True if locked, false otherwise
  */
 function areSettingsLocked($email) {
@@ -306,11 +371,35 @@ function areSettingsLocked($email) {
 
 /**
  * Checks if the current user has super admin privileges.
- * * @return bool
+ * @return bool
  */
 function isSuperAdmin() {
     // Implement your super admin logic here. 
     // Example: checking a session flag or a specific admin email.
     return isset($_SESSION['is_super_admin']) && $_SESSION['is_super_admin'] === true;
+}
+
+/**
+ * Strip HTML tags from message body but preserve some formatting
+ */
+function stripHtmlFromBody($html) {
+    // Convert common HTML tags to plain text equivalents
+    $html = str_replace('<br>', "\n", $html);
+    $html = str_replace('<br/>', "\n", $html);
+    $html = str_replace('<br />', "\n", $html);
+    $html = str_replace('</p>', "\n\n", $html);
+    $html = str_replace('</div>', "\n", $html);
+    
+    // Remove all HTML tags
+    $text = strip_tags($html);
+    
+    // Decode HTML entities
+    $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    
+    // Remove excessive whitespace
+    $text = preg_replace('/\n{3,}/', "\n\n", $text);
+    $text = trim($text);
+    
+    return $text;
 }
 ?>
