@@ -587,11 +587,17 @@ $lastSyncDate = $hasImapSettings ? getLastSyncDate($userEmail) : null;
             gap: 8px;
             text-align: center;
             transition: all 0.2s;
+            text-decoration: none;
+            color: inherit;
+            position: relative;
+            cursor: pointer;
         }
 
         .attachment-card:hover {
             background: #f0f0f5;
-            border-color: #d1d1d6;
+            border-color: #007AFF;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.15);
         }
 
         .attachment-card-icon {
@@ -609,6 +615,30 @@ $lastSyncDate = $hasImapSettings ? getLastSyncDate($userEmail) : null;
         .attachment-card-size {
             font-size: 10px;
             color: #8e8e93;
+        }
+
+        .attachment-card-download {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #007AFF;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .attachment-card-download .material-icons {
+            font-size: 16px;
+        }
+
+        .attachment-card:hover .attachment-card-download {
+            opacity: 1;
         }
 
         .reader-actions {
@@ -1168,13 +1198,19 @@ $lastSyncDate = $hasImapSettings ? getLastSyncDate($userEmail) : null;
                     <div class="reader-attachments">
                         <div class="attachments-title">📎 Attachments (${msg.attachments.length})</div>
                         <div class="attachments-grid">
-                            ${msg.attachments.map(att => `
-                                <div class="attachment-card">
-                                    <div class="attachment-card-icon">${att.icon}</div>
-                                    <div class="attachment-card-name">${escapeHtml(att.filename)}</div>
-                                    <div class="attachment-card-size">${formatFileSize(att.size)}</div>
-                                </div>
-                            `).join('')}
+                            ${msg.attachments.map((att, index) => {
+                                const downloadUrl = `download_attachment.php?inbox_id=${msg.id}-${index}`;
+                                return `
+                                    <a href="${downloadUrl}" class="attachment-card" download>
+                                        <div class="attachment-card-icon">${att.icon}</div>
+                                        <div class="attachment-card-name">${escapeHtml(att.filename)}</div>
+                                        <div class="attachment-card-size">${formatFileSize(att.size)}</div>
+                                        <div class="attachment-card-download">
+                                            <span class="material-icons">download</span>
+                                        </div>
+                                    </a>
+                                `;
+                            }).join('')}
                         </div>
                     </div>
                 `;
