@@ -311,6 +311,7 @@ $messages = getInboxMessages($userEmail);
     </style>
 </head>
 <body>
+    <?php require 'sidebar.php' ?>
     <div class="container">
         <!-- Header -->
         <div class="inbox-header">
