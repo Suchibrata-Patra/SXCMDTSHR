@@ -1,8 +1,9 @@
 <?php
-// sent_history.php - Premium Email Archive WITH READ RECEIPTS (STANDALONE)
+// sent_history.php - Premium Email Archive WITH READ RECEIPTS
 session_start();
 require 'config.php';
 require 'db_config.php';
+require_once 'read_tracking_helper.php';
 
 if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     header("Location: login.php");
@@ -26,16 +27,8 @@ $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $perPage = 50;
 $offset = ($page - 1) * $perPage;
 
-// Check if tracking table exists
-$trackingEnabled = checkTrackingTableExists();
-
 // Get filtered emails
-if ($trackingEnabled) {
-    $sentEmails = getSentEmailsWithTracking($userEmail, $perPage, $offset, $filters);
-} else {
-    $sentEmails = getSentEmailsLegacy($userEmail, $perPage, $offset, $filters);
-}
-
+$sentEmails = getSentEmailsWithTracking($userEmail, $perPage, $offset, $filters);
 $totalEmails = getSentEmailCount($userEmail, $filters);
 $totalPages = ceil($totalEmails / $perPage);
 
@@ -47,27 +40,15 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
 $hasActiveFilters = !empty(array_filter($filters));
 
 /**
- * Check if tracking table exists
- */
-function checkTrackingTableExists() {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) return false;
-        
-        $stmt = $pdo->query("SHOW TABLES LIKE 'email_read_tracking'");
-        return $stmt->rowCount() > 0;
-    } catch (Exception $e) {
-        return false;
-    }
-}
-
-/**
- * Get sent emails WITH READ TRACKING (if tracking enabled)
+ * Get sent emails WITH READ TRACKING
  */
 function getSentEmailsWithTracking($userEmail, $limit = 100, $offset = 0, $filters = []) {
     try {
         $pdo = getDatabaseConnection();
         if (!$pdo) return [];
+
+        $userId = getUserId($pdo, $userEmail);
+        if (!$userId) return [];
 
         // Query with LEFT JOIN to read tracking
         $sql = "SELECT 
@@ -138,180 +119,113 @@ function getSentEmailsWithTracking($userEmail, $limit = 100, $offset = 0, $filte
 
     } catch (PDOException $e) {
         error_log("Error fetching sent emails with tracking: " . $e->getMessage());
-        // Fallback to legacy query
-        return getSentEmailsLegacy($userEmail, $limit, $offset, $filters);
-    }
-}
-
-/**
- * Get sent emails WITHOUT tracking (legacy/fallback)
- */
-function getSentEmailsLegacy($userEmail, $limit = 100, $offset = 0, $filters = []) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) return [];
-
-        $sql = "SELECT * FROM sent_emails 
-                WHERE sender_email = :email 
-                AND current_status = 1";
-        
-        $params = [':email' => $userEmail];
-
-        // Apply filters (same as above)
-        if (!empty($filters['search'])) {
-            $sql .= " AND (recipient_email LIKE :search OR subject LIKE :search OR message_body LIKE :search)";
-            $params[':search'] = '%' . $filters['search'] . '%';
-        }
-
-        if (!empty($filters['recipient'])) {
-            $sql .= " AND recipient_email LIKE :recipient";
-            $params[':recipient'] = '%' . $filters['recipient'] . '%';
-        }
-
-        if (!empty($filters['label_id'])) {
-            if ($filters['label_id'] === 'unlabeled') {
-                $sql .= " AND label_id IS NULL";
-            } else {
-                $sql .= " AND label_id = :label_id";
-                $params[':label_id'] = $filters['label_id'];
-            }
-        }
-
-        if (!empty($filters['date_from'])) {
-            $sql .= " AND DATE(sent_at) >= :date_from";
-            $params[':date_from'] = $filters['date_from'];
-        }
-        if (!empty($filters['date_to'])) {
-            $sql .= " AND DATE(sent_at) <= :date_to";
-            $params[':date_to'] = $filters['date_to'];
-        }
-
-        $sql .= " ORDER BY sent_at DESC LIMIT :limit OFFSET :offset";
-
-        $stmt = $pdo->prepare($sql);
-        
-        foreach ($params as $key => $value) {
-            $stmt->bindValue($key, $value);
-        }
-        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
-
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    } catch (PDOException $e) {
-        error_log("Error fetching legacy sent emails: " . $e->getMessage());
         return [];
     }
 }
 
-function getSentEmailCount($userEmail, $filters = []) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) return 0;
+// Include rest of original helper functions from sent_history.php
+// function getSentEmailCount($userEmail, $filters = []) {
+//     try {
+//         $pdo = getDatabaseConnection();
+//         if (!$pdo) return 0;
 
-        $sql = "SELECT COUNT(*) as count FROM sent_emails WHERE sender_email = :email AND current_status = 1";
-        $params = [':email' => $userEmail];
+//         $sql = "SELECT COUNT(*) as count FROM sent_emails WHERE sender_email = :email AND current_status = 1";
+//         $params = [':email' => $userEmail];
 
-        if (!empty($filters['search'])) {
-            $sql .= " AND (recipient_email LIKE :search OR subject LIKE :search OR message_body LIKE :search)";
-            $params[':search'] = '%' . $filters['search'] . '%';
-        }
+//         if (!empty($filters['search'])) {
+//             $sql .= " AND (recipient_email LIKE :search OR subject LIKE :search OR message_body LIKE :search)";
+//             $params[':search'] = '%' . $filters['search'] . '%';
+//         }
 
-        if (!empty($filters['recipient'])) {
-            $sql .= " AND recipient_email LIKE :recipient";
-            $params[':recipient'] = '%' . $filters['recipient'] . '%';
-        }
+//         if (!empty($filters['recipient'])) {
+//             $sql .= " AND recipient_email LIKE :recipient";
+//             $params[':recipient'] = '%' . $filters['recipient'] . '%';
+//         }
 
-        if (!empty($filters['label_id'])) {
-            if ($filters['label_id'] === 'unlabeled') {
-                $sql .= " AND label_id IS NULL";
-            } else {
-                $sql .= " AND label_id = :label_id";
-                $params[':label_id'] = $filters['label_id'];
-            }
-        }
+//         if (!empty($filters['label_id'])) {
+//             if ($filters['label_id'] === 'unlabeled') {
+//                 $sql .= " AND label_id IS NULL";
+//             } else {
+//                 $sql .= " AND label_id = :label_id";
+//                 $params[':label_id'] = $filters['label_id'];
+//             }
+//         }
 
-        if (!empty($filters['date_from'])) {
-            $sql .= " AND DATE(sent_at) >= :date_from";
-            $params[':date_from'] = $filters['date_from'];
-        }
-        if (!empty($filters['date_to'])) {
-            $sql .= " AND DATE(sent_at) <= :date_to";
-            $params[':date_to'] = $filters['date_to'];
-        }
+//         if (!empty($filters['date_from'])) {
+//             $sql .= " AND DATE(sent_at) >= :date_from";
+//             $params[':date_from'] = $filters['date_from'];
+//         }
+//         if (!empty($filters['date_to'])) {
+//             $sql .= " AND DATE(sent_at) <= :date_to";
+//             $params[':date_to'] = $filters['date_to'];
+//         }
 
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+//         $stmt = $pdo->prepare($sql);
+//         $stmt->execute($params);
+//         $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        return $result['count'] ?? 0;
+//         return $result['count'] ?? 0;
 
-    } catch (PDOException $e) {
-        error_log("Error counting sent emails: " . $e->getMessage());
-        return 0;
-    }
-}
+//     } catch (PDOException $e) {
+//         error_log("Error counting sent emails: " . $e->getMessage());
+//         return 0;
+//     }
+// }
 
-function getLabelCounts($userEmail) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) return [];
+// function getLabelCounts($userEmail) {
+//     try {
+//         $pdo = getDatabaseConnection();
+//         if (!$pdo) return [];
 
-        $userId = getUserId($pdo, $userEmail);
-        if (!$userId) return [];
+//         $userId = getUserId($pdo, $userEmail);
+//         if (!$userId) return [];
 
-        $stmt = $pdo->prepare("
-            SELECT l.*, COUNT(se.id) as email_count
-            FROM labels l
-            LEFT JOIN sent_emails se ON se.label_id = l.id AND se.sender_email = :email AND se.current_status = 1
-            WHERE l.user_id = :user_id
-            GROUP BY l.id
-            ORDER BY l.label_name
-        ");
+//         $stmt = $pdo->prepare("
+//             SELECT l.*, COUNT(se.id) as email_count
+//             FROM labels l
+//             LEFT JOIN sent_emails se ON se.label_id = l.id AND se.sender_email = :email AND se.current_status = 1
+//             WHERE l.user_id = :user_id
+//             GROUP BY l.id
+//             ORDER BY l.label_name
+//         ");
 
-        $stmt->execute([':user_id' => $userId, ':email' => $userEmail]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+//         $stmt->execute([':user_id' => $userId, ':email' => $userEmail]);
+//         return $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    } catch (PDOException $e) {
-        error_log("Error getting label counts: " . $e->getMessage());
-        return [];
-    }
-}
+//     } catch (PDOException $e) {
+//         error_log("Error getting label counts: " . $e->getMessage());
+//         return [];
+//     }
+// }
 
-function getUnlabeledEmailCount($userEmail) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) return 0;
+// function getUnlabeledEmailCount($userEmail) {
+//     try {
+//         $pdo = getDatabaseConnection();
+//         if (!$pdo) return 0;
 
-        $stmt = $pdo->prepare("
-            SELECT COUNT(*) as count
-            FROM sent_emails
-            WHERE sender_email = :email AND label_id IS NULL AND current_status = 1
-        ");
+//         $stmt = $pdo->prepare("
+//             SELECT COUNT(*) as count
+//             FROM sent_emails
+//             WHERE sender_email = :email AND label_id IS NULL AND current_status = 1
+//         ");
 
-        $stmt->execute([':email' => $userEmail]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+//         $stmt->execute([':email' => $userEmail]);
+//         $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        return $result['count'] ?? 0;
+//         return $result['count'] ?? 0;
 
-    } catch (PDOException $e) {
-        error_log("Error getting unlabeled count: " . $e->getMessage());
-        return 0;
-    }
-}
+//     } catch (PDOException $e) {
+//         error_log("Error getting unlabeled count: " . $e->getMessage());
+//         return 0;
+//     }
+// }
 
-function getUserId($pdo, $email) {
-    try {
-        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
-        $stmt->execute([$email]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $user['id'] ?? null;
-    } catch (PDOException $e) {
-        error_log("Error getting user ID: " . $e->getMessage());
-        return null;
-    }
-}
+// function getUserId($pdo, $email) {
+//     $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+//     $stmt->execute([$email]);
+//     $user = $stmt->fetch(PDO::FETCH_ASSOC);
+//     return $user['id'] ?? null;
+// }
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -438,7 +352,7 @@ function getUserId($pdo, $email) {
 
         .email-item {
             display: grid;
-            grid-template-columns: 40px 2fr 3fr 1fr <?= $trackingEnabled ? '80px' : '' ?> 150px;
+            grid-template-columns: 40px 2fr 3fr 1fr 80px 150px;
             gap: 16px;
             padding: 16px 20px;
             border-bottom: 1px solid var(--border);
@@ -512,35 +426,13 @@ function getUserId($pdo, $email) {
             opacity: 0.3;
             margin-bottom: 16px;
         }
-
-        .tracking-notice {
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-            padding: 12px 20px;
-            margin: 20px 32px;
-            border-radius: 8px;
-            font-size: 13px;
-            color: #856404;
-        }
     </style>
 </head>
 <body>
     <div class="app-container">
-        <?php 
-        // Include sidebar if it exists
-        if (file_exists('sidebar.php')) {
-            include 'sidebar.php'; 
-        }
-        ?>
+        <?php include 'sidebar.php'; ?>
 
         <div class="main-content">
-            <?php if (!$trackingEnabled): ?>
-            <div class="tracking-notice">
-                ⚠️ <strong>Read receipt tracking not enabled.</strong> 
-                Run the database migration to enable WhatsApp-style read receipts.
-            </div>
-            <?php endif; ?>
-
             <!-- Email List -->
             <div class="email-list-container">
                 <div class="email-list-wrapper">
@@ -572,11 +464,10 @@ function getUserId($pdo, $email) {
                                     <!-- Label display here -->
                                 </div>
 
-                                <!-- READ STATUS COLUMN (only if tracking enabled) -->
-                                <?php if ($trackingEnabled): ?>
+                                <!-- READ STATUS COLUMN -->
                                 <div class="read-status-col">
                                     <?php if (!empty($email['tracking_token'])): ?>
-                                        <?php if (!empty($email['is_read'])): ?>
+                                        <?php if ($email['is_read']): ?>
                                             <span class="material-icons read-tick-icon read" title="Read">done_all</span>
                                             <span class="read-time">
                                                 <?= date('M j, g:i A', strtotime($email['first_read_at'])) ?>
@@ -588,7 +479,6 @@ function getUserId($pdo, $email) {
                                         <span class="no-tracking">No tracking</span>
                                     <?php endif; ?>
                                 </div>
-                                <?php endif; ?>
 
                                 <div class="col-date">
                                     <?php if (!empty($email['attachment_names'])): ?>
@@ -605,7 +495,6 @@ function getUserId($pdo, $email) {
         </div>
     </div>
 
-    <?php if ($trackingEnabled): ?>
     <script>
         // REAL-TIME READ RECEIPT UPDATES
         let pollingInterval = null;
@@ -714,6 +603,5 @@ function getUserId($pdo, $email) {
             clearInterval(pollingInterval);
         });
     </script>
-    <?php endif; ?>
 </body>
 </html>
