@@ -730,6 +730,7 @@ function formatDate($dateStr) {
     </style>
 </head>
 <body>
+    <?php include('sidebar.php') ?>
     <!-- Sync Status Banner -->
     <?php if ($syncStatus): ?>
     <div class="sync-banner <?= $syncClass ?>">
