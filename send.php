@@ -4,7 +4,7 @@ require 'vendor/autoload.php';
 require 'config.php';
 require 'db_config.php';
 
-// Security check
+// Security check: Redirect to login if session credentials do not exist
 if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     header("Location: login.php");
     exit();
@@ -25,11 +25,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $messageContent = $_POST['message'] ?? '';
         $ccEmails = !empty($_POST['ccEmails']) ? array_map('trim', explode(',', $_POST['ccEmails'])) : [];
         $bccEmails = !empty($_POST['bccEmails']) ? array_map('trim', explode(',', $_POST['bccEmails'])) : [];
+        
         $signatureWish = trim($_POST['signatureWish'] ?? 'Best Regards,');
-        $signatureName = trim($_POST['signatureName'] ?? 'Dr. Durba Bhattacharya');
-        $signatureDesignation = trim($_POST['signatureDesignation'] ?? 'Head of Department, Data Science');
+        $signatureName = trim($_POST['signatureName'] ?? 'Dr. Suchibrata Patra');
+        $signatureDesignation = trim($_POST['signatureDesignation'] ?? 'Student M.Sc Data Science');
         $signatureExtra = trim($_POST['signatureExtra'] ?? 'St. Xavier\'s College (Autonomous), Kolkata');
-        $attachmentIds = !empty($_POST['attachment_ids']) ? explode(',', $_POST['attachment_ids']) : [];
         
         $settings = $_SESSION['user_settings'] ?? [];
         
@@ -38,12 +38,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             throw new Exception("Invalid or missing recipient email address");
         }
         if (empty($subject)) throw new Exception("Subject is required");
-        if (empty($articleTitle)) throw new Exception("Article title is required");
         if (empty($messageContent)) throw new Exception("Message content is required");
         
-        // ==================== STEP 1: PREPARE EMAIL (PRIORITY #1) ====================
-        
-        // Configure SMTP
+        // ==================== STEP 1: CONFIGURE SMTP ====================
         $mail->isSMTP();
         $mail->SMTPDebug = 0;
         $mail->Host = "smtp.hostinger.com";
@@ -53,7 +50,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $mail->Port = 465;
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         
-        // Set sender
+        // Set sender details
         $displayName = !empty($settings['display_name']) ? $settings['display_name'] : "St. Xavier's College";
         $mail->setFrom($_SESSION['smtp_user'], $displayName);
         
@@ -61,73 +58,50 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $mail->addAddress($recipient);
         
         // Add CC recipients
-        $validCCs = [];
         foreach ($ccEmails as $cc) {
             $cc = filter_var($cc, FILTER_SANITIZE_EMAIL);
             if ($cc && filter_var($cc, FILTER_VALIDATE_EMAIL)) {
                 $mail->addCC($cc);
-                $validCCs[] = $cc;
             }
         }
         
         // Add BCC recipients
-        $validBCCs = [];
         foreach ($bccEmails as $bcc) {
             $bcc = filter_var($bcc, FILTER_SANITIZE_EMAIL);
             if ($bcc && filter_var($bcc, FILTER_VALIDATE_EMAIL)) {
                 $mail->addBCC($bcc);
-                $validBCCs[] = $bcc;
             }
         }
         
-        // ==================== STEP 2: ATTACH FILES (PRIORITY #2) ====================
+        // ==================== STEP 2: ATTACH FILES FROM FORM ====================
+        $attachmentsInfo = [];
         
-        $attachments = [];
-        $uploadBaseDir = 'uploads/attachments/';
-        
-        if (!empty($attachmentIds) && isset($_SESSION['temp_attachments'])) {
-            error_log("=== ATTACHING FILES TO EMAIL ===");
+        // Check if the 'attachment' array exists in $_FILES
+        if (isset($_FILES['attachment']) && !empty($_FILES['attachment']['name'][0])) {
+            error_log("=== PROCESSING ATTACHMENTS ===");
             
-            foreach ($attachmentIds as $attachmentId) {
-                $attachmentId = trim($attachmentId);
-                
-                // Find this attachment in session
-                foreach ($_SESSION['temp_attachments'] as $attachment) {
-                    if (isset($attachment['id']) && $attachment['id'] == $attachmentId) {
-                        
-                        // Build the FULL file path
-                        $relativePath = $attachment['path'] ?? '';
-                        $fullFilePath = $uploadBaseDir . $relativePath;
-                        $fileName = $attachment['original_name'] ?? 'attachment';
-                        
-                        error_log("Trying to attach: $fullFilePath");
-                        
-                        // Verify file exists
-                        if (file_exists($fullFilePath)) {
-                            // ATTACH THE FILE TO EMAIL
-                            $mail->addAttachment($fullFilePath, $fileName);
-                            
-                            $attachments[] = [
-                                'name' => $fileName,
-                                'size' => formatFileSize($attachment['file_size'] ?? 0),
-                                'extension' => $attachment['extension'] ?? 'file'
-                            ];
-                            
-                            error_log("✓ Successfully attached: $fileName from $fullFilePath");
-                        } else {
-                            error_log("✗ FILE NOT FOUND: $fullFilePath");
-                        }
-                        break;
+            foreach ($_FILES['attachment']['tmp_name'] as $key => $tmpPath) {
+                // Ensure the upload was successful
+                if ($_FILES['attachment']['error'][$key] === UPLOAD_ERR_OK) {
+                    $originalName = $_FILES['attachment']['name'][$key];
+                    $fileSize = $_FILES['attachment']['size'][$key];
+                    
+                    // Add the file to PHPMailer
+                    if ($mail->addAttachment($tmpPath, $originalName)) {
+                        $attachmentsInfo[] = [
+                            'name' => $originalName,
+                            'size' => formatFileSize($fileSize)
+                        ];
+                        error_log("✓ Successfully attached: $originalName");
                     }
+                } else {
+                    error_log("✗ Upload error for file at index $key: " . $_FILES['attachment']['error'][$key]);
                 }
             }
-            
-            error_log("Total files attached: " . count($attachments));
+            error_log("Total files attached: " . count($attachmentsInfo));
         }
         
         // ==================== STEP 3: BUILD EMAIL CONTENT ====================
-        
-        // Load template
         $templatePath = __DIR__ . '/templates/template1.html';
         if (!file_exists($templatePath)) {
             throw new Exception("Email template not found at: " . $templatePath);
@@ -135,7 +109,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         $emailTemplate = file_get_contents($templatePath);
         
-        // Replace placeholders
+        // Replace placeholders in the HTML template
         $emailBody = str_replace([
             '{{articletitle}}',
             '{{MESSAGE}}',
@@ -152,89 +126,59 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             nl2br(htmlspecialchars($signatureExtra, ENT_QUOTES, 'UTF-8'))
         ], $emailTemplate);
         
-        // Set email content
+        // Set email content properties
         $mail->isHTML(true);
         $mail->Subject = $subject;
         $mail->Body = $emailBody;
         
-        // Plain text alternative
-        $plainTextMessage = strip_tags($messageContent);
-        $mail->AltBody = "Article: " . $articleTitle . "\n\n" . $plainTextMessage . "\n\n" . 
-                         $signatureWish . "\n" . $signatureName . "\n" . 
-                         $signatureDesignation . "\n" . $signatureExtra;
+        // Plain text fallback
+        $mail->AltBody = strip_tags($messageContent);
         
-        // ==================== STEP 4: SEND EMAIL (MOST IMPORTANT!) ====================
-        
-        error_log("=== SENDING EMAIL ===");
-        error_log("To: $recipient");
-        error_log("Subject: $subject");
-        error_log("Attachments: " . count($attachments));
-        
+        // ==================== STEP 4: SEND EMAIL ====================
+        error_log("=== SENDING EMAIL TO $recipient ===");
         if (!$mail->send()) {
             throw new Exception("Failed to send email: " . $mail->ErrorInfo);
         }
-        
         error_log("✓✓✓ EMAIL SENT SUCCESSFULLY ✓✓✓");
         
-        // ==================== STEP 5: SAVE TO DATABASE (OPTIONAL - DO LATER) ====================
-        
-        $dbSaved = false;
+        // ==================== STEP 5: REGISTER IN DATABASE ====================
         try {
             $pdo = getDatabaseConnection();
             if ($pdo) {
-                $stmt = $pdo->prepare("
-                    INSERT INTO sent_emails 
-                    (sender_email, recipient_email, subject, article_title, sent_at, current_status) 
-                    VALUES (?, ?, ?, ?, NOW(), 'sent')
-                ");
+                $emailUuid = generateUuidV4();
+                $emailData = [
+                    'email_uuid' => $emailUuid,
+                    'sender_email' => $_SESSION['smtp_user'],
+                    'recipient_email' => $recipient,
+                    'subject' => $subject,
+                    'body_html' => $emailBody,
+                    'article_title' => $articleTitle,
+                    'has_attachments' => count($attachmentsInfo) > 0 ? 1 : 0,
+                    'email_type' => 'sent'
+                ];
                 
-                $stmt->execute([
-                    $_SESSION['smtp_user'],
-                    $recipient,
-                    $subject,
-                    $articleTitle
-                ]);
+                // Save the main email record
+                $emailId = saveEmailToDatabase($pdo, $emailData);
                 
-                $dbSaved = true;
-                error_log("✓ Database record saved");
+                // Link the email to the user's sent history
+                $userId = getUserId($pdo, $_SESSION['smtp_user']);
+                if ($userId && $emailId) {
+                    createEmailAccess($pdo, $emailId, $userId, 'sender');
+                }
+                error_log("✓ Database record created successfully");
             }
-        } catch (Exception $e) {
-            // Email already sent successfully - database is just bonus
-            error_log("Database save failed (but email was sent!): " . $e->getMessage());
-            $dbSaved = false;
+        } catch (Exception $dbEx) {
+            error_log("Database registration failed (Email was still sent): " . $dbEx->getMessage());
         }
         
-        // Clear temp attachments
-        $_SESSION['temp_attachments'] = [];
-        
-        // ==================== STEP 6: SHOW SUCCESS PAGE ====================
-        
-        $successEmails = [['email' => $recipient, 'type' => 'TO']];
-        foreach ($validCCs as $cc) {
-            $successEmails[] = ['email' => $cc, 'type' => 'CC'];
-        }
-        foreach ($validBCCs as $bcc) {
-            $successEmails[] = ['email' => $bcc, 'type' => 'BCC'];
-        }
-        
-        $summary = [
-            'subject' => $subject,
-            'article_title' => $articleTitle,
-            'sent_at' => date('M d, Y h:i A'),
-            'sender_name' => $displayName,
-            'sender_email' => $_SESSION['smtp_user'],
-            'cc_count' => count($validCCs),
-            'bcc_count' => count($validBCCs),
-            'attachment_count' => count($attachments),
-            'signature_name' => $signatureName,
-            'signature_designation' => $signatureDesignation
-        ];
-        
-        showSuccessPage($successEmails, $attachments, $summary, $dbSaved);
+        // Success output or redirect
+        echo "<h1>Success!</h1><p>Email sent successfully with " . count($attachmentsInfo) . " attachment(s).</p>";
+        echo "<a href='index.php'>Go Back</a>";
         
     } catch (Exception $e) {
         error_log("✗✗✗ EMAIL SEND FAILED: " . $e->getMessage());
-        showErrorPage($e->getMessage());
+        echo "<h1>Error</h1><p>" . htmlspecialchars($e->getMessage()) . "</p>";
+        echo "<a href='index.php'>Try Again</a>";
     }
 } else {
     header("Location: index.php");
@@ -245,18 +189,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
  * Format file size helper
  */
 function formatFileSize($bytes) {
-    if ($bytes === 0) return '0 Bytes';
-    $k = 1024;
-    $sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    $i = floor(log($bytes) / log($k));
-    return round($bytes / pow($k, $i), 2) . ' ' . $sizes[$i];
+    if ($bytes === 0) return '0 B';
+    $units = ['B', 'KB', 'MB', 'GB'];
+    $i = floor(log($bytes, 1024));
+    return round($bytes / pow(1024, $i), 2) . ' ' . $units[$i];
 }
-
-/**
- * Show success page
- */
-function showSuccessPage($successEmails, $attachments, $summary, $dbSaved = false) {
-    ?>
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
