@@ -275,24 +275,6 @@ function updateLastSyncDate($userEmail, $lastMessageId) {
     }
 }
 
-/**
- * Strip HTML tags and return clean text
- */
-function stripHtmlFromBody($body) {
-    // Remove HTML tags
-    $text = strip_tags($body);
-    
-    // Decode HTML entities
-    $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-    
-    // Remove excessive whitespace
-    $text = preg_replace('/\s+/', ' ', $text);
-    
-    // Trim
-    $text = trim($text);
-    
-    return $text;
-}
 
 /**
  * Get attachment metadata (names, types, sizes)
