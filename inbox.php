@@ -40,62 +40,6 @@ if (!isset($_SESSION['imap_config']) && $userPassword) {
 
 // ==================== OPTIMIZED FETCH FUNCTION ====================
 
-/**
- * Get inbox messages - OPTIMIZED VERSION
- * - Only selects columns needed for list view
- * - No LONGTEXT body column transfer
- * - Uses optimized covering index
- */
-function getInboxMessages($userEmail, $limit = 50, $offset = 0) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) return ['messages' => [], 'total' => 0];
-        
-        // Get total count (uses optimized index)
-        $countStmt = $pdo->prepare("
-            SELECT COUNT(*) as total
-            FROM inbox_messages 
-            WHERE user_email = :email AND is_deleted = 0
-        ");
-        $countStmt->execute([':email' => $userEmail]);
-        $total = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
-        
-        // Get paginated messages - ONLY columns needed for list view!
-        // This query uses idx_inbox_optimized covering index
-        $stmt = $pdo->prepare("
-            SELECT 
-                id,
-                sender_email,
-                sender_name,
-                subject,
-                body_preview,
-                received_date,
-                fetched_at,
-                is_read,
-                has_attachments,
-                attachment_data,
-                is_starred,
-                CASE WHEN is_read = 0 AND TIMESTAMPDIFF(MINUTE, fetched_at, NOW()) <= 5 
-                THEN 1 ELSE 0 END as is_new
-            FROM inbox_messages 
-            WHERE user_email = :email AND is_deleted = 0
-            ORDER BY received_date DESC 
-            LIMIT :limit OFFSET :offset
-        ");
-        $stmt->bindValue(':email', $userEmail, PDO::PARAM_STR);
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-        $stmt->execute();
-        
-        return [
-            'messages' => $stmt->fetchAll(PDO::FETCH_ASSOC),
-            'total' => $total
-        ];
-    } catch (Exception $e) {
-        error_log("Inbox fetch error: " . $e->getMessage());
-        return ['messages' => [], 'total' => 0];
-    }
-}
 
 // ==================== PAGINATION ====================
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
