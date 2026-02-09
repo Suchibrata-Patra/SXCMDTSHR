@@ -471,17 +471,17 @@ $lastSync = getLastSyncDate($userEmail);
             /* border-left:1px solid blue; */
         }
 
-        /* .message-item.unread:hover {
-            background: linear-gradient(90deg, #EBF4FF 0%, #FAFAFA 100%);
+        .message-item.unread:hover {
+            background: linear-gradient(90deg, #f9fcff 0%, #FAFAFA 100%);
+        }
+
+        /* .message-item.new {
+            background: linear-gradient(90deg, #E8F5E9 0%, #FFFFFF 100%);
         } */
 
-        .message-item.new {
-            /* background: linear-gradient(90deg, #E8F5E9 0%, #FFFFFF 100%); */
-        }
-
-        .message-item.new:hover {
+        /* .message-item.new:hover {
             background: linear-gradient(90deg, #DFF0E0 0%, #FAFAFA 100%);
-        }
+        } */
 
         .message-item.new::before {
             content: '';
