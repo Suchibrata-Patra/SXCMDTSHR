@@ -734,7 +734,7 @@ function formatDate($dateStr) {
             syncStatus.classList.add('active');
             syncText.textContent = forceRefresh ? 'Refreshing all emails...' : 'Fetching new emails...';
             
-            fetch('fetch_emails.php', {
+            fetch('fetch_inbox_messages.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
