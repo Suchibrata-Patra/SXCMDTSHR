@@ -46,68 +46,68 @@ function saveInboxMessage($messageData) {
  * - NEW: fetched_at within last 5 minutes AND is_read = 0
  * - UNREAD: is_read = 0 (includes new)
  */
-function getInboxMessages($userEmail, $limit = 50, $offset = 0, $filters = []) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) return [];
+// function getInboxMessages($userEmail, $limit = 50, $offset = 0, $filters = []) {
+//     try {
+//         $pdo = getDatabaseConnection();
+//         if (!$pdo) return [];
         
-        $sql = "SELECT 
-                    id, message_id, sender_email, sender_name, 
-                    subject, body, received_date, fetched_at,
-                    is_read, read_at, has_attachments, attachment_data,
-                    is_starred, is_important,
-                    CASE 
-                        WHEN is_read = 0 AND TIMESTAMPDIFF(MINUTE, fetched_at, NOW()) <= 5 
-                        THEN 1 
-                        ELSE 0 
-                    END as is_new
-                FROM inbox_messages 
-                WHERE user_email = :email 
-                AND is_deleted = 0";
+//         $sql = "SELECT 
+//                     id, message_id, sender_email, sender_name, 
+//                     subject, body, received_date, fetched_at,
+//                     is_read, read_at, has_attachments, attachment_data,
+//                     is_starred, is_important,
+//                     CASE 
+//                         WHEN is_read = 0 AND TIMESTAMPDIFF(MINUTE, fetched_at, NOW()) <= 5 
+//                         THEN 1 
+//                         ELSE 0 
+//                     END as is_new
+//                 FROM inbox_messages 
+//                 WHERE user_email = :email 
+//                 AND is_deleted = 0";
         
-        $params = [':email' => $userEmail];
+//         $params = [':email' => $userEmail];
         
-        // Apply filters
-        if (!empty($filters['search'])) {
-            $sql .= " AND (subject LIKE :search OR sender_email LIKE :search OR body LIKE :search)";
-            $params[':search'] = '%' . $filters['search'] . '%';
-        }
+//         // Apply filters
+//         if (!empty($filters['search'])) {
+//             $sql .= " AND (subject LIKE :search OR sender_email LIKE :search OR body LIKE :search)";
+//             $params[':search'] = '%' . $filters['search'] . '%';
+//         }
         
-        if (!empty($filters['unread_only'])) {
-            $sql .= " AND is_read = 0";
-        }
+//         if (!empty($filters['unread_only'])) {
+//             $sql .= " AND is_read = 0";
+//         }
         
-        if (!empty($filters['starred_only'])) {
-            $sql .= " AND is_starred = 1";
-        }
+//         if (!empty($filters['starred_only'])) {
+//             $sql .= " AND is_starred = 1";
+//         }
         
-        if (!empty($filters['new_only'])) {
-            $sql .= " AND is_read = 0 AND TIMESTAMPDIFF(MINUTE, fetched_at, NOW()) <= 5";
-        }
+//         if (!empty($filters['new_only'])) {
+//             $sql .= " AND is_read = 0 AND TIMESTAMPDIFF(MINUTE, fetched_at, NOW()) <= 5";
+//         }
         
-        $sql .= " ORDER BY received_date DESC LIMIT :limit OFFSET :offset";
+//         $sql .= " ORDER BY received_date DESC LIMIT :limit OFFSET :offset";
         
-        $stmt = $pdo->prepare($sql);
+//         $stmt = $pdo->prepare($sql);
         
-        // Bind limit and offset separately (PDO quirk)
-        $stmt->bindValue(':email', $userEmail, PDO::PARAM_STR);
-        foreach ($params as $key => $value) {
-            if ($key !== ':email') {
-                $stmt->bindValue($key, $value, PDO::PARAM_STR);
-            }
-        }
-        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+//         // Bind limit and offset separately (PDO quirk)
+//         $stmt->bindValue(':email', $userEmail, PDO::PARAM_STR);
+//         foreach ($params as $key => $value) {
+//             if ($key !== ':email') {
+//                 $stmt->bindValue($key, $value, PDO::PARAM_STR);
+//             }
+//         }
+//         $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+//         $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
         
-        $stmt->execute();
+//         $stmt->execute();
         
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+//         return $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-    } catch (PDOException $e) {
-        error_log("Error getting inbox messages: " . $e->getMessage());
-        return [];
-    }
-}
+//     } catch (PDOException $e) {
+//         error_log("Error getting inbox messages: " . $e->getMessage());
+//         return [];
+//     }
+// }
 
 /**
  * Get total message count
