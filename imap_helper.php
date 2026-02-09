@@ -231,32 +231,32 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = fa
 //     }
 // }
 
-/**
- * Update last sync date
- */
-function updateLastSyncDate($userEmail, $lastMessageId) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) return false;
+// /**
+//  * Update last sync date
+//  */
+// function updateLastSyncDate($userEmail, $lastMessageId) {
+//     try {
+//         $pdo = getDatabaseConnection();
+//         if (!$pdo) return false;
         
-        // Store in user_settings or a separate sync_log table
-        $stmt = $pdo->prepare("
-            INSERT INTO user_settings (user_email, setting_key, setting_value, updated_at)
-            VALUES (:email, 'last_sync_message_id', :message_id, NOW())
-            ON DUPLICATE KEY UPDATE 
-                setting_value = VALUES(setting_value),
-                updated_at = NOW()
-        ");
+//         // Store in user_settings or a separate sync_log table
+//         $stmt = $pdo->prepare("
+//             INSERT INTO user_settings (user_email, setting_key, setting_value, updated_at)
+//             VALUES (:email, 'last_sync_message_id', :message_id, NOW())
+//             ON DUPLICATE KEY UPDATE 
+//                 setting_value = VALUES(setting_value),
+//                 updated_at = NOW()
+//         ");
         
-        return $stmt->execute([
-            ':email' => $userEmail,
-            ':message_id' => $lastMessageId
-        ]);
-    } catch (Exception $e) {
-        error_log("Error updating last sync date: " . $e->getMessage());
-        return false;
-    }
-}
+//         return $stmt->execute([
+//             ':email' => $userEmail,
+//             ':message_id' => $lastMessageId
+//         ]);
+//     } catch (Exception $e) {
+//         error_log("Error updating last sync date: " . $e->getMessage());
+//         return false;
+//     }
+// }
 
 
 /**
