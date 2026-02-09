@@ -571,7 +571,7 @@ $s = array_merge($defaults, $userSettings);
                         <span class="setting-title">Display Name</span>
                         <span class="setting-desc">How your name appears in the 'From' field</span>
                     </div>
-                    <input type="text" name="display_name" value="<?= htmlspecialchars($s['display_name']) ?>" placeholder="Your Name">
+                    <input type="text" name="display_name" value="<?= htmlspecialchars($s['display_name']) ?>" placeholder="Your Name" disabled>
                 </div>
                 <div class="setting-row">
                     <div class="setting-info">
