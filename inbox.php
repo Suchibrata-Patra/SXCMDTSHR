@@ -642,7 +642,7 @@ function formatDate($dateStr) {
             <!-- Message List Panel -->
             <div class="message-list-panel">
                 <div class="list-header">
-                    <h1 class="list-title">Inbox</h1>
+                    <h1 class="list-title">📬 Inbox</h1>
                     <div class="list-actions">
                         <button class="btn-action btn-refresh" id="refreshBtn">
                             <span class="material-icons" style="font-size: 18px;">refresh</span>
