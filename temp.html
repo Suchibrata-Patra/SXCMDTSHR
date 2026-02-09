@@ -1,549 +1,437 @@
-<!-- File Upload Section - Add this to your index.php form -->
+<?php
+session_start();
+// Check authentication
+if (!isset($_SESSION['authenticated']) || $_SESSION['authenticated'] !== true) {
+    header('Location: login.php');
+    exit();
+}
+require_once 'db_config.php';
+require_once 'settings_helper.php';
+require_once 'imap_helper.php';
 
-<!-- Add after the message editor section and before the submit button -->
+$userEmail = $_SESSION['smtp_user'];
 
-<!-- Attachments Section -->
-<div class="form-section">
-    <label class="form-label">
-        <i class="material-icons">attach_file</i>
-        Attachments
-        <span class="optional-tag">Optional</span>
-    </label>
+// Load IMAP config to session if not already loaded
+if (!isset($_SESSION['imap_config'])) {
+    $settings = getSettingsWithDefaults($userEmail);
+    $_SESSION['imap_config'] = [
+        'imap_server' => $settings['imap_server'] ?? 'imap.hostinger.com',
+        'imap_port' => $settings['imap_port'] ?? '993',
+        'imap_encryption' => $settings['imap_encryption'] ?? 'ssl',
+        'imap_username' => $settings['imap_username'] ?? $userEmail,
+        'imap_password' => $_SESSION['smtp_pass']
+    ];
+}
 
-    <!-- Drop Zone -->
-    <div class="drop-zone" id="dropZone">
-        <div class="drop-zone-icon">
-            <i class="fas fa-cloud-upload-alt"></i>
+$ This is the modfied version of the thins
+
+$messages = getInboxMessages($userEmail);
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inbox - SXC MDTS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+            background: #f5f5f7;
+            color: #1c1c1e;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .inbox-header {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .inbox-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1c1c1e;
+        }
+
+        .inbox-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #007AFF;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0051D5;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #1c1c1e;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .sync-status {
+            background: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .sync-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            color: #8e8e93;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f0f0f0;
+            border-top-color: #007AFF;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .messages-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+        }
+
+        .message-item {
+            padding: 20px 24px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .message-item:hover {
+            background: #f9f9f9;
+        }
+
+        .message-item:last-child {
+            border-bottom: none;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .message-from {
+            font-weight: 600;
+            font-size: 15px;
+            color: #1c1c1e;
+        }
+
+        .message-sender-email {
+            font-size: 13px;
+            color: #8e8e93;
+            margin-left: 8px;
+        }
+
+        .message-date {
+            font-size: 13px;
+            color: #8e8e93;
+        }
+
+        .message-subject {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1c1c1e;
+            margin-bottom: 6px;
+        }
+
+        .message-preview {
+            font-size: 14px;
+            color: #8e8e93;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .message-meta {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+            align-items: center;
+        }
+
+        .attachment-badge {
+            font-size: 12px;
+            background: #f0f9ff;
+            color: #0284c7;
+            padding: 4px 10px;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #8e8e93;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        .empty-state-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1c1c1e;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .toast.success {
+            border-left: 4px solid #10b981;
+        }
+
+        .toast.error {
+            border-left: 4px solid #ef4444;
+        }
+
+        .toast.show {
+            display: flex;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <?php require 'sidebar.php' ?>
+    <div class="container">
+        <!-- Header -->
+        <div class="inbox-header">
+            <h1 class="inbox-title">📬 Inbox</h1>
+            <div class="inbox-actions">
+                <button class="btn btn-secondary" id="refreshBtn">
+                    🔄 Refresh
+                </button>
+                <button class="btn btn-primary" id="composeBtn" onclick="window.location.href='compose.php'">
+                    ✉️ Compose
+                </button>
+            </div>
         </div>
-        <div class="drop-zone-text">
-            <strong>Click to upload</strong> or drag and drop
+
+        <!-- Sync Status -->
+        <div class="sync-status" id="syncStatus" style="display: none;">
+            <div class="sync-info">
+                <div class="spinner"></div>
+                <span id="syncText">Syncing emails...</span>
+            </div>
         </div>
-        <div class="drop-zone-hint">
-            PDF, DOC, XLS, PPT, Images, ZIP (Max 20MB per file, 25MB total)
+
+        <!-- Messages -->
+        <div class="messages-container">
+            <?php if (empty($messages)): ?>
+            <div class="empty-state">
+                <div class="empty-state-icon">📭</div>
+                <div class="empty-state-title">No messages yet</div>
+                <p>Click the refresh button to fetch your emails</p>
+            </div>
+            <?php else: ?>
+            <?php foreach ($messages as $message): ?>
+            <div class="message-item" onclick="viewMessage(<?= $message['id'] ?>)">
+                <div class="message-header">
+                    <div>
+                        <span class="message-from">
+                            <?= htmlspecialchars($message['sender_name'] ?: 'Unknown') ?>
+                        </span>
+                        <span class="message-sender-email">
+                            <?= htmlspecialchars($message['sender_email']) ?>
+                        </span>
+                    </div>
+                    <div class="message-date">
+                        <?= date('M d, Y H:i', strtotime($message['received_date'])) ?>
+                    </div>
+                </div>
+                <div class="message-subject">
+                    <?= htmlspecialchars($message['subject']) ?>
+                </div>
+                <div class="message-preview">
+                    <?= htmlspecialchars(substr($message['body'], 0, 150)) ?>...
+                </div>
+                <?php if ($message['has_attachments']): ?>
+                <div class="message-meta">
+                    <span class="attachment-badge">
+                        📎
+                        <?= count(json_decode($message['attachment_data'] ?? '[]', true)) ?> attachment(s)
+                    </span>
+                </div>
+                <?php endif; ?>
+            </div>
+            <?php endforeach; ?>
+            <?php endif; ?>
         </div>
     </div>
 
-    <!-- Hidden file input -->
-    <input type="file" id="fileUpload" style="display: none;" multiple>
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <span id="toastMessage"></span>
+    </div>
 
-    <!-- Hidden input for attachment IDs -->
-    <input type="hidden" name="attachment_ids" id="attachmentIds" value="">
+    <script>
+        // Auto-fetch on page load
+        window.addEventListener('load', function () {
+            fetchEmails(false); // false = don't force refresh, just get new ones
+        });
 
-    <!-- Attachment Cards Container -->
-    <div id="attachmentCards" class="attachment-cards" style="display: none;"></div>
-</div>
+        // Refresh button click
+        document.getElementById('refreshBtn').addEventListener('click', function () {
+            fetchEmails(true); // true = force refresh (clear and refetch all)
+        });
 
-<!-- CSS Styles - Add this to the <style> section -->
-<style>
-    /* Drop Zone Styles */
-    .drop-zone {
-        border: 2px dashed var(--border);
-        border-radius: 12px;
-        padding: 40px 20px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        background: white;
-        margin-bottom: 20px;
-    }
+        function fetchEmails(forceRefresh = false) {
+            const refreshBtn = document.getElementById('refreshBtn');
+            const syncStatus = document.getElementById('syncStatus');
+            const syncText = document.getElementById('syncText');
 
-    .drop-zone:hover {
-        border-color: var(--apple-blue);
-        background: rgba(0, 122, 255, 0.02);
-    }
+            // Disable button and show sync status
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = '⏳ Syncing...';
+            syncStatus.style.display = 'flex';
+            syncText.textContent = forceRefresh ? 'Refreshing all emails...' : 'Fetching new emails...';
 
-    .drop-zone.drag-over {
-        border-color: var(--apple-blue);
-        background: rgba(0, 122, 255, 0.05);
-        transform: scale(1.02);
-    }
-
-    .drop-zone-icon {
-        font-size: 48px;
-        color: var(--apple-blue);
-        margin-bottom: 15px;
-    }
-
-    .drop-zone-text {
-        font-size: 16px;
-        color: #1c1c1e;
-        margin-bottom: 8px;
-    }
-
-    .drop-zone-text strong {
-        color: var(--apple-blue);
-    }
-
-    .drop-zone-hint {
-        font-size: 13px;
-        color: var(--apple-gray);
-    }
-
-    /* Attachment Cards */
-    .attachment-cards {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        margin-top: 15px;
-    }
-
-    .attachment-card {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        padding: 15px;
-        background: white;
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        transition: all 0.2s ease;
-        animation: slideIn 0.3s ease-out;
-    }
-
-    @keyframes slideIn {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .attachment-card:hover {
-        border-color: var(--apple-blue);
-        box-shadow: 0 2px 12px rgba(0, 122, 255, 0.1);
-    }
-
-    .attachment-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 10px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 24px;
-        flex-shrink: 0;
-    }
-
-    .attachment-icon.uploading {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        animation: pulse 1.5s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-
-        0%,
-        100% {
-            opacity: 1;
-        }
-
-        50% {
-            opacity: 0.6;
-        }
-    }
-
-    .attachment-info {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .attachment-name {
-        font-size: 14px;
-        font-weight: 500;
-        color: #1c1c1e;
-        margin-bottom: 4px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .attachment-size {
-        font-size: 12px;
-        color: var(--apple-gray);
-    }
-
-    .attachment-actions {
-        display: flex;
-        gap: 8px;
-        flex-shrink: 0;
-    }
-
-    .btn-download,
-    .btn-remove {
-        width: 36px;
-        height: 36px;
-        border-radius: 8px;
-        border: none;
-        background: var(--apple-bg);
-        color: var(--apple-gray);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-        text-decoration: none;
-    }
-
-    .btn-download:hover {
-        background: rgba(0, 122, 255, 0.1);
-        color: var(--apple-blue);
-    }
-
-    .btn-remove:hover {
-        background: rgba(255, 59, 48, 0.1);
-        color: #ff3b30;
-    }
-
-    /* Notifications */
-    .notification {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: white;
-        padding: 15px 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        min-width: 300px;
-        opacity: 0;
-        transform: translateX(400px);
-        transition: all 0.3s ease;
-        z-index: 10000;
-    }
-
-    .notification.show {
-        opacity: 1;
-        transform: translateX(0);
-    }
-
-    .notification-success {
-        border-left: 4px solid var(--success-green);
-    }
-
-    .notification-success i {
-        color: var(--success-green);
-        font-size: 20px;
-    }
-
-    .notification-error {
-        border-left: 4px solid #ff3b30;
-    }
-
-    .notification-error i {
-        color: #ff3b30;
-        font-size: 20px;
-    }
-
-    .notification span {
-        font-size: 14px;
-        color: #1c1c1e;
-        flex: 1;
-    }
-
-    /* Optional tag in form labels */
-    .optional-tag {
-        font-size: 11px;
-        color: var(--apple-gray);
-        font-weight: 400;
-        margin-left: 8px;
-    }
-</style>
-
-<!-- JavaScript - Add before closing </body> tag -->
-<script src="attachment-upload.js"></script>
-
-<!-- Or include inline if preferred -->
-<script>
-    // attachment-upload.js - File Upload Handler with Card UI
-
-    class AttachmentUploader {
-        constructor() {
-            this.uploadedFiles = [];
-            this.maxFileSize = 20 * 1024 * 1024; // 20MB
-            this.maxTotalSize = 25 * 1024 * 1024; // 25MB
-            this.allowedExtensions = [
-                'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
-                'jpg', 'jpeg', 'png', 'gif', 'webp',
-                'zip', 'rar', '7z',
-                'txt', 'csv', 'json', 'xml'
-            ];
-
-            this.init();
-        }
-
-        init() {
-            const fileInput = document.getElementById('fileUpload');
-            const dropZone = document.getElementById('dropZone');
-            const attachmentContainer = document.getElementById('attachmentCards');
-
-            // File input change handler
-            fileInput.addEventListener('change', (e) => {
-                this.handleFiles(e.target.files);
-                e.target.value = ''; // Reset input
-            });
-
-            // Drag and drop handlers
-            dropZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                dropZone.classList.add('drag-over');
-            });
-
-            dropZone.addEventListener('dragleave', () => {
-                dropZone.classList.remove('drag-over');
-            });
-
-            dropZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                dropZone.classList.remove('drag-over');
-                this.handleFiles(e.dataTransfer.files);
-            });
-
-            // Click to upload
-            dropZone.addEventListener('click', () => {
-                fileInput.click();
-            });
-        }
-
-        handleFiles(files) {
-            Array.from(files).forEach(file => {
-                // Validate file extension
-                const extension = file.name.split('.').pop().toLowerCase();
-                if (!this.allowedExtensions.includes(extension)) {
-                    this.showError(`File type .${extension} is not allowed`);
-                    return;
-                }
-
-                // Validate file size
-                if (file.size > this.maxFileSize) {
-                    this.showError(`File ${file.name} exceeds 20MB limit`);
-                    return;
-                }
-
-                // Check total size
-                const currentTotalSize = this.uploadedFiles.reduce((sum, f) => sum + f.file_size, 0);
-                if (currentTotalSize + file.size > this.maxTotalSize) {
-                    this.showError('Total upload size exceeds 25MB limit');
-                    return;
-                }
-
-                // Upload file
-                this.uploadFile(file);
-            });
-        }
-
-        uploadFile(file) {
-            const formData = new FormData();
-            formData.append('file', file);
-
-            // Create temporary card with progress
-            const tempId = 'temp-' + Date.now();
-            this.createFileCard({
-                id: tempId,
-                original_name: file.name,
-                formatted_size: this.formatBytes(file.size),
-                extension: file.name.split('.').pop().toLowerCase(),
-                uploading: true
-            });
-
-            // Upload via AJAX
-            fetch('upload_handler.php', {
+            // Fetch emails
+            fetch('fetch_emails.php', {
                 method: 'POST',
-                body: formData
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: 'force_refresh=' + (forceRefresh ? '1' : '0')
             })
                 .then(response => response.json())
-                .then(data => {
-                    // Remove temporary card
-                    this.removeCard(tempId);
+                .then(result => {
+                    refreshBtn.disabled = false;
+                    refreshBtn.textContent = '🔄 Refresh';
+                    syncStatus.style.display = 'none';
 
-                    if (data.success) {
-                        // Add to uploaded files
-                        this.uploadedFiles.push(data);
+                    if (result.success) {
+                        showToast('✅ ' + result.message, 'success');
 
-                        // Create permanent card
-                        this.createFileCard(data);
-
-                        // Update hidden input with attachment IDs
-                        this.updateAttachmentIds();
-
-                        this.showSuccess(`${file.name} uploaded successfully`);
+                        // Reload page to show new messages
+                        if (result.count > 0) {
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1500);
+                        }
                     } else {
-                        this.showError(data.error || 'Upload failed');
+                        showToast('❌ ' + (result.error || result.message), 'error');
                     }
                 })
                 .catch(error => {
-                    this.removeCard(tempId);
-                    this.showError('Upload error: ' + error.message);
+                    refreshBtn.disabled = false;
+                    refreshBtn.textContent = '🔄 Refresh';
+                    syncStatus.style.display = 'none';
+                    showToast('❌ Network error: ' + error.message, 'error');
                 });
         }
 
-        createFileCard(fileData) {
-            const container = document.getElementById('attachmentCards');
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
 
-            const card = document.createElement('div');
-            card.className = 'attachment-card';
-            card.setAttribute('data-file-id', fileData.id);
+            toastMessage.textContent = message;
+            toast.className = 'toast ' + type + ' show';
 
-            if (fileData.uploading) {
-                card.innerHTML = `
-                <div class="attachment-icon uploading">
-                    <i class="fas fa-spinner fa-spin"></i>
-                </div>
-                <div class="attachment-info">
-                    <div class="attachment-name">${this.escapeHtml(fileData.original_name)}</div>
-                    <div class="attachment-size">Uploading...</div>
-                </div>
-            `;
-            } else {
-                const icon = this.getFileIcon(fileData.extension);
-                const downloadUrl = `download.php?id=${encodeURIComponent(fileData.encrypted_id)}`;
-
-                card.innerHTML = `
-                <div class="attachment-icon">
-                    <i class="fas ${icon}"></i>
-                </div>
-                <div class="attachment-info">
-                    <div class="attachment-name">${this.escapeHtml(fileData.original_name)}</div>
-                    <div class="attachment-size">${fileData.formatted_size}</div>
-                </div>
-                <div class="attachment-actions">
-                    <a href="${downloadUrl}" class="btn-download" title="Download" target="_blank">
-                        <i class="fas fa-download"></i>
-                    </a>
-                    <button class="btn-remove" onclick="attachmentUploader.removeFile('${fileData.encrypted_id}')" title="Remove">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            `;
-            }
-
-            container.appendChild(card);
-            container.style.display = 'flex';
-        }
-
-        removeFile(encryptedId) {
-            // Find and remove from array
-            this.uploadedFiles = this.uploadedFiles.filter(f => f.encrypted_id !== encryptedId);
-
-            // Remove card from DOM
-            const cards = document.querySelectorAll('.attachment-card');
-            cards.forEach(card => {
-                const cardId = card.getAttribute('data-file-id');
-                const fileData = this.uploadedFiles.find(f => f.id == cardId) ||
-                    this.uploadedFiles.find(f => f.encrypted_id === cardId);
-                if (fileData && fileData.encrypted_id === encryptedId) {
-                    card.remove();
-                }
-            });
-
-            // Update hidden input
-            this.updateAttachmentIds();
-
-            // Hide container if empty
-            const container = document.getElementById('attachmentCards');
-            if (this.uploadedFiles.length === 0) {
-                container.style.display = 'none';
-            }
-
-            this.showSuccess('File removed');
-        }
-
-        removeCard(cardId) {
-            const card = document.querySelector(`[data-file-id="${cardId}"]`);
-            if (card) {
-                card.remove();
-            }
-        }
-
-        updateAttachmentIds() {
-            const input = document.getElementById('attachmentIds');
-            const ids = this.uploadedFiles.map(f => f.encrypted_id).join(',');
-            input.value = ids;
-
-            console.log('Updated attachment IDs:', ids);
-        }
-
-        getFileIcon(extension) {
-            const icons = {
-                'pdf': 'fa-file-pdf',
-                'doc': 'fa-file-word',
-                'docx': 'fa-file-word',
-                'xls': 'fa-file-excel',
-                'xlsx': 'fa-file-excel',
-                'ppt': 'fa-file-powerpoint',
-                'pptx': 'fa-file-powerpoint',
-                'jpg': 'fa-file-image',
-                'jpeg': 'fa-file-image',
-                'png': 'fa-file-image',
-                'gif': 'fa-file-image',
-                'webp': 'fa-file-image',
-                'zip': 'fa-file-archive',
-                'rar': 'fa-file-archive',
-                '7z': 'fa-file-archive',
-                'txt': 'fa-file-alt',
-                'csv': 'fa-file-csv',
-                'json': 'fa-file-code',
-                'xml': 'fa-file-code'
-            };
-
-            return icons[extension] || 'fa-file';
-        }
-
-        formatBytes(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-        }
-
-        escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        showSuccess(message) {
-            this.showNotification(message, 'success');
-        }
-
-        showError(message) {
-            this.showNotification(message, 'error');
-        }
-
-        showNotification(message, type) {
-            // Create notification element
-            const notification = document.createElement('div');
-            notification.className = `notification notification-${type}`;
-            notification.innerHTML = `
-            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
-            <span>${this.escapeHtml(message)}</span>
-        `;
-
-            document.body.appendChild(notification);
-
-            // Show notification
             setTimeout(() => {
-                notification.classList.add('show');
-            }, 10);
-
-            // Remove after 3 seconds
-            setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => {
-                    notification.remove();
-                }, 300);
+                toast.classList.remove('show');
             }, 3000);
         }
-    }
 
-    // Initialize when DOM is ready
-    let attachmentUploader;
-    document.addEventListener('DOMContentLoaded', () => {
-        attachmentUploader = new AttachmentUploader();
-    });</script>
+        function viewMessage(id) {
+            window.location.href = 'view_message.php?id=' + id;
+        }
+    </script>
+</body>
+
+</html>
