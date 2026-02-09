@@ -993,6 +993,75 @@ $hasActiveFilters = !empty(array_filter($filters));
                 }
             }
         });
+        /**
+ * Get sent emails for current user with pagination and filters
+ */
+function getSentEmails($userEmail, $limit = 100, $offset = 0, $filters = []) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return [];
+
+        $userId = getUserId($pdo, $userEmail);
+        if (!$userId) return [];
+
+        // Base query using the sent history view
+        $sql = "SELECT * FROM v_user_sent WHERE user_id = :user_id";
+        $params = [':user_id' => $userId];
+
+        // Apply Search Filter
+        if (!empty($filters['search'])) {
+            $sql .= " AND (recipient_email LIKE :search 
+                        OR subject LIKE :search 
+                        OR body_text LIKE :search 
+                        OR article_title LIKE :search)";
+            $params[':search'] = '%' . $filters['search'] . '%';
+        }
+
+        // Apply Recipient Filter
+        if (!empty($filters['recipient'])) {
+            $sql .= " AND recipient_email LIKE :recipient";
+            $params[':recipient'] = '%' . $filters['recipient'] . '%';
+        }
+
+        // Apply Label Filter
+        if (!empty($filters['label_id'])) {
+            if ($filters['label_id'] === 'unlabeled') {
+                $sql .= " AND label_id IS NULL";
+            } else {
+                $sql .= " AND label_id = :label_id";
+                $params[':label_id'] = $filters['label_id'];
+            }
+        }
+
+        // Apply Date Range Filters
+        if (!empty($filters['date_from'])) {
+            $sql .= " AND DATE(sent_at) >= :date_from";
+            $params[':date_from'] = $filters['date_from'];
+        }
+        if (!empty($filters['date_to'])) {
+            $sql .= " AND DATE(sent_at) <= :date_to";
+            $params[':date_to'] = $filters['date_to'];
+        }
+
+        $sql .= " ORDER BY sent_at DESC LIMIT :limit OFFSET :offset";
+
+        $stmt = $pdo->prepare($sql);
+        
+        // Bind parameters
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    } catch (PDOException $e) {
+        error_log("Error fetching sent emails: " . $e->getMessage());
+        return [];
+    }
+}
     </script>
 </body>
 </html>
