@@ -580,8 +580,8 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .badge-attachment {
-            background: rgb(227, 227, 227);
-            color: rgb(108, 108, 108);
+            background: rgb(255, 255, 255);
+            color: #50bc25;
             padding: 5px 7px;
             border-radius: 20px;
         }
