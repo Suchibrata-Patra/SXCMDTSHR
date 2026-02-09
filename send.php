@@ -18,7 +18,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $mail = new PHPMailer(true);
     
     try {
-        // SMTP Configuration
+        // ==================== SMTP Configuration ====================
         $mail->isSMTP();
         $mail->SMTPDebug = 0;
         
@@ -35,74 +35,114 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         
         // Sender
-        $displayName = !empty($settings['display_name']) ? $settings['display_name'] : "`";
+        $displayName = !empty($settings['display_name']) ? $settings['display_name'] : "St. Xavier's College";
         $mail->setFrom($_SESSION['smtp_user'], $displayName);
         
-        // Capture all form data
+        // ==================== Capture ALL Form Fields ====================
+        
+        // Primary recipient (required)
         $recipient = filter_var(trim($_POST['email'] ?? ''), FILTER_SANITIZE_EMAIL);
+        
+        // Subject (required)
         $subject = trim($_POST['subject'] ?? 'Official Communication');
+        
+        // Article title for template (required)
+        $articleTitle = trim($_POST['articletitle'] ?? 'Official Communication');
+        
+        // Message content (HTML from Quill editor)
         $messageContent = $_POST['message'] ?? '';
         
-        // Additional template fields
-        $articleTitle = trim($_POST['article_title'] ?? 'Official Communication');
-        $signatureWish = trim($_POST['signature_wish'] ?? 'Best Regards,');
-        $signatureName = trim($_POST['signature_name'] ?? 'Dr. Durba Bhattacharya');
-        $signatureDesignation = trim($_POST['signature_designation'] ?? 'Head of Department, Data Science');
-        $signatureExtra = trim($_POST['signature_extra'] ?? 'St. Xavier\'s College (Autonomous), Kolkata');
+        // CC and BCC emails (comma-separated, optional)
+        $ccEmails = !empty($_POST['ccEmails']) ? array_map('trim', explode(',', $_POST['ccEmails'])) : [];
+        $bccEmails = !empty($_POST['bccEmails']) ? array_map('trim', explode(',', $_POST['bccEmails'])) : [];
         
-        // CC and BCC (comma-separated)
-        $ccEmails = !empty($_POST['cc_emails']) ? explode(',', $_POST['cc_emails']) : [];
-        $bccEmails = !empty($_POST['bcc_emails']) ? explode(',', $_POST['bcc_emails']) : [];
+        // Signature fields (optional with defaults)
+        $signatureWish = trim($_POST['signatureWish'] ?? 'Best Regards,');
+        $signatureName = trim($_POST['signatureName'] ?? 'Dr. Durba Bhattacharya');
+        $signatureDesignation = trim($_POST['signatureDesignation'] ?? 'Head of Department, Data Science');
+        $signatureExtra = trim($_POST['signatureExtra'] ?? 'St. Xavier\'s College (Autonomous), Kolkata');
         
-        if (!$recipient) {
-            throw new Exception("Invalid email address");
+        // Attachment IDs from session-based upload system
+        $attachmentIds = !empty($_POST['attachment_ids']) ? explode(',', $_POST['attachment_ids']) : [];
+        
+        // ==================== Validate Required Fields ====================
+        if (!$recipient || !filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+            throw new Exception("Invalid or missing recipient email address");
         }
         
+        if (empty($subject)) {
+            throw new Exception("Subject is required");
+        }
+        
+        if (empty($articleTitle)) {
+            throw new Exception("Article title is required");
+        }
+        
+        if (empty($messageContent)) {
+            throw new Exception("Message content is required");
+        }
+        
+        // ==================== Add Recipients ====================
         $mail->addAddress($recipient);
         
         // Add CC recipients
+        $validCCs = [];
         foreach ($ccEmails as $cc) {
-            $cc = filter_var(trim($cc), FILTER_SANITIZE_EMAIL);
+            $cc = filter_var($cc, FILTER_SANITIZE_EMAIL);
             if ($cc && filter_var($cc, FILTER_VALIDATE_EMAIL)) {
                 $mail->addCC($cc);
+                $validCCs[] = $cc;
             }
         }
         
         // Add BCC recipients
+        $validBCCs = [];
         foreach ($bccEmails as $bcc) {
-            $bcc = filter_var(trim($bcc), FILTER_SANITIZE_EMAIL);
+            $bcc = filter_var($bcc, FILTER_SANITIZE_EMAIL);
             if ($bcc && filter_var($bcc, FILTER_VALIDATE_EMAIL)) {
                 $mail->addBCC($bcc);
+                $validBCCs[] = $bcc;
             }
         }
         
-        // Handle file attachments
+        // ==================== Handle Attachments from Session ====================
         $attachments = [];
-        if (!empty($_FILES['attachments']['name'][0])) {
-            foreach ($_FILES['attachments']['tmp_name'] as $key => $tmp_name) {
-                if (!empty($tmp_name) && $_FILES['attachments']['error'][$key] === UPLOAD_ERR_OK) {
-                    $fileName = $_FILES['attachments']['name'][$key];
-                    $fileSize = $_FILES['attachments']['size'][$key];
-                    
-                    $mail->addAttachment($tmp_name, $fileName);
-                    $attachments[] = [
-                        'name' => $fileName,
-                        'size' => formatFileSize($fileSize)
-                    ];
+        if (!empty($attachmentIds) && isset($_SESSION['temp_attachments'])) {
+            $sessionAttachments = $_SESSION['temp_attachments'];
+            
+            foreach ($attachmentIds as $attachmentId) {
+                $attachmentId = trim($attachmentId);
+                
+                // Find attachment in session
+                foreach ($sessionAttachments as $attachment) {
+                    if (isset($attachment['id']) && $attachment['id'] == $attachmentId) {
+                        $filePath = $attachment['path'] ?? '';
+                        $fileName = $attachment['original_name'] ?? 'attachment';
+                        
+                        if (file_exists($filePath)) {
+                            $mail->addAttachment($filePath, $fileName);
+                            $attachments[] = [
+                                'name' => $fileName,
+                                'size' => formatFileSize($attachment['file_size'] ?? 0),
+                                'extension' => $attachment['extension'] ?? 'file'
+                            ];
+                        }
+                        break;
+                    }
                 }
             }
         }
         
-        // Load the email template
+        // ==================== Load and Process Email Template ====================
         $templatePath = __DIR__ . '/templates/template1.html';
         
         if (!file_exists($templatePath)) {
-            throw new Exception("Email template not found");
+            throw new Exception("Email template not found at: " . $templatePath);
         }
         
         $emailTemplate = file_get_contents($templatePath);
         
-        // Replace placeholders in template
+        // Replace ALL placeholders in template with actual values
         $emailBody = str_replace([
             '{{articletitle}}',
             '{{MESSAGE}}',
@@ -111,39 +151,38 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             '{{SIGNATURE_DESIGNATION}}',
             '{{SIGNATURE_EXTRA}}'
         ], [
-            htmlspecialchars($articleTitle),
-            nl2br(htmlspecialchars($messageContent)),
-            htmlspecialchars($signatureWish),
-            htmlspecialchars($signatureName),
-            htmlspecialchars($signatureDesignation),
-            nl2br(htmlspecialchars($signatureExtra))
+            htmlspecialchars($articleTitle, ENT_QUOTES, 'UTF-8'),
+            $messageContent, // Already HTML from Quill
+            htmlspecialchars($signatureWish, ENT_QUOTES, 'UTF-8'),
+            htmlspecialchars($signatureName, ENT_QUOTES, 'UTF-8'),
+            htmlspecialchars($signatureDesignation, ENT_QUOTES, 'UTF-8'),
+            nl2br(htmlspecialchars($signatureExtra, ENT_QUOTES, 'UTF-8'))
         ], $emailTemplate);
         
-        // Set email content
+        // ==================== Set Email Content ====================
         $mail->isHTML(true);
         $mail->Subject = $subject;
         $mail->Body = $emailBody;
         
-        // Plain text alternative
-        $mail->AltBody = strip_tags($messageContent);
+        // Create plain text alternative (strip HTML tags from message)
+        $plainTextMessage = strip_tags($messageContent);
+        $mail->AltBody = "Article: " . $articleTitle . "\n\n" . $plainTextMessage . "\n\n" . 
+                         $signatureWish . "\n" . $signatureName . "\n" . 
+                         $signatureDesignation . "\n" . $signatureExtra;
 
-        // Send email
+        // ==================== Send Email ====================
         if ($mail->send()) {
-            // Prepare success data
-            $successEmails = [['email' => $recipient, 'type' => 'TO']];
+            // Prepare success data for display
+            $successEmails = [
+                ['email' => $recipient, 'type' => 'TO']
+            ];
             
-            foreach ($ccEmails as $cc) {
-                $cc = trim($cc);
-                if ($cc) {
-                    $successEmails[] = ['email' => $cc, 'type' => 'CC'];
-                }
+            foreach ($validCCs as $cc) {
+                $successEmails[] = ['email' => $cc, 'type' => 'CC'];
             }
             
-            foreach ($bccEmails as $bcc) {
-                $bcc = trim($bcc);
-                if ($bcc) {
-                    $successEmails[] = ['email' => $bcc, 'type' => 'BCC'];
-                }
+            foreach ($validBCCs as $bcc) {
+                $successEmails[] = ['email' => $bcc, 'type' => 'BCC'];
             }
             
             $summary = [
@@ -151,34 +190,55 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 'article_title' => $articleTitle,
                 'sent_at' => date('M d, Y h:i A'),
                 'sender_name' => $displayName,
-                'cc_count' => count($ccEmails),
-                'bcc_count' => count($bccEmails),
-                'attachment_count' => count($attachments)
+                'sender_email' => $_SESSION['smtp_user'],
+                'cc_count' => count($validCCs),
+                'bcc_count' => count($validBCCs),
+                'attachment_count' => count($attachments),
+                'signature_name' => $signatureName,
+                'signature_designation' => $signatureDesignation
             ];
             
             // Try to save to database
             $dbSaved = false;
             try {
-                if (isset($pdo)) {
-                    $stmt = $pdo->prepare("INSERT INTO sent_emails (sender_email, recipient_email, subject, message, article_title, sent_at, status) VALUES (?, ?, ?, ?, ?, NOW(), 'sent')");
+                $pdo = getDatabaseConnection();
+                if ($pdo) {
+                    $stmt = $pdo->prepare("
+                        INSERT INTO sent_emails 
+                        (sender_email, recipient_email, subject, message, article_title, sent_at, status, cc_emails, bcc_emails, attachment_count) 
+                        VALUES (?, ?, ?, ?, ?, NOW(), 'sent', ?, ?, ?)
+                    ");
+                    
+                    $ccString = implode(', ', $validCCs);
+                    $bccString = implode(', ', $validBCCs);
+                    
                     $stmt->execute([
                         $_SESSION['smtp_user'],
                         $recipient,
                         $subject,
-                        $messageContent,
-                        $articleTitle
+                        $plainTextMessage,
+                        $articleTitle,
+                        $ccString,
+                        $bccString,
+                        count($attachments)
                     ]);
                     $dbSaved = true;
                 }
             } catch (Exception $e) {
                 // Database save failed, but email was sent successfully
+                error_log("Database save failed: " . $e->getMessage());
                 $dbSaved = false;
             }
             
+            // Clear temp attachments after successful send
+            $_SESSION['temp_attachments'] = [];
+            
+            // Show success page
             showSuccessPage($successEmails, $attachments, $summary, $dbSaved);
         }
         
     } catch (Exception $e) {
+        // Show error page
         showErrorPage($e->getMessage());
     }
 } else {
@@ -202,7 +262,7 @@ function formatFileSize($bytes) {
 }
 
 /**
- * Show success page
+ * Show success page with all email details
  */
 function showSuccessPage($successEmails, $attachments, $summary, $dbSaved) {
     ?>
@@ -267,14 +327,14 @@ function showSuccessPage($successEmails, $attachments, $summary, $dbSaved) {
         .success-icon-wrapper {
             width: 80px;
             height: 80px;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: linear-gradient(135deg, #34C759 0%, #30A14E 100%);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 24px;
-            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
-            animation: scaleIn 0.5s ease-out 0.2s both;
+            box-shadow: 0 10px 30px rgba(52, 199, 89, 0.3);
+            animation: scaleIn 0.5s ease-out;
         }
 
         @keyframes scaleIn {
@@ -304,8 +364,8 @@ function showSuccessPage($successEmails, $attachments, $summary, $dbSaved) {
             font-weight: 400;
         }
 
-        /* Cards */
-        .card {
+        /* Summary Card */
+        .summary-card {
             background: white;
             border-radius: 16px;
             padding: 30px;
@@ -326,178 +386,148 @@ function showSuccessPage($successEmails, $attachments, $summary, $dbSaved) {
             }
         }
 
-        .card-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: #1c1c1e;
-            margin-bottom: 20px;
+        .summary-header {
             display: flex;
-            align-items: center;
-            gap: 10px;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e5e7eb;
         }
 
-        .card-title i {
-            color: #007AFF;
+        .summary-title {
             font-size: 20px;
-        }
-
-        /* Summary Details */
-        .summary-item {
-            background: #f8f9fa;
-            padding: 16px 20px;
-            border-radius: 12px;
-            margin-bottom: 12px;
-            border-left: 4px solid #007AFF;
-        }
-
-        .summary-label {
-            font-size: 12px;
             font-weight: 600;
-            color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            color: #1c1c1e;
             margin-bottom: 6px;
         }
 
-        .summary-value {
+        .summary-article-title {
             font-size: 15px;
-            font-weight: 600;
-            color: #1c1c1e;
-            word-break: break-word;
+            color: #6b7280;
+            font-weight: 400;
         }
 
-        /* Stats Grid */
-        .stats-grid {
+        .summary-time {
+            font-size: 14px;
+            color: #9ca3af;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .summary-stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
             gap: 16px;
             margin-top: 20px;
         }
 
-        .stat-box {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 12px;
+        .stat-item {
             text-align: center;
-            transition: transform 0.2s, box-shadow 0.2s;
+            padding: 16px;
+            background: #f9fafb;
+            border-radius: 12px;
         }
 
-        .stat-box:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        .stat-number {
+            font-size: 24px;
+            font-weight: 700;
+            color: #007AFF;
+            margin-bottom: 4px;
         }
 
         .stat-label {
-            font-size: 12px;
-            font-weight: 600;
+            font-size: 13px;
             color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
+            font-weight: 500;
         }
 
-        .stat-value {
-            font-size: 28px;
-            font-weight: 700;
+        /* Recipients Section */
+        .recipients-section {
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: #1c1c1e;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title i {
             color: #007AFF;
         }
 
-        .stat-subtext {
-            font-size: 11px;
-            color: #9ca3af;
-            margin-top: 4px;
-        }
-
-        /* Recipients List */
-        .recipient-list {
-            list-style: none;
+        .recipients-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
         .recipient-item {
-            background: #f8f9fa;
-            padding: 14px 18px;
-            border-radius: 10px;
-            margin-bottom: 10px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            transition: all 0.2s;
-        }
-
-        .recipient-item:hover {
-            background: #e5e7eb;
-            transform: translateX(4px);
-        }
-
-        .recipient-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .recipient-icon {
-            width: 36px;
-            height: 36px;
-            background: #007AFF;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 14px;
+            padding: 14px 16px;
+            background: #f9fafb;
+            border-radius: 10px;
+            border: 1px solid #e5e7eb;
         }
 
         .recipient-email {
             font-size: 14px;
-            font-weight: 500;
             color: #1c1c1e;
+            font-weight: 500;
         }
 
         .recipient-badge {
-            background: #007AFF;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
             font-size: 11px;
             font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 12px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
-        /* Attachments */
+        .badge-to {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-cc {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-bcc {
+            background: #f3e8ff;
+            color: #6b21a8;
+        }
+
+        /* Attachments Section */
         .attachments-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 12px;
-            margin-top: 16px;
         }
 
         .attachment-card {
-            background: #f8f9fa;
             padding: 16px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
             border-radius: 10px;
             display: flex;
             align-items: center;
             gap: 12px;
-            transition: all 0.2s;
-        }
-
-        .attachment-card:hover {
-            background: #e5e7eb;
-            transform: translateY(-2px);
         }
 
         .attachment-icon {
-            width: 44px;
-            height: 44px;
-            background: #007AFF;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 20px;
-            flex-shrink: 0;
+            font-size: 32px;
+            color: #007AFF;
         }
 
         .attachment-info {
@@ -506,18 +536,18 @@ function showSuccessPage($successEmails, $attachments, $summary, $dbSaved) {
         }
 
         .attachment-name {
-            font-weight: 600;
             font-size: 14px;
+            font-weight: 500;
             color: #1c1c1e;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            margin-bottom: 4px;
         }
 
         .attachment-size {
             font-size: 12px;
             color: #6b7280;
+            margin-top: 2px;
         }
 
         /* Warning Box */
@@ -526,17 +556,16 @@ function showSuccessPage($successEmails, $attachments, $summary, $dbSaved) {
             border-left: 4px solid #f59e0b;
             padding: 16px 20px;
             border-radius: 10px;
-            display: flex;
-            gap: 12px;
-            align-items: flex-start;
             margin-bottom: 24px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
         }
 
         .warning-box i {
-            color: #d97706;
+            color: #f59e0b;
             font-size: 20px;
             margin-top: 2px;
-            flex-shrink: 0;
         }
 
         .warning-content {
@@ -544,38 +573,38 @@ function showSuccessPage($successEmails, $attachments, $summary, $dbSaved) {
         }
 
         .warning-content strong {
-            color: #92400e;
             display: block;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
+            color: #92400e;
+            font-size: 14px;
         }
 
         .warning-content p {
             color: #78350f;
-            font-size: 14px;
+            font-size: 13px;
             line-height: 1.5;
         }
 
         /* Action Buttons */
         .action-buttons {
             display: flex;
-            gap: 16px;
-            justify-content: center;
-            margin-top: 40px;
-            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 24px;
         }
 
         .btn {
+            flex: 1;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.3s;
             display: inline-flex;
             align-items: center;
-            gap: 10px;
-            padding: 14px 28px;
-            border-radius: 12px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 15px;
-            transition: all 0.3s;
-            border: none;
-            cursor: pointer;
+            justify-content: center;
+            gap: 8px;
         }
 
         .btn-primary {
@@ -590,40 +619,29 @@ function showSuccessPage($successEmails, $attachments, $summary, $dbSaved) {
         }
 
         .btn-secondary {
-            background: white;
-            color: #1c1c1e;
-            border: 2px solid #e5e7eb;
+            background: #f3f4f6;
+            color: #374151;
         }
 
         .btn-secondary:hover {
-            background: #f8f9fa;
-            border-color: #d1d5db;
-            transform: translateY(-2px);
-        }
-
-        /* Responsive */
-        @media (max-width: 1024px) {
-            .main-content {
-                padding: 30px 20px;
-            }
+            background: #e5e7eb;
         }
 
         @media (max-width: 768px) {
-            .success-title {
-                font-size: 26px;
+            .main-content {
+                padding: 20px;
             }
 
-            .stats-grid {
-                grid-template-columns: 1fr;
+            .summary-header {
+                flex-direction: column;
             }
 
             .action-buttons {
                 flex-direction: column;
             }
 
-            .btn {
-                width: 100%;
-                justify-content: center;
+            .summary-stats {
+                grid-template-columns: 1fr 1fr;
             }
         }
     </style>
@@ -645,86 +663,74 @@ function showSuccessPage($successEmails, $attachments, $summary, $dbSaved) {
                     <p class="success-subtitle">Your message has been delivered to all recipients</p>
                 </div>
 
-                <!-- Email Summary Card -->
-                <div class="card">
-                    <div class="card-title">
-                        <i class="fas fa-info-circle"></i>
-                        Email Summary
+                <!-- Summary Card -->
+                <div class="summary-card">
+                    <div class="summary-header">
+                        <div>
+                            <h2 class="summary-title"><?= htmlspecialchars($summary['subject']) ?></h2>
+                            <p class="summary-article-title">Article: <?= htmlspecialchars($summary['article_title']) ?></p>
+                        </div>
+                        <div class="summary-time">
+                            <i class="fas fa-clock"></i>
+                            <?= $summary['sent_at'] ?>
+                        </div>
                     </div>
 
-                    <div class="summary-item">
-                        <div class="summary-label">Subject</div>
-                        <div class="summary-value"><?= htmlspecialchars($summary['subject']) ?></div>
-                    </div>
-
-                    <?php if (!empty($summary['article_title'])): ?>
-                    <div class="summary-item">
-                        <div class="summary-label">Article Title</div>
-                        <div class="summary-value"><?= htmlspecialchars($summary['article_title']) ?></div>
-                    </div>
-                    <?php endif; ?>
-
-                    <div class="stats-grid">
-                        <div class="stat-box">
-                            <div class="stat-label">Sent At</div>
-                            <div class="stat-value" style="font-size: 16px;"><?= $summary['sent_at'] ?></div>
+                    <div class="summary-stats">
+                        <div class="stat-item">
+                            <div class="stat-number"><?= count($successEmails) ?></div>
+                            <div class="stat-label">Total Recipients</div>
                         </div>
-
-                        <div class="stat-box">
-                            <div class="stat-label">From</div>
-                            <div class="stat-value" style="font-size: 16px; word-break: break-word;"><?= htmlspecialchars($summary['sender_name']) ?></div>
+                        <?php if ($summary['cc_count'] > 0): ?>
+                        <div class="stat-item">
+                            <div class="stat-number"><?= $summary['cc_count'] ?></div>
+                            <div class="stat-label">CC Recipients</div>
                         </div>
-
-                        <div class="stat-box">
-                            <div class="stat-label">Recipients</div>
-                            <div class="stat-value"><?= count($successEmails) ?></div>
-                            <?php if ($summary['cc_count'] > 0 || $summary['bcc_count'] > 0): ?>
-                            <div class="stat-subtext"><?= $summary['cc_count'] ?> CC • <?= $summary['bcc_count'] ?> BCC</div>
-                            <?php endif; ?>
+                        <?php endif; ?>
+                        <?php if ($summary['bcc_count'] > 0): ?>
+                        <div class="stat-item">
+                            <div class="stat-number"><?= $summary['bcc_count'] ?></div>
+                            <div class="stat-label">BCC Recipients</div>
                         </div>
-
-                        <div class="stat-box">
+                        <?php endif; ?>
+                        <?php if ($summary['attachment_count'] > 0): ?>
+                        <div class="stat-item">
+                            <div class="stat-number"><?= $summary['attachment_count'] ?></div>
                             <div class="stat-label">Attachments</div>
-                            <div class="stat-value"><?= $summary['attachment_count'] ?></div>
-                            <div class="stat-subtext">file<?= $summary['attachment_count'] != 1 ? 's' : '' ?></div>
                         </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
-                <!-- Recipients Card -->
-                <div class="card">
-                    <div class="card-title">
-                        <i class="fas fa-users"></i>
-                        Recipients (<?= count($successEmails) ?>)
-                    </div>
-                    <ul class="recipient-list">
-                        <?php foreach ($successEmails as $email): ?>
-                        <li class="recipient-item">
-                            <div class="recipient-info">
-                                <div class="recipient-icon">
-                                    <i class="fas fa-envelope"></i>
-                                </div>
-                                <span class="recipient-email"><?= htmlspecialchars($email['email']) ?></span>
-                            </div>
-                            <span class="recipient-badge"><?= htmlspecialchars($email['type']) ?></span>
-                        </li>
+                <!-- Recipients Section -->
+                <div class="summary-card recipients-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-user-friends"></i>
+                        Recipients
+                    </h3>
+                    <div class="recipients-list">
+                        <?php foreach ($successEmails as $recipient): ?>
+                        <div class="recipient-item">
+                            <span class="recipient-email"><?= htmlspecialchars($recipient['email']) ?></span>
+                            <span class="recipient-badge badge-<?= strtolower($recipient['type']) ?>">
+                                <?= $recipient['type'] ?>
+                            </span>
+                        </div>
                         <?php endforeach; ?>
-                    </ul>
+                    </div>
                 </div>
 
-                <!-- Attachments Card -->
+                <!-- Attachments Section -->
                 <?php if (!empty($attachments)): ?>
-                <div class="card">
-                    <div class="card-title">
+                <div class="summary-card">
+                    <h3 class="section-title">
                         <i class="fas fa-paperclip"></i>
                         Attachments (<?= count($attachments) ?>)
-                    </div>
+                    </h3>
                     <div class="attachments-grid">
                         <?php foreach ($attachments as $att): ?>
                         <div class="attachment-card">
-                            <div class="attachment-icon">
-                                <i class="fas fa-file"></i>
-                            </div>
+                            <i class="fas fa-file attachment-icon"></i>
                             <div class="attachment-info">
                                 <div class="attachment-name" title="<?= htmlspecialchars($att['name']) ?>">
                                     <?= htmlspecialchars($att['name']) ?>
@@ -754,9 +760,9 @@ function showSuccessPage($successEmails, $attachments, $summary, $dbSaved) {
                         <i class="fas fa-paper-plane"></i>
                         Send Another Email
                     </a>
-                    <a href="sent_history.php" class="btn btn-secondary">
-                        <i class="fas fa-history"></i>
-                        View Sent History
+                    <a href="inbox.php" class="btn btn-secondary">
+                        <i class="fas fa-inbox"></i>
+                        Go to Inbox
                     </a>
                 </div>
             </div>
