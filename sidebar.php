@@ -151,6 +151,24 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         color: white;
     }
 
+    /* Badge for unread count */
+    .nav-badge {
+        margin-left: auto;
+        background: var(--apple-blue);
+        color: white;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 7px;
+        border-radius: 10px;
+        min-width: 20px;
+        text-align: center;
+    }
+
+    .nav-item.active .nav-badge {
+        background: white;
+        color: var(--apple-blue);
+    }
+
     /* ========== SECTION DIVIDER ========== */
     .nav-section-divider {
         height: 30px;
@@ -408,6 +426,12 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         <a href="inbox.php" class="nav-item <?= ($current_page == 'inbox') ? 'active' : ''; ?>">
             <span class="material-icons">mail</span>
             <span>Inbox</span>
+            <?php 
+            $unreadCount = getUnreadCount($userEmail) ?? 0;
+            if ($unreadCount > 0): 
+            ?>
+            <span class="nav-badge" id="sidebarUnreadBadge"><?= $unreadCount ?></span>
+            <?php endif; ?>
         </a>
 
         <!-- Section Divider -->

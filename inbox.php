@@ -1,6 +1,6 @@
 <?php
 /**
- * Professional Inbox Page with Sidebar - COMPLETE VERSION
+ * Professional Inbox Page - Refactored with External Sidebar
  */
 
 session_start();
@@ -131,7 +131,6 @@ $lastSync = getLastSyncDate($userEmail);
             --danger-red: #FF3B30;
             --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             --hover-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-            --sidebar-width: 260px;
         }
 
         * {
@@ -151,166 +150,6 @@ $lastSync = getLastSyncDate($userEmail);
             -moz-osx-font-smoothing: grayscale;
         }
 
-        /* ========== SIDEBAR ========== */
-        .sidebar {
-            width: var(--sidebar-width);
-            background: white;
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            z-index: 200;
-        }
-
-        .sidebar-header {
-            padding: 24px 20px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .app-title {
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--apple-blue);
-            letter-spacing: -0.5px;
-            margin-bottom: 4px;
-        }
-
-        .app-subtitle {
-            font-size: 13px;
-            color: var(--apple-gray);
-            font-weight: 400;
-        }
-
-        .sidebar-nav {
-            flex: 1;
-            overflow-y: auto;
-            padding: 12px 8px;
-        }
-
-        .nav-section {
-            margin-bottom: 24px;
-        }
-
-        .nav-section-title {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--apple-gray);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 8px 12px;
-            margin-bottom: 4px;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            padding: 10px 12px;
-            margin: 2px 0;
-            border-radius: 8px;
-            color: #1c1c1e;
-            text-decoration: none;
-            transition: all 0.2s;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .nav-item:hover {
-            background: var(--apple-bg);
-        }
-
-        .nav-item.active {
-            background: var(--apple-blue);
-            color: white;
-        }
-
-        .nav-item .material-icons {
-            font-size: 20px;
-            margin-right: 12px;
-        }
-
-        .nav-item-text {
-            flex: 1;
-        }
-
-        .nav-item-badge {
-            background: var(--apple-blue);
-            color: white;
-            font-size: 11px;
-            font-weight: 600;
-            padding: 2px 8px;
-            border-radius: 10px;
-            min-width: 20px;
-            text-align: center;
-        }
-
-        .nav-item.active .nav-item-badge {
-            background: white;
-            color: var(--apple-blue);
-        }
-
-        .sidebar-footer {
-            padding: 16px;
-            border-top: 1px solid var(--border);
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            padding: 8px;
-            border-radius: 8px;
-            background: var(--apple-bg);
-        }
-
-        .user-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: var(--apple-blue);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 14px;
-            margin-right: 12px;
-        }
-
-        .user-details {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .user-name {
-            font-size: 13px;
-            font-weight: 600;
-            color: #1c1c1e;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .user-email {
-            font-size: 11px;
-            color: var(--apple-gray);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .logout-btn {
-            background: none;
-            border: none;
-            color: var(--danger-red);
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 6px;
-            transition: all 0.2s;
-        }
-
-        .logout-btn:hover {
-            background: rgba(255, 59, 48, 0.1);
-        }
-
         /* ========== MAIN CONTENT ========== */
         .main-content {
             flex: 1;
@@ -323,7 +162,7 @@ $lastSync = getLastSyncDate($userEmail);
         .page-header {
             background: white;
             border-bottom: 1px solid var(--border);
-            padding: 20px 32px;
+            padding: 16px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -334,30 +173,30 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .page-title {
-            font-size: 28px;
+            font-size: 24px;
             font-weight: 700;
             color: #1c1c1e;
-            letter-spacing: -0.7px;
-            margin-bottom: 4px;
+            letter-spacing: -0.5px;
+            margin-bottom: 2px;
         }
 
         .page-subtitle {
-            font-size: 14px;
+            font-size: 13px;
             color: var(--apple-gray);
             font-weight: 400;
         }
 
         .header-actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             align-items: center;
         }
 
         .btn {
-            padding: 10px 18px;
+            padding: 8px 14px;
             border: none;
             border-radius: 8px;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
             cursor: pointer;
             display: inline-flex;
@@ -382,19 +221,8 @@ $lastSync = getLastSyncDate($userEmail);
             box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
         }
 
-        .btn-secondary {
-            background: white;
-            color: var(--apple-blue);
-            border: 1px solid var(--border);
-        }
-
-        .btn-secondary:hover {
-            background: var(--apple-bg);
-            border-color: var(--apple-blue);
-        }
-
         .btn-icon {
-            padding: 10px;
+            padding: 8px;
             background: white;
             border: 1px solid var(--border);
             border-radius: 8px;
@@ -412,15 +240,25 @@ $lastSync = getLastSyncDate($userEmail);
 
         .btn-icon .material-icons {
             color: var(--apple-gray);
+            transition: transform 0.3s ease;
+        }
+
+        .btn-icon.rotating .material-icons {
+            animation: rotate 0.6s linear;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         /* ========== STATS BAR ========== */
         .stats-bar {
             background: white;
-            padding: 16px 32px;
+            padding: 12px 24px;
             border-bottom: 1px solid var(--border);
             display: flex;
-            gap: 32px;
+            gap: 24px;
             align-items: center;
         }
 
@@ -431,13 +269,13 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .stat-icon {
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            font-size: 16px;
         }
 
         .stat-icon.total {
@@ -461,14 +299,14 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .stat-number {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
             color: #1c1c1e;
             line-height: 1;
         }
 
         .stat-label {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--apple-gray);
             margin-top: 2px;
         }
@@ -478,29 +316,43 @@ $lastSync = getLastSyncDate($userEmail);
             display: flex;
             align-items: center;
             gap: 6px;
-            font-size: 13px;
+            font-size: 12px;
             color: var(--apple-gray);
         }
 
         .sync-info .material-icons {
-            font-size: 16px;
+            font-size: 14px;
         }
 
-        /* ========== CONTENT AREA ========== */
-        .content-area {
+        /* ========== CONTENT AREA WITH SPLIT PANE ========== */
+        .content-wrapper {
             flex: 1;
+            display: flex;
             overflow: hidden;
+        }
+
+        .messages-pane {
+            width: 50%;
             display: flex;
             flex-direction: column;
+            border-right: 1px solid var(--border);
+            background: white;
+        }
+
+        .message-view-pane {
+            width: 50%;
+            display: flex;
+            flex-direction: column;
+            background: #FAFAFA;
         }
 
         /* ========== TOOLBAR ========== */
         .toolbar {
             background: white;
-            padding: 16px 32px;
+            padding: 12px 20px;
             border-bottom: 1px solid var(--border);
             display: flex;
-            gap: 12px;
+            gap: 10px;
             align-items: center;
         }
 
@@ -511,10 +363,10 @@ $lastSync = getLastSyncDate($userEmail);
 
         .search-box input {
             width: 100%;
-            padding: 10px 14px 10px 42px;
+            padding: 8px 12px 8px 36px;
             border: 1px solid var(--border);
             border-radius: 8px;
-            font-size: 14px;
+            font-size: 13px;
             font-family: 'Inter', sans-serif;
             background: var(--apple-bg);
             transition: all 0.2s;
@@ -529,28 +381,28 @@ $lastSync = getLastSyncDate($userEmail);
 
         .search-box .material-icons {
             position: absolute;
-            left: 14px;
+            left: 12px;
             top: 50%;
             transform: translateY(-50%);
             color: var(--apple-gray);
-            font-size: 20px;
+            font-size: 18px;
         }
 
         .filter-group {
             display: flex;
-            gap: 8px;
+            gap: 6px;
         }
 
         .filter-btn {
-            padding: 8px 16px;
+            padding: 6px 12px;
             background: white;
             border: 1px solid var(--border);
             border-radius: 8px;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 6px;
-            font-size: 13px;
+            gap: 4px;
+            font-size: 12px;
             font-weight: 500;
             color: #1c1c1e;
             transition: all 0.2s;
@@ -569,31 +421,26 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .filter-btn .material-icons {
-            font-size: 16px;
+            font-size: 14px;
         }
 
         /* ========== MESSAGES AREA ========== */
         .messages-area {
             flex: 1;
             overflow-y: auto;
-            padding: 20px 32px;
         }
 
         .messages-container {
             background: white;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            overflow: hidden;
-            box-shadow: var(--card-shadow);
         }
 
         .message-item {
-            padding: 16px 20px;
+            padding: 14px 20px;
             border-bottom: 1px solid var(--border);
             cursor: pointer;
             transition: all 0.2s;
             display: flex;
-            gap: 14px;
+            gap: 12px;
             align-items: start;
             position: relative;
         }
@@ -604,6 +451,12 @@ $lastSync = getLastSyncDate($userEmail);
 
         .message-item:hover {
             background: #FAFAFA;
+        }
+
+        .message-item.selected {
+            background: #F0F7FF;
+            border-left: 3px solid var(--apple-blue);
+            padding-left: 17px;
         }
 
         .message-item.unread {
@@ -632,18 +485,10 @@ $lastSync = getLastSyncDate($userEmail);
             background: var(--success-green);
         }
 
-        .message-checkbox {
-            width: 18px;
-            height: 18px;
-            margin-top: 3px;
-            cursor: pointer;
-            accent-color: var(--apple-blue);
-        }
-
         .message-star {
             cursor: pointer;
             color: var(--apple-light-gray);
-            font-size: 20px;
+            font-size: 18px;
             margin-top: 2px;
             transition: all 0.2s;
         }
@@ -664,29 +509,29 @@ $lastSync = getLastSyncDate($userEmail);
 
         .message-header {
             display: flex;
-            justify-space-between;
+            justify-content: space-between;
             align-items: start;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
         .message-sender {
             font-weight: 600;
             color: #1c1c1e;
-            font-size: 15px;
+            font-size: 14px;
             margin-right: 12px;
         }
 
         .message-date {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--apple-gray);
             white-space: nowrap;
             font-weight: 500;
         }
 
         .message-subject {
-            font-size: 14px;
+            font-size: 13px;
             color: #1c1c1e;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             font-weight: 500;
             display: -webkit-box;
             -webkit-line-clamp: 1;
@@ -695,29 +540,29 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .message-preview {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--apple-gray);
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            line-height: 1.5;
+            line-height: 1.4;
         }
 
         .message-badges {
             display: flex;
-            gap: 6px;
-            margin-top: 8px;
+            gap: 4px;
+            margin-top: 6px;
             flex-wrap: wrap;
         }
 
         .badge {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            padding: 3px 8px;
-            border-radius: 6px;
-            font-size: 11px;
+            gap: 3px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
             font-weight: 600;
         }
 
@@ -732,171 +577,64 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .badge-attachment .material-icons {
-            font-size: 12px;
+            font-size: 11px;
         }
 
-        /* ========== EMPTY STATE ========== */
-        .empty-state {
-            padding: 80px 20px;
-            text-align: center;
-        }
-
-        .empty-icon {
-            font-size: 80px;
-            margin-bottom: 20px;
-        }
-
-        .empty-title {
-            font-size: 22px;
-            font-weight: 600;
-            color: #1c1c1e;
-            margin-bottom: 8px;
-        }
-
-        .empty-text {
-            font-size: 15px;
-            color: var(--apple-gray);
-            max-width: 400px;
-            margin: 0 auto 24px;
-            line-height: 1.6;
-        }
-
-        .empty-action {
-            margin-top: 20px;
-        }
-
-        /* ========== LOADING ========== */
-        .loading {
-            padding: 60px;
-            text-align: center;
-        }
-
-        .loading-spinner {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            border: 3px solid var(--border);
-            border-top-color: var(--apple-blue);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin-bottom: 16px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .loading-text {
-            font-size: 14px;
-            color: var(--apple-gray);
-        }
-
-        /* ========== MODAL ========== */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(4px);
-        }
-
-        .modal-overlay.active {
-            display: flex;
-        }
-
-        .modal {
+        /* ========== MESSAGE VIEW PANE ========== */
+        .message-view-header {
             background: white;
-            border-radius: 16px;
-            max-width: 900px;
-            max-height: 90vh;
-            width: 90%;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: modalSlideIn 0.3s ease-out;
-        }
-
-        @keyframes modalSlideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-20px) scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        .modal-header {
-            padding: 24px 28px;
             border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: start;
-            background: white;
+            padding: 16px 20px;
         }
 
-        .modal-title-section {
-            flex: 1;
-            min-width: 0;
-            margin-right: 20px;
-        }
-
-        .modal-subject {
-            font-size: 20px;
+        .message-view-title {
+            font-size: 18px;
             font-weight: 600;
             color: #1c1c1e;
             margin-bottom: 8px;
             line-height: 1.4;
         }
 
-        .modal-meta {
+        .message-view-meta {
             display: flex;
-            gap: 16px;
+            gap: 12px;
             flex-wrap: wrap;
+            margin-bottom: 12px;
         }
 
-        .modal-meta-item {
+        .message-view-meta-item {
             display: flex;
             align-items: center;
-            gap: 6px;
-            font-size: 13px;
+            gap: 4px;
+            font-size: 12px;
             color: var(--apple-gray);
         }
 
-        .modal-meta-item .material-icons {
-            font-size: 16px;
+        .message-view-meta-item .material-icons {
+            font-size: 14px;
         }
 
-        .modal-meta-label {
+        .message-view-meta-label {
             font-weight: 600;
             color: #1c1c1e;
         }
 
-        .modal-actions {
+        .message-view-actions {
             display: flex;
-            gap: 8px;
+            gap: 6px;
         }
 
-        .modal-body {
-            padding: 28px;
-            overflow-y: auto;
+        .message-view-body {
             flex: 1;
-            background: #FAFAFA;
+            overflow-y: auto;
+            padding: 20px;
         }
 
         .message-detail {
             background: white;
-            border-radius: 12px;
-            padding: 24px;
-            font-size: 15px;
+            border-radius: 10px;
+            padding: 20px;
+            font-size: 14px;
             line-height: 1.7;
             color: #1c1c1e;
             box-shadow: var(--card-shadow);
@@ -917,18 +655,18 @@ $lastSync = getLastSyncDate($userEmail);
             text-decoration: underline;
         }
 
-        /* Attachments in modal */
+        /* Attachments */
         .attachments-section {
-            margin-top: 24px;
-            padding-top: 24px;
+            margin-top: 20px;
+            padding-top: 20px;
             border-top: 1px solid var(--border);
         }
 
         .attachments-title {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             color: #1c1c1e;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
             gap: 6px;
@@ -936,15 +674,15 @@ $lastSync = getLastSyncDate($userEmail);
 
         .attachments-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
         }
 
         .attachment-card {
             background: white;
             border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 14px;
+            border-radius: 8px;
+            padding: 12px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -960,20 +698,73 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .attachment-icon {
-            font-size: 40px;
-            margin-bottom: 8px;
+            font-size: 36px;
+            margin-bottom: 6px;
         }
 
         .attachment-name {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 500;
             color: #1c1c1e;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
             word-break: break-word;
         }
 
         .attachment-size {
-            font-size: 11px;
+            font-size: 10px;
+            color: var(--apple-gray);
+        }
+
+        /* ========== EMPTY STATE ========== */
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1c1c1e;
+            margin-bottom: 6px;
+        }
+
+        .empty-text {
+            font-size: 14px;
+            color: var(--apple-gray);
+            max-width: 320px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* ========== LOADING ========== */
+        .loading {
+            padding: 40px;
+            text-align: center;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            border: 2px solid var(--border);
+            border-top-color: var(--apple-blue);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 12px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 13px;
             color: var(--apple-gray);
         }
 
@@ -984,17 +775,17 @@ $lastSync = getLastSyncDate($userEmail);
             right: 24px;
             background: #1c1c1e;
             color: white;
-            padding: 14px 20px;
+            padding: 12px 18px;
             border-radius: 10px;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
             display: flex;
             align-items: center;
-            gap: 12px;
-            font-size: 14px;
+            gap: 10px;
+            font-size: 13px;
             font-weight: 500;
             z-index: 2000;
             animation: toastSlideIn 0.3s ease-out;
-            max-width: 400px;
+            max-width: 360px;
         }
 
         @keyframes toastSlideIn {
@@ -1017,111 +808,13 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .toast .material-icons {
-            font-size: 20px;
-        }
-
-        /* ========== RESPONSIVE ========== */
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 220px;
-            }
-            
-            .page-header {
-                padding: 16px 20px;
-            }
-            
-            .page-title {
-                font-size: 24px;
-            }
-            
-            .stats-bar {
-                padding: 12px 20px;
-                gap: 20px;
-            }
-            
-            .toolbar {
-                padding: 12px 20px;
-                flex-wrap: wrap;
-            }
-            
-            .messages-area {
-                padding: 16px 20px;
-            }
+            font-size: 18px;
         }
     </style>
 </head>
 <body>
-    <!-- ========== SIDEBAR ========== -->
-    <div class="sidebar">
-        <div class="sidebar-header">
-            <div class="app-title">SXC MDTS</div>
-            <div class="app-subtitle">Mail Delivery & Tracking</div>
-        </div>
-
-        <nav class="sidebar-nav">
-            <div class="nav-section">
-                <div class="nav-section-title">Mail</div>
-                <a href="index.php" class="nav-item">
-                    <span class="material-icons">edit</span>
-                    <span class="nav-item-text">Compose</span>
-                </a>
-                <a href="inbox.php" class="nav-item active">
-                    <span class="material-icons">inbox</span>
-                    <span class="nav-item-text">Inbox</span>
-                    <span class="nav-item-badge" id="sidebarUnreadBadge"><?= $unreadCount ?></span>
-                </a>
-                <a href="sent.php" class="nav-item">
-                    <span class="material-icons">send</span>
-                    <span class="nav-item-text">Sent</span>
-                </a>
-                <a href="drafts.php" class="nav-item">
-                    <span class="material-icons">drafts</span>
-                    <span class="nav-item-text">Drafts</span>
-                </a>
-            </div>
-
-            <div class="nav-section">
-                <div class="nav-section-title">Organization</div>
-                <div class="nav-item">
-                    <span class="material-icons">star</span>
-                    <span class="nav-item-text">Starred</span>
-                </div>
-                <div class="nav-item">
-                    <span class="material-icons">label</span>
-                    <span class="nav-item-text">Important</span>
-                </div>
-                <div class="nav-item">
-                    <span class="material-icons">delete</span>
-                    <span class="nav-item-text">Trash</span>
-                </div>
-            </div>
-
-            <div class="nav-section">
-                <div class="nav-section-title">Settings</div>
-                <a href="settings.php" class="nav-item">
-                    <span class="material-icons">settings</span>
-                    <span class="nav-item-text">Settings</span>
-                </a>
-                <a href="help.php" class="nav-item">
-                    <span class="material-icons">help</span>
-                    <span class="nav-item-text">Help & Support</span>
-                </a>
-            </div>
-        </nav>
-
-        <div class="sidebar-footer">
-            <div class="user-info">
-                <div class="user-avatar"><?= strtoupper(substr($userEmail, 0, 1)) ?></div>
-                <div class="user-details">
-                    <div class="user-name">Account</div>
-                    <div class="user-email"><?= htmlspecialchars($userEmail) ?></div>
-                </div>
-                <button class="logout-btn" onclick="logout()" title="Logout">
-                    <span class="material-icons">logout</span>
-                </button>
-            </div>
-        </div>
-    </div>
+    <!-- ========== SIDEBAR (EXTERNAL) ========== -->
+    <?php require 'sidebar.php'; ?>
 
     <!-- ========== MAIN CONTENT ========== -->
     <div class="main-content">
@@ -1135,12 +828,12 @@ $lastSync = getLastSyncDate($userEmail);
                 <button class="btn-icon" onclick="syncMessages()" title="Sync now" id="syncBtn">
                     <span class="material-icons">sync</span>
                 </button>
-                <button class="btn-icon" onclick="forceRefresh()" title="Force refresh">
+                <button class="btn-icon" onclick="forceRefresh()" title="Force refresh" id="refreshBtn">
                     <span class="material-icons">refresh</span>
                 </button>
                 <button class="btn btn-primary" onclick="location.href='index.php'">
                     <span class="material-icons">edit</span>
-                    Compose New
+                    Compose
                 </button>
             </div>
         </div>
@@ -1153,7 +846,7 @@ $lastSync = getLastSyncDate($userEmail);
                 </div>
                 <div class="stat-content">
                     <div class="stat-number" id="totalCount"><?= $totalCount ?></div>
-                    <div class="stat-label">Total Messages</div>
+                    <div class="stat-label">Total</div>
                 </div>
             </div>
 
@@ -1189,294 +882,166 @@ $lastSync = getLastSyncDate($userEmail);
             </div>
         </div>
 
-        <!-- Content area -->
-        <div class="content-area">
-            <!-- Toolbar -->
-            <div class="toolbar">
-                <div class="search-box">
-                    <span class="material-icons">search</span>
-                    <input type="text" id="searchInput" placeholder="Search in inbox..." onkeyup="searchMessages()">
+        <!-- Content wrapper with split panes -->
+        <div class="content-wrapper">
+            <!-- Left pane: Messages list -->
+            <div class="messages-pane">
+                <!-- Toolbar -->
+                <div class="toolbar">
+                    <div class="search-box">
+                        <span class="material-icons">search</span>
+                        <input type="text" id="searchInput" placeholder="Search..." onkeyup="searchMessages()">
+                    </div>
+
+                    <div class="filter-group">
+                        <button class="filter-btn" id="filterUnread" onclick="toggleFilter('unread')">
+                            <span class="material-icons">mark_email_unread</span>
+                            Unread
+                        </button>
+                        <button class="filter-btn" id="filterStarred" onclick="toggleFilter('starred')">
+                            <span class="material-icons">star</span>
+                            Starred
+                        </button>
+                        <button class="filter-btn" id="filterNew" onclick="toggleFilter('new')">
+                            <span class="material-icons">fiber_new</span>
+                            New
+                        </button>
+                    </div>
                 </div>
 
-                <div class="filter-group">
-                    <button class="filter-btn active" id="filterAll" onclick="setFilter('all')">
-                        All
-                    </button>
-                    <button class="filter-btn" id="filterUnread" onclick="setFilter('unread')">
-                        <span class="material-icons">mark_email_unread</span>
-                        Unread
-                    </button>
-                    <button class="filter-btn" id="filterStarred" onclick="setFilter('starred')">
-                        <span class="material-icons">star</span>
-                        Starred
-                    </button>
-                    <button class="filter-btn" id="filterNew" onclick="setFilter('new')">
-                        <span class="material-icons">fiber_new</span>
-                        New
-                    </button>
-                </div>
-            </div>
-
-            <!-- Messages area -->
-            <div class="messages-area">
-                <div class="messages-container" id="messagesContainer">
-                    <div class="loading">
-                        <div class="loading-spinner"></div>
-                        <div class="loading-text">Loading messages...</div>
+                <!-- Messages list -->
+                <div class="messages-area">
+                    <div class="messages-container" id="messagesList">
+                        <div class="loading">
+                            <div class="loading-spinner"></div>
+                            <div class="loading-text">Loading messages...</div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- ========== MESSAGE DETAIL MODAL ========== -->
-    <div class="modal-overlay" id="messageModal" onclick="closeModalOnOverlay(event)">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <div class="modal-title-section">
-                    <h2 class="modal-subject" id="modalSubject"></h2>
-                    <div class="modal-meta" id="modalMeta"></div>
-                </div>
-                <div class="modal-actions">
-                    <button class="btn-icon" onclick="toggleStarFromModal()" id="modalStarBtn" title="Star">
-                        <span class="material-icons">star_border</span>
-                    </button>
-                    <button class="btn-icon" onclick="deleteMessageFromModal()" title="Delete">
-                        <span class="material-icons">delete</span>
-                    </button>
-                    <button class="btn-icon" onclick="closeModal()" title="Close">
-                        <span class="material-icons">close</span>
-                    </button>
+            <!-- Right pane: Message view -->
+            <div class="message-view-pane">
+                <div id="messageViewContent">
+                    <div class="empty-state">
+                        <div class="empty-icon">✉️</div>
+                        <div class="empty-title">No message selected</div>
+                        <div class="empty-text">Click on a message to view its contents</div>
+                    </div>
                 </div>
             </div>
-            <div class="modal-body" id="modalBody"></div>
         </div>
     </div>
 
     <script>
-        let currentFilter = 'all';
-        let messages = <?= json_encode($messages) ?>;
+        let currentFilters = { unread_only: false, starred_only: false, new_only: false };
+        let currentSearchQuery = '';
         let currentMessageId = null;
-        let syncInterval = null;
+        let selectedMessageElement = null;
 
-        // Initial render
-        setTimeout(() => {
-            renderMessages(messages);
-        }, 500);
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchMessages();
+        });
 
-        // Auto-sync every 2 minutes
-        syncInterval = setInterval(() => {
-            syncMessages(true); // Silent sync
-        }, 120000);
+        async function fetchMessages() {
+            try {
+                const params = new URLSearchParams({
+                    action: 'fetch_messages',
+                    limit: 50,
+                    offset: 0
+                });
 
-        function renderMessages(msgs) {
-            const container = document.getElementById('messagesContainer');
-            
-            if (!msgs || msgs.length === 0) {
+                if (currentSearchQuery) params.append('search', currentSearchQuery);
+                if (currentFilters.unread_only) params.append('unread_only', '1');
+                if (currentFilters.starred_only) params.append('starred_only', '1');
+                if (currentFilters.new_only) params.append('new_only', '1');
+
+                const response = await fetch(`inbox.php?${params.toString()}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    renderMessages(data.messages);
+                    document.getElementById('totalCount').textContent = data.total;
+                }
+            } catch (error) {
+                console.error('Error fetching messages:', error);
+                document.getElementById('messagesList').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">⚠️</div>
+                        <div class="empty-title">Error loading messages</div>
+                        <div class="empty-text">Please try refreshing the page</div>
+                    </div>
+                `;
+            }
+        }
+
+        function renderMessages(messages) {
+            const container = document.getElementById('messagesList');
+
+            if (!messages || messages.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-icon">📭</div>
                         <div class="empty-title">No messages found</div>
-                        <div class="empty-text">Your inbox is empty or there are no messages matching your current filter.</div>
-                        <div class="empty-action">
-                            <button class="btn btn-primary" onclick="syncMessages()">
-                                <span class="material-icons">sync</span>
-                                Sync Now
-                            </button>
-                        </div>
+                        <div class="empty-text">Your inbox is empty or no messages match your filters</div>
                     </div>
                 `;
                 return;
             }
 
-            let html = '';
-            msgs.forEach(msg => {
-                const isUnread = msg.is_read == 0;
-                const isNew = msg.is_new == 1;
-                const isStarred = msg.is_starred == 1;
-                const hasAttachments = msg.has_attachments == 1;
-                
-                let attachments = [];
-                if (hasAttachments && msg.attachment_data) {
-                    try {
-                        attachments = JSON.parse(msg.attachment_data);
-                    } catch (e) {}
-                }
-                
-                html += `
-                    <div class="message-item ${isUnread ? 'unread' : ''} ${isNew ? 'new' : ''}" onclick="viewMessage(${msg.id})">
-                        <span class="material-icons message-star ${isStarred ? 'starred' : ''}" 
-                              onclick="event.stopPropagation(); toggleStar(${msg.id})">
-                            ${isStarred ? 'star' : 'star_border'}
+            container.innerHTML = messages.map(msg => {
+                const classes = ['message-item'];
+                if (msg.is_read == 0) classes.push('unread');
+                if (msg.is_new == 1) classes.push('new');
+                if (msg.id == currentMessageId) classes.push('selected');
+
+                const preview = msg.body ? msg.body.substring(0, 100) : '';
+
+                return `
+                    <div class="${classes.join(' ')}" onclick="viewMessage(${msg.id}, event)">
+                        <span class="material-icons message-star ${msg.is_starred == 1 ? 'starred' : ''}" 
+                              onclick="toggleStar(${msg.id}, event)">
+                            ${msg.is_starred == 1 ? 'star' : 'star_border'}
                         </span>
                         <div class="message-content">
                             <div class="message-header">
-                                <div class="message-sender">${escapeHtml(msg.sender_name || msg.sender_email)}</div>
-                                <div class="message-date">${formatDate(msg.received_date)}</div>
+                                <span class="message-sender">${escapeHtml(msg.sender)}</span>
+                                <span class="message-date">${formatDate(msg.received_date)}</span>
                             </div>
                             <div class="message-subject">${escapeHtml(msg.subject)}</div>
-                            <div class="message-preview">${escapeHtml(msg.body_preview || '')}</div>
-                            ${isNew || hasAttachments ? `
-                                <div class="message-badges">
-                                    ${isNew ? '<span class="badge badge-new">NEW</span>' : ''}
-                                    ${hasAttachments ? `
-                                        <span class="badge badge-attachment">
-                                            <span class="material-icons">attach_file</span>
-                                            ${attachments.length} file${attachments.length > 1 ? 's' : ''}
-                                        </span>
-                                    ` : ''}
-                                </div>
-                            ` : ''}
+                            <div class="message-preview">${escapeHtml(preview)}</div>
+                            <div class="message-badges">
+                                ${msg.is_new == 1 ? '<span class="badge badge-new">NEW</span>' : ''}
+                                ${msg.has_attachments == 1 ? '<span class="badge badge-attachment"><span class="material-icons">attach_file</span> Attachments</span>' : ''}
+                            </div>
                         </div>
                     </div>
                 `;
-            });
-
-            container.innerHTML = html;
+            }).join('');
         }
 
-        function setFilter(filter) {
-            currentFilter = filter;
-            
-            // Update button states
-            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-            const filterId = 'filter' + filter.charAt(0).toUpperCase() + filter.slice(1);
-            document.getElementById(filterId).classList.add('active');
-            
-            fetchMessages();
-        }
-
-        function searchMessages() {
-            fetchMessages();
-        }
-
-        async function fetchMessages() {
-            const searchTerm = document.getElementById('searchInput').value;
-            let url = `inbox.php?action=fetch_messages`;
-            
-            if (searchTerm) url += `&search=${encodeURIComponent(searchTerm)}`;
-            if (currentFilter === 'unread') url += '&unread_only=1';
-            if (currentFilter === 'starred') url += '&starred_only=1';
-            if (currentFilter === 'new') url += '&new_only=1';
-            
-            try {
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                if (data.success) {
-                    messages = data.messages;
-                    renderMessages(messages);
-                    updateCounts();
-                }
-            } catch (error) {
-                console.error('Error fetching messages:', error);
-                showToast('Failed to load messages', 'error');
-            }
-        }
-
-        async function syncMessages(silent = false) {
-            const syncBtn = document.getElementById('syncBtn');
-            if (syncBtn) {
-                syncBtn.querySelector('.material-icons').style.animation = 'spin 0.8s linear infinite';
-            }
-            
-            if (!silent) {
-                showToast('Syncing messages...', 'info');
-            }
-            
-            try {
-                const response = await fetch('inbox.php?action=sync&limit=50');
-                const data = await response.json();
-                
-                if (syncBtn) {
-                    syncBtn.querySelector('.material-icons').style.animation = '';
+        async function viewMessage(messageId, event) {
+            if (event) {
+                // Remove selected class from previous element
+                if (selectedMessageElement) {
+                    selectedMessageElement.classList.remove('selected');
                 }
                 
-                if (data.success) {
-                    if (!silent) {
-                        showToast(data.message, 'success');
-                    }
-                    fetchMessages();
-                    updateLastSyncTime();
-                } else {
-                    if (!silent) {
-                        showToast('Sync failed: ' + data.error, 'error');
-                    }
-                }
-            } catch (error) {
-                if (syncBtn) {
-                    syncBtn.querySelector('.material-icons').style.animation = '';
-                }
-                console.error('Error syncing:', error);
-                if (!silent) {
-                    showToast('Sync failed', 'error');
-                }
+                // Add selected class to clicked element
+                selectedMessageElement = event.currentTarget;
+                selectedMessageElement.classList.add('selected');
             }
-        }
 
-        async function forceRefresh() {
-            if (!confirm('Force refresh will clear all cached messages and re-fetch from the server. This may take a moment. Continue?')) {
-                return;
-            }
-            
-            showToast('Refreshing inbox...', 'info');
-            
-            try {
-                const response = await fetch('inbox.php?action=sync&limit=100&force=true');
-                const data = await response.json();
-                
-                if (data.success) {
-                    showToast(data.message, 'success');
-                    fetchMessages();
-                    updateLastSyncTime();
-                } else {
-                    showToast('Refresh failed: ' + data.error, 'error');
-                }
-            } catch (error) {
-                console.error('Error refreshing:', error);
-                showToast('Refresh failed', 'error');
-            }
-        }
-
-        async function viewMessage(messageId) {
             currentMessageId = messageId;
-            
+
             try {
                 const response = await fetch(`inbox.php?action=get_message&id=${messageId}`);
                 const data = await response.json();
-                
+
                 if (data.success) {
                     const msg = data.message;
-                    
-                    // Set subject
-                    document.getElementById('modalSubject').textContent = msg.subject;
-                    
-                    // Set metadata
-                    const metaHtml = `
-                        <div class="modal-meta-item">
-                            <span class="material-icons">person</span>
-                            <span class="modal-meta-label">From:</span>
-                            ${escapeHtml(msg.sender_name || msg.sender_email)}
-                        </div>
-                        <div class="modal-meta-item">
-                            <span class="material-icons">schedule</span>
-                            <span class="modal-meta-label">Date:</span>
-                            ${formatDateLong(msg.received_date)}
-                        </div>
-                    `;
-                    document.getElementById('modalMeta').innerHTML = metaHtml;
-                    
-                    // Set star button state
-                    const starBtn = document.getElementById('modalStarBtn');
-                    const starIcon = starBtn.querySelector('.material-icons');
-                    if (msg.is_starred == 1) {
-                        starIcon.textContent = 'star';
-                        starIcon.style.color = 'var(--warning-orange)';
-                    } else {
-                        starIcon.textContent = 'star_border';
-                        starIcon.style.color = '';
-                    }
-                    
+
                     // Parse attachments
                     let attachments = [];
                     if (msg.has_attachments && msg.attachment_data) {
@@ -1484,10 +1049,10 @@ $lastSync = getLastSyncDate($userEmail);
                             attachments = JSON.parse(msg.attachment_data);
                         } catch (e) {}
                     }
-                    
-                    // Set body
+
+                    // Build body HTML
                     let bodyHtml = `<div class="message-detail">${escapeHtml(msg.body)}</div>`;
-                    
+
                     // Add attachments section
                     if (attachments.length > 0) {
                         bodyHtml += `
@@ -1498,7 +1063,7 @@ $lastSync = getLastSyncDate($userEmail);
                                 </div>
                                 <div class="attachments-grid">
                                     ${attachments.map(att => `
-                                        <div class="attachment-card">
+                                        <div class="attachment-card" onclick="downloadAttachment(${msg.id}, '${escapeHtml(att.filename)}')">
                                             <div class="attachment-icon">${att.icon || '📎'}</div>
                                             <div class="attachment-name">${escapeHtml(att.filename)}</div>
                                             <div class="attachment-size">${formatBytes(att.size)}</div>
@@ -1508,12 +1073,40 @@ $lastSync = getLastSyncDate($userEmail);
                             </div>
                         `;
                     }
-                    
-                    document.getElementById('modalBody').innerHTML = bodyHtml;
-                    document.getElementById('messageModal').classList.add('active');
-                    
+
+                    // Render message view
+                    document.getElementById('messageViewContent').innerHTML = `
+                        <div class="message-view-header">
+                            <div class="message-view-title">${escapeHtml(msg.subject)}</div>
+                            <div class="message-view-meta">
+                                <div class="message-view-meta-item">
+                                    <span class="material-icons">person</span>
+                                    <span class="message-view-meta-label">From:</span> ${escapeHtml(msg.sender)}
+                                </div>
+                                <div class="message-view-meta-item">
+                                    <span class="material-icons">schedule</span>
+                                    <span class="message-view-meta-label">Date:</span> ${formatDateLong(msg.received_date)}
+                                </div>
+                            </div>
+                            <div class="message-view-actions">
+                                <button class="filter-btn" onclick="toggleStarFromView()">
+                                    <span class="material-icons">${msg.is_starred == 1 ? 'star' : 'star_border'}</span>
+                                    ${msg.is_starred == 1 ? 'Starred' : 'Star'}
+                                </button>
+                                <button class="filter-btn" onclick="deleteMessageFromView()">
+                                    <span class="material-icons">delete</span>
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                        <div class="message-view-body">
+                            ${bodyHtml}
+                        </div>
+                    `;
+
                     // Refresh list to update read status
-                    fetchMessages();
+                    setTimeout(() => fetchMessages(), 100);
+                    updateCounts();
                 }
             } catch (error) {
                 console.error('Error viewing message:', error);
@@ -1521,56 +1114,122 @@ $lastSync = getLastSyncDate($userEmail);
             }
         }
 
-        function closeModal() {
-            document.getElementById('messageModal').classList.remove('active');
-            currentMessageId = null;
-        }
+        async function syncMessages() {
+            const btn = document.getElementById('syncBtn');
+            btn.classList.add('rotating');
+            
+            try {
+                const response = await fetch('inbox.php?action=sync&limit=50&force=false');
+                const data = await response.json();
 
-        function closeModalOnOverlay(event) {
-            if (event.target.id === 'messageModal') {
-                closeModal();
+                if (data.success) {
+                    showToast(`Synced ${data.new_count} new messages`, 'success');
+                    fetchMessages();
+                    updateCounts();
+                    updateLastSyncTime();
+                } else {
+                    showToast(data.error || 'Sync failed', 'error');
+                }
+            } catch (error) {
+                console.error('Sync error:', error);
+                showToast('Sync failed', 'error');
+            } finally {
+                setTimeout(() => btn.classList.remove('rotating'), 600);
             }
         }
 
-        async function toggleStar(messageId) {
+        async function forceRefresh() {
+            const btn = document.getElementById('refreshBtn');
+            btn.classList.add('rotating');
+            
+            try {
+                const response = await fetch('inbox.php?action=sync&limit=50&force=true');
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast(`Refreshed: ${data.new_count} new messages`, 'success');
+                    fetchMessages();
+                    updateCounts();
+                    updateLastSyncTime();
+                } else {
+                    showToast(data.error || 'Refresh failed', 'error');
+                }
+            } catch (error) {
+                console.error('Refresh error:', error);
+                showToast('Refresh failed', 'error');
+            } finally {
+                setTimeout(() => btn.classList.remove('rotating'), 600);
+            }
+        }
+
+        function toggleFilter(filterType) {
+            const filterBtn = document.getElementById('filter' + filterType.charAt(0).toUpperCase() + filterType.slice(1));
+
+            if (filterType === 'unread') {
+                currentFilters.unread_only = !currentFilters.unread_only;
+                filterBtn.classList.toggle('active');
+            } else if (filterType === 'starred') {
+                currentFilters.starred_only = !currentFilters.starred_only;
+                filterBtn.classList.toggle('active');
+            } else if (filterType === 'new') {
+                currentFilters.new_only = !currentFilters.new_only;
+                filterBtn.classList.toggle('active');
+            }
+
+            fetchMessages();
+        }
+
+        function searchMessages() {
+            currentSearchQuery = document.getElementById('searchInput').value;
+            fetchMessages();
+        }
+
+        async function toggleStar(messageId, event) {
+            event.stopPropagation();
+
             try {
                 const response = await fetch(`inbox.php?action=toggle_star&id=${messageId}`);
                 const data = await response.json();
-                
+
                 if (data.success) {
                     fetchMessages();
+                    if (currentMessageId === messageId) {
+                        viewMessage(messageId);
+                    }
                 }
             } catch (error) {
                 console.error('Error toggling star:', error);
             }
         }
 
-        async function toggleStarFromModal() {
+        async function toggleStarFromView() {
             if (!currentMessageId) return;
-            
-            await toggleStar(currentMessageId);
-            
-            // Refresh modal
-            setTimeout(() => {
-                viewMessage(currentMessageId);
-            }, 300);
+            await toggleStar(currentMessageId, { stopPropagation: () => {} });
         }
 
-        async function deleteMessageFromModal() {
+        async function deleteMessageFromView() {
             if (!currentMessageId) return;
-            
+
             if (!confirm('Are you sure you want to delete this message?')) {
                 return;
             }
-            
+
             try {
                 const response = await fetch(`inbox.php?action=delete&id=${currentMessageId}`);
                 const data = await response.json();
-                
+
                 if (data.success) {
                     showToast('Message deleted', 'success');
-                    closeModal();
+                    currentMessageId = null;
+                    document.getElementById('messageViewContent').innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">✉️</div>
+                            <div class="empty-title">No message selected</div>
+                            <div class="empty-text">Click on a message to view its contents</div>
+                        </div>
+                    `;
                     fetchMessages();
+                    updateCounts();
                 } else {
                     showToast('Failed to delete message', 'error');
                 }
@@ -1580,21 +1239,23 @@ $lastSync = getLastSyncDate($userEmail);
             }
         }
 
+        function downloadAttachment(messageId, filename) {
+            window.location.href = `download_attachment.php?message_id=${messageId}&filename=${encodeURIComponent(filename)}`;
+        }
+
         async function updateCounts() {
             try {
                 const response = await fetch('inbox.php?action=get_counts');
                 const data = await response.json();
-                
+
                 if (data.success) {
                     document.getElementById('unreadCount').textContent = data.unread;
                     document.getElementById('newCount').textContent = data.new;
-                    document.getElementById('sidebarUnreadBadge').textContent = data.unread;
                     
-                    // Hide badge if 0
-                    if (data.unread == 0) {
-                        document.getElementById('sidebarUnreadBadge').style.display = 'none';
-                    } else {
-                        document.getElementById('sidebarUnreadBadge').style.display = 'block';
+                    const sidebarBadge = document.getElementById('sidebarUnreadBadge');
+                    if (sidebarBadge) {
+                        sidebarBadge.textContent = data.unread;
+                        sidebarBadge.style.display = data.unread > 0 ? 'block' : 'none';
                     }
                 }
             } catch (error) {
@@ -1615,20 +1276,20 @@ $lastSync = getLastSyncDate($userEmail);
             const diffMins = Math.floor(diffMs / 60000);
             const diffHours = Math.floor(diffMs / 3600000);
             const diffDays = Math.floor(diffMs / 86400000);
-            
+
             if (diffMins < 1) return 'Just now';
             if (diffMins < 60) return diffMins + 'm ago';
             if (diffHours < 24) return diffHours + 'h ago';
             if (diffDays < 7) return diffDays + 'd ago';
-            
+
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
 
         function formatDateLong(dateStr) {
             const date = new Date(dateStr);
-            return date.toLocaleString('en-US', { 
-                month: 'short', 
-                day: 'numeric', 
+            return date.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
                 year: 'numeric',
                 hour: 'numeric',
                 minute: '2-digit',
@@ -1652,33 +1313,26 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         function showToast(message, type = 'info') {
-            // Remove existing toasts
             document.querySelectorAll('.toast').forEach(t => t.remove());
-            
+
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
-            
-            const icon = type === 'success' ? 'check_circle' : 
-                        type === 'error' ? 'error' : 
+
+            const icon = type === 'success' ? 'check_circle' :
+                        type === 'error' ? 'error' :
                         'info';
-            
+
             toast.innerHTML = `
                 <span class="material-icons">${icon}</span>
                 <span>${message}</span>
             `;
-            
+
             document.body.appendChild(toast);
-            
+
             setTimeout(() => {
                 toast.style.animation = 'toastSlideIn 0.3s ease-out reverse';
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
-        }
-
-        function logout() {
-            if (confirm('Are you sure you want to logout?')) {
-                window.location.href = 'logout.php';
-            }
         }
 
         // Auto-update counts every 30 seconds
@@ -1686,11 +1340,6 @@ $lastSync = getLastSyncDate($userEmail);
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
-            // ESC to close modal
-            if (e.key === 'Escape' && document.getElementById('messageModal').classList.contains('active')) {
-                closeModal();
-            }
-            
             // Ctrl/Cmd + R to sync
             if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
                 e.preventDefault();
