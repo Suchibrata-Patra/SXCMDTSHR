@@ -1,21 +1,16 @@
 <?php
 /**
- * Fetch Inbox Messages API
- * Syncs new emails from IMAP server to database
- * 
- * UPDATED: Now uses session-based IMAP configuration
+ * FETCH EMAILS API ENDPOINT
+ * Fetches emails from IMAP server and saves them to database
  */
 
 session_start();
 header('Content-Type: application/json');
 
 // Check authentication
-if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['authenticated']) || $_SESSION['authenticated'] !== true) {
-    echo json_encode([
-        'success' => false,
-        'error' => 'Unauthorized'
-    ]);
-    exit;
+if (!isset($_SESSION['authenticated']) || $_SESSION['authenticated'] !== true) {
+    echo json_encode(['success' => false, 'error' => 'Not authenticated']);
+    exit();
 }
 
 require_once 'db_config.php';
@@ -23,21 +18,23 @@ require_once 'settings_helper.php';
 require_once 'imap_helper.php';
 
 $userEmail = $_SESSION['smtp_user'];
+$forceRefresh = isset($_POST['force_refresh']) && $_POST['force_refresh'] === '1';
+
+// Ensure IMAP config is in session
+if (!isset($_SESSION['imap_config'])) {
+    $settings = getSettingsWithDefaults($userEmail);
+    $_SESSION['imap_config'] = [
+        'imap_server' => $settings['imap_server'] ?? 'imap.hostinger.com',
+        'imap_port' => $settings['imap_port'] ?? '993',
+        'imap_encryption' => $settings['imap_encryption'] ?? 'ssl',
+        'imap_username' => $settings['imap_username'] ?? $userEmail,
+        'imap_password' => $_SESSION['smtp_pass']
+    ];
+}
 
 try {
-    // Check if IMAP is configured in session
-    $imapConfig = getImapConfigFromSession();
-    
-    if (!$imapConfig) {
-        echo json_encode([
-            'success' => false,
-            'error' => 'IMAP not configured. Please configure your mail settings first.'
-        ]);
-        exit;
-    }
-    
-    // Fetch new messages using session configuration (limit to 50 per sync to prevent timeout)
-    $result = fetchNewMessagesFromSession($userEmail, 50);
+    // Fetch messages
+    $result = fetchNewMessagesFromSession($userEmail, 50, $forceRefresh);
     
     if ($result['success']) {
         echo json_encode([
@@ -49,16 +46,17 @@ try {
     } else {
         echo json_encode([
             'success' => false,
-            'error' => $result['error'] ?? 'Could not fetch messages'
+            'error' => $result['error'] ?? 'Unknown error occurred',
+            'count' => 0
         ]);
     }
     
 } catch (Exception $e) {
-    error_log("Error in fetch_inbox_messages.php: " . $e->getMessage());
-    
+    error_log("Error in fetch_emails.php: " . $e->getMessage());
     echo json_encode([
         'success' => false,
-        'error' => 'An error occurred while syncing messages'
+        'error' => 'Server error: ' . $e->getMessage(),
+        'count' => 0
     ]);
 }
 ?>
