@@ -101,13 +101,14 @@ try {
     $pdo->beginTransaction();
     
     // Prepare statement for insert/update
-    $stmt = $pdo->prepare("
-        INSERT INTO user_settings (user_email, setting_key, setting_value, updated_at)
-        VALUES (:email, :key, :value, NOW())
-        ON DUPLICATE KEY UPDATE 
-            setting_value = VALUES(setting_value),
-            updated_at = NOW()
-    ");
+   // Prepare statement that matches your actual table structure
+$stmt = $pdo->prepare("
+INSERT INTO user_settings (user_email, setting_key, setting_value, updated_at)
+VALUES (:email, :key, :value, NOW())
+ON DUPLICATE KEY UPDATE 
+    setting_value = VALUES(setting_value),
+    updated_at = NOW()
+");
     
     $savedCount = 0;
     
