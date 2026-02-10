@@ -724,12 +724,11 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
         }
 
         .message-recipient {
-            font-weight: 600;
+            font-weight: 800;
             color: #1c1c1e;
             font-size: 14px;
             margin-right: 0.5rem;
             color:#1479f6;
-            font-weight:500;
         }
 
         .message-date {
