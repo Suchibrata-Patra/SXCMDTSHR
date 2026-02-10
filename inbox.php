@@ -903,6 +903,8 @@ $lastSync = getLastSyncDate($userEmail);
                 </div>
             </div>
 
+            
+            <div class="sync-info">
             <div class="header-actions">
                 <button class="btn-icon" onclick="syncMessages()" title="Sync now" id="syncBtn">
                     <span class="material-icons">sync</span>
@@ -914,7 +916,6 @@ $lastSync = getLastSyncDate($userEmail);
                     <span class="material-icons">edit</span>
                 </button>
             </div>
-            <div class="sync-info">
                 <span class="material-icons">schedule</span>
                 <span id="lastSyncText">
                     <?php if ($lastSync): ?>
