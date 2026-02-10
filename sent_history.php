@@ -495,18 +495,18 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
         }
 
         .stat-icon.total {
-            background: rgba(0, 122, 255, 0.1);
-            color: var(--apple-blue);
+            background: rgba(229,55,66,0.1);
+            color: #e53848
         }
 
         .stat-icon.labeled {
-            background: rgba(52, 199, 89, 0.1);
-            color: var(--success-green);
+            background: rgb(144,236,64,0.1);
+            color: rgb(144,236,64);
         }
 
         .stat-icon.unlabeled {
-            background: rgba(255, 149, 0, 0.1);
-            color: var(--warning-orange);
+            background: rgb(105,242,243, 0.1);
+            color: rgb(105,242,243);
         }
 
         .stat-content {
