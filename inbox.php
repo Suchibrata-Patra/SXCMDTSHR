@@ -861,7 +861,6 @@ $lastSync = getLastSyncDate($userEmail);
                 </button>
                 <button class="btn btn-primary" onclick="location.href='index.php'">
                     <span class="material-icons">edit</span>
-                    Compose
                 </button>
             </div>
         </div>
