@@ -1,5 +1,4 @@
 <?php
-// view_sent_email.php - View single sent email (Simplified 2-Table Version)
 session_start();
 require 'config.php';
 require 'db_config.php';
@@ -11,102 +10,78 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 }
 
 $userEmail = $_SESSION['smtp_user'];
-
-// Get email ID
-$emailId = isset($_GET['id']) ? intval($_GET['id']) : 0;
+$emailId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if (!$emailId) {
     header("Location: sent_history.php");
     exit();
 }
 
-// Fetch email from database - SIMPLIFIED
-try {
-    $pdo = getDatabaseConnection();
-    if (!$pdo) {
-        die("Database connection failed");
-    }
-    
-    // Single table query - much simpler!
-    $email = getSentEmailById($emailId, $userEmail);
-    
-    if (!$email) {
-        header("Location: sent_history.php");
-        exit();
-    }
-    
-    // Get attachments if any
-    $attachments = [];
-
-    
-} catch (PDOException $e) {
-    error_log("Error fetching email: " . $e->getMessage());
-    die("Error loading email");
-}
-
-// Get all unique labels for the dropdown (from sent_emails table)
-$allLabels = getUserLabelsFromSentEmails($userEmail);
-
-// Handle label update
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_label'])) {
-    $newLabelId = !empty($_POST['label_id']) ? intval($_POST['label_id']) : null;
-    $newLabelName = !empty($_POST['label_name']) ? trim($_POST['label_name']) : null;
-    $newLabelColor = !empty($_POST['label_color']) ? trim($_POST['label_color']) : null;
-    
-    if (updateSentEmailLabel($pdo, $emailId, $newLabelId, $newLabelName, $newLabelColor)) {
-        $_SESSION['success_message'] = 'Label updated successfully';
-        header("Location: view_sent_email.php?id=$emailId");
-        exit();
-    } else {
-        $_SESSION['error_message'] = 'Failed to update label';
-    }
-}
+/**
+ * Get sent email by ID
+ */
 function getSentEmailById($emailId, $userEmail) {
     try {
         $pdo = getDatabaseConnection();
         if (!$pdo) return null;
         
         $stmt = $pdo->prepare("
-            SELECT * FROM sent_emails_new
-            WHERE id = :id AND sender_email = :email AND is_deleted = 0
+            SELECT * FROM sent_emails_new 
+            WHERE id = ? AND sender_email = ? AND is_deleted = 0
         ");
-        
-        $stmt->execute([
-            'id' => $emailId,
-            'email' => $userEmail
-        ]);
-        
+        $stmt->execute([$emailId, $userEmail]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
-        
     } catch (PDOException $e) {
-        error_log("Error getting sent email: " . $e->getMessage());
+        error_log("Error fetching email: " . $e->getMessage());
         return null;
     }
 }
-function getUserLabelsFromSentEmails($userEmail) {
+
+/**
+ * Get attachments for a sent email
+ */
+function getSentEmailAttachments($emailId) {
     try {
         $pdo = getDatabaseConnection();
         if (!$pdo) return [];
         
         $stmt = $pdo->prepare("
-            SELECT DISTINCT
-                label_id as id,
-                label_name,
-                label_color
-            FROM sent_emails_new
-            WHERE sender_email = :email
-            AND is_deleted = 0
-            AND label_id IS NOT NULL
-            ORDER BY label_name
+            SELECT * FROM sent_email_attachments_new 
+            WHERE sent_email_id = ? 
+            ORDER BY uploaded_at ASC
         ");
-        
-        $stmt->execute(['email' => $userEmail]);
+        $stmt->execute([$emailId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
     } catch (PDOException $e) {
-        error_log("Error getting user labels: " . $e->getMessage());
+        error_log("Error fetching attachments: " . $e->getMessage());
         return [];
     }
+}
+
+/**
+ * Format file size
+ */
+function formatFileSize($bytes) {
+    if ($bytes <= 0) return "0 B";
+    $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    $power = floor(log($bytes, 1024));
+    $power = min($power, count($units) - 1);
+    $size = $bytes / pow(1024, $power);
+    return round($size, 2) . ' ' . $units[$power];
+}
+
+// Fetch the email
+$email = getSentEmailById($emailId, $userEmail);
+
+if (!$email) {
+    header("Location: sent_history.php");
+    exit();
+}
+
+// Get attachments if any
+$attachments = [];
+if ($email['has_attachments']) {
+    $attachments = getSentEmailAttachments($emailId);
 }
 
 ?>
@@ -116,8 +91,8 @@ function getUserLabelsFromSentEmails($userEmail) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($email['subject']) ?> - SXC MDTS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         * {
@@ -127,225 +102,165 @@ function getUserLabelsFromSentEmails($userEmail) {
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            background: #f6f8fc;
-            min-height: 100vh;
-        }
-
-        .top-nav {
-            background: white;
-            border-bottom: 1px solid #e0e0e0;
-            padding: 12px 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-        }
-
-        .nav-left {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .back-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background: transparent;
-            border: 1px solid #dadce0;
-            border-radius: 8px;
-            color: #5f6368;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.15s;
-        }
-
-        .back-button:hover {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: #f8f9fa;
-            border-color: #bdc1c6;
+            color: #1c1c1e;
+            line-height: 1.6;
         }
 
-        .email-subject-nav {
-            font-size: 18px;
-            font-weight: 600;
-            color: #202124;
-        }
-
-        .email-container {
-            max-width: 900px;
-            margin: 24px auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-            border: 1px solid #e5e7eb;
-            overflow: hidden;
+        .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 0 20px;
         }
 
         .email-header {
-            padding: 24px;
-            border-bottom: 1px solid #e0e0e0;
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e5e7eb;
         }
 
         .email-subject {
-            font-size: 24px;
+            font-size: 28px;
             font-weight: 700;
-            color: #202124;
-            margin-bottom: 16px;
+            color: #1c1c1e;
+            margin-bottom: 20px;
         }
 
-        .label-section {
-            margin-bottom: 16px;
+        .email-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 15px 0;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .meta-item .material-icons {
+            font-size: 18px;
+            color: #9ca3af;
+        }
+
+        .meta-label {
+            font-weight: 600;
+            color: #374151;
         }
 
         .label-badge {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 6px 14px;
-            border-radius: 16px;
-            font-size: 13px;
-            font-weight: 600;
-            color: white;
-        }
-
-        .label-editor {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .label-select {
-            padding: 8px 12px;
-            border: 1px solid #dadce0;
-            border-radius: 8px;
-            font-size: 14px;
-            cursor: pointer;
-        }
-
-        .btn-save-label {
-            padding: 8px 16px;
-            background: #007AFF;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-save-label:hover {
-            background: #0056b3;
-        }
-
-        .email-meta {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-        }
-
-        .meta-item {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .meta-label {
+            padding: 4px 12px;
+            border-radius: 12px;
             font-size: 12px;
             font-weight: 600;
-            color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .meta-value {
-            font-size: 14px;
-            color: #1c1c1e;
-            font-weight: 500;
+            color: white;
         }
 
         .email-body {
-            padding: 24px;
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e5e7eb;
         }
 
         .article-title {
-            font-size: 20px;
+            font-size: 24px;
             font-weight: 700;
             color: #1c1c1e;
             margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 2px solid #f3f4f6;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e5e7eb;
         }
 
         .email-content {
             font-size: 15px;
-            line-height: 1.7;
+            line-height: 1.8;
             color: #374151;
         }
 
         .attachments-section {
-            padding: 24px;
-            border-top: 1px solid #e0e0e0;
-            background: #f9fafb;
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e5e7eb;
         }
 
         .attachments-title {
-            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
             font-weight: 700;
             color: #1c1c1e;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            margin-bottom: 20px;
         }
 
-        .attachment-list {
+        .attachments-title .material-icons {
+            color: #007AFF;
+        }
+
+        .attachments-grid {
             display: grid;
-            gap: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
         }
 
-        .attachment-item {
+        .attachment-card {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 12px;
-            padding: 12px;
-            background: white;
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 12px;
             border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            transition: all 0.2s;
+            cursor: pointer;
+            transition: all 0.3s;
         }
 
-        .attachment-item:hover {
+        .attachment-card:hover {
+            background: #f3f4f6;
             border-color: #007AFF;
-            box-shadow: 0 2px 8px rgba(0, 122, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.1);
         }
 
         .attachment-icon {
-            width: 40px;
-            height: 40px;
+            width: 48px;
+            height: 48px;
+            background: #007AFF;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #f3f4f6;
-            border-radius: 8px;
-            color: #6b7280;
+            margin-bottom: 12px;
         }
 
-        .attachment-info {
-            flex: 1;
+        .attachment-icon .material-icons {
+            font-size: 28px;
+            color: white;
         }
 
         .attachment-name {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             color: #1c1c1e;
+            text-align: center;
+            word-break: break-word;
+            margin-bottom: 4px;
         }
 
         .attachment-size {
@@ -353,185 +268,186 @@ function getUserLabelsFromSentEmails($userEmail) {
             color: #6b7280;
         }
 
-        .btn-download {
-            padding: 6px 12px;
-            background: #007AFF;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            text-decoration: none;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
         }
 
-        .btn-download:hover {
+        .btn-primary {
+            background: #007AFF;
+            color: white;
+        }
+
+        .btn-primary:hover {
             background: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 122, 255, 0.3);
         }
 
-        .success-message {
-            background: #d1fae5;
-            color: #065f46;
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
         }
 
-        .error-message {
-            background: #fee2e2;
-            color: #991b1b;
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        .btn-secondary:hover {
+            background: #4b5563;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+
+        @media print {
+            .action-buttons {
+                display: none;
+            }
         }
 
         @media (max-width: 768px) {
+            .container {
+                margin: 20px auto;
+            }
+
+            .email-subject {
+                font-size: 22px;
+            }
+
             .email-meta {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .attachments-grid {
                 grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
-    <div class="top-nav">
-        <div class="nav-left">
-            <a href="sent_history.php" class="back-button">
+    <div class="container">
+        <div class="action-buttons">
+            <a href="sent_history.php" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i>
                 Back to Sent Emails
             </a>
-            <span class="email-subject-nav"><?= htmlspecialchars($email['subject']) ?></span>
+            <button onclick="window.print()" class="btn btn-primary">
+                <i class="fas fa-print"></i>
+                Print
+            </button>
+            <button onclick="deleteEmail()" class="btn btn-danger">
+                <i class="fas fa-trash"></i>
+                Delete
+            </button>
         </div>
-    </div>
 
-    <div class="email-container">
         <div class="email-header">
-            <?php if (isset($_SESSION['success_message'])): ?>
-            <div class="success-message">
-                <i class="fas fa-check-circle"></i>
-                <?= htmlspecialchars($_SESSION['success_message']) ?>
-            </div>
-            <?php unset($_SESSION['success_message']); endif; ?>
-
-            <?php if (isset($_SESSION['error_message'])): ?>
-            <div class="error-message">
-                <i class="fas fa-exclamation-circle"></i>
-                <?= htmlspecialchars($_SESSION['error_message']) ?>
-            </div>
-            <?php unset($_SESSION['error_message']); endif; ?>
-
             <h1 class="email-subject"><?= htmlspecialchars($email['subject']) ?></h1>
-
-            <!-- Label Section -->
-            <div class="label-section">
-                <?php if (!empty($email['label_name'])): ?>
-                <span class="label-badge" style="background-color: <?= htmlspecialchars($email['label_color'] ?? '#6b7280') ?>">
-                    <i class="fas fa-tag"></i>
-                    <?= htmlspecialchars($email['label_name']) ?>
-                </span>
-                <?php endif; ?>
-
-                <!-- Label Editor -->
-                <form method="POST" class="label-editor">
-                    <select name="label_id" class="label-select" onchange="updateLabelData(this)">
-                        <option value="">-- No Label --</option>
-                        <?php foreach ($allLabels as $label): ?>
-                        <option value="<?= $label['id'] ?>" 
-                                data-name="<?= htmlspecialchars($label['label_name']) ?>"
-                                data-color="<?= htmlspecialchars($label['label_color']) ?>"
-                                <?= $email['label_id'] == $label['id'] ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($label['label_name']) ?>
-                        </option>
-                        <?php endforeach; ?>
-                    </select>
-                    <input type="hidden" name="label_name" id="label_name">
-                    <input type="hidden" name="label_color" id="label_color">
-                    <button type="submit" name="update_label" class="btn-save-label">
-                        <i class="fas fa-save"></i> Update Label
-                    </button>
-                </form>
-            </div>
-
-            <!-- Email Metadata -->
+            
             <div class="email-meta">
                 <div class="meta-item">
-                    <span class="meta-label">From</span>
-                    <span class="meta-value">
+                    <span class="material-icons">person</span>
+                    <span>
+                        <span class="meta-label">From:</span> 
                         <?= htmlspecialchars($email['sender_name'] ?? $email['sender_email']) ?>
-                        <br><small style="color: #6b7280;"><?= htmlspecialchars($email['sender_email']) ?></small>
+                        &lt;<?= htmlspecialchars($email['sender_email']) ?>&gt;
                     </span>
                 </div>
+                
                 <div class="meta-item">
-                    <span class="meta-label">To</span>
-                    <span class="meta-value"><?= htmlspecialchars($email['recipient_email']) ?></span>
+                    <span class="material-icons">email</span>
+                    <span>
+                        <span class="meta-label">To:</span> 
+                        <?= htmlspecialchars($email['recipient_email']) ?>
+                    </span>
                 </div>
+                
                 <?php if (!empty($email['cc_list'])): ?>
                 <div class="meta-item">
-                    <span class="meta-label">CC</span>
-                    <span class="meta-value"><?= htmlspecialchars($email['cc_list']) ?></span>
-                </div>
-                <?php endif; ?>
-                <?php if (!empty($email['bcc_list'])): ?>
-                <div class="meta-item">
-                    <span class="meta-label">BCC</span>
-                    <span class="meta-value"><?= htmlspecialchars($email['bcc_list']) ?></span>
-                </div>
-                <?php endif; ?>
-                <div class="meta-item">
-                    <span class="meta-label">Sent At</span>
-                    <span class="meta-value">
-                        <?= date('F j, Y \a\t g:i A', strtotime($email['sent_at'])) ?>
+                    <span class="material-icons">group</span>
+                    <span>
+                        <span class="meta-label">CC:</span> 
+                        <?= htmlspecialchars($email['cc_list']) ?>
                     </span>
                 </div>
+                <?php endif; ?>
+                
                 <div class="meta-item">
-                    <span class="meta-label">Message ID</span>
-                    <span class="meta-value" style="font-size: 12px; word-break: break-all;">
-                        <?= htmlspecialchars($email['message_id'] ?? 'N/A') ?>
+                    <span class="material-icons">schedule</span>
+                    <span>
+                        <?= date('M d, Y h:i A', strtotime($email['sent_at'])) ?>
                     </span>
                 </div>
+                
+                <?php if (!empty($email['label_name'])): ?>
+                <div class="meta-item">
+                    <span class="label-badge" style="background: <?= htmlspecialchars($email['label_color'] ?? '#6b7280') ?>">
+                        <?= htmlspecialchars($email['label_name']) ?>
+                    </span>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
 
-        <!-- Email Body -->
         <div class="email-body">
             <?php if (!empty($email['article_title'])): ?>
-            <div class="article-title"><?= htmlspecialchars($email['article_title']) ?></div>
+            <div class="article-title">
+                <?= htmlspecialchars($email['article_title']) ?>
+            </div>
             <?php endif; ?>
-
+            
             <div class="email-content">
-                <?= $email['body_html'] ?? nl2br(htmlspecialchars($email['body_text'] ?? '')) ?>
+                <?php 
+                if (!empty($email['body_html'])) {
+                    echo $email['body_html'];
+                } else {
+                    echo nl2br(htmlspecialchars($email['body_text'] ?? 'No content'));
+                }
+                ?>
             </div>
         </div>
 
-        <!-- Attachments -->
         <?php if (!empty($attachments)): ?>
         <div class="attachments-section">
             <div class="attachments-title">
-                <i class="fas fa-paperclip"></i>
+                <span class="material-icons">attach_file</span>
                 Attachments (<?= count($attachments) ?>)
             </div>
-            <div class="attachment-list">
+            
+            <div class="attachments-grid">
                 <?php foreach ($attachments as $attachment): ?>
-                <div class="attachment-item">
+                <div class="attachment-card" onclick="downloadAttachment('<?= htmlspecialchars($attachment['file_path']) ?>', '<?= htmlspecialchars($attachment['original_filename']) ?>')">
                     <div class="attachment-icon">
-                        <i class="fas fa-file"></i>
+                        <span class="material-icons">insert_drive_file</span>
                     </div>
-                    <div class="attachment-info">
-                        <div class="attachment-name"><?= htmlspecialchars($attachment['original_filename']) ?></div>
-                        <div class="attachment-size"><?= formatFileSize($attachment['file_size']) ?></div>
+                    <div class="attachment-name">
+                        <?= htmlspecialchars($attachment['original_filename']) ?>
                     </div>
-                    <a href="download_attachment.php?id=<?= encryptFileId($attachment['id']) ?>" class="btn-download">
-                        <i class="fas fa-download"></i>
-                        Download
-                    </a>
+                    <div class="attachment-size">
+                        <?= formatFileSize($attachment['file_size']) ?>
+                    </div>
                 </div>
                 <?php endforeach; ?>
             </div>
@@ -540,13 +456,32 @@ function getUserLabelsFromSentEmails($userEmail) {
     </div>
 
     <script>
-        function updateLabelData(select) {
-            const selectedOption = select.options[select.selectedIndex];
-            const labelName = selectedOption.getAttribute('data-name') || '';
-            const labelColor = selectedOption.getAttribute('data-color') || '';
-            
-            document.getElementById('label_name').value = labelName;
-            document.getElementById('label_color').value = labelColor;
+        function downloadAttachment(filePath, filename) {
+            const link = document.createElement('a');
+            link.href = filePath;
+            link.download = filename;
+            link.click();
+        }
+
+        function deleteEmail() {
+            if (!confirm('Are you sure you want to delete this email?')) {
+                return;
+            }
+
+            fetch('sent_history.php?action=delete&id=<?= $emailId ?>')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Email deleted successfully');
+                        window.location.href = 'sent_history.php';
+                    } else {
+                        alert('Failed to delete email');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to delete email');
+                });
         }
     </script>
 </body>
