@@ -4,7 +4,27 @@
  * Handles CSV upload, queue management, and email processing
  */
 
+// Enable error logging
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+error_log("=== Bulk Mail Processor Started ===");
+
 session_start();
+
+// Check if files exist
+if (!file_exists('db_config.php')) {
+    error_log("CRITICAL: db_config.php not found");
+    echo json_encode(['success' => false, 'error' => 'System configuration error: db_config.php not found']);
+    exit();
+}
+
+if (!file_exists('vendor/autoload.php')) {
+    error_log("CRITICAL: vendor/autoload.php not found - Composer dependencies missing");
+    echo json_encode(['success' => false, 'error' => 'System configuration error: PHPMailer not installed']);
+    exit();
+}
+
 require_once 'db_config.php';
 require 'vendor/autoload.php';
 
@@ -13,24 +33,36 @@ use PHPMailer\PHPMailer\Exception;
 
 // Security check
 if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
+    error_log("Unauthorized access attempt");
     http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+    echo json_encode(['success' => false, 'error' => 'Unauthorized - Please login first']);
     exit();
 }
 
 header('Content-Type: application/json');
 
-$pdo = getDatabaseConnection();
-$userEmail = $_SESSION['smtp_user'];
-$userId = getUserId($pdo, $userEmail);
-
-if (!$userId) {
-    $userId = createUserIfNotExists($pdo, $userEmail, null);
-}
-
-$action = $_GET['action'] ?? 'status';
-
 try {
+    $pdo = getDatabaseConnection();
+    
+    if (!$pdo) {
+        throw new Exception("Database connection failed - check db_config.php settings");
+    }
+    
+    $userEmail = $_SESSION['smtp_user'];
+    $userId = getUserId($pdo, $userEmail);
+    
+    if (!$userId) {
+        error_log("User not found in database, creating: $userEmail");
+        $userId = createUserIfNotExists($pdo, $userEmail, null);
+        if (!$userId) {
+            throw new Exception("Could not create user in database");
+        }
+    }
+    
+    $action = $_GET['action'] ?? 'status';
+    
+    error_log("Processing action: $action for user: $userEmail (ID: $userId)");
+    
     switch ($action) {
         case 'upload':
             handleCSVUpload($pdo, $userId);
@@ -48,197 +80,369 @@ try {
             clearQueue($pdo, $userId);
             break;
         
+        case 'test':
+            // Test endpoint to verify everything is working
+            echo json_encode([
+                'success' => true,
+                'message' => 'Bulk mail processor is working',
+                'user_id' => $userId,
+                'user_email' => $userEmail,
+                'php_version' => phpversion(),
+                'session_active' => session_status() === PHP_SESSION_ACTIVE
+            ]);
+            break;
+        
         default:
-            echo json_encode(['success' => false, 'error' => 'Invalid action']);
+            throw new Exception('Invalid action: ' . $action);
     }
+    
 } catch (Exception $e) {
-    error_log("Bulk mail error: " . $e->getMessage());
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    error_log("CRITICAL ERROR: " . $e->getMessage());
+    error_log("Stack trace: " . $e->getTraceAsString());
+    echo json_encode([
+        'success' => false, 
+        'error' => $e->getMessage(),
+        'debug_info' => [
+            'file' => basename($e->getFile()),
+            'line' => $e->getLine()
+        ]
+    ]);
 }
 
 /**
  * Handle CSV upload and populate queue
  */
 function handleCSVUpload($pdo, $userId) {
-    if (!isset($_FILES['csv_file'])) {
-        throw new Exception('No CSV file uploaded');
-    }
+    try {
+        error_log("=== CSV Upload Started ===");
+        error_log("User ID: $userId");
+        error_log("POST data: " . print_r(array_keys($_POST), true));
+        error_log("FILES data: " . print_r(array_keys($_FILES), true));
+        
+        if (!isset($_FILES['csv_file'])) {
+            throw new Exception('No CSV file uploaded. Please select a CSV file and try again.');
+        }
 
-    $csvFile = $_FILES['csv_file'];
-    
-    if ($csvFile['error'] !== UPLOAD_ERR_OK) {
-        throw new Exception('File upload error');
-    }
+        $csvFile = $_FILES['csv_file'];
+        
+        error_log("CSV file info: name={$csvFile['name']}, size={$csvFile['size']}, type={$csvFile['type']}, error={$csvFile['error']}");
+        
+        if ($csvFile['error'] !== UPLOAD_ERR_OK) {
+            $errorMessages = [
+                UPLOAD_ERR_INI_SIZE => 'File exceeds upload_max_filesize directive in php.ini',
+                UPLOAD_ERR_FORM_SIZE => 'File exceeds MAX_FILE_SIZE directive in HTML form',
+                UPLOAD_ERR_PARTIAL => 'File was only partially uploaded',
+                UPLOAD_ERR_NO_FILE => 'No file was uploaded',
+                UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder on server',
+                UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+                UPLOAD_ERR_EXTENSION => 'Upload stopped by PHP extension'
+            ];
+            $errorMsg = $errorMessages[$csvFile['error']] ?? "Unknown upload error (code: {$csvFile['error']})";
+            throw new Exception($errorMsg);
+        }
+        
+        // Validate file size
+        if ($csvFile['size'] > 10 * 1024 * 1024) {
+            throw new Exception('CSV file is too large. Maximum size is 10MB.');
+        }
+        
+        // Validate file extension
+        $fileExt = strtolower(pathinfo($csvFile['name'], PATHINFO_EXTENSION));
+        if ($fileExt !== 'csv') {
+            throw new Exception('Invalid file type. Please upload a CSV file.');
+        }
 
-    // Read CSV file
-    $handle = fopen($csvFile['tmp_name'], 'r');
-    if (!$handle) {
-        throw new Exception('Could not open CSV file');
-    }
+        // Read CSV file
+        $handle = fopen($csvFile['tmp_name'], 'r');
+        if (!$handle) {
+            throw new Exception('Could not open CSV file for reading. File may be corrupted.');
+        }
 
-    // Read header row
-    $header = fgetcsv($handle);
-    if (!$header) {
-        fclose($handle);
-        throw new Exception('CSV file is empty');
-    }
-
-    // Validate required columns
-    $requiredColumns = [
-        'mail_id', 'receiver_name', 'Mail_Subject', 'Article_Title',
-        'Personalised_message', 'closing_wish', 'Name', 'Designation',
-        'Additional_information', 'Attachments'
-    ];
-
-    foreach ($requiredColumns as $col) {
-        if (!in_array($col, $header)) {
+        // Read header row
+        $header = fgetcsv($handle);
+        if (!$header || empty($header)) {
             fclose($handle);
-            throw new Exception("Missing required column: $col");
+            throw new Exception('CSV file is empty or has no header row');
         }
+
+        error_log("CSV columns found: " . implode(', ', $header));
+
+        // Validate required columns
+        $requiredColumns = [
+            'mail_id', 
+            'receiver_name', 
+            'Mail_Subject', 
+            'Article_Title',
+            'Personalised_message', 
+            'closing_wish', 
+            'Name', 
+            'Designation',
+            'Additional_information', 
+            'Attachments'
+        ];
+
+        $missingColumns = [];
+        foreach ($requiredColumns as $col) {
+            if (!in_array($col, $header)) {
+                $missingColumns[] = $col;
+            }
+        }
+
+        if (!empty($missingColumns)) {
+            fclose($handle);
+            $missing = implode(', ', $missingColumns);
+            error_log("Missing columns: $missing");
+            throw new Exception("CSV is missing required columns: $missing. Please check your CSV format.");
+        }
+
+        // Get column indices
+        $columnMap = array_flip($header);
+
+        // Get attachment ID if provided
+        $attachmentId = !empty($_POST['attachment_id']) ? intval($_POST['attachment_id']) : null;
+        
+        if ($attachmentId) {
+            error_log("Common attachment ID: $attachmentId");
+            
+            // Verify attachment exists
+            $stmt = $pdo->prepare("SELECT id FROM attachments WHERE id = ?");
+            $stmt->execute([$attachmentId]);
+            if (!$stmt->fetch()) {
+                error_log("WARNING: Attachment ID $attachmentId not found in database");
+                $attachmentId = null;
+            }
+        }
+
+        // Ensure queue table exists
+        createQueueTable($pdo);
+
+        // Clear existing pending/failed entries for this user
+        $stmt = $pdo->prepare("DELETE FROM bulk_mail_queue WHERE user_id = ? AND status IN ('pending', 'failed')");
+        $stmt->execute([$userId]);
+        $cleared = $stmt->rowCount();
+        
+        error_log("Cleared $cleared old pending/failed queue entries");
+
+        // Insert CSV rows into queue
+        $insertCount = 0;
+        $errorCount = 0;
+        $skippedRows = [];
+        $batchUuid = generateUuidV4();
+
+        $insertStmt = $pdo->prepare("
+            INSERT INTO bulk_mail_queue (
+                user_id, batch_uuid, recipient_email, recipient_name,
+                subject, article_title, message_content, closing_wish,
+                sender_name, sender_designation, additional_info,
+                attachment_id, status, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
+        ");
+
+        $rowNumber = 1;
+        while (($row = fgetcsv($handle)) !== false) {
+            $rowNumber++;
+            
+            // Skip empty rows
+            if (empty(array_filter($row))) {
+                error_log("Skipping empty row $rowNumber");
+                continue;
+            }
+            
+            if (count($row) < count($header)) {
+                error_log("Row $rowNumber has insufficient columns: " . count($row) . " (expected " . count($header) . ")");
+                $skippedRows[] = $rowNumber;
+                $errorCount++;
+                continue;
+            }
+
+            try {
+                $recipientEmail = trim($row[$columnMap['mail_id']]);
+                
+                // Validate email
+                if (empty($recipientEmail)) {
+                    error_log("Row $rowNumber: Empty email address");
+                    $skippedRows[] = $rowNumber;
+                    $errorCount++;
+                    continue;
+                }
+                
+                if (!filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
+                    error_log("Row $rowNumber: Invalid email format: $recipientEmail");
+                    $skippedRows[] = $rowNumber;
+                    $errorCount++;
+                    continue;
+                }
+                
+                $subject = trim($row[$columnMap['Mail_Subject']]);
+                $articleTitle = trim($row[$columnMap['Article_Title']]);
+                $message = trim($row[$columnMap['Personalised_message']]);
+                
+                if (empty($subject) || empty($articleTitle) || empty($message)) {
+                    error_log("Row $rowNumber: Missing required fields (subject, article title, or message)");
+                    $skippedRows[] = $rowNumber;
+                    $errorCount++;
+                    continue;
+                }
+                
+                $insertStmt->execute([
+                    $userId,
+                    $batchUuid,
+                    $recipientEmail,
+                    trim($row[$columnMap['receiver_name']] ?? ''),
+                    $subject,
+                    $articleTitle,
+                    $message,
+                    trim($row[$columnMap['closing_wish']] ?? 'Best Regards'),
+                    trim($row[$columnMap['Name']] ?? ''),
+                    trim($row[$columnMap['Designation']] ?? ''),
+                    trim($row[$columnMap['Additional_information']] ?? ''),
+                    $attachmentId
+                ]);
+                $insertCount++;
+                
+                if ($insertCount % 10 === 0) {
+                    error_log("Processed $insertCount rows so far...");
+                }
+                
+            } catch (Exception $e) {
+                error_log("Error inserting row $rowNumber: " . $e->getMessage());
+                $skippedRows[] = $rowNumber;
+                $errorCount++;
+            }
+        }
+
+        fclose($handle);
+
+        error_log("CSV processing complete: $insertCount inserted, $errorCount errors");
+        if (!empty($skippedRows)) {
+            error_log("Skipped rows: " . implode(', ', $skippedRows));
+        }
+
+        if ($insertCount === 0) {
+            throw new Exception("No valid emails found in CSV file. Please check:\n1. Email addresses are valid\n2. Required fields are not empty\n3. CSV format matches the template");
+        }
+
+        $message = "Successfully added $insertCount emails to queue";
+        if ($errorCount > 0) {
+            $message .= " ($errorCount rows skipped due to errors)";
+        }
+
+        echo json_encode([
+            'success' => true,
+            'message' => $message,
+            'count' => $insertCount,
+            'errors' => $errorCount,
+            'skipped_rows' => $skippedRows,
+            'batch_uuid' => $batchUuid
+        ]);
+        
+    } catch (Exception $e) {
+        error_log("CSV upload failed: " . $e->getMessage());
+        throw $e;
     }
-
-    // Get column indices
-    $columnMap = array_flip($header);
-
-    // Get attachment ID if provided
-    $attachmentId = !empty($_POST['attachment_id']) ? intval($_POST['attachment_id']) : null;
-
-    // Ensure queue table exists
-    createQueueTable($pdo);
-
-    // Clear existing pending/failed entries for this user
-    $stmt = $pdo->prepare("DELETE FROM bulk_mail_queue WHERE user_id = ? AND status IN ('pending', 'failed')");
-    $stmt->execute([$userId]);
-
-    // Insert CSV rows into queue
-    $insertCount = 0;
-    $batchUuid = generateUuidV4();
-
-    $insertStmt = $pdo->prepare("
-        INSERT INTO bulk_mail_queue (
-            user_id, batch_uuid, recipient_email, recipient_name,
-            subject, article_title, message_content, closing_wish,
-            sender_name, sender_designation, additional_info,
-            attachment_id, status, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
-    ");
-
-    while (($row = fgetcsv($handle)) !== false) {
-        if (count($row) < count($header)) {
-            continue; // Skip incomplete rows
-        }
-
-        try {
-            $insertStmt->execute([
-                $userId,
-                $batchUuid,
-                trim($row[$columnMap['mail_id']]),
-                trim($row[$columnMap['receiver_name']]),
-                trim($row[$columnMap['Mail_Subject']]),
-                trim($row[$columnMap['Article_Title']]),
-                trim($row[$columnMap['Personalised_message']]),
-                trim($row[$columnMap['closing_wish']]),
-                trim($row[$columnMap['Name']]),
-                trim($row[$columnMap['Designation']]),
-                trim($row[$columnMap['Additional_information']]),
-                $attachmentId
-            ]);
-            $insertCount++;
-        } catch (Exception $e) {
-            error_log("Error inserting row: " . $e->getMessage());
-        }
-    }
-
-    fclose($handle);
-
-    echo json_encode([
-        'success' => true,
-        'message' => "Added $insertCount emails to queue",
-        'count' => $insertCount,
-        'batch_uuid' => $batchUuid
-    ]);
 }
 
 /**
  * Process next email in queue
  */
 function processNextEmail($pdo, $userId) {
-    // Get next pending email
-    $stmt = $pdo->prepare("
-        SELECT * FROM bulk_mail_queue
-        WHERE user_id = ? AND status = 'pending'
-        ORDER BY created_at ASC
-        LIMIT 1
-        FOR UPDATE
-    ");
-    $stmt->execute([$userId]);
-    $queueItem = $stmt->fetch(PDO::FETCH_ASSOC);
+    try {
+        // Start transaction
+        $pdo->beginTransaction();
+        
+        // Get next pending email with row lock
+        $stmt = $pdo->prepare("
+            SELECT * FROM bulk_mail_queue
+            WHERE user_id = ? AND status = 'pending'
+            ORDER BY created_at ASC
+            LIMIT 1
+            FOR UPDATE
+        ");
+        $stmt->execute([$userId]);
+        $queueItem = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$queueItem) {
-        // No more emails to process
+        if (!$queueItem) {
+            // No more emails to process
+            $pdo->commit();
+            $status = getQueueStatusData($pdo, $userId);
+            
+            error_log("No more pending emails. Status: " . json_encode($status));
+            
+            echo json_encode([
+                'success' => true,
+                'has_more' => false,
+                'pending' => $status['pending'],
+                'processing' => $status['processing'],
+                'completed' => $status['completed'],
+                'failed' => $status['failed'],
+                'total' => $status['total']
+            ]);
+            return;
+        }
+
+        // Mark as processing
+        $updateStmt = $pdo->prepare("UPDATE bulk_mail_queue SET status = 'processing', processing_started_at = NOW() WHERE id = ?");
+        $updateStmt->execute([$queueItem['id']]);
+        
+        $pdo->commit();
+
+        error_log("Processing queue item #{$queueItem['id']}: {$queueItem['recipient_email']}");
+
+        // Send the email
+        $result = sendBulkEmail($pdo, $queueItem);
+
+        // Update status based on result
+        if ($result['success']) {
+            $updateStmt = $pdo->prepare("
+                UPDATE bulk_mail_queue 
+                SET status = 'completed', 
+                    completed_at = NOW(),
+                    sent_email_id = ?
+                WHERE id = ?
+            ");
+            $updateStmt->execute([$result['email_id'], $queueItem['id']]);
+            error_log("✓ Email sent successfully to {$queueItem['recipient_email']}");
+        } else {
+            $updateStmt = $pdo->prepare("
+                UPDATE bulk_mail_queue 
+                SET status = 'failed', 
+                    error_message = ?,
+                    completed_at = NOW()
+                WHERE id = ?
+            ");
+            $updateStmt->execute([$result['error'], $queueItem['id']]);
+            error_log("✗ Email failed to {$queueItem['recipient_email']}: {$result['error']}");
+        }
+
+        // Get updated status
         $status = getQueueStatusData($pdo, $userId);
+
         echo json_encode([
             'success' => true,
-            'has_more' => false,
+            'has_more' => $status['pending'] > 0,
             'pending' => $status['pending'],
             'processing' => $status['processing'],
             'completed' => $status['completed'],
             'failed' => $status['failed'],
-            'total' => $status['total']
+            'total' => $status['total'],
+            'current_email' => [
+                'recipient' => $queueItem['recipient_email'],
+                'subject' => $queueItem['subject']
+            ],
+            'last_result' => [
+                'recipient' => $queueItem['recipient_email'],
+                'status' => $result['success'] ? 'completed' : 'failed',
+                'error_message' => $result['error'] ?? null
+            ]
         ]);
-        return;
+        
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        error_log("Process email error: " . $e->getMessage());
+        throw $e;
     }
-
-    // Mark as processing
-    $updateStmt = $pdo->prepare("UPDATE bulk_mail_queue SET status = 'processing', processing_started_at = NOW() WHERE id = ?");
-    $updateStmt->execute([$queueItem['id']]);
-
-    // Send the email
-    $result = sendBulkEmail($pdo, $queueItem);
-
-    if ($result['success']) {
-        // Mark as completed
-        $updateStmt = $pdo->prepare("
-            UPDATE bulk_mail_queue 
-            SET status = 'completed', 
-                completed_at = NOW(),
-                sent_email_id = ?
-            WHERE id = ?
-        ");
-        $updateStmt->execute([$result['email_id'], $queueItem['id']]);
-    } else {
-        // Mark as failed
-        $updateStmt = $pdo->prepare("
-            UPDATE bulk_mail_queue 
-            SET status = 'failed', 
-                error_message = ?,
-                completed_at = NOW()
-            WHERE id = ?
-        ");
-        $updateStmt->execute([$result['error'], $queueItem['id']]);
-    }
-
-    // Get updated status
-    $status = getQueueStatusData($pdo, $userId);
-
-    echo json_encode([
-        'success' => true,
-        'has_more' => $status['pending'] > 0,
-        'pending' => $status['pending'],
-        'processing' => $status['processing'],
-        'completed' => $status['completed'],
-        'failed' => $status['failed'],
-        'total' => $status['total'],
-        'current_email' => [
-            'recipient' => $queueItem['recipient_email'],
-            'subject' => $queueItem['subject']
-        ],
-        'last_result' => [
-            'recipient' => $queueItem['recipient_email'],
-            'status' => $result['success'] ? 'completed' : 'failed',
-            'error_message' => $result['error'] ?? null
-        ]
-    ]);
 }
 
 /**
@@ -284,8 +488,9 @@ function sendBulkEmail($pdo, $queueItem) {
                 
                 if (file_exists($fullFilePath)) {
                     $mail->addAttachment($fullFilePath, $attachment['original_filename']);
+                    error_log("Attached file: " . $attachment['original_filename']);
                 } else {
-                    error_log("Attachment file not found: $fullFilePath");
+                    error_log("WARNING: Attachment file not found: $fullFilePath");
                 }
             }
         }
@@ -294,7 +499,7 @@ function sendBulkEmail($pdo, $queueItem) {
         $templatePath = __DIR__ . '/templates/template1.html';
         
         if (!file_exists($templatePath)) {
-            throw new Exception("Email template not found");
+            throw new Exception("Email template not found. Please ensure templates/template1.html exists.");
         }
         
         $emailTemplate = file_get_contents($templatePath);
@@ -411,10 +616,13 @@ function getQueueStatusData($pdo, $userId) {
 function clearQueue($pdo, $userId) {
     $stmt = $pdo->prepare("DELETE FROM bulk_mail_queue WHERE user_id = ? AND status IN ('pending', 'failed')");
     $stmt->execute([$userId]);
+    $deleted = $stmt->rowCount();
+    
+    error_log("Cleared $deleted pending/failed queue items for user $userId");
     
     echo json_encode([
         'success' => true,
-        'message' => 'Queue cleared'
+        'message' => "Cleared $deleted emails from queue"
     ]);
 }
 
@@ -422,32 +630,41 @@ function clearQueue($pdo, $userId) {
  * Create queue table if it doesn't exist
  */
 function createQueueTable($pdo) {
-    $sql = "CREATE TABLE IF NOT EXISTS bulk_mail_queue (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL,
-        batch_uuid VARCHAR(36) NOT NULL,
-        recipient_email VARCHAR(255) NOT NULL,
-        recipient_name VARCHAR(255),
-        subject VARCHAR(500) NOT NULL,
-        article_title VARCHAR(500) NOT NULL,
-        message_content TEXT NOT NULL,
-        closing_wish VARCHAR(255),
-        sender_name VARCHAR(255),
-        sender_designation VARCHAR(255),
-        additional_info VARCHAR(500),
-        attachment_id INT NULL,
-        status ENUM('pending', 'processing', 'completed', 'failed') DEFAULT 'pending',
-        error_message TEXT NULL,
-        sent_email_id INT NULL,
-        created_at DATETIME NOT NULL,
-        processing_started_at DATETIME NULL,
-        completed_at DATETIME NULL,
-        INDEX idx_user_status (user_id, status),
-        INDEX idx_batch (batch_uuid),
-        INDEX idx_created (created_at)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
-    
-    $pdo->exec($sql);
+    try {
+        $sql = "CREATE TABLE IF NOT EXISTS `bulk_mail_queue` (
+            `id` INT(11) NOT NULL AUTO_INCREMENT,
+            `user_id` INT(11) NOT NULL,
+            `batch_uuid` VARCHAR(36) NOT NULL,
+            `recipient_email` VARCHAR(255) NOT NULL,
+            `recipient_name` VARCHAR(255) DEFAULT NULL,
+            `subject` VARCHAR(500) NOT NULL,
+            `article_title` VARCHAR(500) NOT NULL,
+            `message_content` TEXT NOT NULL,
+            `closing_wish` VARCHAR(255) DEFAULT NULL,
+            `sender_name` VARCHAR(255) DEFAULT NULL,
+            `sender_designation` VARCHAR(255) DEFAULT NULL,
+            `additional_info` VARCHAR(500) DEFAULT NULL,
+            `attachment_id` INT(11) DEFAULT NULL,
+            `status` ENUM('pending','processing','completed','failed') NOT NULL DEFAULT 'pending',
+            `error_message` TEXT DEFAULT NULL,
+            `sent_email_id` INT(11) DEFAULT NULL,
+            `created_at` DATETIME NOT NULL,
+            `processing_started_at` DATETIME DEFAULT NULL,
+            `completed_at` DATETIME DEFAULT NULL,
+            PRIMARY KEY (`id`),
+            KEY `idx_user_status` (`user_id`, `status`),
+            KEY `idx_batch` (`batch_uuid`),
+            KEY `idx_created` (`created_at`),
+            KEY `idx_status` (`status`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+        
+        $pdo->exec($sql);
+        error_log("Queue table verified/created successfully");
+        
+    } catch (Exception $e) {
+        error_log("Error creating queue table: " . $e->getMessage());
+        throw new Exception("Could not create queue table: " . $e->getMessage());
+    }
 }
 
 /**
