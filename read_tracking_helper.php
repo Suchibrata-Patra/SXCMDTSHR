@@ -17,7 +17,7 @@ function generateTrackingToken() {
 function getBaseUrl() {
     // OPTION 1: Subdomain (HIGHLY RECOMMENDED)
     // Create DNS: track.holidayseva.com → Your Server IP
-    return 'https://track.holidayseva.com';
+    return 'https://hr.holidayseva.com';
     
     // OPTION 2: Main domain (if subdomain not possible)
     // return 'https://hr.holidayseva.com';
