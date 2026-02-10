@@ -352,25 +352,11 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--apple-bg);
             color: #1c1c1e;
-            margin: 0;
-            padding: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-        }
-
-        /* Layout Container */
-        .app-container {
-            display: flex;
-            min-height: 100vh;
-            width: 100%;
-            background: var(--apple-bg);
-        }
-
-        .main-content-wrapper {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow-x: hidden;
         }
 
         /* ========== MAIN CONTENT ========== */
@@ -1029,11 +1015,9 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
 </head>
 
 <body>
-    <div class="app-container">
-        <?php require_once 'sidebar.php'; ?>
+    <?php include 'sidebar.php'; ?>
 
-        <div class="main-content-wrapper">
-            <div class="main-content">
+    <div class="main-content">
         <!-- Header -->
         <div class="page-header">
             <div class="header-left">
@@ -1162,8 +1146,6 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
             </div>
         </div>
     </div>
-    </div> <!-- /main-content-wrapper -->
-    </div> <!-- /app-container -->
 
     <script>
         let currentMessageId = null;
