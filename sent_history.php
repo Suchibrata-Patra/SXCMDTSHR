@@ -633,7 +633,7 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
         /* ========== MESSAGES AREA ========== */
         .messages-area {
             flex: 1;
-            overflow-y: auto;
+            overflow: hidden;
         }
 
         .messages-container {
