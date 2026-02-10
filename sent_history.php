@@ -51,7 +51,7 @@ if (isset($_GET['action'])) {
                     try {
                         $pdo = getDatabaseConnection();
                         $stmt = $pdo->prepare("
-                            SELECT * FROM email_attachments 
+                            SELECT * FROM sent_emails_new 
                             WHERE email_id = ? 
                             ORDER BY created_at ASC
                         ");
