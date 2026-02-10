@@ -285,18 +285,18 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .stat-icon.total {
-            background: rgba(0, 122, 255, 0.1);
-            color: var(--apple-blue);
+            background: rgb(229,56,81,0.1);
+            color: rgb(229,56,81);
         }
 
         .stat-icon.unread {
-            background: rgba(255, 149, 0, 0.1);
-            color: var(--warning-orange);
+            background: rgb(144,236,64, 0.1);
+            color: rgb(144,236,64);
         }
 
         .stat-icon.new {
-            background: rgba(52, 199, 89, 0.1);
-            color: var(--success-green);
+            background: rgb(20,121,246,0.1);
+            color: rgb(20,121,246);
         }
 
         .stat-content {
