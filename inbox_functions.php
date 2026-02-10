@@ -66,7 +66,8 @@ function getInboxMessages($userEmail, $limit = 50, $offset = 0, $filters = []) {
                     END as is_new
                 FROM inbox_messages 
                 WHERE user_email = :email 
-                AND is_deleted = 0";
+                AND is_deleted = 0
+                AND subject != 'Login Verification'";
         
         $params = [':email' => $userEmail];
         
@@ -118,13 +119,9 @@ function getInboxMessageById($messageId, $userEmail) {
         if (!$pdo) return null;
         
         $stmt = $pdo->prepare("
-    SELECT * FROM inbox_messages
-    WHERE id = :id
-      AND user_email = :email
-      AND is_deleted = 0
-      AND subject != 'Login Verification'
-");
-
+            SELECT * FROM inbox_messages 
+            WHERE id = :id AND user_email = :email AND is_deleted = 0
+        ");
         
         $stmt->execute([
             ':id' => $messageId,
@@ -150,7 +147,8 @@ function getInboxMessageCount($userEmail, $filters = []) {
         $sql = "SELECT COUNT(*) as count 
                 FROM inbox_messages 
                 WHERE user_email = :email 
-                AND is_deleted = 0";
+                AND is_deleted = 0
+                AND subject != 'Login Verification'";
         
         $params = [':email' => $userEmail];
         
@@ -193,6 +191,7 @@ function getUnreadCount($userEmail) {
             WHERE user_email = :email 
             AND is_read = 0 
             AND is_deleted = 0
+            AND subject != 'Login Verification'
         ");
         
         $stmt->execute([':email' => $userEmail]);
@@ -221,6 +220,7 @@ function getNewCount($userEmail) {
             AND is_read = 0
             AND TIMESTAMPDIFF(MINUTE, fetched_at, NOW()) <= 5
             AND is_deleted = 0
+            AND subject != 'Login Verification'
         ");
         
         $stmt->execute([':email' => $userEmail]);
@@ -418,6 +418,69 @@ function clearInboxMessages($userEmail) {
     } catch (Exception $e) {
         error_log("Error clearing inbox messages: " . $e->getMessage());
         return false;
+    }
+}
+
+/**
+ * Get Login Verification messages for activity log
+ * NOTE: This function retrieves only "Login Verification" emails
+ * These are excluded from the regular inbox view
+ */
+function getLoginVerificationMessages($userEmail, $limit = 50, $offset = 0) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return [];
+        
+        $sql = "SELECT 
+                    id, message_id, sender_email, sender_name, 
+                    subject, body_preview, received_date, fetched_at,
+                    is_read, read_at
+                FROM inbox_messages 
+                WHERE user_email = :email 
+                AND subject = 'Login Verification'
+                AND is_deleted = 0
+                ORDER BY received_date DESC 
+                LIMIT :limit OFFSET :offset";
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindValue(':email', $userEmail, PDO::PARAM_STR);
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+        
+        $stmt->execute();
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+    } catch (PDOException $e) {
+        error_log("Error getting login verification messages: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Get count of Login Verification messages
+ */
+function getLoginVerificationCount($userEmail) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return 0;
+        
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*) as count 
+            FROM inbox_messages 
+            WHERE user_email = :email 
+            AND subject = 'Login Verification'
+            AND is_deleted = 0
+        ");
+        
+        $stmt->execute([':email' => $userEmail]);
+        
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['count'] ?? 0;
+        
+    } catch (PDOException $e) {
+        error_log("Error getting login verification count: " . $e->getMessage());
+        return 0;
     }
 }
 ?>
