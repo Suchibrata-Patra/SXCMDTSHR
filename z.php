@@ -1,5 +1,0 @@
-<?php
-function updateLabels($rmailID){
-    
-}
-?>
