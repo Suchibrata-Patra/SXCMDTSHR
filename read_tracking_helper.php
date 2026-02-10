@@ -1,7 +1,7 @@
 <?php
 /**
- * Read Tracking Helper - CACHE-PROOF VERSION
- * Adds cache-busting parameters to prevent Gmail Image Proxy caching
+ * Read Tracking Helper Functions - FIXED VERSION
+ * CRITICAL FIX: Prevents double pixel injection
  */
 
 /**
@@ -12,94 +12,90 @@ function generateTrackingToken() {
 }
 
 /**
- * Get base URL
+ * Get base URL for tracking pixel
  */
 function getBaseUrl() {
-    // HARDCODED - CHANGE THIS TO YOUR DOMAIN
+    // HARDCODED URL - SET THIS TO YOUR ACTUAL DOMAIN
     return 'https://hr.holidayseva.com';
     
-    /* Auto-detect alternative:
+    // Alternative auto-detect (comment out above line to use this)
+    /*
     $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    
+    if (($protocol === 'https' && strpos($host, ':443') !== false) ||
+        ($protocol === 'http' && strpos($host, ':80') !== false)) {
+        $host = preg_replace('/:\d+$/', '', $host);
+    }
+    
     return $protocol . '://' . $host;
     */
 }
 
 /**
- * Build tracking pixel URL with cache-busting parameters
- * CRITICAL: Adds random and timestamp params to prevent caching
+ * Build tracking pixel URL
  */
 function buildTrackingPixelUrl($trackingToken) {
     $baseUrl = getBaseUrl();
-    
-    // Add cache-busting parameters
-    $params = [
-        't' => $trackingToken,              // Tracking token
-        'r' => bin2hex(random_bytes(8)),    // Random string (16 chars)
-        'ts' => time()                       // Current timestamp
-    ];
-    
-    $queryString = http_build_query($params);
-    
-    return $baseUrl . '/track_pixel.php?' . $queryString;
+    return $baseUrl . '/track_pixel.php?t=' . urlencode($trackingToken);
 }
 
 /**
- * Inject tracking pixel with CACHE-PROOF URL
- * This pixel will NOT be cached by Gmail Image Proxy
+ * FIXED: Inject tracking pixel into email body
+ * PREVENTS DOUBLE INJECTION
  */
 function injectTrackingPixel($emailBody, $trackingToken) {
-    // Check if pixel already exists
-    if (preg_match('/track_pixel\.php\?/i', $emailBody)) {
-        error_log("WARNING: Tracking pixel already exists in email - skipping injection");
-        return $emailBody;
+    // First check if a tracking pixel already exists
+    if (preg_match('/track_pixel\.php\?t=/i', $emailBody)) {
+        error_log("WARNING: Tracking pixel already exists in email body - skipping injection");
+        return $emailBody; // Already has tracking pixel, don't add another
     }
     
     $pixelUrl = buildTrackingPixelUrl($trackingToken);
     
-    // Build pixel HTML
-    // Using style attribute for maximum email client compatibility
+    // Build the tracking pixel HTML
+    // Use proper HTML attributes and make it truly invisible
     $trackingPixel = sprintf(
-        '<img src="%s" alt="" width="1" height="1" border="0" style="display:block;width:1px;height:1px;border:0;padding:0;margin:0;opacity:0;visibility:hidden;" />',
+        '<img src="%s" alt="" width="1" height="1" border="0" style="display:block !important; width:1px !important; height:1px !important; min-width:1px !important; max-width:1px !important; min-height:1px !important; max-height:1px !important; opacity:0 !important; visibility:hidden !important; border:0 !important; padding:0 !important; margin:0 !important;" />',
         htmlspecialchars($pixelUrl, ENT_QUOTES, 'UTF-8')
     );
     
-    // Inject before closing body tag
+    // Try to inject before closing body tag (best practice)
     if (stripos($emailBody, '</body>') !== false) {
         return str_ireplace('</body>', $trackingPixel . "\n</body>", $emailBody);
     }
     
-    // Inject before closing html tag
+    // Try to inject before closing html tag
     if (stripos($emailBody, '</html>') !== false) {
         return str_ireplace('</html>', $trackingPixel . "\n</html>", $emailBody);
     }
     
-    // Append to end
+    // No HTML structure found, append to end
     return $emailBody . "\n" . $trackingPixel;
 }
 
 /**
- * Initialize email tracking
+ * Initialize email tracking record for EMAILS table
  */
 function initializeEmailTracking($emailId, $senderEmail, $recipientEmail) {
     try {
         $pdo = getDatabaseConnection();
         if (!$pdo) {
-            error_log("Database connection failed in initializeEmailTracking");
+            error_log("Failed to get database connection in initializeEmailTracking");
             return false;
         }
         
-        // Check if tracking exists
+        // Check if tracking already exists
         $stmt = $pdo->prepare("SELECT tracking_token FROM email_read_tracking WHERE email_id = ?");
         $stmt->execute([$emailId]);
         $existing = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if ($existing) {
-            error_log("Tracking already exists for email $emailId");
+            error_log("Tracking already exists for email ID $emailId, returning existing token");
             return $existing['tracking_token'];
         }
         
-        // Generate token
+        // Generate new tracking token
         $trackingToken = generateTrackingToken();
         
         // Insert tracking record
@@ -112,55 +108,70 @@ function initializeEmailTracking($emailId, $senderEmail, $recipientEmail) {
         
         $stmt->execute([$emailId, $trackingToken, $senderEmail, $recipientEmail]);
         
-        error_log("Tracking initialized for email $emailId: token=$trackingToken");
+        error_log("Initialized tracking for email ID: $emailId, token: $trackingToken");
         
         return $trackingToken;
         
     } catch (PDOException $e) {
-        error_log("Error initializing tracking: " . $e->getMessage());
+        error_log("Error initializing email tracking: " . $e->getMessage());
         return false;
     }
 }
 
 /**
- * Initialize tracking for sent_emails table (legacy)
- * Uses email_id = 0 for test/legacy emails
+ * SIMPLIFIED: Initialize tracking for SENT_EMAILS table
+ * Uses email_id = 0 for legacy/test emails
+ * 
+ * NOTE: This requires that your email_read_tracking table does NOT have 
+ * a strict foreign key constraint on email_id, OR email_id allows 0/NULL
  */
 function initializeLegacyEmailTracking($sentEmailId, $senderEmail, $recipientEmail) {
     try {
         $pdo = getDatabaseConnection();
         if (!$pdo) {
-            error_log("Database connection failed in initializeLegacyEmailTracking");
+            error_log("Failed to get database connection in initializeLegacyEmailTracking");
             return false;
         }
         
-        // Verify sent_email exists
+        // Check if sent_email exists
         $stmt = $pdo->prepare("SELECT id FROM sent_emails WHERE id = ?");
         $stmt->execute([$sentEmailId]);
         if (!$stmt->fetch()) {
-            error_log("Sent email $sentEmailId not found");
+            error_log("Sent email ID $sentEmailId not found in sent_emails table");
             return false;
         }
         
-        // Check if sent_emails already has a tracking_token
-        $stmt = $pdo->prepare("SELECT tracking_token FROM sent_emails WHERE id = ?");
-        $stmt->execute([$sentEmailId]);
-        $sentEmail = $stmt->fetch(PDO::FETCH_ASSOC);
+        // Check if tracking already exists (using email_id = 0 for legacy)
+        // Each sent_email gets unique tracking_token, so we check by sent_email reference
+        $stmt = $pdo->prepare("
+            SELECT tracking_token 
+            FROM email_read_tracking 
+            WHERE sender_email = ? 
+            AND recipient_email = ?
+            AND email_id = 0
+            AND created_at >= NOW() - INTERVAL 5 MINUTE
+            ORDER BY created_at DESC
+            LIMIT 1
+        ");
+        $stmt->execute([$senderEmail, $recipientEmail]);
+        $recent = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        if ($sentEmail && $sentEmail['tracking_token']) {
-            // Check if this token exists in email_read_tracking
-            $stmt = $pdo->prepare("SELECT id FROM email_read_tracking WHERE tracking_token = ?");
-            $stmt->execute([$sentEmail['tracking_token']]);
-            if ($stmt->fetch()) {
-                error_log("Reusing existing tracking token for sent_email $sentEmailId");
-                return $sentEmail['tracking_token'];
-            }
+        // If we just created one in last 5 minutes for same sender/recipient, reuse it
+        // This prevents double-creation during send process
+        if ($recent) {
+            error_log("Reusing recent tracking token for sent_email ID $sentEmailId");
+            
+            // Update sent_emails table
+            $stmt = $pdo->prepare("UPDATE sent_emails SET tracking_token = ? WHERE id = ?");
+            $stmt->execute([$recent['tracking_token'], $sentEmailId]);
+            
+            return $recent['tracking_token'];
         }
         
-        // Generate new token
+        // Generate new tracking token
         $trackingToken = generateTrackingToken();
         
-        // Insert into email_read_tracking with email_id = 0 (legacy marker)
+        // Insert tracking record with email_id = 0 (legacy/test marker)
         $stmt = $pdo->prepare("
             INSERT INTO email_read_tracking (
                 email_id, tracking_token, sender_email, recipient_email,
@@ -170,32 +181,36 @@ function initializeLegacyEmailTracking($sentEmailId, $senderEmail, $recipientEma
         
         $stmt->execute([$trackingToken, $senderEmail, $recipientEmail]);
         
-        // Update sent_emails with token
+        // Update sent_emails table with tracking token
         $stmt = $pdo->prepare("UPDATE sent_emails SET tracking_token = ? WHERE id = ?");
         $stmt->execute([$trackingToken, $sentEmailId]);
         
-        error_log("Legacy tracking initialized for sent_email $sentEmailId: token=$trackingToken");
+        error_log("Initialized legacy tracking for sent_email ID: $sentEmailId, token: $trackingToken");
         
         return $trackingToken;
         
     } catch (PDOException $e) {
-        error_log("Error in initializeLegacyEmailTracking: " . $e->getMessage());
+        error_log("Error initializing legacy email tracking: " . $e->getMessage());
+        error_log("SQL Error: " . print_r($pdo->errorInfo(), true));
         return false;
     }
 }
 
 /**
- * Get read status
+ * Get email read status
  */
 function getEmailReadStatus($emailId) {
     try {
         $pdo = getDatabaseConnection();
         if (!$pdo) return null;
         
-        $stmt = $pdo->prepare("SELECT * FROM email_read_tracking WHERE email_id = ?");
+        $stmt = $pdo->prepare("
+            SELECT * FROM email_read_tracking WHERE email_id = ?
+        ");
         $stmt->execute([$emailId]);
         
         return $stmt->fetch(PDO::FETCH_ASSOC);
+        
     } catch (PDOException $e) {
         error_log("Error getting read status: " . $e->getMessage());
         return null;
@@ -203,7 +218,28 @@ function getEmailReadStatus($emailId) {
 }
 
 /**
- * Parse user agent
+ * Get read status by tracking token
+ */
+function getReadStatusByToken($trackingToken) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return null;
+        
+        $stmt = $pdo->prepare("
+            SELECT * FROM email_read_tracking WHERE tracking_token = ?
+        ");
+        $stmt->execute([$trackingToken]);
+        
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+        
+    } catch (PDOException $e) {
+        error_log("Error getting read status by token: " . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Parse user agent string
  */
 function parseUserAgent($userAgent) {
     $data = [
@@ -212,16 +248,18 @@ function parseUserAgent($userAgent) {
         'device_type' => 'unknown'
     ];
     
-    if (empty($userAgent)) return $data;
+    if (empty($userAgent)) {
+        return $data;
+    }
     
-    // OS detection
+    // Detect OS
     if (preg_match('/Windows NT 10/i', $userAgent)) {
         $data['os'] = 'Windows 10/11';
         $data['device_type'] = 'desktop';
-    } elseif (preg_match('/Windows/i', $userAgent)) {
+    } elseif (preg_match('/Windows NT/i', $userAgent)) {
         $data['os'] = 'Windows';
         $data['device_type'] = 'desktop';
-    } elseif (preg_match('/Mac OS X/i', $userAgent)) {
+    } elseif (preg_match('/Macintosh|Mac OS X/i', $userAgent)) {
         $data['os'] = 'macOS';
         $data['device_type'] = 'desktop';
     } elseif (preg_match('/Linux/i', $userAgent)) {
@@ -238,7 +276,7 @@ function parseUserAgent($userAgent) {
         $data['device_type'] = preg_match('/Mobile/i', $userAgent) ? 'mobile' : 'tablet';
     }
     
-    // Browser detection
+    // Detect Browser
     if (preg_match('/Edge/i', $userAgent)) {
         $data['browser'] = 'Edge';
     } elseif (preg_match('/Chrome/i', $userAgent)) {
@@ -247,12 +285,14 @@ function parseUserAgent($userAgent) {
         $data['browser'] = 'Firefox';
     } elseif (preg_match('/Safari/i', $userAgent)) {
         $data['browser'] = 'Safari';
+    } elseif (preg_match('/MSIE|Trident/i', $userAgent)) {
+        $data['browser'] = 'Internet Explorer';
     } elseif (preg_match('/Outlook/i', $userAgent)) {
         $data['browser'] = 'Outlook';
     }
     
-    // Bot detection
-    if (preg_match('/bot|crawler|spider|imageproxy/i', $userAgent)) {
+    // Detect bots
+    if (preg_match('/bot|crawler|spider|scraper|imageproxy/i', $userAgent)) {
         $data['device_type'] = 'bot';
     }
     
@@ -260,24 +300,42 @@ function parseUserAgent($userAgent) {
 }
 
 /**
- * Check if sender is opening own email
+ * Check if open is from sender (testing their own email)
  */
 function isSenderOpen($senderEmail, $ipAddress, $userAgent) {
+    // Check if session matches sender
     if (session_status() === PHP_SESSION_NONE) {
         @session_start();
     }
     
-    return isset($_SESSION['smtp_user']) && $_SESSION['smtp_user'] === $senderEmail;
+    if (isset($_SESSION['smtp_user']) && $_SESSION['smtp_user'] === $senderEmail) {
+        return true;
+    }
+    
+    return false;
 }
 
 /**
- * Check if bot/prefetch
+ * Check if open is from bot/email scanner
  */
 function isBotOpen($userAgent, $openDelay = null) {
+    // Check user agent for bot patterns
     $botPatterns = [
-        '/bot/i', '/crawler/i', '/spider/i', '/scanner/i',
-        '/preview/i', '/prefetch/i', '/preload/i',
-        '/imageproxy/i', '/ggpht\.com/i'
+        '/bot/i',
+        '/crawler/i',
+        '/spider/i',
+        '/scanner/i',
+        '/preview/i',
+        '/prefetch/i',
+        '/preload/i',
+        '/curl/i',
+        '/wget/i',
+        '/python-requests/i',
+        '/java\//i',
+        '/imageproxy/i',
+        '/ggpht\.com/i',
+        '/yahoo.*slurp/i',
+        '/microsoft.*office/i'
     ];
     
     foreach ($botPatterns as $pattern) {
@@ -286,6 +344,7 @@ function isBotOpen($userAgent, $openDelay = null) {
         }
     }
     
+    // Check if opened too quickly (less than 2 seconds = likely prefetch)
     if ($openDelay !== null && $openDelay < 2) {
         return true;
     }
@@ -294,9 +353,14 @@ function isBotOpen($userAgent, $openDelay = null) {
 }
 
 /**
- * Check if proxy
+ * Check if IP is likely a proxy/VPN
  */
 function isLikelyProxy($ipAddress) {
-    return !filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+    // Check for private/local IPs
+    if (!filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+        return true;
+    }
+    
+    return false;
 }
 ?>

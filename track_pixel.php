@@ -1,43 +1,28 @@
 <?php
 /**
- * TRACKING PIXEL - CACHE-PROOF VERSION
- * Prevents Gmail Image Proxy from caching the pixel
+ * TRACKING PIXEL ENDPOINT - DEBUG VERSION
+ * Comprehensive logging for troubleshooting
  * 
- * URL: track_pixel.php?t={tracking_token}&r={random}&ts={timestamp}
+ * URL: track_pixel.php?t={tracking_token}
+ * 
+ * IMPORTANT: Set TESTING_MODE = true to bypass all filters
  */
 
 // ============================================
-// CONFIGURATION
+// DEBUG CONFIGURATION
 // ============================================
-define('TESTING_MODE', false);  // Set to TRUE to bypass filtering
+define('TESTING_MODE', true);  // Set to TRUE to bypass all filtering
 define('DEBUG_LOG_FILE', __DIR__ . '/tracking_debug.log');
-define('ENABLE_CONSOLE_DEBUG', true);
+define('ENABLE_CONSOLE_DEBUG', true); // Adds HTML comments to pixel response
 
-// Critical: Disable all output buffering and error display
+// Disable error display (pixel must always return valid image)
 ini_set('display_errors', 0);
 error_reporting(0);
-ob_end_clean();
-
-// ============================================
-// PREVENT CACHING - CRITICAL!
-// ============================================
-header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0');
-header('Pragma: no-cache');
-header('Expires: Thu, 01 Jan 1970 00:00:00 GMT');
-header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
-
-// Additional anti-cache headers for Gmail/Outlook proxies
-header('X-Robots-Tag: noindex, nofollow, noarchive, nosnippet');
-header('Vary: *');
-
-// Content type MUST be set early
-header('Content-Type: image/gif');
 
 // Start logging
 debugLog("=== TRACKING PIXEL REQUEST STARTED ===");
 debugLog("Request Time: " . date('Y-m-d H:i:s'));
 debugLog("Request URI: " . ($_SERVER['REQUEST_URI'] ?? 'N/A'));
-debugLog("Query String: " . ($_SERVER['QUERY_STRING'] ?? 'N/A'));
 
 require_once 'db_config.php';
 require_once 'read_tracking_helper.php';
@@ -46,24 +31,11 @@ require_once 'read_tracking_helper.php';
 // COLLECT REQUEST DATA
 // ============================================
 $trackingToken = $_GET['t'] ?? null;
-$randomParam = $_GET['r'] ?? null; // Anti-cache random value
-$timestampParam = $_GET['ts'] ?? null; // Timestamp to prevent caching
-
-debugLog("Tracking Token: " . ($trackingToken ?? 'NULL'));
-debugLog("Random Param: " . ($randomParam ?? 'NULL'));
-debugLog("Timestamp Param: " . ($timestampParam ?? 'NULL'));
+debugLog("Tracking Token from URL: " . ($trackingToken ?? 'NULL'));
 
 if (!$trackingToken) {
     debugLog("ERROR: No tracking token provided");
     outputTransparentPixel("No tracking token");
-    exit;
-}
-
-// Validate token format (should be 64 hex characters)
-if (!preg_match('/^[a-f0-9]{64}$/i', $trackingToken)) {
-    debugLog("ERROR: Invalid token format - expected 64 hex chars, got: " . strlen($trackingToken) . " chars");
-    debugLog("Token value: " . substr($trackingToken, 0, 100) . (strlen($trackingToken) > 100 ? '...' : ''));
-    outputTransparentPixel("Invalid token format");
     exit;
 }
 
@@ -92,12 +64,14 @@ outputTransparentPixel();
 exit;
 
 /**
- * Process tracking event
+ * Process tracking event with comprehensive debugging
  */
 function processTrackingEvent($trackingToken, $ipAddress, $userAgent, $referer) {
     debugLog("--- Processing Tracking Event ---");
     
     try {
+        // Get database connection
+        debugLog("Attempting database connection...");
         $pdo = getDatabaseConnection();
         
         if (!$pdo) {
@@ -122,6 +96,19 @@ function processTrackingEvent($trackingToken, $ipAddress, $userAgent, $referer) 
         if (!$tracking) {
             debugLog("ERROR: Tracking token not found in database!");
             debugLog("Token searched: " . $trackingToken);
+            
+            // Check if token exists in emails table
+            $stmt = $pdo->prepare("SELECT id, tracking_token FROM emails WHERE tracking_token = ?");
+            $stmt->execute([$trackingToken]);
+            $emailCheck = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($emailCheck) {
+                debugLog("WARNING: Token found in emails table but NOT in email_read_tracking table!");
+                debugLog("Email ID: " . $emailCheck['id']);
+            } else {
+                debugLog("Token not found in emails table either");
+            }
+            
             return;
         }
         
@@ -133,6 +120,7 @@ function processTrackingEvent($trackingToken, $ipAddress, $userAgent, $referer) 
         debugLog("  - Currently Read: " . ($tracking['is_read'] ? 'YES' : 'NO'));
         debugLog("  - Total Opens: " . $tracking['total_opens']);
         debugLog("  - Valid Opens: " . $tracking['valid_opens']);
+        debugLog("  - Created At: " . $tracking['created_at']);
         
         // Parse user agent
         $uaData = parseUserAgent($userAgent);
@@ -160,13 +148,13 @@ function processTrackingEvent($trackingToken, $ipAddress, $userAgent, $referer) 
         debugLog("  - Is Bot Open: " . ($isBot ? 'YES (BLOCKED)' : 'NO'));
         debugLog("  - Is Proxy: " . ($isProxy ? 'YES (WARNING)' : 'NO'));
         
-        // Check session
-        if (session_status() === PHP_SESSION_NONE) {
-            @session_start();
-        }
+        // Check session for sender detection
+        @session_start();
         if (isset($_SESSION['smtp_user'])) {
             debugLog("  - Session User: " . $_SESSION['smtp_user']);
             debugLog("  - Matches Sender: " . ($_SESSION['smtp_user'] === $tracking['sender_email'] ? 'YES' : 'NO'));
+        } else {
+            debugLog("  - Session User: Not logged in");
         }
         
         // Determine if valid open
@@ -196,7 +184,7 @@ function processTrackingEvent($trackingToken, $ipAddress, $userAgent, $referer) 
         // ============================================
         debugLog("--- Updating Database ---");
         
-        // Always increment total opens
+        // Increment total opens
         debugLog("Incrementing total_opens...");
         $stmt = $pdo->prepare("
             UPDATE email_read_tracking
@@ -225,12 +213,17 @@ function processTrackingEvent($trackingToken, $ipAddress, $userAgent, $referer) 
         ]);
         debugLog($result ? "✓ Open event logged" : "✗ Failed to log open event");
         
-        // If first valid open, mark as read
+        // If this is the FIRST VALID open, mark as read
         if ($isValidOpen && !$tracking['is_read']) {
             debugLog("*** THIS IS THE FIRST VALID OPEN - MARKING AS READ ***");
             
+            // Get country/city from IP
             $location = getLocationFromIP($ipAddress);
+            debugLog("Location Data:");
+            debugLog("  - Country: " . ($location['country'] ?? 'N/A'));
+            debugLog("  - City: " . ($location['city'] ?? 'N/A'));
             
+            debugLog("Executing UPDATE query to mark as read...");
             $stmt = $pdo->prepare("
                 UPDATE email_read_tracking
                 SET 
@@ -252,7 +245,7 @@ function processTrackingEvent($trackingToken, $ipAddress, $userAgent, $referer) 
                 WHERE id = ?
             ");
             
-            $result = $stmt->execute([
+            $params = [
                 $ipAddress,
                 $userAgent,
                 $uaData['browser'],
@@ -265,19 +258,64 @@ function processTrackingEvent($trackingToken, $ipAddress, $userAgent, $referer) 
                 $isProxy ? 1 : 0,
                 $openDelay,
                 $tracking['id']
-            ]);
+            ];
             
-            debugLog($result ? "✓✓✓ EMAIL SUCCESSFULLY MARKED AS READ ✓✓✓" : "✗✗✗ UPDATE FAILED ✗✗✗");
+            debugLog("Update parameters: " . json_encode($params));
+            
+            try {
+                $result = $stmt->execute($params);
+                $rowsAffected = $stmt->rowCount();
+                
+                debugLog("Update executed: " . ($result ? 'SUCCESS' : 'FAILED'));
+                debugLog("Rows affected: " . $rowsAffected);
+                
+                if ($rowsAffected > 0) {
+                    debugLog("✓✓✓ EMAIL SUCCESSFULLY MARKED AS READ ✓✓✓");
+                } else {
+                    debugLog("⚠️  WARNING: Update succeeded but 0 rows affected");
+                    debugLog("This might indicate a WHERE clause mismatch");
+                }
+                
+                // Verify the update
+                $stmt = $pdo->prepare("SELECT is_read, first_read_at FROM email_read_tracking WHERE id = ?");
+                $stmt->execute([$tracking['id']]);
+                $verify = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                debugLog("Verification query result:");
+                debugLog("  - is_read: " . $verify['is_read']);
+                debugLog("  - first_read_at: " . $verify['first_read_at']);
+                
+            } catch (PDOException $e) {
+                debugLog("✗✗✗ UPDATE QUERY FAILED ✗✗✗");
+                debugLog("PDO Error: " . $e->getMessage());
+                debugLog("Error Code: " . $e->getCode());
+            }
+            
+            // Also update legacy sent_emails if applicable
+            if ($tracking['email_id'] < 0) {
+                debugLog("Updating legacy sent_emails table...");
+                $legacyId = abs($tracking['email_id']);
+                $stmt = $pdo->prepare("
+                    UPDATE sent_emails
+                    SET is_read = 1, first_read_at = NOW()
+                    WHERE id = ?
+                ");
+                $result = $stmt->execute([$legacyId]);
+                debugLog($result ? "✓ Legacy table updated" : "✗ Legacy update failed");
+            }
             
         } elseif ($isValidOpen) {
-            debugLog("Email already read, incrementing valid_opens...");
+            debugLog("Email already marked as read, incrementing valid_opens counter...");
+            
             $stmt = $pdo->prepare("
                 UPDATE email_read_tracking
                 SET valid_opens = valid_opens + 1,
                     updated_at = NOW()
                 WHERE id = ?
             ");
-            $stmt->execute([$tracking['id']]);
+            $result = $stmt->execute([$tracking['id']]);
+            debugLog($result ? "✓ Valid opens incremented" : "✗ Failed to increment valid opens");
+            
         } else {
             debugLog("Open was filtered out - no read status update");
         }
@@ -285,15 +323,22 @@ function processTrackingEvent($trackingToken, $ipAddress, $userAgent, $referer) 
     } catch (PDOException $e) {
         debugLog("✗✗✗ DATABASE ERROR ✗✗✗");
         debugLog("PDO Exception: " . $e->getMessage());
+        debugLog("Error Code: " . $e->getCode());
+        debugLog("SQL State: " . ($e->errorInfo[0] ?? 'N/A'));
+        debugLog("Stack Trace: " . $e->getTraceAsString());
+    } catch (Exception $e) {
+        debugLog("✗✗✗ GENERAL ERROR ✗✗✗");
+        debugLog("Exception: " . $e->getMessage());
+        debugLog("Stack Trace: " . $e->getTraceAsString());
     }
 }
 
 /**
- * Get real IP address
+ * Get real IP address (handles proxies)
  */
 function getRealIpAddress() {
     $headers = [
-        'HTTP_CF_CONNECTING_IP',
+        'HTTP_CF_CONNECTING_IP', // Cloudflare
         'HTTP_X_FORWARDED_FOR',
         'HTTP_X_REAL_IP',
         'HTTP_CLIENT_IP',
@@ -303,10 +348,14 @@ function getRealIpAddress() {
     foreach ($headers as $header) {
         if (isset($_SERVER[$header]) && !empty($_SERVER[$header])) {
             $ip = $_SERVER[$header];
+            
+            // Handle comma-separated IPs (proxy chain)
             if (strpos($ip, ',') !== false) {
                 $ips = explode(',', $ip);
                 $ip = trim($ips[0]);
             }
+            
+            // Validate IP
             if (filter_var($ip, FILTER_VALIDATE_IP)) {
                 return $ip;
             }
@@ -317,52 +366,87 @@ function getRealIpAddress() {
 }
 
 /**
- * Output transparent 1x1 GIF pixel
- * Using GIF instead of PNG - smaller and more compatible
- */
-function outputTransparentPixel($debugMessage = '') {
-    // 1x1 transparent GIF (43 bytes) - smallest possible
-    // This is the same pixel used by Facebook, Google Analytics, etc.
-    $pixel = base64_decode('R0lGODlhAQABAJAAAP8AAAAAACH5BAUQAAAALAAAAAABAAEAAAICBAEAOw==');
-    
-    echo $pixel;
-}
-
-/**
- * Debug logging
- */
-function debugLog($message) {
-    $timestamp = date('Y-m-d H:i:s');
-    $logMessage = "[{$timestamp}] {$message}\n";
-    @file_put_contents(DEBUG_LOG_FILE, $logMessage, FILE_APPEND);
-}
-
-/**
- * Get location from IP
+ * Get location from IP address
  */
 function getLocationFromIP($ip) {
-    $location = ['country' => null, 'city' => null];
+    $location = [
+        'country' => null,
+        'city' => null
+    ];
     
+    // Skip for local/private IPs
     if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+        debugLog("Skipping geolocation for private IP: " . $ip);
         return $location;
     }
     
     try {
+        debugLog("Fetching geolocation for IP: " . $ip);
+        
+        // Using free ip-api.com service (100 requests/minute limit)
         $apiUrl = "http://ip-api.com/json/{$ip}?fields=status,country,city";
-        $context = stream_context_create(['http' => ['timeout' => 2]]);
+        
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 2,
+                'ignore_errors' => true
+            ]
+        ]);
+        
         $response = @file_get_contents($apiUrl, false, $context);
         
         if ($response) {
             $data = json_decode($response, true);
-            if ($data && $data['status'] === 'success') {
+            
+            if ($data && isset($data['status']) && $data['status'] === 'success') {
                 $location['country'] = $data['country'] ?? null;
                 $location['city'] = $data['city'] ?? null;
+                debugLog("Geolocation: " . $location['country'] . ", " . $location['city']);
+            } else {
+                debugLog("Geolocation API returned non-success status");
             }
+        } else {
+            debugLog("Geolocation API request failed");
         }
+        
     } catch (Exception $e) {
-        // Silently fail
+        debugLog("Geolocation error: " . $e->getMessage());
     }
     
     return $location;
+}
+
+/**
+ * Output transparent 1x1 pixel PNG
+ */
+function outputTransparentPixel($debugMessage = '') {
+    // Set headers
+    header('Content-Type: image/png');
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Cache-Control: post-check=0, pre-check=0', false);
+    header('Pragma: no-cache');
+    header('Expires: Thu, 01 Jan 1970 00:00:00 GMT');
+    
+    // Add debug info as HTML comment (invisible in images but shows in raw response)
+    if (ENABLE_CONSOLE_DEBUG && !empty($debugMessage)) {
+        echo "<!-- DEBUG: " . htmlspecialchars($debugMessage) . " -->\n";
+    }
+    
+    // Output 1x1 transparent PNG (43 bytes)
+    echo base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=');
+}
+
+/**
+ * Debug logging function
+ */
+function debugLog($message) {
+    $timestamp = date('Y-m-d H:i:s');
+    $logMessage = "[{$timestamp}] {$message}\n";
+    
+    // Write to log file
+    @file_put_contents(DEBUG_LOG_FILE, $logMessage, FILE_APPEND);
+    
+    // Also log to PHP error log
+    error_log("TRACKING DEBUG: " . $message);
 }
 ?>
