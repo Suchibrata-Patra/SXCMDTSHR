@@ -1,7 +1,7 @@
 <?php
 /**
  * db_config.php - Database Configuration and Helper Functions
- * CORRECTED VERSION - Removed duplicates and improved security
+ * ENHANCED VERSION with improved attachment linking
  */
 
 // Start session if not already started
@@ -21,14 +21,6 @@ if (!defined('FILE_ENCRYPTION_METHOD')) {
 // ==================== DATABASE CONNECTION ====================
 
 /**
- * Get environment variable or default value
- */
-function env($key, $default = null) {
-    $value = getenv($key);
-    return $value !== false ? $value : $default;
-}
-
-/**
  * Get PDO database connection
  */
 function getDatabaseConnection() {
@@ -39,11 +31,11 @@ function getDatabaseConnection() {
     }
     
     try {
-        // Use environment variables for security (fallback to hardcoded for backwards compatibility)
-        $host = env('DB_HOST', 'localhost');
-        $dbname = env('DB_NAME', 'u955994755_SXC_MDTS');
-        $username = env('DB_USER', 'u955994755_DB_supremacy');
-        $password = env('DB_PASS', 'sxccal.edu#MDTS@2026');
+        // Direct database credentials
+        $host = "localhost";
+        $dbname = "u955994755_SXC_MDTS";
+        $username = "u955994755_DB_supremacy";
+        $password = "sxccal.edu#MDTS@2026";
         
         $dsn = "mysql:host=$host;dbname=$dbname;charset=utf8mb4";
         
@@ -573,6 +565,14 @@ function generateUuidV4() {
 /**
  * Load IMAP config to session
  */
+// function loadImapConfigToSession($email, $password) {
+//     // Ensure session is started
+//     if (session_status() === PHP_SESSION_NONE) {
+//         session_start();
+//     }
+    
+//     $_SESSION['imap_configured'] = true;
+// }
 function loadImapConfigToSession($email, $password) {
     // Detect mail provider from email domain
     $domain = substr(strrchr($email, "@"), 1);
@@ -698,296 +698,58 @@ function getUnlabeledEmailCount($userEmail) {
 }
 
 /**
- * Save sent email to database
- */
-function saveSentEmail($pdo, $emailData) {
-    try {
-        $stmt = $pdo->prepare("
-            INSERT INTO sent_emails (
-                email_uuid, message_id, sender_email, sender_name,
-                recipient_email, cc_list, bcc_list, reply_to,
-                subject, article_title, body_text, body_html,
-                label_id, label_name, label_color,
-                has_attachments, email_type, sent_at, created_at
-            ) VALUES (
-                :email_uuid, :message_id, :sender_email, :sender_name,
-                :recipient_email, :cc_list, :bcc_list, :reply_to,
-                :subject, :article_title, :body_text, :body_html,
-                :label_id, :label_name, :label_color,
-                :has_attachments, :email_type, NOW(), NOW()
-            )
-        ");
-        
-        $stmt->execute([
-            'email_uuid' => $emailData['email_uuid'],
-            'message_id' => $emailData['message_id'] ?? null,
-            'sender_email' => $emailData['sender_email'],
-            'sender_name' => $emailData['sender_name'] ?? null,
-            'recipient_email' => $emailData['recipient_email'],
-            'cc_list' => $emailData['cc_list'] ?? null,
-            'bcc_list' => $emailData['bcc_list'] ?? null,
-            'reply_to' => $emailData['reply_to'] ?? null,
-            'subject' => $emailData['subject'],
-            'article_title' => $emailData['article_title'] ?? null,
-            'body_text' => $emailData['body_text'] ?? null,
-            'body_html' => $emailData['body_html'] ?? null,
-            'label_id' => $emailData['label_id'] ?? null,
-            'label_name' => $emailData['label_name'] ?? null,
-            'label_color' => $emailData['label_color'] ?? null,
-            'has_attachments' => $emailData['has_attachments'] ?? 0,
-            'email_type' => $emailData['email_type'] ?? 'sent'
-        ]);
-        
-        $emailId = $pdo->lastInsertId();
-        
-        if ($emailId) {
-            error_log("✓ Sent email saved to database (ID: $emailId, UUID: {$emailData['email_uuid']})");
-        } else {
-            error_log("✗ Failed to save sent email to database");
-        }
-        
-        return $emailId;
-        
-    } catch (PDOException $e) {
-        error_log("Error saving sent email: " . $e->getMessage());
-        error_log("SQL Error Details: " . print_r($e->errorInfo, true));
-        return null;
-    }
-}
-
-/**
- * Update sent email label
- */
-function updateSentEmailLabel($pdo, $emailId, $labelId = null, $labelName = null, $labelColor = null) {
-    try {
-        $stmt = $pdo->prepare("
-            UPDATE sent_emails 
-            SET label_id = :label_id,
-                label_name = :label_name,
-                label_color = :label_color,
-                updated_at = NOW()
-            WHERE id = :email_id
-        ");
-        
-        $success = $stmt->execute([
-            'label_id' => $labelId,
-            'label_name' => $labelName,
-            'label_color' => $labelColor,
-            'email_id' => $emailId
-        ]);
-        
-        if ($success) {
-            error_log("✓ Label updated for email $emailId");
-        }
-        
-        return $success;
-        
-    } catch (PDOException $e) {
-        error_log("Error updating email label: " . $e->getMessage());
-        return false;
-    }
-}
-
-/**
- * Get user labels from sent emails
- */
-function getUserLabelsFromSentEmails($userEmail) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) return [];
-        
-        $stmt = $pdo->prepare("
-            SELECT DISTINCT
-                label_id as id,
-                label_name,
-                label_color
-            FROM sent_emails
-            WHERE sender_email = :email
-            AND is_deleted = 0
-            AND label_id IS NOT NULL
-            ORDER BY label_name
-        ");
-        
-        $stmt->execute(['email' => $userEmail]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-    } catch (PDOException $e) {
-        error_log("Error getting user labels: " . $e->getMessage());
-        return [];
-    }
-}
-
-/**
- * Get sent emails with filters
- */
-function getSentEmails($userEmail, $limit = 50, $offset = 0, $filters = []) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) return [];
-        
-        $sql = "SELECT 
-                    se.*,
-                    (SELECT GROUP_CONCAT(original_filename SEPARATOR ', ')
-                     FROM sent_email_attachments sea
-                     WHERE sea.sent_email_id = se.id) as attachment_names,
-                    (SELECT COUNT(*)
-                     FROM sent_email_attachments sea
-                     WHERE sea.sent_email_id = se.id) as attachment_count
-                FROM sent_emails se
-                WHERE se.sender_email = :email
-                AND se.is_deleted = 0";
-        
-        $params = ['email' => $userEmail];
-        
-        // Apply search filter
-        if (!empty($filters['search'])) {
-            $sql .= " AND (se.recipient_email LIKE :search 
-                        OR se.subject LIKE :search 
-                        OR se.body_text LIKE :search 
-                        OR se.article_title LIKE :search)";
-            $params['search'] = '%' . $filters['search'] . '%';
-        }
-        
-        // Apply recipient filter
-        if (!empty($filters['recipient'])) {
-            $sql .= " AND se.recipient_email LIKE :recipient";
-            $params['recipient'] = '%' . $filters['recipient'] . '%';
-        }
-        
-        // Apply label filter
-        if (!empty($filters['label_id'])) {
-            if ($filters['label_id'] === 'unlabeled') {
-                $sql .= " AND se.label_id IS NULL";
-            } else {
-                $sql .= " AND se.label_id = :label_id";
-                $params['label_id'] = $filters['label_id'];
-            }
-        }
-        
-        // Apply date range filters
-        if (!empty($filters['date_from'])) {
-            $sql .= " AND DATE(se.sent_at) >= :date_from";
-            $params['date_from'] = $filters['date_from'];
-        }
-        if (!empty($filters['date_to'])) {
-            $sql .= " AND DATE(se.sent_at) <= :date_to";
-            $params['date_to'] = $filters['date_to'];
-        }
-        
-        $sql .= " ORDER BY se.sent_at DESC LIMIT :limit OFFSET :offset";
-        
-        $stmt = $pdo->prepare($sql);
-        
-        foreach ($params as $key => $value) {
-            $stmt->bindValue(':' . $key, $value);
-        }
-        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
-        
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-    } catch (PDOException $e) {
-        error_log("Error fetching sent emails: " . $e->getMessage());
-        return [];
-    }
-}
-
-/**
- * Get count of sent emails with filters
+ * Get the total count of sent emails for a user based on filters
  */
 function getSentEmailCount($userEmail, $filters = []) {
     try {
         $pdo = getDatabaseConnection();
         if (!$pdo) return 0;
-        
+
+        $userId = getUserId($pdo, $userEmail);
+        if (!$userId) return 0;
+
         $sql = "SELECT COUNT(*) as count 
-                FROM sent_emails
-                WHERE sender_email = :email 
-                AND is_deleted = 0";
-        
-        $params = ['email' => $userEmail];
-        
+                FROM emails e
+                JOIN user_email_access uea ON e.id = uea.email_id
+                WHERE uea.user_id = :user_id 
+                AND uea.access_type = 'sender' 
+                AND uea.is_deleted = 0";
+
+        $params = [':user_id' => $userId];
+
         if (!empty($filters['search'])) {
             $sql .= " AND (recipient_email LIKE :search OR subject LIKE :search OR body_text LIKE :search)";
-            $params['search'] = '%' . $filters['search'] . '%';
+            $params[':search'] = '%' . $filters['search'] . '%';
         }
-        
+
         if (!empty($filters['recipient'])) {
             $sql .= " AND recipient_email LIKE :recipient";
-            $params['recipient'] = '%' . $filters['recipient'] . '%';
+            $params[':recipient'] = '%' . $filters['recipient'] . '%';
         }
-        
+
         if (!empty($filters['label_id'])) {
             if ($filters['label_id'] === 'unlabeled') {
-                $sql .= " AND label_id IS NULL";
+                $sql .= " AND uea.label_id IS NULL";
             } else {
-                $sql .= " AND label_id = :label_id";
-                $params['label_id'] = $filters['label_id'];
+                $sql .= " AND uea.label_id = :label_id";
+                $params[':label_id'] = $filters['label_id'];
             }
         }
-        
-        if (!empty($filters['date_from'])) {
-            $sql .= " AND DATE(sent_at) >= :date_from";
-            $params['date_from'] = $filters['date_from'];
-        }
-        if (!empty($filters['date_to'])) {
-            $sql .= " AND DATE(sent_at) <= :date_to";
-            $params['date_to'] = $filters['date_to'];
-        }
-        
+
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         $result = $stmt->fetch();
         
         return $result['count'] ?? 0;
-        
+
     } catch (PDOException $e) {
         error_log("Error counting sent emails: " . $e->getMessage());
         return 0;
     }
 }
 
-/**
- * Get single sent email by ID
- */
-function getSentEmailById($emailId, $userEmail) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) return null;
-        
-        $stmt = $pdo->prepare("
-            SELECT * FROM sent_emails
-            WHERE id = :id AND sender_email = :email AND is_deleted = 0
-        ");
-        
-        $stmt->execute([
-            'id' => $emailId,
-            'email' => $userEmail
-        ]);
-        
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-        
-    } catch (PDOException $e) {
-        error_log("Error getting sent email: " . $e->getMessage());
-        return null;
-    }
-}
-
-/**
- * Format file size to human readable
- */
-function formatFileSize($bytes) {
-    if ($bytes === 0) return '0 Bytes';
-    $k = 1024;
-    $sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    $i = floor(log($bytes) / log($k));
-    return round($bytes / pow($k, $i), 2) . ' ' . $sizes[$i];
-}
-
-// Disable error display in production (set to 0)
-// For debugging, set to 1
-ini_set('display_errors', 0);
-ini_set('display_startup_errors', 0);
+// Enable error display for debugging (remove in production)
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 ?>
