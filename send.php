@@ -42,7 +42,7 @@ function linkAttachmentsToSentEmail(PDO $pdo, int $emailId, string $emailUuid, a
     }
 
     $sql = "
-        INSERT INTO sent_email_attachments (email_id, email_uuid, attachment_id)
+        INSERT INTO sent_email_attachments_new (email_id, email_uuid, attachment_id)
         VALUES (:email_id, :email_uuid, :attachment_id)
     ";
 
