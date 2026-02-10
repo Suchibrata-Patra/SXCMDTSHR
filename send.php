@@ -3,7 +3,6 @@ session_start();
 require 'vendor/autoload.php';
 require 'config.php';
 require 'db_config.php';
-require_once 'read_tracking_helper.php';
 
 // Security check
 if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
