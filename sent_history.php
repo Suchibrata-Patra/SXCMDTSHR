@@ -99,6 +99,418 @@ if (isset($_GET['action'])) {
             exit();
     }
 }
+function getSentEmails($userEmail, $limit = 50, $offset = 0, $filters = []) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return [];
+        
+        $sql = "SELECT 
+                    se.*,
+                    (SELECT GROUP_CONCAT(original_filename SEPARATOR ', ')
+                     FROM sent_email_attachments_new sea
+                     WHERE sea.sent_email_id = se.id) as attachment_names,
+                    (SELECT COUNT(*)
+                     FROM sent_email_attachments_new sea
+                     WHERE sea.sent_email_id = se.id) as attachment_count
+                FROM sent_emails_new se
+                WHERE se.sender_email = :email
+                AND se.is_deleted = 0";
+        
+        $params = ['email' => $userEmail];
+        
+        // Apply search filter
+        if (!empty($filters['search'])) {
+            $sql .= " AND (se.recipient_email LIKE :search 
+                        OR se.subject LIKE :search 
+                        OR se.body_text LIKE :search 
+                        OR se.article_title LIKE :search)";
+            $params['search'] = '%' . $filters['search'] . '%';
+        }
+        
+        // Apply recipient filter
+        if (!empty($filters['recipient'])) {
+            $sql .= " AND se.recipient_email LIKE :recipient";
+            $params['recipient'] = '%' . $filters['recipient'] . '%';
+        }
+        
+        // Apply subject filter
+        if (!empty($filters['subject'])) {
+            $sql .= " AND se.subject LIKE :subject";
+            $params['subject'] = '%' . $filters['subject'] . '%';
+        }
+        
+        // Apply label filter
+        if (!empty($filters['label_id'])) {
+            if ($filters['label_id'] === 'unlabeled') {
+                $sql .= " AND se.label_id IS NULL";
+            } else {
+                $sql .= " AND se.label_id = :label_id";
+                $params['label_id'] = $filters['label_id'];
+            }
+        }
+        
+        // Apply date range filters
+        if (!empty($filters['date_from'])) {
+            $sql .= " AND DATE(se.sent_at) >= :date_from";
+            $params['date_from'] = $filters['date_from'];
+        }
+        if (!empty($filters['date_to'])) {
+            $sql .= " AND DATE(se.sent_at) <= :date_to";
+            $params['date_to'] = $filters['date_to'];
+        }
+        
+        $sql .= " ORDER BY se.sent_at DESC LIMIT :limit OFFSET :offset";
+        
+        $stmt = $pdo->prepare($sql);
+        
+        foreach ($params as $key => $value) {
+            $stmt->bindValue(':' . $key, $value);
+        }
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+        
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+    } catch (PDOException $e) {
+        error_log("Error fetching sent emails: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Get count of sent emails with filters
+ */
+function getSentEmailCount($userEmail, $filters = []) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return 0;
+        
+        $sql = "SELECT COUNT(*) as count 
+                FROM sent_emails_new
+                WHERE sender_email = :email 
+                AND is_deleted = 0";
+        
+        $params = ['email' => $userEmail];
+        
+        if (!empty($filters['search'])) {
+            $sql .= " AND (recipient_email LIKE :search OR subject LIKE :search OR body_text LIKE :search OR article_title LIKE :search)";
+            $params['search'] = '%' . $filters['search'] . '%';
+        }
+        
+        if (!empty($filters['recipient'])) {
+            $sql .= " AND recipient_email LIKE :recipient";
+            $params['recipient'] = '%' . $filters['recipient'] . '%';
+        }
+        
+        if (!empty($filters['subject'])) {
+            $sql .= " AND subject LIKE :subject";
+            $params['subject'] = '%' . $filters['subject'] . '%';
+        }
+        
+        if (!empty($filters['label_id'])) {
+            if ($filters['label_id'] === 'unlabeled') {
+                $sql .= " AND label_id IS NULL";
+            } else {
+                $sql .= " AND label_id = :label_id";
+                $params['label_id'] = $filters['label_id'];
+            }
+        }
+        
+        if (!empty($filters['date_from'])) {
+            $sql .= " AND DATE(sent_at) >= :date_from";
+            $params['date_from'] = $filters['date_from'];
+        }
+        if (!empty($filters['date_to'])) {
+            $sql .= " AND DATE(sent_at) <= :date_to";
+            $params['date_to'] = $filters['date_to'];
+        }
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $result = $stmt->fetch();
+        
+        return $result['count'] ?? 0;
+        
+    } catch (PDOException $e) {
+        error_log("Error counting sent emails: " . $e->getMessage());
+        return 0;
+    }
+}
+
+/**
+ * Get single sent email by ID
+ */
+function getSentEmailById($emailId, $userEmail) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return null;
+        
+        $stmt = $pdo->prepare("
+            SELECT * FROM sent_emails_new
+            WHERE id = :id AND sender_email = :email AND is_deleted = 0
+        ");
+        
+        $stmt->execute([
+            'id' => $emailId,
+            'email' => $userEmail
+        ]);
+        
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+        
+    } catch (PDOException $e) {
+        error_log("Error getting sent email: " . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Update sent email label
+ */
+function updateSentEmailLabel($pdo, $emailId, $labelId = null, $labelName = null, $labelColor = null) {
+    try {
+        $stmt = $pdo->prepare("
+            UPDATE sent_emails_new 
+            SET label_id = :label_id,
+                label_name = :label_name,
+                label_color = :label_color,
+                updated_at = NOW()
+            WHERE id = :email_id
+        ");
+        
+        $success = $stmt->execute([
+            'label_id' => $labelId,
+            'label_name' => $labelName,
+            'label_color' => $labelColor,
+            'email_id' => $emailId
+        ]);
+        
+        if ($success) {
+            error_log("✓ Label updated for email $emailId");
+        }
+        
+        return $success;
+        
+    } catch (PDOException $e) {
+        error_log("Error updating email label: " . $e->getMessage());
+        return false;
+    }
+}
+
+// ==================== LABEL MANAGEMENT ====================
+
+/**
+ * Get label counts for user from sent_emails_new table
+ */
+function getLabelCounts($userEmail) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) {
+            return [];
+        }
+        
+        $sql = "SELECT 
+                    label_id,
+                    label_name,
+                    label_color,
+                    COUNT(*) as email_count
+                FROM sent_emails_new
+                WHERE sender_email = :user_email
+                AND is_deleted = 0
+                AND label_id IS NOT NULL
+                GROUP BY label_id, label_name, label_color
+                ORDER BY label_name ASC";
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([':user_email' => $userEmail]);
+        
+        return $stmt->fetchAll();
+        
+    } catch (PDOException $e) {
+        error_log("Error fetching label counts: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Get count of unlabeled emails
+ */
+function getUnlabeledEmailCount($userEmail) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) {
+            return 0;
+        }
+        
+        $sql = "SELECT COUNT(*) as count 
+                FROM sent_emails_new 
+                WHERE sender_email = :user_email 
+                AND label_id IS NULL 
+                AND is_deleted = 0";
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([':user_email' => $userEmail]);
+        $result = $stmt->fetch();
+        
+        return $result['count'] ?? 0;
+        
+    } catch (PDOException $e) {
+        error_log("Error fetching unlabeled count: " . $e->getMessage());
+        return 0;
+    }
+}
+
+/**
+ * Get user labels from sent emails
+ */
+function getUserLabelsFromSentEmails($userEmail) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return [];
+        
+        $stmt = $pdo->prepare("
+            SELECT DISTINCT
+                label_id as id,
+                label_name,
+                label_color
+            FROM sent_emails_new
+            WHERE sender_email = :email
+            AND is_deleted = 0
+            AND label_id IS NOT NULL
+            ORDER BY label_name
+        ");
+        
+        $stmt->execute(['email' => $userEmail]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+    } catch (PDOException $e) {
+        error_log("Error getting user labels: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Create a new label (if you have a labels table)
+ */
+function createLabel($userEmail, $labelName, $labelColor = '#0973dc') {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) {
+            return false;
+        }
+        
+        // Check if labels table exists
+        $stmt = $pdo->query("SHOW TABLES LIKE 'labels'");
+        if ($stmt->rowCount() == 0) {
+            return false;
+        }
+        
+        // Check if label already exists
+        $stmt = $pdo->prepare("SELECT id FROM labels WHERE user_email = ? AND label_name = ?");
+        $stmt->execute([$userEmail, $labelName]);
+        
+        if ($stmt->fetch()) {
+            return ['error' => 'Label already exists'];
+        }
+        
+        $sql = "INSERT INTO labels (user_email, label_name, label_color, created_at) 
+                VALUES (?, ?, ?, NOW())";
+        
+        $stmt = $pdo->prepare($sql);
+        $result = $stmt->execute([$userEmail, $labelName, $labelColor]);
+        
+        return $result ? $pdo->lastInsertId() : false;
+        
+    } catch (PDOException $e) {
+        error_log("Error creating label: " . $e->getMessage());
+        return false;
+    }
+}
+
+// ==================== UTILITY FUNCTIONS ====================
+
+/**
+ * Generate UUID v4
+ */
+function generateUuidV4() {
+    return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+        mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+        mt_rand(0, 0xffff),
+        mt_rand(0, 0x0fff) | 0x4000,
+        mt_rand(0, 0x3fff) | 0x8000,
+        mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+    );
+}
+
+/**
+ * Parse email list from comma/semicolon separated string
+ */
+function parseEmailList($emailString) {
+    $emails = preg_split('/[;,]+/', $emailString);
+    $emails = array_map('trim', $emails);
+    $emails = array_filter($emails);
+    return $emails;
+}
+
+/**
+ * Format file size to human readable
+ */
+function formatFileSize($bytes) {
+    if ($bytes === 0) return '0 Bytes';
+    $k = 1024;
+    $sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    $i = floor(log($bytes) / log($k));
+    return round($bytes / pow($k, $i), 2) . ' ' . $sizes[$i];
+}
+
+/**
+ * Encrypt file ID for secure download links
+ */
+function encryptFileId($fileId) {
+    try {
+        $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length(FILE_ENCRYPTION_METHOD));
+        
+        $encrypted = openssl_encrypt(
+            (string)$fileId,
+            FILE_ENCRYPTION_METHOD,
+            FILE_ENCRYPTION_KEY,
+            0,
+            $iv
+        );
+        
+        $result = base64_encode($iv . $encrypted);
+        return $result;
+        
+    } catch (Exception $e) {
+        error_log("Encryption error: " . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Decrypt file ID
+ */
+function decryptFileId($encrypted) {
+    try {
+        $data = base64_decode($encrypted);
+        $iv_length = openssl_cipher_iv_length(FILE_ENCRYPTION_METHOD);
+        $iv = substr($data, 0, $iv_length);
+        $encrypted_data = substr($data, $iv_length);
+        
+        $decrypted = openssl_decrypt(
+            $encrypted_data,
+            FILE_ENCRYPTION_METHOD,
+            FILE_ENCRYPTION_KEY,
+            0,
+            $iv
+        );
+        
+        return $decrypted !== false ? (int)$decrypted : null;
+    } catch (Exception $e) {
+        error_log("Decryption error: " . $e->getMessage());
+        return null;
+    }
+}
 
 // Initial data load
 $messages = getSentEmails($userEmail, 50, 0) ?? [];
