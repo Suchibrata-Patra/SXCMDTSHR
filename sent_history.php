@@ -1,8 +1,7 @@
 <?php
 /**
  * CORRECTED PHP PORTION for sent_history.php
- * Works with sent_emails_new table structure
- * Replace lines 1-270 with this code
+ * Replace lines 1-250 with this corrected version
  */
 
 session_start();
@@ -32,7 +31,7 @@ if (isset($_GET['action'])) {
             if (isset($_GET['label_id'])) $filters['label_id'] = $_GET['label_id'];
             
             $messages = getSentEmails($userEmail, $limit, $offset, $filters);
-            $total = getSentEmailCountLocal($userEmail, $filters);
+            $total = getSentEmailCount($userEmail, $filters);
             
             echo json_encode([
                 'success' => true,
@@ -52,9 +51,9 @@ if (isset($_GET['action'])) {
                     try {
                         $pdo = getDatabaseConnection();
                         $stmt = $pdo->prepare("
-                            SELECT * FROM sent_email_attachments_new 
-                            WHERE sent_email_id = ? 
-                            ORDER BY uploaded_at ASC
+                            SELECT * FROM sent_emails_new 
+                            WHERE email_id = ? 
+                            ORDER BY created_at ASC
                         ");
                         $stmt->execute([$messageId]);
                         $attachments = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -74,22 +73,29 @@ if (isset($_GET['action'])) {
             $messageId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
             try {
                 $pdo = getDatabaseConnection();
-                $stmt = $pdo->prepare("
-                    UPDATE sent_emails_new 
-                    SET is_deleted = 1 
-                    WHERE id = ? AND sender_email = ?
-                ");
-                $success = $stmt->execute([$messageId, $userEmail]);
-                echo json_encode(['success' => $success]);
+                $userId = getUserId($pdo, $userEmail);
+                
+                if ($userId) {
+                    // Mark as deleted in user_email_access
+                    $stmt = $pdo->prepare("
+                        UPDATE user_email_access 
+                        SET is_deleted = 1 
+                        WHERE email_id = ? AND user_id = ? AND access_type = 'sender'
+                    ");
+                    $success = $stmt->execute([$messageId, $userId]);
+                    echo json_encode(['success' => $success]);
+                } else {
+                    echo json_encode(['success' => false, 'error' => 'User not found']);
+                }
             } catch (PDOException $e) {
                 echo json_encode(['success' => false, 'error' => $e->getMessage()]);
             }
             exit();
             
         case 'get_counts':
-            $total = getSentEmailCountLocal($userEmail);
-            $labeled = getSentEmailCountLocal($userEmail, ['has_label' => true]);
-            $unlabeled = getSentEmailCountLocal($userEmail, ['label_id' => 'unlabeled']);
+            $total = getSentEmailCount($userEmail);
+            $labeled = getSentEmailCount($userEmail, ['has_label' => true]);
+            $unlabeled = getUnlabeledEmailCount($userEmail);
             
             echo json_encode([
                 'success' => true,
@@ -102,69 +108,78 @@ if (isset($_GET['action'])) {
 }
 
 /**
- * Get sent emails from sent_emails_new table
+ * Get sent emails for a user with filters
  */
 function getSentEmails($userEmail, $limit = 50, $offset = 0, $filters = []) {
     try {
         $pdo = getDatabaseConnection();
         if (!$pdo) return [];
         
-        $sql = "SELECT 
-                    se.*,
-                    (SELECT GROUP_CONCAT(original_filename SEPARATOR ', ')
-                     FROM sent_email_attachments_new sea
-                     WHERE sea.sent_email_id = se.id) as attachment_names,
-                    (SELECT COUNT(*)
-                     FROM sent_email_attachments_new sea
-                     WHERE sea.sent_email_id = se.id) as attachment_count
-                FROM sent_emails_new se
-                WHERE se.sender_email = :email
-                AND se.is_deleted = 0";
+        $userId = getUserId($pdo, $userEmail);
+        if (!$userId) return [];
         
-        $params = ['email' => $userEmail];
+        $sql = "SELECT 
+                    e.*,
+                    uea.label_id,
+                    l.name as label_name,
+                    l.color as label_color,
+                    (SELECT GROUP_CONCAT(original_filename SEPARATOR ', ')
+                     FROM email_attachments ea
+                     WHERE ea.email_id = e.id) as attachment_names,
+                    (SELECT COUNT(*)
+                     FROM email_attachments ea
+                     WHERE ea.email_id = e.id) as attachment_count
+                FROM emails e
+                JOIN user_email_access uea ON e.id = uea.email_id
+                LEFT JOIN labels l ON uea.label_id = l.id
+                WHERE uea.user_id = :user_id
+                AND uea.access_type = 'sender'
+                AND uea.is_deleted = 0";
+        
+        $params = ['user_id' => $userId];
         
         // Apply search filter
         if (!empty($filters['search'])) {
-            $sql .= " AND (se.recipient_email LIKE :search 
-                        OR se.subject LIKE :search 
-                        OR se.body_text LIKE :search 
-                        OR se.article_title LIKE :search)";
+            $sql .= " AND (e.recipient_email LIKE :search 
+                        OR e.subject LIKE :search 
+                        OR e.body_text LIKE :search 
+                        OR e.article_title LIKE :search)";
             $params['search'] = '%' . $filters['search'] . '%';
         }
         
         // Apply recipient filter
         if (!empty($filters['recipient'])) {
-            $sql .= " AND se.recipient_email LIKE :recipient";
+            $sql .= " AND e.recipient_email LIKE :recipient";
             $params['recipient'] = '%' . $filters['recipient'] . '%';
         }
         
         // Apply subject filter
         if (!empty($filters['subject'])) {
-            $sql .= " AND se.subject LIKE :subject";
+            $sql .= " AND e.subject LIKE :subject";
             $params['subject'] = '%' . $filters['subject'] . '%';
         }
         
         // Apply label filter
         if (!empty($filters['label_id'])) {
             if ($filters['label_id'] === 'unlabeled') {
-                $sql .= " AND se.label_id IS NULL";
+                $sql .= " AND uea.label_id IS NULL";
             } else {
-                $sql .= " AND se.label_id = :label_id";
+                $sql .= " AND uea.label_id = :label_id";
                 $params['label_id'] = $filters['label_id'];
             }
         }
         
         // Apply date range filters
         if (!empty($filters['date_from'])) {
-            $sql .= " AND DATE(se.sent_at) >= :date_from";
+            $sql .= " AND DATE(e.sent_at) >= :date_from";
             $params['date_from'] = $filters['date_from'];
         }
         if (!empty($filters['date_to'])) {
-            $sql .= " AND DATE(se.sent_at) <= :date_to";
+            $sql .= " AND DATE(e.sent_at) <= :date_to";
             $params['date_to'] = $filters['date_to'];
         }
         
-        $sql .= " ORDER BY se.sent_at DESC LIMIT :limit OFFSET :offset";
+        $sql .= " ORDER BY e.sent_at DESC LIMIT :limit OFFSET :offset";
         
         $stmt = $pdo->prepare($sql);
         
@@ -184,78 +199,35 @@ function getSentEmails($userEmail, $limit = 50, $offset = 0, $filters = []) {
 }
 
 /**
- * Get sent email count from sent_emails_new table
+ * Get a specific sent email by ID
  */
-function getSentEmailCountLocal($userEmail, $filters = []) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) return 0;
-        
-        $sql = "SELECT COUNT(*) as count 
-                FROM sent_emails_new
-                WHERE sender_email = :email 
-                AND is_deleted = 0";
-        
-        $params = ['email' => $userEmail];
-        
-        // Apply has_label filter
-        if (!empty($filters['has_label'])) {
-            $sql .= " AND label_id IS NOT NULL";
-        }
-        
-        // Apply label_id filter
-        if (!empty($filters['label_id'])) {
-            if ($filters['label_id'] === 'unlabeled') {
-                $sql .= " AND label_id IS NULL";
-            } else {
-                $sql .= " AND label_id = :label_id";
-                $params['label_id'] = $filters['label_id'];
-            }
-        }
-        
-        // Apply search filter
-        if (!empty($filters['search'])) {
-            $sql .= " AND (recipient_email LIKE :search 
-                        OR subject LIKE :search 
-                        OR body_text LIKE :search 
-                        OR article_title LIKE :search)";
-            $params['search'] = '%' . $filters['search'] . '%';
-        }
-        
-        $stmt = $pdo->prepare($sql);
-        foreach ($params as $key => $value) {
-            $stmt->bindValue(':' . $key, $value);
-        }
-        $stmt->execute();
-        
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $result['count'] ?? 0;
-        
-    } catch (PDOException $e) {
-        error_log("Error counting sent emails: " . $e->getMessage());
-        return 0;
-    }
-}
-
-/**
- * Get a single sent email by ID from sent_emails_new table
- */
-function getSentEmailById($messageId, $userEmail) {
+function getSentEmailById($emailId, $userEmail) {
     try {
         $pdo = getDatabaseConnection();
         if (!$pdo) return null;
         
+        $userId = getUserId($pdo, $userEmail);
+        if (!$userId) return null;
+        
         $stmt = $pdo->prepare("
-            SELECT se.*
-            FROM sent_emails_new se
-            WHERE se.id = :id 
-            AND se.sender_email = :email
-            AND se.is_deleted = 0
+            SELECT 
+                e.*,
+                uea.label_id,
+                l.name as label_name,
+                l.color as label_color
+            FROM emails e
+            JOIN user_email_access uea ON e.id = uea.email_id
+            LEFT JOIN labels l ON uea.label_id = l.id
+            WHERE e.id = :email_id 
+            AND uea.user_id = :user_id
+            AND uea.access_type = 'sender'
+            AND uea.is_deleted = 0
+            LIMIT 1
         ");
         
         $stmt->execute([
-            'id' => $messageId,
-            'email' => $userEmail
+            'email_id' => $emailId,
+            'user_id' => $userId
         ]);
         
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -266,33 +238,7 @@ function getSentEmailById($messageId, $userEmail) {
     }
 }
 
-// Get counts for stats
-$totalCount = getSentEmailCountLocal($userEmail);
-$labeledCount = getSentEmailCountLocal($userEmail, ['has_label' => true]);
-$unlabeledCount = getSentEmailCountLocal($userEmail, ['label_id' => 'unlabeled']);
-
-// Get labels for filter dropdown
-$labels = [];
-try {
-    $pdo = getDatabaseConnection();
-    $stmt = $pdo->prepare("
-        SELECT l.*, COUNT(se.id) as email_count
-        FROM labels l
-        LEFT JOIN sent_emails_new se ON l.label_id = se.label_id 
-            AND se.sender_email = :email 
-            AND se.is_deleted = 0
-        WHERE l.user_email = :email
-        GROUP BY l.label_id
-        ORDER BY l.label_name
-    ");
-    $stmt->execute(['email' => $userEmail]);
-    $labels = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    error_log("Error fetching labels: " . $e->getMessage());
-}
-
-// Get initial messages for display
-$messages = getSentEmails($userEmail, 50, 0);
+// Continue with HTML portion from line 251 onwards...
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -300,143 +246,153 @@ $messages = getSentEmails($userEmail, 50, 0);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sent Email History</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Sent Emails — SXC MDTS</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
     <style>
+        :root {
+            --apple-blue: #007AFF;
+            --apple-gray: #8E8E93;
+            --apple-light-gray: #C7C7CC;
+            --apple-bg: #F2F2F7;
+            --glass: rgba(255, 255, 255, 0.7);
+            --border: #E5E5EA;
+            --success-green: #34C759;
+            --warning-orange: #FF9500;
+            --danger-red: #FF3B30;
+            --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --hover-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        :root {
-            --apple-blue: #007AFF;
-            --apple-gray: #8E8E93;
-            --apple-bg: #F2F2F7;
-            --border: #E5E5EA;
-            --success-green: #34C759;
-            --warning-orange: #FF9500;
-            --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        }
-
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #FAFAFA;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--apple-bg);
             color: #1c1c1e;
+            display: flex;
+            height: 100vh;
             overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
-        /* ========== CONTAINER ========== */
-        .container {
-            height: 100vh;
+        /* ========== MAIN CONTENT ========== */
+        .main-content {
+            flex: 1;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
 
         /* ========== HEADER ========== */
-        .header {
+        .page-header {
             background: white;
             border-bottom: 1px solid var(--border);
             padding: 16px 24px;
-        }
-
-        .header-top {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
         }
 
-        .header-title {
-            font-size: 28px;
+        .header-left {
+            flex: 1;
+        }
+
+        .page-title {
+            font-size: 24px;
             font-weight: 700;
             color: #1c1c1e;
+            letter-spacing: -0.5px;
+            margin-bottom: 2px;
+        }
+
+        .page-subtitle {
+            font-size: 13px;
+            color: var(--apple-gray);
+            font-weight: 400;
         }
 
         .header-actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
+            align-items: center;
         }
 
         .btn {
-            padding: 8px 16px;
-            background: var(--apple-blue);
-            color: white;
+            padding: 8px 14px;
             border: none;
             border-radius: 8px;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 6px;
+            transition: all 0.2s;
             font-family: 'Inter', sans-serif;
-        }
-
-        .btn:hover {
-            background: #0051D5;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
-        }
-
-        .btn-secondary {
-            background: white;
-            color: #1c1c1e;
-            border: 1px solid var(--border);
-        }
-
-        .btn-secondary:hover {
-            background: var(--apple-bg);
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .btn-icon {
-            padding: 8px;
-            background: transparent;
-            color: var(--apple-gray);
-        }
-
-        .btn-icon:hover {
-            background: var(--apple-bg);
-            color: var(--apple-blue);
-            transform: translateY(0);
         }
 
         .btn .material-icons {
             font-size: 18px;
         }
 
-        /* ========== STATS ========== */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
+        .btn-primary {
+            background: var(--apple-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0051D5;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+        }
+
+        .btn-icon {
+            padding: 8px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-icon:hover {
+            background: var(--apple-bg);
+            border-color: var(--apple-blue);
+        }
+
+        /* ========== STATS BAR ========== */
+        .stats-bar {
+            background: white;
+            padding: 12px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 24px;
+            align-items: center;
         }
 
         .stat-item {
-            background: white;
-            padding: 16px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
             display: flex;
             align-items: center;
-            gap: 14px;
-            transition: all 0.2s;
-        }
-
-        .stat-item:hover {
-            box-shadow: var(--card-shadow);
-            transform: translateY(-2px);
+            gap: 10px;
         }
 
         .stat-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 10px;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -496,15 +452,6 @@ $messages = getSentEmails($userEmail, 50, 0);
             display: flex;
             flex-direction: column;
             background: #FAFAFA;
-            overflow: hidden; /* CRITICAL FIX: Added overflow hidden */
-        }
-
-        /* CRITICAL FIX: New CSS for message view content container */
-        #messageViewContent {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden; /* CRITICAL FIX: Prevents the container from expanding */
         }
 
         /* ========== TOOLBAR ========== */
@@ -524,12 +471,12 @@ $messages = getSentEmails($userEmail, 50, 0);
 
         .search-box input {
             width: 100%;
-            padding: 8px 12px 8px 38px;
-            background: var(--apple-bg);
-            border: 1px solid transparent;
+            padding: 8px 12px 8px 36px;
+            border: 1px solid var(--border);
             border-radius: 8px;
             font-size: 13px;
             font-family: 'Inter', sans-serif;
+            background: var(--apple-bg);
             transition: all 0.2s;
         }
 
@@ -658,28 +605,34 @@ $messages = getSentEmails($userEmail, 50, 0);
             color: #1c1c1e;
             margin-bottom: 4px;
             font-weight: 500;
-            white-space: nowrap;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
             overflow: hidden;
-            text-overflow: ellipsis;
         }
 
         .message-preview {
             font-size: 12px;
             color: var(--apple-gray);
-            white-space: nowrap;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
             overflow: hidden;
-            text-overflow: ellipsis;
-            margin-bottom: 6px;
+            line-height: 1.4;
         }
 
         .message-badges {
             display: flex;
-            gap: 6px;
+            gap: 4px;
+            margin-top: 6px;
             flex-wrap: wrap;
         }
 
         .badge {
-            padding: 4px 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            padding: 2px 8px;
             border-radius: 12px;
             font-size: 10px;
             font-weight: 600;
@@ -705,7 +658,6 @@ $messages = getSentEmails($userEmail, 50, 0);
             background: white;
             border-bottom: 1px solid var(--border);
             padding: 16px 20px;
-            flex-shrink: 0; /* CRITICAL FIX: Prevents header from shrinking */
         }
 
         .message-view-title {
@@ -747,7 +699,7 @@ $messages = getSentEmails($userEmail, 50, 0);
 
         .message-view-body {
             flex: 1;
-            overflow-y: auto; /* CRITICAL FIX: Keeps scrolling on the body */
+            overflow-y: auto;
             padding: 20px;
         }
 
@@ -872,36 +824,40 @@ $messages = getSentEmails($userEmail, 50, 0);
         .empty-text {
             font-size: 14px;
             color: var(--apple-gray);
+            max-width: 320px;
+            margin: 0 auto;
+            line-height: 1.6;
         }
 
         /* ========== LOADING ========== */
         .loading {
-            padding: 40px 20px;
+            padding: 40px;
             text-align: center;
-            color: var(--apple-gray);
         }
 
-        .spinner {
-            border: 3px solid rgba(0, 122, 255, 0.2);
-            border-top: 3px solid var(--apple-blue);
+        .loading-spinner {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            border: 2px solid var(--border);
+            border-top-color: var(--apple-blue);
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
             animation: spin 0.8s linear infinite;
-            margin: 0 auto 12px;
+            margin-bottom: 12px;
         }
 
         @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
+            to {
                 transform: rotate(360deg);
             }
         }
 
-        /* ========== TOAST ========== */
+        .loading-text {
+            font-size: 13px;
+            color: var(--apple-gray);
+        }
+
+        /* ========== TOAST NOTIFICATIONS ========== */
         .toast {
             position: fixed;
             bottom: 24px;
@@ -909,7 +865,7 @@ $messages = getSentEmails($userEmail, 50, 0);
             background: white;
             padding: 14px 20px;
             border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
             display: flex;
             align-items: center;
             gap: 10px;
@@ -936,7 +892,7 @@ $messages = getSentEmails($userEmail, 50, 0);
         }
 
         .toast.error {
-            border-left: 4px solid #FF3B30;
+            border-left: 4px solid var(--danger-red);
         }
 
         .toast.info {
@@ -952,108 +908,83 @@ $messages = getSentEmails($userEmail, 50, 0);
         }
 
         .toast.error .material-icons {
-            color: #FF3B30;
+            color: var(--danger-red);
         }
 
         .toast.info .material-icons {
             color: var(--apple-blue);
         }
 
-        /* ========== SCROLLBAR CUSTOMIZATION ========== */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #D1D1D6;
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #B0B0B5;
-        }
-
         /* ========== RESPONSIVE ========== */
-        @media (max-width: 1200px) {
+        @media (max-width: 968px) {
             .messages-pane {
-                width: 45%;
-            }
-
-            .message-view-pane {
-                width: 55%;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .content-wrapper {
-                flex-direction: column;
-            }
-
-            .messages-pane,
-            .message-view-pane {
                 width: 100%;
                 border-right: none;
             }
 
             .message-view-pane {
-                border-top: 1px solid var(--border);
+                display: none;
+            }
+
+            .message-view-pane.mobile-show {
+                display: flex;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                width: 100%;
+                z-index: 100;
             }
         }
     </style>
 </head>
 
 <body>
-    <?php require ('sidebar.php') ?>
-    <div class="container">
+    <?php include 'sidebar.php'; ?>
+
+    <div class="main-content">
         <!-- Header -->
-        <div class="header">
-            <div class="header-top">
-                <h1 class="header-title">Sent Email History</h1>
-                <div class="header-actions">
-                    <a href="index.php" class="btn btn-secondary">
-                        <span class="material-icons">arrow_back</span>
-                        Back to Home
-                    </a>
+        <div class="page-header">
+            <div class="header-left">
+                <h1 class="page-title">Sent Emails</h1>
+                <p class="page-subtitle">Manage your sent email history</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="window.location.href='index.php'">
+                    <span class="material-icons">add</span>
+                    Compose Email
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-icon total">
+                    <span class="material-icons">mail</span>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="totalCount"><?= $totalCount ?></div>
+                    <div class="stat-label">Total Sent</div>
                 </div>
             </div>
-
-            <!-- Stats -->
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <div class="stat-icon total">
-                        <span class="material-icons">mail</span>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-number" id="totalCount"><?= $totalCount ?></div>
-                        <div class="stat-label">Total Sent</div>
-                    </div>
+            <div class="stat-item">
+                <div class="stat-icon labeled">
+                    <span class="material-icons">label</span>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-icon labeled">
-                        <span class="material-icons">label</span>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-number" id="labeledCount"><?= $labeledCount ?></div>
-                        <div class="stat-label">Labeled</div>
-                    </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="labeledCount"><?= $labeledCount ?></div>
+                    <div class="stat-label">Labeled</div>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-icon unlabeled">
-                        <span class="material-icons">label_off</span>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-number" id="unlabeledCount"><?= $unlabeledCount ?></div>
-                        <div class="stat-label">Unlabeled</div>
-                    </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-icon unlabeled">
+                    <span class="material-icons">label_off</span>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="unlabeledCount"><?= $unlabeledCount ?></div>
+                    <div class="stat-label">Unlabeled</div>
                 </div>
             </div>
         </div>
@@ -1086,7 +1017,7 @@ $messages = getSentEmails($userEmail, 50, 0);
                     <div class="messages-container" id="messagesContainer">
                         <?php if (empty($messages)): ?>
                         <div class="empty-state">
-                            <div class="empty-icon">📭</div>
+                            <div class="empty-icon">📧</div>
                             <div class="empty-title">No sent emails</div>
                             <div class="empty-text">Your sent emails will appear here</div>
                         </div>
@@ -1114,10 +1045,10 @@ $messages = getSentEmails($userEmail, 50, 0);
                                         <?= htmlspecialchars($msg['label_name']) ?>
                                     </span>
                                     <?php endif; ?>
-                                    <?php if ($msg['attachment_count'] > 0): ?>
+                                    <?php if ($msg['has_attachments']): ?>
                                     <span class="badge badge-attachment">
                                         <span class="material-icons">attach_file</span>
-                                        <?= $msg['attachment_count'] ?>
+                                        <?= $msg['attachment_count'] ?? '1' ?>
                                     </span>
                                     <?php endif; ?>
                                 </div>
@@ -1156,26 +1087,29 @@ $messages = getSentEmails($userEmail, 50, 0);
             if (messageId) {
                 viewMessage(parseInt(messageId));
             }
-
-            // Update counts on load
-            updateCounts();
         });
 
         async function fetchMessages() {
             try {
                 const params = new URLSearchParams({
                     action: 'fetch_messages',
-                    ...currentFilters
+                    limit: 50,
+                    offset: 0
                 });
 
-                const response = await fetch(`sent_history.php?${params}`);
+                if (currentFilters.search) params.append('search', currentFilters.search);
+                if (currentFilters.label_id) params.append('label_id', currentFilters.label_id);
+
+                const response = await fetch('sent_history.php?' + params);
                 const data = await response.json();
 
                 if (data.success) {
                     renderMessages(data.messages);
+                    updateCounts();
                 }
             } catch (error) {
                 console.error('Error fetching messages:', error);
+                showToast('Failed to load messages', 'error');
             }
         }
 
@@ -1185,47 +1119,49 @@ $messages = getSentEmails($userEmail, 50, 0);
             if (messages.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
-                        <div class="empty-icon">📭</div>
-                        <div class="empty-title">No messages found</div>
-                        <div class="empty-text">Try adjusting your search or filters</div>
+                        <div class="empty-icon">📧</div>
+                        <div class="empty-title">No emails found</div>
+                        <div class="empty-text">Try adjusting your filters</div>
                     </div>
                 `;
                 return;
             }
 
-            container.innerHTML = messages.map(msg => {
-                const hasAttachments = msg.attachment_count > 0;
-                const labelBadge = msg.label_name ? `
-                    <span class="badge badge-label" style="background: ${msg.label_color || '#6b7280'}">
-                        ${escapeHtml(msg.label_name)}
-                    </span>
-                ` : '';
-                const attachmentBadge = hasAttachments ? `
-                    <span class="badge badge-attachment">
-                        <span class="material-icons">attach_file</span>
-                        ${msg.attachment_count}
-                    </span>
-                ` : '';
-
-                return `
-                    <div class="message-item ${currentMessageId === msg.id ? 'selected' : ''}" 
-                         onclick="viewMessage(${msg.id})" 
-                         data-message-id="${msg.id}">
-                        <div class="message-content">
-                            <div class="message-header">
-                                <div class="message-recipient">${escapeHtml(msg.recipient_email)}</div>
-                                <div class="message-date">${formatDate(msg.sent_at)}</div>
+            container.innerHTML = messages.map(msg => `
+                <div class="message-item ${currentMessageId === msg.id ? 'selected' : ''}" 
+                     onclick="viewMessage(${msg.id})" 
+                     data-message-id="${msg.id}">
+                    <div class="message-content">
+                        <div class="message-header">
+                            <div class="message-recipient">
+                                ${escapeHtml(msg.recipient_email)}
                             </div>
-                            <div class="message-subject">${escapeHtml(msg.subject)}</div>
-                            <div class="message-preview">${escapeHtml(stripTags(msg.body_text) || 'No preview available')}</div>
-                            <div class="message-badges">
-                                ${labelBadge}
-                                ${attachmentBadge}
+                            <div class="message-date">
+                                ${formatDate(msg.sent_at)}
                             </div>
                         </div>
+                        <div class="message-subject">
+                            ${escapeHtml(msg.subject)}
+                        </div>
+                        <div class="message-preview">
+                            ${escapeHtml(stripTags(msg.body_text) || 'No preview available')}
+                        </div>
+                        <div class="message-badges">
+                            ${msg.label_name ? `
+                                <span class="badge badge-label" style="background: ${msg.label_color || '#6b7280'}">
+                                    ${escapeHtml(msg.label_name)}
+                                </span>
+                            ` : ''}
+                            ${msg.has_attachments ? `
+                                <span class="badge badge-attachment">
+                                    <span class="material-icons">attach_file</span>
+                                    ${msg.attachment_count || '1'}
+                                </span>
+                            ` : ''}
+                        </div>
                     </div>
-                `;
-            }).join('');
+                </div>
+            `).join('');
         }
 
         async function viewMessage(messageId) {
@@ -1233,14 +1169,18 @@ $messages = getSentEmails($userEmail, 50, 0);
 
             // Update selected state
             document.querySelectorAll('.message-item').forEach(item => {
-                item.classList.toggle('selected', parseInt(item.dataset.messageId) === messageId);
+                item.classList.remove('selected');
             });
+            const selectedItem = document.querySelector(`[data-message-id="${messageId}"]`);
+            if (selectedItem) {
+                selectedItem.classList.add('selected');
+            }
 
-            // Show loading state
+            // Show loading
             document.getElementById('messageViewContent').innerHTML = `
                 <div class="loading">
-                    <div class="spinner"></div>
-                    <div>Loading message...</div>
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">Loading email...</div>
                 </div>
             `;
 
@@ -1251,7 +1191,13 @@ $messages = getSentEmails($userEmail, 50, 0);
                 if (data.success) {
                     renderMessageView(data.message);
                 } else {
-                    showToast('Failed to load message', 'error');
+                    document.getElementById('messageViewContent').innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">⚠️</div>
+                            <div class="empty-title">Error Loading Message</div>
+                            <div class="empty-text">${data.error || 'Message not found'}</div>
+                        </div>
+                    `;
                 }
             } catch (error) {
                 console.error('Error loading message:', error);
@@ -1264,7 +1210,7 @@ $messages = getSentEmails($userEmail, 50, 0);
 
             const html = `
                 <div class="message-view-header">
-                    <div class="message-view-title">${escapeHtml(message.subject)}</div>
+                    <h2 class="message-view-title">${escapeHtml(message.subject)}</h2>
                     <div class="message-view-meta">
                         <div class="message-view-meta-item">
                             <span class="material-icons">person</span>
