@@ -1,1403 +1,1240 @@
-<?php
-/**
- * Professional Inbox Page - Refactored with External Sidebar
- */
-
-session_start();
-
-// Security check
-if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
-    header("Location: login.php");
-    exit();
-}
-
-require_once 'inbox_functions.php';
-require_once 'imap_helper.php';
-
-$userEmail = $_SESSION['smtp_user'];
-
-// Handle AJAX requests
-if (isset($_GET['action'])) {
-    header('Content-Type: application/json');
-    
-    switch ($_GET['action']) {
-        case 'fetch_messages':
-            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
-            $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
-            
-            $filters = [];
-            if (isset($_GET['search'])) $filters['search'] = $_GET['search'];
-            if (isset($_GET['unread_only'])) $filters['unread_only'] = true;
-            if (isset($_GET['starred_only'])) $filters['starred_only'] = true;
-            if (isset($_GET['new_only'])) $filters['new_only'] = true;
-            
-            $messages = getInboxMessages($userEmail, $limit, $offset, $filters);
-            $total = getInboxMessageCount($userEmail, $filters);
-            
-            echo json_encode([
-                'success' => true,
-                'messages' => $messages,
-                'total' => $total
-            ]);
-            exit();
-            
-        case 'sync':
-            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
-            $forceRefresh = isset($_GET['force']) && $_GET['force'] === 'true';
-            
-            $result = fetchNewMessagesFromSession($userEmail, $limit, $forceRefresh);
-            echo json_encode($result);
-            exit();
-            
-        case 'get_message':
-            $messageId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-            $message = getInboxMessageById($messageId, $userEmail);
-            
-            if ($message) {
-                // Mark as read
-                markMessageAsRead($messageId, $userEmail);
-                echo json_encode(['success' => true, 'message' => $message]);
-            } else {
-                echo json_encode(['success' => false, 'error' => 'Message not found']);
-            }
-            exit();
-            
-        case 'mark_read':
-            $messageId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-            $success = markMessageAsRead($messageId, $userEmail);
-            echo json_encode(['success' => $success]);
-            exit();
-            
-        case 'mark_unread':
-            $messageId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-            $success = markMessageAsUnread($messageId, $userEmail);
-            echo json_encode(['success' => $success]);
-            exit();
-            
-        case 'toggle_star':
-            $messageId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-            $success = toggleStarMessage($messageId, $userEmail);
-            echo json_encode(['success' => $success]);
-            exit();
-            
-        case 'delete':
-            $messageId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-            $success = deleteInboxMessage($messageId, $userEmail);
-            echo json_encode(['success' => $success]);
-            exit();
-            
-        case 'get_counts':
-            $unread = getUnreadCount($userEmail);
-            $new = getNewCount($userEmail);
-            echo json_encode([
-                'success' => true,
-                'unread' => $unread,
-                'new' => $new
-            ]);
-            exit();
-    }
-}
-
-// Initial data load
-$messages = getInboxMessages($userEmail, 50, 0) ?? [];
-$totalCount = getInboxMessageCount($userEmail) ?? 0;
-$unreadCount = getUnreadCount($userEmail) ?? 0;
-$newCount = getNewCount($userEmail) ?? 0;
-$lastSync = getLastSyncDate($userEmail);
-
-?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inbox — SXC MDTS</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-
+    <title>Inbox - Messages</title>
     <style>
-        :root {
-            --apple-blue: #007AFF;
-            --apple-gray: #8E8E93;
-            --apple-light-gray: #C7C7CC;
-            --apple-bg: #F2F2F7;
-            --glass: rgba(255, 255, 255, 0.7);
-            --border: #E5E5EA;
-            --success-green: #34C759;
-            --warning-orange: #FF9500;
-            --danger-red: #FF3B30;
-            --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            --hover-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-        }
-
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        :root {
+            --color-total: rgb(229, 56, 81);
+            --color-total-bg: rgba(229, 56, 81, 0.1);
+            --color-unread: rgb(144, 236, 64);
+            --color-unread-bg: rgba(144, 236, 64, 0.1);
+            --color-new: rgb(20, 121, 246);
+            --color-new-bg: rgba(20, 121, 246, 0.1);
+            --highlight-yellow: #FFE58F;
+            --bg-primary: #FFFFFF;
+            --bg-secondary: #F8F9FA;
+            --text-primary: #1A1A1A;
+            --text-secondary: #6C757D;
+            --text-tertiary: #ADB5BD;
+            --border-color: #E9ECEF;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+            --transition-smooth: cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--apple-bg);
-            color: #1c1c1e;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            line-height: 1.6;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
         }
 
-        /* ========== MAIN CONTENT ========== */
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Smooth scrolling momentum */
+        body, .messages-area {
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+        }
+
+        /* Main Container */
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+            min-height: 100vh;
+        }
+
+        /* Header Section */
+        .header {
+            background: var(--bg-primary);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-sm);
+            position: relative;
             overflow: hidden;
+            transition: all 0.4s var(--transition-smooth);
         }
 
-        /* ========== HEADER ========== */
-        .page-header {
-            background: white;
-            border-bottom: 1px solid var(--border);
-            padding: 16px 24px;
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--color-total) 0%, var(--color-new) 50%, var(--color-unread) 100%);
+            opacity: 0.8;
+        }
+
+        .header:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .header-top {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 24px;
         }
 
-        .header-left {
-            flex: 1;
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 16px;
         }
 
-        .page-title {
-            font-size: 24px;
+        .header-title h1 {
+            font-size: 32px;
             font-weight: 700;
-            color: #1c1c1e;
             letter-spacing: -0.5px;
-            margin-bottom: 2px;
+            background: linear-gradient(135deg, var(--color-total), var(--color-new));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
-        .page-subtitle {
-            font-size: 13px;
-            color: var(--apple-gray);
-            font-weight: 400;
+        .inbox-badge {
+            background: var(--color-new-bg);
+            color: var(--color-new);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s var(--transition-smooth);
         }
 
-        .header-actions {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .btn {
-            padding: 8px 14px;
-            border: none;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.2s;
-            font-family: 'Inter', sans-serif;
-        }
-
-        .btn .material-icons {
-            font-size: 18px;
-        }
-
-        .btn-primary {
-            background: var(--apple-blue);
+        .inbox-badge:hover {
+            background: var(--color-new);
             color: white;
+            transform: scale(1.05);
         }
 
-        .btn-primary:hover {
-            background: #0051D5;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
         }
 
-        .btn-icon {
-            padding: 8px;
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
+        .stat-card {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 16px;
             display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 16px;
+            transition: all 0.35s var(--transition-smooth);
+            position: relative;
+            overflow: hidden;
+            border: 2px solid transparent;
         }
 
-        .btn-icon:hover {
-            background: var(--apple-bg);
-            border-color: var(--apple-blue);
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.1) 100%);
+            opacity: 0;
+            transition: opacity 0.3s var(--transition-smooth);
         }
 
-        .btn-icon .material-icons {
-            color: var(--apple-gray);
-            transition: transform 0.3s ease;
+        .stat-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: var(--shadow-md);
         }
 
-        .btn-icon.rotating .material-icons {
-            animation: rotate 0.6s linear;
+        .stat-card:hover::before {
+            opacity: 1;
         }
 
-        @keyframes rotate {
-            from {
-                transform: rotate(0deg);
-            }
-
-            to {
-                transform: rotate(360deg);
-            }
+        .stat-card.total {
+            border-color: var(--color-total-bg);
         }
 
-        /* ========== STATS BAR ========== */
-        .stats-bar {
-            background: white;
-            padding: 12px 24px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            gap: 24px;
-            align-items: center;
+        .stat-card.total:hover {
+            border-color: var(--color-total);
+            background: var(--color-total-bg);
         }
 
-        .stat-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        .stat-card.unread {
+            border-color: var(--color-unread-bg);
+        }
+
+        .stat-card.unread:hover {
+            border-color: var(--color-unread);
+            background: var(--color-unread-bg);
+        }
+
+        .stat-card.new {
+            border-color: var(--color-new-bg);
+        }
+
+        .stat-card.new:hover {
+            border-color: var(--color-new);
+            background: var(--color-new-bg);
         }
 
         .stat-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
+            font-size: 24px;
+            transition: all 0.3s var(--transition-smooth);
+            flex-shrink: 0;
         }
 
         .stat-icon.total {
-            background: rgb(229,56,81,0.1);
-            color: rgb(229,56,81);
+            background: var(--color-total-bg);
+            color: var(--color-total);
         }
 
         .stat-icon.unread {
-            background: rgb(144,236,64, 0.1);
-            color: rgb(144,236,64);
+            background: var(--color-unread-bg);
+            color: var(--color-unread);
         }
 
         .stat-icon.new {
-            background: rgb(20,121,246,0.1);
-            color: rgb(20,121,246);
+            background: var(--color-new-bg);
+            color: var(--color-new);
         }
 
-        .stat-content {
-            display: flex;
-            flex-direction: column;
+        .stat-card:hover .stat-icon {
+            transform: scale(1.1) rotate(5deg);
         }
 
-        .stat-number {
-            font-size: 18px;
-            font-weight: 700;
-            color: #1c1c1e;
-            line-height: 1;
+        .stat-info {
+            flex: 1;
         }
 
         .stat-label {
-            font-size: 11px;
-            color: var(--apple-gray);
-            margin-top: 2px;
-        }
-
-        .sync-info {
-            margin-left: auto;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            color: var(--apple-gray);
-        }
-
-        .sync-info .material-icons {
-            font-size: 14px;
-        }
-
-        /* ========== CONTENT AREA WITH SPLIT PANE ========== */
-        .content-wrapper {
-            flex: 1;
-            display: flex;
-            overflow: hidden;
-        }
-
-        .messages-pane {
-            width: 40%;
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid var(--border);
-            background: white;
-        }
-
-        .message-view-pane {
-            width: 60%;
-            display: flex;
-            flex-direction: column;
-            background: #FAFAFA;
-        }
-
-        /* ========== TOOLBAR ========== */
-        .toolbar {
-            background: white;
-            padding: 12px 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .search-box {
-            flex: 1;
-            position: relative;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 8px 12px 8px 36px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
             font-size: 13px;
-            font-family: 'Inter', sans-serif;
-            background: var(--apple-bg);
-            transition: all 0.2s;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
         }
 
-        .search-box input:focus {
-            outline: none;
-            background: white;
-            border-color: var(--apple-blue);
-            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1;
         }
 
-        .search-box .material-icons {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--apple-gray);
-            font-size: 18px;
+        /* Search Section */
+        .search-section {
+            margin-bottom: 24px;
         }
 
-        .filter-group {
+        .search-container {
+            background: var(--bg-primary);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.4s var(--transition-smooth);
+        }
+
+        .search-container:focus-within {
+            box-shadow: var(--shadow-md), 0 0 0 4px var(--color-new-bg);
+            transform: translateY(-2px);
+        }
+
+        .search-wrapper {
+            position: relative;
             display: flex;
-            gap: 6px;
+            align-items: center;
+            gap: 12px;
         }
 
-        .filter-btn {
-            padding: 6px 12px;
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 8px;
+        .search-icon-wrapper {
+            position: absolute;
+            left: 20px;
+            color: var(--text-tertiary);
+            transition: all 0.3s var(--transition-smooth);
+            pointer-events: none;
+        }
+
+        .search-container:focus-within .search-icon-wrapper {
+            color: var(--color-new);
+            transform: scale(1.1);
+        }
+
+        #searchInput {
+            flex: 1;
+            padding: 18px 24px 18px 56px;
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 500;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: all 0.3s var(--transition-smooth);
+            outline: none;
+        }
+
+        #searchInput:focus {
+            border-color: var(--color-new);
+            background: var(--bg-primary);
+            box-shadow: 0 0 0 3px var(--color-new-bg);
+        }
+
+        #searchInput::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .clear-btn {
+            position: absolute;
+            right: 20px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: var(--text-tertiary);
+            color: white;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 4px;
-            font-size: 12px;
-            font-weight: 500;
-            color: #1c1c1e;
-            transition: all 0.2s;
-            font-family: 'Inter', sans-serif;
+            justify-content: center;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.3s var(--transition-smooth);
         }
 
-        .filter-btn:hover {
-            background: var(--apple-bg);
-            border-color: var(--apple-blue);
+        .clear-btn.visible {
+            opacity: 1;
+            transform: scale(1);
         }
 
-        .filter-btn.active {
-            background: var(--apple-blue);
-            color: white;
-            border-color: var(--apple-blue);
+        .clear-btn:hover {
+            background: var(--color-total);
+            transform: scale(1.1);
         }
 
-        .filter-btn .material-icons {
+        .clear-btn:active {
+            transform: scale(0.95);
+        }
+
+        .search-results {
+            margin-top: 16px;
+            padding: 12px 20px;
+            background: var(--color-new-bg);
+            border-radius: 12px;
+            color: var(--color-new);
             font-size: 14px;
-        }
-
-        /* ========== MESSAGES AREA ========== */
-        .messages-area {
-            flex: 1;
-            overflow-y: auto;
-        }
-
-        .messages-container {
-            background: white;
-        }
-
-        .message-item {
-            padding: 6px 20px;
-            border-bottom: 1px solid var(--border);
-            cursor: pointer;
-            transition: all 0.2s;
+            font-weight: 600;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s var(--transition-smooth);
             display: flex;
-            gap: 12px;
-            align-items: start;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .search-results.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Messages Section */
+        .messages-section {
+            background: var(--bg-primary);
+            border-radius: 20px;
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            transition: all 0.4s var(--transition-smooth);
+        }
+
+        .messages-section:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .messages-area {
+            max-height: calc(100vh - 420px);
+            overflow-y: auto;
+            scroll-behavior: smooth;
+            will-change: scroll-position;
+        }
+
+        /* Custom Scrollbar */
+        .messages-area::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .messages-area::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        .messages-area::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--color-new), var(--color-total));
+            border-radius: 10px;
+            transition: all 0.3s var(--transition-smooth);
+        }
+
+        .messages-area::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, var(--color-total), var(--color-unread));
+        }
+
+        /* Message Item */
+        .message-item {
+            padding: 24px 28px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
             position: relative;
+            overflow: hidden;
+            transition: all 0.3s var(--transition-smooth);
+            will-change: transform;
+            contain: layout style paint;
+        }
+
+        .message-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, var(--color-new), var(--color-total));
+            transform: scaleY(0);
+            transition: transform 0.3s var(--transition-smooth);
+        }
+
+        .message-item:hover::before {
+            transform: scaleY(1);
+        }
+
+        .message-item:hover {
+            background: linear-gradient(90deg, var(--bg-secondary) 0%, transparent 100%);
+            transform: translateX(8px);
+        }
+
+        .message-item:active {
+            transform: translateX(8px) scale(0.99);
         }
 
         .message-item:last-child {
             border-bottom: none;
         }
 
-        .message-item:hover {
-            background: #FAFAFA;
+        .message-item.hidden {
+            display: none;
         }
 
-        .message-item.selected {
-            background: #F0F7FF;
-            border-left: 3px solid var(--apple-blue);
-            /* padding-left: 17px; */
-        }
-
+        /* Unread Messages */
         .message-item.unread {
-            /* background: linear-gradient(90deg, #F5F9FF 0%, #FFFFFF 100%); */
-            /* background: #f6f6f6; */
-            /* border-left:1px solid blue; */
+            background: linear-gradient(90deg, var(--color-unread-bg) 0%, transparent 100%);
         }
 
-        .message-item.unread:hover {
-            background: linear-gradient(90deg, #f9fcff 0%, #FAFAFA 100%);
-        }
-
-        /* .message-item.new {
-            background: linear-gradient(90deg, #E8F5E9 0%, #FFFFFF 100%);
-        } */
-
-        /* .message-item.new:hover {
-            background: linear-gradient(90deg, #DFF0E0 0%, #FAFAFA 100%);
-        } */
-
-        .message-item.new::before {
+        .message-item.unread::after {
             content: '';
             position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 3px;
-            background: var(--success-green);
+            left: 28px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 10px;
+            height: 10px;
+            background: var(--color-unread);
+            border-radius: 50%;
+            box-shadow: 0 0 0 3px var(--color-unread-bg);
+            animation: pulse 2s ease-in-out infinite;
         }
 
-        .message-star {
-            cursor: pointer;
-            color: var(--apple-light-gray);
-            font-size: 18px;
-            margin-top: 2px;
-            transition: all 0.2s;
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: translateY(-50%) scale(1);
+            }
+            50% {
+                opacity: 0.6;
+                transform: translateY(-50%) scale(1.2);
+            }
         }
 
-        .message-star:hover {
-            color: var(--warning-orange);
-            transform: scale(1.1);
+        .message-item.unread .message-content {
+            padding-left: 28px;
         }
 
-        .message-star.starred {
-            color: var(--warning-orange);
-        }
-
-        .message-content {
-            flex: 1;
-            min-width: 0;
-        }
-
+        /* Message Header */
         .message-header {
             display: flex;
             justify-content: space-between;
-            align-items: start;
-            margin-bottom: 4px;
+            align-items: flex-start;
+            margin-bottom: 10px;
+            gap: 16px;
         }
 
-        .message-sender {
-            font-weight: 600;
-            color: #1c1c1e;
-            font-size: 14px;
-            margin-right: 12px;
+        .sender {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--text-primary);
+            transition: all 0.3s var(--transition-smooth);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .message-date {
+        .message-item:hover .sender {
+            color: var(--color-new);
+        }
+
+        .priority-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 8px;
             font-size: 11px;
-            color: var(--apple-gray);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .priority-badge.high {
+            background: var(--color-total-bg);
+            color: var(--color-total);
+        }
+
+        .priority-badge.medium {
+            background: var(--color-new-bg);
+            color: var(--color-new);
+        }
+
+        .time {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-tertiary);
             white-space: nowrap;
-            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .message-subject {
-            font-size: 13px;
-            color: #1c1c1e;
-            margin-bottom: 4px;
-            font-weight: 500;
-            display: -webkit-box;
-            -webkit-line-clamp: 1;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+        .subject {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            line-height: 1.4;
+            transition: all 0.3s var(--transition-smooth);
         }
 
-        .message-preview {
-            font-size: 12px;
-            color: var(--apple-gray);
+        .message-item:hover .subject {
+            color: var(--color-total);
+        }
+
+        .preview {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            line-height: 1.4;
         }
 
-        .message-badges {
-            display: flex;
-            gap: 4px;
-            margin-top: 6px;
-            flex-wrap: wrap;
-        }
-
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 3px;
+        /* Highlight */
+        .highlight {
+            background: var(--highlight-yellow);
             padding: 2px 6px;
             border-radius: 4px;
-            font-size: 10px;
             font-weight: 600;
+            color: var(--text-primary);
+            box-shadow: 0 2px 4px rgba(255, 229, 143, 0.3);
+            animation: highlightFade 0.5s ease-out;
         }
 
-        .badge-new {
-            background: rgba(52, 199, 89, 0.15);
-            color: var(--success-green);
+        @keyframes highlightFade {
+            0% {
+                background: #FFD700;
+                transform: scale(1.1);
+            }
+            100% {
+                background: var(--highlight-yellow);
+                transform: scale(1);
+            }
         }
 
-        .badge-attachment {
-            background: rgb(227, 227, 227);
-            color: rgb(33, 33, 33);
-            padding: 5px 7px;
-            border-radius: 20px;
-        }
-
-        .badge-attachment .material-icons {
-            font-size: 11px;
-        }
-
-        /* ========== MESSAGE VIEW PANE ========== */
-        .message-view-header {
-            background: white;
-            border-bottom: 1px solid var(--border);
-            padding: 16px 20px;
-        }
-
-        .message-view-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #1c1c1e;
-            margin-bottom: 8px;
-            line-height: 1.4;
-        }
-
-        .message-view-meta {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-bottom: 12px;
-        }
-
-        .message-view-meta-item {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 12px;
-            color: var(--apple-gray);
-        }
-
-        .message-view-meta-item .material-icons {
-            font-size: 14px;
-        }
-
-        .message-view-meta-label {
-            font-weight: 600;
-            color: #1c1c1e;
-        }
-
-        .message-view-actions {
-            display: flex;
-            gap: 6px;
-        }
-
-        .message-view-body {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-        }
-
-        .message-meta {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .unread-dot {
-            width: 10px;
-            height: 10px;
-            background-color: #1a73e8;
-            /* nice Google-ish blue */
-            border-radius: 50%;
-        }
-
-        .message-detail {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            font-size: 14px;
-            line-height: 1.7;
-            color: #1c1c1e;
-            box-shadow: var(--card-shadow);
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-
-        .message-detail p {
-            margin-bottom: 12px;
-        }
-
-        .message-detail a {
-            color: var(--apple-blue);
-            text-decoration: none;
-        }
-
-        .message-detail a:hover {
-            text-decoration: underline;
-        }
-
-        /* Attachments */
-        .attachments-section {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border);
-        }
-
-        .attachments-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: #1c1c1e;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .attachments-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 10px;
-        }
-
-        .attachment-card {
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            transition: all 0.2s;
-            cursor: pointer;
-        }
-
-        .attachment-card:hover {
-            border-color: var(--apple-blue);
-            box-shadow: var(--card-shadow);
-            transform: translateY(-2px);
-        }
-
-        .attachment-icon {
-            font-size: 36px;
-            margin-bottom: 6px;
-        }
-
-        .attachment-name {
-            font-size: 11px;
-            font-weight: 500;
-            color: #1c1c1e;
-            margin-bottom: 3px;
-            word-break: break-word;
-        }
-
-        .attachment-size {
-            font-size: 10px;
-            color: var(--apple-gray);
-        }
-
-        /* ========== EMPTY STATE ========== */
+        /* Empty State */
         .empty-state {
-            padding: 60px 20px;
+            display: none;
             text-align: center;
+            padding: 80px 40px;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.5s var(--transition-smooth);
+        }
+
+        .empty-state.visible {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .empty-icon {
-            font-size: 64px;
-            margin-bottom: 16px;
-            opacity: 0.5;
+            font-size: 80px;
+            margin-bottom: 24px;
+            opacity: 0.3;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
         }
 
         .empty-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #1c1c1e;
-            margin-bottom: 6px;
-        }
-
-        .empty-text {
-            font-size: 14px;
-            color: var(--apple-gray);
-            max-width: 320px;
-            margin: 0 auto;
-            line-height: 1.6;
-        }
-
-        /* ========== LOADING ========== */
-        .loading {
-            padding: 40px;
-            text-align: center;
-        }
-
-        .loading-spinner {
-            display: inline-block;
-            width: 32px;
-            height: 32px;
-            border: 2px solid var(--border);
-            border-top-color: var(--apple-blue);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
             margin-bottom: 12px;
         }
 
-        @keyframes spin {
+        .empty-text {
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+
+        /* Loading Animation */
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
             to {
-                transform: rotate(360deg);
+                opacity: 1;
+                transform: translateY(0);
             }
         }
 
-        .loading-text {
-            font-size: 13px;
-            color: var(--apple-gray);
+        .message-item {
+            animation: slideInUp 0.5s var(--transition-smooth) backwards;
         }
 
-        /* ========== TOAST NOTIFICATIONS ========== */
-        .toast {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            background: #1c1c1e;
-            color: white;
-            padding: 12px 18px;
-            border-radius: 10px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 13px;
-            font-weight: 500;
-            z-index: 2000;
-            animation: toastSlideIn 0.3s ease-out;
-            max-width: 360px;
+        .message-item:nth-child(1) { animation-delay: 0.05s; }
+        .message-item:nth-child(2) { animation-delay: 0.1s; }
+        .message-item:nth-child(3) { animation-delay: 0.15s; }
+        .message-item:nth-child(4) { animation-delay: 0.2s; }
+        .message-item:nth-child(5) { animation-delay: 0.25s; }
+        .message-item:nth-child(6) { animation-delay: 0.3s; }
+        .message-item:nth-child(7) { animation-delay: 0.35s; }
+        .message-item:nth-child(8) { animation-delay: 0.4s; }
+        .message-item:nth-child(9) { animation-delay: 0.45s; }
+        .message-item:nth-child(10) { animation-delay: 0.5s; }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 16px;
+            }
+
+            .header {
+                padding: 24px;
+            }
+
+            .header-title h1 {
+                font-size: 26px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .message-item {
+                padding: 20px;
+            }
+
+            .messages-area {
+                max-height: calc(100vh - 500px);
+            }
+
+            .message-item:hover {
+                transform: translateX(4px);
+            }
         }
 
-        @keyframes toastSlideIn {
+        /* Utility Classes */
+        .fade-in {
+            animation: fadeIn 0.6s var(--transition-smooth);
+        }
+
+        @keyframes fadeIn {
             from {
-                transform: translateX(100%);
                 opacity: 0;
             }
-
             to {
-                transform: translateX(0);
                 opacity: 1;
             }
         }
-
-        .toast.success {
-            background: var(--success-green);
-        }
-
-        .toast.error {
-            background: var(--danger-red);
-        }
-
-        .toast .material-icons {
-            font-size: 18px;
-        }
     </style>
 </head>
-
 <body>
-    <!-- ========== SIDEBAR (EXTERNAL) ========== -->
-    <?php require 'sidebar.php'; ?>
-
-    <!-- ========== MAIN CONTENT ========== -->
-    <div class="main-content">
+    <div class="app-container">
         <!-- Header -->
-        <!-- <div class="page-header">
-            <div class="header-left">
-                <h1 class="page-title">📬 Inbox</h1>
-                <p class="page-subtitle">View and manage your incoming emails</p>
-            </div>
-            <div class="header-actions">
-                <button class="btn-icon" onclick="syncMessages()" title="Sync now" id="syncBtn">
-                    <span class="material-icons">sync</span>
-                </button>
-                <button class="btn-icon" onclick="forceRefresh()" title="Force refresh" id="refreshBtn">
-                    <span class="material-icons">refresh</span>
-                </button>
-                <button class="btn-icon" onclick="location.href='index.php'">
-                    <span class="material-icons">edit</span>
-                </button>
-            </div>
-        </div> -->
-
-        <!-- Stats bar -->
-        <div class="stats-bar">
-            <div class="stat-item">
-                <div class="stat-icon total">
-                    <span class="material-icons">mail</span>
+        <div class="header fade-in">
+            <div class="header-top">
+                <div class="header-title">
+                    <h1>📨 Inbox</h1>
+                    <div class="inbox-badge" id="totalBadge">0 Messages</div>
                 </div>
-                <div class="stat-content">
-                    <div class="stat-number" id="totalCount">
-                        <?= $totalCount ?>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card total">
+                    <div class="stat-icon total">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
                     </div>
-                    <div class="stat-label">Total Received</div>
-                </div>
-            </div>
-
-            <div class="stat-item">
-                <div class="stat-icon unread">
-                    <span class="material-icons">mark_email_unread</span>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-number" id="unreadCount">
-                        <?= $unreadCount ?>
+                    <div class="stat-info">
+                        <div class="stat-label">Total Messages</div>
+                        <div class="stat-value" id="totalCount">0</div>
                     </div>
-                    <div class="stat-label">Unread</div>
                 </div>
-            </div>
 
-            <div class="stat-item">
-                <div class="stat-icon new">
-                    <span class="material-icons">fiber_new</span>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-number" id="newCount">
-                        <?= $newCount ?>
+                <div class="stat-card unread">
+                    <div class="stat-icon unread">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 6v6l4 2"/>
+                        </svg>
                     </div>
-                    <div class="stat-label">New Today</div>
+                    <div class="stat-info">
+                        <div class="stat-label">Unread</div>
+                        <div class="stat-value" id="unreadCount">0</div>
+                    </div>
                 </div>
-            </div>
 
-            
-            <div class="sync-info">
-            <div class="header-actions">
-                <button class="btn-icon" onclick="syncMessages()" title="Sync now" id="syncBtn">
-                    <span class="material-icons">sync</span>
-                </button>
-                <button class="btn-icon" onclick="forceRefresh()" title="Force refresh" id="refreshBtn">
-                    <span class="material-icons">refresh</span>
-                </button>
-                <button class="btn-icon" onclick="location.href='index.php'">
-                    <span class="material-icons">edit</span>
-                </button>
-            </div>
-                <span class="material-icons">schedule</span>
-                <span id="lastSyncText">
-                    <?php if ($lastSync): ?>
-                    Last synced:
-                    <?= date('g:i A', strtotime($lastSync)) ?>
-                    <?php else: ?>
-                    Never synced
-                    <?php endif; ?>
-                </span>
+                <div class="stat-card new">
+                    <div class="stat-icon new">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-label">New Today</div>
+                        <div class="stat-value" id="newCount">0</div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Content wrapper with split panes -->
-        <div class="content-wrapper">
-            <!-- Left pane: Messages list -->
-            <div class="messages-pane">
-                <!-- Toolbar -->
-                <div class="toolbar">
-                    <div class="search-box">
-                        <span class="material-icons">search</span>
-                        <input type="text" id="searchInput" placeholder="Search..." onkeyup="searchMessages()">
+        <!-- Search Section -->
+        <div class="search-section fade-in">
+            <div class="search-container">
+                <div class="search-wrapper">
+                    <div class="search-icon-wrapper">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="m21 21-4.35-4.35"/>
+                        </svg>
                     </div>
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        placeholder="Search by sender, subject, or content..."
+                        autocomplete="off"
+                    >
+                    <button class="clear-btn" id="clearBtn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="search-results" id="searchResults">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <span id="resultsText">Found 0 messages</span>
+                </div>
+            </div>
+        </div>
 
-                    <div class="filter-group">
-                        <button class="filter-btn" id="filterUnread" onclick="toggleFilter('unread')">
-                            <span class="material-icons">mark_email_unread</span>
-                            Unread
-                        </button>
-                        <button class="filter-btn" id="filterStarred" onclick="toggleFilter('starred')">
-                            <span class="material-icons">star</span>
-                            Starred
-                        </button>
-                        <button class="filter-btn" id="filterNew" onclick="toggleFilter('new')">
-                            <span class="material-icons">fiber_new</span>
-                            New
-                        </button>
+        <!-- Messages Section -->
+        <div class="messages-section fade-in">
+            <div class="messages-area" id="messagesArea">
+                <!-- Message Items -->
+                <div class="message-item unread" 
+                     data-sender="Sarah Johnson" 
+                     data-subject="Q4 Marketing Strategy - Urgent Review Needed" 
+                     data-preview="Hi team, I need everyone to review the attached Q4 marketing strategy document before our meeting tomorrow. There are some critical changes to our campaign approach that we need to discuss. Please pay special attention to the budget allocations and timeline adjustments.">
+                    <div class="message-content">
+                        <div class="message-header">
+                            <div class="sender">
+                                Sarah Johnson
+                                <span class="priority-badge high">High Priority</span>
+                            </div>
+                            <div class="time">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                                2m ago
+                            </div>
+                        </div>
+                        <div class="subject">Q4 Marketing Strategy - Urgent Review Needed</div>
+                        <div class="preview">Hi team, I need everyone to review the attached Q4 marketing strategy document before our meeting tomorrow. There are some critical changes to our campaign approach that we need to discuss...</div>
                     </div>
                 </div>
 
-                <!-- Messages list -->
-                <div class="messages-area">
-                    <div class="messages-container" id="messagesList">
-                        <div class="loading">
-                            <div class="loading-spinner"></div>
-                            <div class="loading-text">Loading messages...</div>
+                <div class="message-item unread" 
+                     data-sender="Mike Chen" 
+                     data-subject="Project Timeline Update - Development Phase" 
+                     data-preview="The development timeline has been adjusted based on the client feedback we received yesterday. The new schedule extends the testing phase by two weeks to ensure comprehensive quality assurance. I've updated the project board with all the changes.">
+                    <div class="message-content">
+                        <div class="message-header">
+                            <div class="sender">
+                                Mike Chen
+                                <span class="priority-badge medium">Medium</span>
+                            </div>
+                            <div class="time">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                                18m ago
+                            </div>
                         </div>
+                        <div class="subject">Project Timeline Update - Development Phase</div>
+                        <div class="preview">The development timeline has been adjusted based on the client feedback we received yesterday. The new schedule extends the testing phase by two weeks to ensure comprehensive quality assurance...</div>
+                    </div>
+                </div>
+
+                <div class="message-item" 
+                     data-sender="Emma Davis" 
+                     data-subject="Team Meeting Notes - January 15th" 
+                     data-preview="Here are the comprehensive notes from today's team meeting. Key takeaways include the decision to move forward with the redesign project, hiring two new developers, and reorganizing our sprint planning process. Action items have been assigned to respective team members.">
+                    <div class="message-content">
+                        <div class="message-header">
+                            <div class="sender">Emma Davis</div>
+                            <div class="time">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                                1h ago
+                            </div>
+                        </div>
+                        <div class="subject">Team Meeting Notes - January 15th</div>
+                        <div class="preview">Here are the comprehensive notes from today's team meeting. Key takeaways include the decision to move forward with the redesign project, hiring two new developers, and reorganizing our sprint planning process...</div>
+                    </div>
+                </div>
+
+                <div class="message-item" 
+                     data-sender="Alex Rodriguez" 
+                     data-subject="Client Feedback Summary - Prototype v2.3" 
+                     data-preview="Our client has provided detailed feedback on the latest prototype version 2.3. Overall, the response has been very positive with particular praise for the new navigation system and improved user interface. However, they've requested some modifications to the checkout flow.">
+                    <div class="message-content">
+                        <div class="message-header">
+                            <div class="sender">
+                                Alex Rodriguez
+                                <span class="priority-badge high">High Priority</span>
+                            </div>
+                            <div class="time">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                                3h ago
+                            </div>
+                        </div>
+                        <div class="subject">Client Feedback Summary - Prototype v2.3</div>
+                        <div class="preview">Our client has provided detailed feedback on the latest prototype version 2.3. Overall, the response has been very positive with particular praise for the new navigation system and improved user interface...</div>
+                    </div>
+                </div>
+
+                <div class="message-item" 
+                     data-sender="Jessica Lee" 
+                     data-subject="Budget Approval Request - Marketing Campaign" 
+                     data-preview="I'm requesting approval for additional resources needed for the upcoming digital marketing campaign. The proposed budget increase of $15,000 will cover enhanced social media advertising, influencer partnerships, and content creation. Detailed breakdown attached.">
+                    <div class="message-content">
+                        <div class="message-header">
+                            <div class="sender">Jessica Lee</div>
+                            <div class="time">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                                Yesterday
+                            </div>
+                        </div>
+                        <div class="subject">Budget Approval Request - Marketing Campaign</div>
+                        <div class="preview">I'm requesting approval for additional resources needed for the upcoming digital marketing campaign. The proposed budget increase of $15,000 will cover enhanced social media advertising...</div>
+                    </div>
+                </div>
+
+                <div class="message-item" 
+                     data-sender="David Park" 
+                     data-subject="Code Review Complete - Feature Branch Authentication" 
+                     data-preview="I've completed the comprehensive review of your latest commit on the authentication feature branch. Excellent work on the optimization improvements! The code is clean, well-documented, and follows our style guidelines. I've left a few minor suggestions for improvement.">
+                    <div class="message-content">
+                        <div class="message-header">
+                            <div class="sender">David Park</div>
+                            <div class="time">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                                Yesterday
+                            </div>
+                        </div>
+                        <div class="subject">Code Review Complete - Feature Branch Authentication</div>
+                        <div class="preview">I've completed the comprehensive review of your latest commit on the authentication feature branch. Excellent work on the optimization improvements! The code is clean, well-documented...</div>
+                    </div>
+                </div>
+
+                <div class="message-item" 
+                     data-sender="Rachel Kim" 
+                     data-subject="User Research Findings - Navigation Study" 
+                     data-preview="The recent user interviews and usability testing sessions have revealed some fascinating insights about our navigation patterns. Users are having difficulty finding the account settings, and the search functionality needs to be more prominent. Full report attached with recommendations.">
+                    <div class="message-content">
+                        <div class="message-header">
+                            <div class="sender">
+                                Rachel Kim
+                                <span class="priority-badge medium">Medium</span>
+                            </div>
+                            <div class="time">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                                2 days ago
+                            </div>
+                        </div>
+                        <div class="subject">User Research Findings - Navigation Study</div>
+                        <div class="preview">The recent user interviews and usability testing sessions have revealed some fascinating insights about our navigation patterns. Users are having difficulty finding the account settings...</div>
+                    </div>
+                </div>
+
+                <div class="message-item" 
+                     data-sender="Tom Wilson" 
+                     data-subject="Weekly Status Report - Development Team" 
+                     data-preview="This week's accomplishments include completing the authentication module, fixing 23 bugs, implementing the new dashboard design, and conducting performance optimization. Next week we'll focus on integrating the payment gateway and starting the mobile app development.">
+                    <div class="message-content">
+                        <div class="message-header">
+                            <div class="sender">Tom Wilson</div>
+                            <div class="time">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                                3 days ago
+                            </div>
+                        </div>
+                        <div class="subject">Weekly Status Report - Development Team</div>
+                        <div class="preview">This week's accomplishments include completing the authentication module, fixing 23 bugs, implementing the new dashboard design, and conducting performance optimization...</div>
+                    </div>
+                </div>
+
+                <div class="message-item" 
+                     data-sender="Lisa Anderson" 
+                     data-subject="Product Launch Preparation Checklist" 
+                     data-preview="As we approach the product launch date, I've compiled a comprehensive checklist of all remaining tasks. We need to finalize the marketing materials, complete QA testing, prepare customer support documentation, and conduct final stakeholder reviews.">
+                    <div class="message-content">
+                        <div class="message-header">
+                            <div class="sender">
+                                Lisa Anderson
+                                <span class="priority-badge high">High Priority</span>
+                            </div>
+                            <div class="time">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                                4 days ago
+                            </div>
+                        </div>
+                        <div class="subject">Product Launch Preparation Checklist</div>
+                        <div class="preview">As we approach the product launch date, I've compiled a comprehensive checklist of all remaining tasks. We need to finalize the marketing materials, complete QA testing...</div>
+                    </div>
+                </div>
+
+                <div class="message-item" 
+                     data-sender="Chris Martinez" 
+                     data-subject="Security Audit Results and Recommendations" 
+                     data-preview="The security audit has been completed and I'm pleased to report that our application passed with a strong security rating. However, there are a few recommended improvements including updating dependencies, implementing rate limiting, and enhancing password policies.">
+                    <div class="message-content">
+                        <div class="message-header">
+                            <div class="sender">Chris Martinez</div>
+                            <div class="time">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                                5 days ago
+                            </div>
+                        </div>
+                        <div class="subject">Security Audit Results and Recommendations</div>
+                        <div class="preview">The security audit has been completed and I'm pleased to report that our application passed with a strong security rating. However, there are a few recommended improvements...</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Right pane: Message view -->
-            <div class="message-view-pane">
-                <div id="messageViewContent">
-                    <div class="empty-state">
-                        <div class="empty-icon">✉️</div>
-                        <div class="empty-title">No message selected</div>
-                        <div class="empty-text">Click on a message to view its contents</div>
-                    </div>
-                </div>
+            <!-- Empty State -->
+            <div class="empty-state" id="emptyState">
+                <div class="empty-icon">🔍</div>
+                <div class="empty-title">No Messages Found</div>
+                <div class="empty-text">Try adjusting your search query</div>
             </div>
         </div>
     </div>
 
     <script>
-        let currentFilters = { unread_only: false, starred_only: false, new_only: false };
-        let currentSearchQuery = '';
-        let currentMessageId = null;
-        let selectedMessageElement = null;
+        // DOM Elements
+        const searchInput = document.getElementById('searchInput');
+        const clearBtn = document.getElementById('clearBtn');
+        const messagesArea = document.getElementById('messagesArea');
+        const emptyState = document.getElementById('emptyState');
+        const searchResults = document.getElementById('searchResults');
+        const resultsText = document.getElementById('resultsText');
+        const totalCount = document.getElementById('totalCount');
+        const unreadCount = document.getElementById('unreadCount');
+        const newCount = document.getElementById('newCount');
+        const totalBadge = document.getElementById('totalBadge');
 
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            fetchMessages();
+        // Get all message items
+        const messages = Array.from(document.querySelectorAll('.message-item'));
+        
+        // Store original HTML for each message
+        const originalHTML = new Map();
+        messages.forEach(msg => {
+            originalHTML.set(msg, msg.innerHTML);
         });
 
-        async function fetchMessages() {
-            try {
-                const params = new URLSearchParams({
-                    action: 'fetch_messages',
-                    limit: 50,
-                    offset: 0
+        // Initialize counts
+        function updateCounts() {
+            const total = messages.length;
+            const unread = messages.filter(m => m.classList.contains('unread')).length;
+            const newToday = Math.min(unread, 3); // Simulate new messages
+            
+            totalCount.textContent = total;
+            unreadCount.textContent = unread;
+            newCount.textContent = newToday;
+            totalBadge.textContent = `${total} Message${total !== 1 ? 's' : ''}`;
+        }
+
+        updateCounts();
+
+        // Debounce function for smooth performance
+        function debounce(func, delay) {
+            let timeoutId;
+            return function (...args) {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => func.apply(this, args), delay);
+            };
+        }
+
+        // Escape special regex characters
+        function escapeRegex(str) {
+            return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        // Highlight matching text
+        function highlightText(text, query) {
+            if (!query) return text;
+            const regex = new RegExp(`(${escapeRegex(query)})`, 'gi');
+            return text.replace(regex, '<span class="highlight">$1</span>');
+        }
+
+        // Main search function
+        function performSearch(query) {
+            query = query.trim().toLowerCase();
+            let visibleCount = 0;
+
+            if (!query) {
+                // Reset to original state
+                messages.forEach(msg => {
+                    msg.innerHTML = originalHTML.get(msg);
+                    msg.classList.remove('hidden');
+                    visibleCount++;
+                });
+                
+                searchResults.classList.remove('visible');
+                emptyState.classList.remove('visible');
+                messagesArea.style.display = 'block';
+            } else {
+                // Search through messages
+                messages.forEach(msg => {
+                    const sender = (msg.dataset.sender || '').toLowerCase();
+                    const subject = (msg.dataset.subject || '').toLowerCase();
+                    const preview = (msg.dataset.preview || '').toLowerCase();
+                    
+                    const isMatch = sender.includes(query) || 
+                                  subject.includes(query) || 
+                                  preview.includes(query);
+
+                    if (isMatch) {
+                        // Restore original HTML first
+                        msg.innerHTML = originalHTML.get(msg);
+                        
+                        // Apply highlighting
+                        const senderEl = msg.querySelector('.sender');
+                        const subjectEl = msg.querySelector('.subject');
+                        const previewEl = msg.querySelector('.preview');
+                        
+                        if (sender.includes(query) && senderEl) {
+                            const originalSender = senderEl.innerHTML;
+                            const textOnly = msg.dataset.sender;
+                            senderEl.innerHTML = originalSender.replace(
+                                textOnly,
+                                highlightText(textOnly, query)
+                            );
+                        }
+                        
+                        if (subject.includes(query) && subjectEl) {
+                            subjectEl.innerHTML = highlightText(msg.dataset.subject, query);
+                        }
+                        
+                        if (preview.includes(query) && previewEl) {
+                            previewEl.innerHTML = highlightText(msg.dataset.preview, query);
+                        }
+                        
+                        msg.classList.remove('hidden');
+                        visibleCount++;
+                    } else {
+                        msg.classList.add('hidden');
+                    }
                 });
 
-                if (currentSearchQuery) params.append('search', currentSearchQuery);
-                if (currentFilters.unread_only) params.append('unread_only', '1');
-                if (currentFilters.starred_only) params.append('starred_only', '1');
-                if (currentFilters.new_only) params.append('new_only', '1');
+                // Update search results info
+                resultsText.textContent = `Found ${visibleCount} message${visibleCount !== 1 ? 's' : ''}`;
+                searchResults.classList.add('visible');
 
-                const response = await fetch(`inbox.php?${params.toString()}`);
-                const data = await response.json();
-
-                if (data.success) {
-                    renderMessages(data.messages);
-                    document.getElementById('totalCount').textContent = data.total;
-                }
-            } catch (error) {
-                console.error('Error fetching messages:', error);
-                document.getElementById('messagesList').innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">⚠️</div>
-                        <div class="empty-title">Error loading messages</div>
-                        <div class="empty-text">Please try refreshing the page</div>
-                    </div>
-                `;
-            }
-        }
-
-        function renderMessages(messages) {
-            const container = document.getElementById('messagesList');
-
-            if (!messages || messages.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">📭</div>
-                        <div class="empty-title">No messages found</div>
-                        <div class="empty-text">Your inbox is empty or no messages match your filters</div>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = messages.map(msg => {
-                const classes = ['message-item'];
-                if (msg.is_read == 0) classes.push('unread');
-                if (msg.is_new == 1) classes.push('new');
-                if (msg.id == currentMessageId) classes.push('selected');
-
-                const preview = msg.body ? msg.body.substring(0, 100) : '';
-
-                return `
-                    <div class="${classes.join(' ')}" onclick="viewMessage(${msg.id}, event)">
-                    <span class="message-meta">
-    <span class="material-icons message-star ${msg.is_starred == 1 ? 'starred' : ''}"
-          onclick="toggleStar(${msg.id}, event)">
-        ${msg.is_starred == 1 ? 'star' : 'star_border'}
-    </span>
-
-    ${msg.is_read == 0 ? '<span class="unread-dot"></span>' : ''}
-</span>
-
-                        <div class="message-content">
-                            <div class="message-header">
-                                <span class="message-sender">${escapeHtml(msg.sender)}</span>
-                                <span class="message-date">${formatDate(msg.received_date)}</span>
-                            </div>
-                            <div class="message-subject">${escapeHtml(msg.subject)}</div>
-                            <div class="message-preview">${escapeHtml(preview)}</div>
-                            <div class="message-badges">
-                                ${msg.is_new == 1 ? '<span class="badge badge-new">NEW</span>' : ''}
-                                ${msg.has_attachments == 1 ? '<span class="badge badge-attachment"><span class="material-icons">attach_file</span> Attachments</span>' : ''}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        async function viewMessage(messageId, event) {
-            if (event) {
-                // Remove selected class from previous element
-                if (selectedMessageElement) {
-                    selectedMessageElement.classList.remove('selected');
-                }
-
-                // Add selected class to clicked element
-                selectedMessageElement = event.currentTarget;
-                selectedMessageElement.classList.add('selected');
-            }
-
-            currentMessageId = messageId;
-
-            try {
-                const response = await fetch(`inbox.php?action=get_message&id=${messageId}`);
-                const data = await response.json();
-
-                if (data.success) {
-                    const msg = data.message;
-
-                    // Parse attachments
-                    let attachments = [];
-                    if (msg.has_attachments && msg.attachment_data) {
-                        try {
-                            attachments = JSON.parse(msg.attachment_data);
-                        } catch (e) { }
-                    }
-
-                    // Build body HTML
-                    let bodyHtml = `<div class="message-detail">${escapeHtml(msg.body)}</div>`;
-
-                    // Add attachments section
-                    if (attachments.length > 0) {
-                        bodyHtml += `
-                            <div class="attachments-section">
-                                <div class="attachments-title">
-                                    <span class="material-icons">attach_file</span>
-                                    ${attachments.length} Attachment${attachments.length > 1 ? 's' : ''}
-                                </div>
-                                <div class="attachments-grid">
-                                    ${attachments.map(att => `
-                                        <div class="attachment-card" onclick="downloadAttachment(${msg.id}, '${escapeHtml(att.filename)}')">
-                                            <div class="attachment-icon">${att.icon || '📎'}</div>
-                                            <div class="attachment-name">${escapeHtml(att.filename)}</div>
-                                            <div class="attachment-size">${formatBytes(att.size)}</div>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        `;
-                    }
-
-                    // Render message view
-                    document.getElementById('messageViewContent').innerHTML = `
-                        <div class="message-view-header">
-                            <div class="message-view-title">${escapeHtml(msg.subject)}</div>
-                            <div class="message-view-meta">
-                                <div class="message-view-meta-item">
-                                    <span class="material-icons">person</span>
-                                    <span class="message-view-meta-label">From:</span> ${escapeHtml(msg.sender)}
-                                </div>
-                                <div class="message-view-meta-item">
-                                    <span class="material-icons">schedule</span>
-                                    <span class="message-view-meta-label">Date:</span> ${formatDateLong(msg.received_date)}
-                                </div>
-                            </div>
-                            <div class="message-view-actions">
-                                <button class="filter-btn" onclick="toggleStarFromView()">
-                                    <span class="material-icons">${msg.is_starred == 1 ? 'star' : 'star_border'}</span>
-                                    ${msg.is_starred == 1 ? 'Starred' : 'Star'}
-                                </button>
-                                <button class="filter-btn" onclick="deleteMessageFromView()">
-                                    <span class="material-icons">delete</span>
-                                    Delete
-                                </button>
-                            </div>
-                        </div>
-                        <div class="message-view-body">
-                            ${bodyHtml}
-                        </div>
-                    `;
-
-                    // Refresh list to update read status
-                    setTimeout(() => fetchMessages(), 100);
-                    updateCounts();
-                }
-            } catch (error) {
-                console.error('Error viewing message:', error);
-                showToast('Failed to load message', 'error');
-            }
-        }
-
-        async function syncMessages() {
-            const btn = document.getElementById('syncBtn');
-            btn.classList.add('rotating');
-
-            try {
-                const response = await fetch('inbox.php?action=sync&limit=50&force=false');
-                const data = await response.json();
-
-                if (data.success) {
-                    showToast(`Synced ${data.new_count} new messages`, 'success');
-                    fetchMessages();
-                    updateCounts();
-                    updateLastSyncTime();
+                // Show/hide empty state
+                if (visibleCount === 0) {
+                    messagesArea.style.display = 'none';
+                    emptyState.classList.add('visible');
                 } else {
-                    showToast(data.error || 'Sync failed', 'error');
+                    messagesArea.style.display = 'block';
+                    emptyState.classList.remove('visible');
                 }
-            } catch (error) {
-                console.error('Sync error:', error);
-                showToast('Sync failed', 'error');
-            } finally {
-                setTimeout(() => btn.classList.remove('rotating'), 600);
-            }
-        }
-
-        async function forceRefresh() {
-            const btn = document.getElementById('refreshBtn');
-            btn.classList.add('rotating');
-
-            try {
-                const response = await fetch('inbox.php?action=sync&limit=50&force=true');
-                const data = await response.json();
-
-                if (data.success) {
-                    showToast(`Refreshed: ${data.new_count} new messages`, 'success');
-                    fetchMessages();
-                    updateCounts();
-                    updateLastSyncTime();
-                } else {
-                    showToast(data.error || 'Refresh failed', 'error');
-                }
-            } catch (error) {
-                console.error('Refresh error:', error);
-                showToast('Refresh failed', 'error');
-            } finally {
-                setTimeout(() => btn.classList.remove('rotating'), 600);
-            }
-        }
-
-        function toggleFilter(filterType) {
-            const filterBtn = document.getElementById('filter' + filterType.charAt(0).toUpperCase() + filterType.slice(1));
-
-            if (filterType === 'unread') {
-                currentFilters.unread_only = !currentFilters.unread_only;
-                filterBtn.classList.toggle('active');
-            } else if (filterType === 'starred') {
-                currentFilters.starred_only = !currentFilters.starred_only;
-                filterBtn.classList.toggle('active');
-            } else if (filterType === 'new') {
-                currentFilters.new_only = !currentFilters.new_only;
-                filterBtn.classList.toggle('active');
             }
 
-            fetchMessages();
-        }
-
-        function searchMessages() {
-            currentSearchQuery = document.getElementById('searchInput').value;
-            fetchMessages();
-        }
-
-        async function toggleStar(messageId, event) {
-            event.stopPropagation();
-
-            try {
-                const response = await fetch(`inbox.php?action=toggle_star&id=${messageId}`);
-                const data = await response.json();
-
-                if (data.success) {
-                    fetchMessages();
-                    if (currentMessageId === messageId) {
-                        viewMessage(messageId);
-                    }
-                }
-            } catch (error) {
-                console.error('Error toggling star:', error);
-            }
-        }
-
-        async function toggleStarFromView() {
-            if (!currentMessageId) return;
-            await toggleStar(currentMessageId, { stopPropagation: () => { } });
-        }
-
-        async function deleteMessageFromView() {
-            if (!currentMessageId) return;
-
-            if (!confirm('Are you sure you want to delete this message?')) {
-                return;
-            }
-
-            try {
-                const response = await fetch(`inbox.php?action=delete&id=${currentMessageId}`);
-                const data = await response.json();
-
-                if (data.success) {
-                    showToast('Message deleted', 'success');
-                    currentMessageId = null;
-                    document.getElementById('messageViewContent').innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-icon">✉️</div>
-                            <div class="empty-title">No message selected</div>
-                            <div class="empty-text">Click on a message to view its contents</div>
-                        </div>
-                    `;
-                    fetchMessages();
-                    updateCounts();
-                } else {
-                    showToast('Failed to delete message', 'error');
-                }
-            } catch (error) {
-                console.error('Error deleting message:', error);
-                showToast('Failed to delete message', 'error');
-            }
-        }
-
-        function downloadAttachment(messageId, filename) {
-            window.location.href = `download_attachment.php?message_id=${messageId}&filename=${encodeURIComponent(filename)}`;
-        }
-
-        async function updateCounts() {
-            try {
-                const response = await fetch('inbox.php?action=get_counts');
-                const data = await response.json();
-
-                if (data.success) {
-                    document.getElementById('unreadCount').textContent = data.unread;
-                    document.getElementById('newCount').textContent = data.new;
-
-                    const sidebarBadge = document.getElementById('sidebarUnreadBadge');
-                    if (sidebarBadge) {
-                        sidebarBadge.textContent = data.unread;
-                        sidebarBadge.style.display = data.unread > 0 ? 'block' : 'none';
-                    }
-                }
-            } catch (error) {
-                console.error('Error updating counts:', error);
-            }
-        }
-
-        function updateLastSyncTime() {
-            const now = new Date();
-            const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-            document.getElementById('lastSyncText').textContent = 'Last synced: ' + timeStr;
-        }
-
-        function formatDate(dateStr) {
-            const date = new Date(dateStr);
-            const now = new Date();
-            const diffMs = now - date;
-            const diffMins = Math.floor(diffMs / 60000);
-            const diffHours = Math.floor(diffMs / 3600000);
-            const diffDays = Math.floor(diffMs / 86400000);
-
-            if (diffMins < 1) return 'Just now';
-            if (diffMins < 60) return diffMins + 'm ago';
-            if (diffHours < 24) return diffHours + 'h ago';
-            if (diffDays < 7) return diffDays + 'd ago';
-
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        }
-
-        function formatDateLong(dateStr) {
-            const date = new Date(dateStr);
-            return date.toLocaleString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
+            // Smooth scroll to top
+            messagesArea.scrollTo({
+                top: 0,
+                behavior: 'smooth'
             });
         }
 
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-        }
+        // Debounced search
+        const debouncedSearch = debounce(performSearch, 200);
 
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+        // Event Listeners
+        searchInput.addEventListener('input', (e) => {
+            const value = e.target.value;
+            
+            // Show/hide clear button
+            clearBtn.classList.toggle('visible', value.length > 0);
+            
+            // Perform search
+            debouncedSearch(value);
+        });
 
-        function showToast(message, type = 'info') {
-            document.querySelectorAll('.toast').forEach(t => t.remove());
-
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-
-            const icon = type === 'success' ? 'check_circle' :
-                type === 'error' ? 'error' :
-                    'info';
-
-            toast.innerHTML = `
-                <span class="material-icons">${icon}</span>
-                <span>${message}</span>
-            `;
-
-            document.body.appendChild(toast);
-
-            setTimeout(() => {
-                toast.style.animation = 'toastSlideIn 0.3s ease-out reverse';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        // Auto-update counts every 30 seconds
-        setInterval(updateCounts, 30000);
+        // Clear button
+        clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            clearBtn.classList.remove('visible');
+            performSearch('');
+            searchInput.focus();
+        });
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
-            // Ctrl/Cmd + R to sync
-            if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+            // Cmd/Ctrl + F to focus search
+            if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
                 e.preventDefault();
-                syncMessages();
+                searchInput.focus();
+                searchInput.select();
             }
+            
+            // Escape to clear search
+            if (e.key === 'Escape' && document.activeElement === searchInput) {
+                if (searchInput.value) {
+                    searchInput.value = '';
+                    clearBtn.classList.remove('visible');
+                    performSearch('');
+                } else {
+                    searchInput.blur();
+                }
+            }
+        });
+
+        // Message click handlers
+        messages.forEach(msg => {
+            msg.addEventListener('click', function(e) {
+                // Don't trigger if clicking on badges or other interactive elements
+                if (!e.target.closest('.priority-badge')) {
+                    console.log('Opening message:', this.dataset.subject);
+                    // Add your message open logic here
+                    
+                    // Visual feedback
+                    this.style.transform = 'translateX(8px) scale(0.98)';
+                    setTimeout(() => {
+                        this.style.transform = '';
+                    }, 200);
+                }
+            });
+        });
+
+        // Smooth scroll optimization
+        let scrollTimeout;
+        messagesArea.addEventListener('scroll', () => {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                // Scroll has stopped
+            }, 100);
+        }, { passive: true });
+
+        // Performance: Intersection Observer for lazy animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '50px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Initial animation trigger
+        window.addEventListener('load', () => {
+            document.querySelectorAll('.fade-in').forEach(el => {
+                el.style.opacity = '1';
+            });
         });
     </script>
 </body>
-
 </html>
