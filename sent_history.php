@@ -581,7 +581,7 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
 
         .search-box input {
             width: 100%;
-            padding: 8px 12px 8px 36px;
+            padding: 8px 36px 8px 36px;
             border: 1px solid var(--border);
             border-radius: 8px;
             font-size: 13px;
@@ -604,6 +604,29 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
             transform: translateY(-50%);
             color: var(--apple-gray);
             font-size: 18px;
+        }
+
+        .search-box .clear-search {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--apple-gray);
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            display: none;
+            transition: all 0.2s;
+        }
+
+        .search-box .clear-search:hover {
+            background: rgba(0, 0, 0, 0.05);
+            color: #1c1c1e;
+        }
+
+        .search-box .clear-search.visible {
+            display: block;
         }
 
         .filter-group {
@@ -763,6 +786,15 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
 
         .badge-attachment .material-icons {
             font-size: 11px;
+        }
+
+        /* ========== SEARCH HIGHLIGHT ========== */
+        .search-highlight {
+            background-color: #ffeb3b;
+            color: #000;
+            padding: 2px 0;
+            border-radius: 2px;
+            font-weight: 600;
         }
 
         /* ========== MESSAGE VIEW PANE ========== */
@@ -1113,7 +1145,8 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
                 <div class="toolbar">
                     <div class="search-box">
                         <span class="material-icons">search</span>
-                        <input type="text" id="searchInput" placeholder="Search sent emails..." onkeyup="searchMessages()">
+                        <input type="text" id="searchInput" placeholder="Search sent emails..." oninput="searchMessages()">
+                        <span class="material-icons clear-search" id="clearSearch" onclick="clearSearch()">close</span>
                     </div>
                     <div class="filter-group">
                         <select id="labelFilter" class="filter-select" onchange="filterByLabel()">
@@ -1197,6 +1230,7 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
             search: '',
             label_id: ''
         };
+        let allMessages = []; // Store all messages for client-side search
 
         // Load initial message if present in URL
         window.addEventListener('DOMContentLoaded', () => {
@@ -1205,81 +1239,170 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
             if (messageId) {
                 viewMessage(parseInt(messageId));
             }
+            
+            // Load all messages initially
+            loadAllMessages();
         });
 
-        async function fetchMessages() {
+        async function loadAllMessages() {
             try {
                 const params = new URLSearchParams({
                     action: 'fetch_messages',
-                    limit: 50,
+                    limit: 1000,
                     offset: 0
                 });
 
-                if (currentFilters.search) params.append('search', currentFilters.search);
                 if (currentFilters.label_id) params.append('label_id', currentFilters.label_id);
 
                 const response = await fetch('sent_history.php?' + params);
                 const data = await response.json();
 
                 if (data.success) {
-                    renderMessages(data.messages);
-                    updateCounts();
+                    allMessages = data.messages;
+                    displayMessages(allMessages);
                 }
             } catch (error) {
-                console.error('Error fetching messages:', error);
-                showToast('Failed to load messages', 'error');
+                console.error('Error loading messages:', error);
             }
         }
 
-        function renderMessages(messages) {
+        function searchMessages() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            const clearBtn = document.getElementById('clearSearch');
+            currentFilters.search = searchTerm;
+
+            // Show/hide clear button
+            if (searchTerm) {
+                clearBtn.classList.add('visible');
+            } else {
+                clearBtn.classList.remove('visible');
+            }
+
+            if (!searchTerm) {
+                // If search is empty, show all messages
+                displayMessages(allMessages);
+                return;
+            }
+
+            // Filter messages based on search term
+            const filteredMessages = allMessages.filter(msg => {
+                const searchLower = searchTerm.toLowerCase();
+                const recipient = (msg.recipient_email || '').toLowerCase();
+                const subject = (msg.subject || '').toLowerCase();
+                const body = (msg.body_text || '').toLowerCase();
+                const article = (msg.article_title || '').toLowerCase();
+                const label = (msg.label_name || '').toLowerCase();
+
+                return recipient.includes(searchLower) ||
+                       subject.includes(searchLower) ||
+                       body.includes(searchLower) ||
+                       article.includes(searchLower) ||
+                       label.includes(searchLower);
+            });
+
+            displayMessages(filteredMessages, searchTerm);
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('clearSearch').classList.remove('visible');
+            currentFilters.search = '';
+            displayMessages(allMessages);
+        }
+
+        function displayMessages(messages, searchTerm = '') {
             const container = document.getElementById('messagesContainer');
 
             if (messages.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
-                        <div class="empty-icon">📧</div>
-                        <div class="empty-title">No emails found</div>
-                        <div class="empty-text">Try adjusting your filters</div>
+                        <div class="empty-icon">🔍</div>
+                        <div class="empty-title">No results found</div>
+                        <div class="empty-text">${searchTerm ? 'Try a different search term' : 'No messages to display'}</div>
                     </div>
                 `;
                 return;
             }
 
-            container.innerHTML = messages.map(msg => `
-                <div class="message-item ${currentMessageId === msg.id ? 'selected' : ''}" 
-                     onclick="viewMessage(${msg.id})" 
-                     data-message-id="${msg.id}">
-                    <div class="message-content">
-                        <div class="message-header">
-                            <div class="message-recipient">
-                                ${escapeHtml(msg.recipient_email)}
+            let html = '';
+            messages.forEach(msg => {
+                const recipient = highlightText(escapeHtml(msg.recipient_email), searchTerm);
+                const subject = highlightText(escapeHtml(msg.subject), searchTerm);
+                const preview = highlightText(escapeHtml(stripTags(msg.body_text) || 'No preview available'), searchTerm);
+                const article = msg.article_title ? highlightText(escapeHtml(msg.article_title), searchTerm) : '';
+                const labelName = msg.label_name ? highlightText(escapeHtml(msg.label_name), searchTerm) : '';
+
+                html += `
+                    <div class="message-item" onclick="viewMessage(${msg.id})" data-message-id="${msg.id}">
+                        <div class="message-content">
+                            <div class="message-header">
+                                <div class="message-recipient">
+                                    ${recipient}
+                                </div>
+                                <div class="message-date">
+                                    ${formatDate(msg.sent_at)}
+                                </div>
                             </div>
-                            <div class="message-date">
-                                ${formatDate(msg.sent_at)}
+                            ${article ? `<div class="message-subject">${article}</div>` : ''}
+                            <div class="message-subject">
+                                ${subject}
                             </div>
-                        </div>
-                        <div class="message-subject">
-                            ${escapeHtml(msg.subject)}
-                        </div>
-                        <div class="message-preview">
-                            ${escapeHtml(stripTags(msg.body_text) || 'No preview available')}
-                        </div>
-                        <div class="message-badges">
-                            ${msg.label_name ? `
-                                <span class="badge badge-label" style="background: ${msg.label_color || '#6b7280'}">
-                                    ${escapeHtml(msg.label_name)}
-                                </span>
-                            ` : ''}
-                            ${msg.has_attachments ? `
-                                <span class="badge badge-attachment">
-                                    <span class="material-icons">attach_file</span>
-                                    ${msg.attachment_count || '1'}
-                                </span>
-                            ` : ''}
+                            <div class="message-preview">
+                                ${preview}
+                            </div>
+                            <div class="message-badges">
+                                ${msg.label_name ? `
+                                    <span class="badge badge-label" style="background: ${msg.label_color || '#6b7280'}">
+                                        ${labelName}
+                                    </span>
+                                ` : ''}
+                                ${msg.has_attachments ? `
+                                    <span class="badge badge-attachment">
+                                        <span class="material-icons">attach_file</span>
+                                        ${msg.attachment_count || '1'}
+                                    </span>
+                                ` : ''}
+                            </div>
                         </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            });
+
+            container.innerHTML = html;
+
+            // Re-highlight selected message if it exists
+            if (currentMessageId) {
+                const selectedItem = container.querySelector(`[data-message-id="${currentMessageId}"]`);
+                if (selectedItem) {
+                    selectedItem.classList.add('selected');
+                }
+            }
+        }
+
+        function highlightText(text, searchTerm) {
+            if (!searchTerm || !text) return text;
+
+            const regex = new RegExp(`(${escapeRegex(searchTerm)})`, 'gi');
+            return text.replace(regex, '<span class="search-highlight">$1</span>');
+        }
+
+        function escapeRegex(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        async function fetchMessages() {
+            // This function is now replaced by loadAllMessages for client-side filtering
+            await loadAllMessages();
+        }
+
+        async function filterByLabel() {
+            currentFilters.label_id = document.getElementById('labelFilter').value;
+            await loadAllMessages();
+            
+            // Reapply search if there's a search term
+            if (currentFilters.search) {
+                searchMessages();
+            }
         }
 
         async function viewMessage(messageId) {
@@ -1414,7 +1537,7 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
                             <div class="empty-text">Click on an email to view its contents</div>
                         </div>
                     `;
-                    fetchMessages();
+                    await loadAllMessages();
                     updateCounts();
                 } else {
                     showToast('Failed to delete email', 'error');
@@ -1431,16 +1554,6 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
             link.href = downloadUrl;
             link.download = filename;
             link.click();
-        }
-
-        function searchMessages() {
-            currentFilters.search = document.getElementById('searchInput').value;
-            fetchMessages();
-        }
-
-        function filterByLabel() {
-            currentFilters.label_id = document.getElementById('labelFilter').value;
-            fetchMessages();
         }
 
         async function updateCounts() {
