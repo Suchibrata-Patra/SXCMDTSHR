@@ -207,7 +207,7 @@ $labels = getLabelCounts($userEmail);
         }
 
         .main_label_names {
-            font-weight: 600;
+            font-weight: 500;
             font-size: 15px;
         }
 
