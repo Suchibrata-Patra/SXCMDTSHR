@@ -85,7 +85,31 @@ function getSentEmailById($emailId, $userEmail) {
         return null;
     }
 }
-
+function getUserLabelsFromSentEmails($userEmail) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return [];
+        
+        $stmt = $pdo->prepare("
+            SELECT DISTINCT
+                label_id as id,
+                label_name,
+                label_color
+            FROM sent_emails_new
+            WHERE sender_email = :email
+            AND is_deleted = 0
+            AND label_id IS NOT NULL
+            ORDER BY label_name
+        ");
+        
+        $stmt->execute(['email' => $userEmail]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+    } catch (PDOException $e) {
+        error_log("Error getting user labels: " . $e->getMessage());
+        return [];
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
