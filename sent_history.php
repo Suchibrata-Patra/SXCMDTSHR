@@ -1,5 +1,5 @@
 <?php
-// sent_history.php - Premium Email Archive WITH READ RECEIPTS
+// sent_history.php - Premium Email Archive for Simplified 2-Table Structure
 session_start();
 require 'config.php';
 require 'db_config.php';
@@ -26,8 +26,8 @@ $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $perPage = 50;
 $offset = ($page - 1) * $perPage;
 
-// Get filtered emails
-$sentEmails = getSentEmailsWithTracking($userEmail, $perPage, $offset, $filters);
+// Get filtered emails using simplified function
+$sentEmails = getSentEmails($userEmail, $perPage, $offset, $filters);
 $totalEmails = getSentEmailCount($userEmail, $filters);
 $totalPages = ceil($totalEmails / $perPage);
 
@@ -38,193 +38,6 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
 // Check if filters are active
 $hasActiveFilters = !empty(array_filter($filters));
 
-/**
- * Get sent emails WITH READ TRACKING
- */
-function getSentEmailsWithTracking($userEmail, $limit = 100, $offset = 0, $filters = []) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) return [];
-
-        $userId = getUserId($pdo, $userEmail);
-        if (!$userId) return [];
-
-        // Query with LEFT JOIN to read tracking
-$sql = "SELECT 
-            se.*,
-            rt.tracking_token,
-            rt.is_read,
-            rt.first_read_at,
-            rt.total_opens,
-            rt.valid_opens,
-            rt.device_type,
-            rt.browser,
-            rt.os
-        FROM emails se
-        LEFT JOIN email_read_tracking rt ON rt.email_id = se.id
-        WHERE se.sender_email = :email
-        AND se.email_type = 'sent'";
-        
-        $params = [':email' => $userEmail];
-
-        // Apply Search Filter
-        if (!empty($filters['search'])) {
-            $sql .= " AND (se.recipient_email LIKE :search 
-                        OR se.subject LIKE :search 
-                        OR se.message_body LIKE :search 
-                        OR se.article_title LIKE :search)";
-            $params[':search'] = '%' . $filters['search'] . '%';
-        }
-
-        // Apply Recipient Filter
-        if (!empty($filters['recipient'])) {
-            $sql .= " AND se.recipient_email LIKE :recipient";
-            $params[':recipient'] = '%' . $filters['recipient'] . '%';
-        }
-
-        // Apply Label Filter
-        if (!empty($filters['label_id'])) {
-            if ($filters['label_id'] === 'unlabeled') {
-                $sql .= " AND se.label_id IS NULL";
-            } else {
-                $sql .= " AND se.label_id = :label_id";
-                $params[':label_id'] = $filters['label_id'];
-            }
-        }
-
-        // Apply Date Range Filters
-        if (!empty($filters['date_from'])) {
-            $sql .= " AND DATE(se.sent_at) >= :date_from";
-            $params[':date_from'] = $filters['date_from'];
-        }
-        if (!empty($filters['date_to'])) {
-            $sql .= " AND DATE(se.sent_at) <= :date_to";
-            $params[':date_to'] = $filters['date_to'];
-        }
-
-        $sql .= " ORDER BY se.sent_at DESC LIMIT :limit OFFSET :offset";
-
-        $stmt = $pdo->prepare($sql);
-        
-        // Bind parameters
-        foreach ($params as $key => $value) {
-            $stmt->bindValue($key, $value);
-        }
-        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
-
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    } catch (PDOException $e) {
-        error_log("Error fetching sent emails with tracking: " . $e->getMessage());
-        return [];
-    }
-}
-
-// Include rest of original helper functions from sent_history.php
-// function getSentEmailCount($userEmail, $filters = []) {
-//     try {
-//         $pdo = getDatabaseConnection();
-//         if (!$pdo) return 0;
-
-//         $sql = "SELECT COUNT(*) as count FROM sent_emails WHERE sender_email = :email AND current_status = 1";
-//         $params = [':email' => $userEmail];
-
-//         if (!empty($filters['search'])) {
-//             $sql .= " AND (recipient_email LIKE :search OR subject LIKE :search OR message_body LIKE :search)";
-//             $params[':search'] = '%' . $filters['search'] . '%';
-//         }
-
-//         if (!empty($filters['recipient'])) {
-//             $sql .= " AND recipient_email LIKE :recipient";
-//             $params[':recipient'] = '%' . $filters['recipient'] . '%';
-//         }
-
-//         if (!empty($filters['label_id'])) {
-//             if ($filters['label_id'] === 'unlabeled') {
-//                 $sql .= " AND label_id IS NULL";
-//             } else {
-//                 $sql .= " AND label_id = :label_id";
-//                 $params[':label_id'] = $filters['label_id'];
-//             }
-//         }
-
-//         if (!empty($filters['date_from'])) {
-//             $sql .= " AND DATE(sent_at) >= :date_from";
-//             $params[':date_from'] = $filters['date_from'];
-//         }
-//         if (!empty($filters['date_to'])) {
-//             $sql .= " AND DATE(sent_at) <= :date_to";
-//             $params[':date_to'] = $filters['date_to'];
-//         }
-
-//         $stmt = $pdo->prepare($sql);
-//         $stmt->execute($params);
-//         $result = $stmt->fetch(PDO::FETCH_ASSOC);
-
-//         return $result['count'] ?? 0;
-
-//     } catch (PDOException $e) {
-//         error_log("Error counting sent emails: " . $e->getMessage());
-//         return 0;
-//     }
-// }
-
-// function getLabelCounts($userEmail) {
-//     try {
-//         $pdo = getDatabaseConnection();
-//         if (!$pdo) return [];
-
-//         $userId = getUserId($pdo, $userEmail);
-//         if (!$userId) return [];
-
-//         $stmt = $pdo->prepare("
-//             SELECT l.*, COUNT(se.id) as email_count
-//             FROM labels l
-//             LEFT JOIN sent_emails se ON se.label_id = l.id AND se.sender_email = :email AND se.current_status = 1
-//             WHERE l.user_id = :user_id
-//             GROUP BY l.id
-//             ORDER BY l.label_name
-//         ");
-
-//         $stmt->execute([':user_id' => $userId, ':email' => $userEmail]);
-//         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-//     } catch (PDOException $e) {
-//         error_log("Error getting label counts: " . $e->getMessage());
-//         return [];
-//     }
-// }
-
-// function getUnlabeledEmailCount($userEmail) {
-//     try {
-//         $pdo = getDatabaseConnection();
-//         if (!$pdo) return 0;
-
-//         $stmt = $pdo->prepare("
-//             SELECT COUNT(*) as count
-//             FROM sent_emails
-//             WHERE sender_email = :email AND label_id IS NULL AND current_status = 1
-//         ");
-
-//         $stmt->execute([':email' => $userEmail]);
-//         $result = $stmt->fetch(PDO::FETCH_ASSOC);
-
-//         return $result['count'] ?? 0;
-
-//     } catch (PDOException $e) {
-//         error_log("Error getting unlabeled count: " . $e->getMessage());
-//         return 0;
-//     }
-// }
-
-// function getUserId($pdo, $email) {
-//     $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
-//     $stmt->execute([$email]);
-//     $user = $stmt->fetch(PDO::FETCH_ASSOC);
-//     return $user['id'] ?? null;
-// }
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -232,162 +45,160 @@ $sql = "SELECT
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sent Emails - SXC MDTS</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    
     <style>
-        :root {
-            --apple-blue: #007AFF;
-            --apple-gray: #8E8E93;
-            --apple-bg: #F2F2F7;
-            --border: #E5E5EA;
-            --text-primary: #1c1c1e;
-            --text-secondary: #52525b;
-            --read-blue: #4A90E2;
-            --unread-gray: #C7C7CC;
-        }
-
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        :root {
+            --apple-blue: #007AFF;
+            --apple-gray: #8E8E93;
+            --apple-light-gray: #F2F2F7;
+        }
+
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--apple-bg);
-            color: var(--text-primary);
-            line-height: 1.6;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #1c1c1e;
+            line-height: 1.5;
         }
 
         .app-container {
             display: flex;
             min-height: 100vh;
-            max-width: 1600px;
-            margin: 0 auto;
         }
 
         .main-content {
             flex: 1;
+            padding: 20px;
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1c1c1e;
+            margin-bottom: 10px;
+        }
+
+        .stats-row {
             display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            gap: 20px;
+            margin-bottom: 30px;
         }
 
-        /* ========== READ RECEIPT STYLES ========== */
-        .read-status-col {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            min-width: 80px;
-        }
-
-        .read-tick-icon {
-            font-size: 20px;
-            transition: all 0.3s ease;
-        }
-
-        .read-tick-icon.unread {
-            color: var(--unread-gray);
-        }
-
-        .read-tick-icon.read {
-            color: var(--read-blue);
-        }
-
-        .read-tick-icon.read-animating {
-            animation: tickBlue 0.5s ease;
-        }
-
-        @keyframes tickBlue {
-            0% { 
-                color: var(--unread-gray);
-                transform: scale(1);
-            }
-            50% { 
-                transform: scale(1.3);
-            }
-            100% { 
-                color: var(--read-blue);
-                transform: scale(1);
-            }
-        }
-
-        .read-time {
-            font-size: 10px;
-            color: #FF3B30;
-            font-weight: 600;
-            white-space: nowrap;
-        }
-
-        .no-tracking {
-            font-size: 10px;
-            color: var(--apple-gray);
-            font-style: italic;
-        }
-
-        /* ========== EMAIL LIST ========== */
-        .email-list-container {
+        .stat-card {
             flex: 1;
-            overflow-y: auto;
-            background: var(--apple-bg);
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e5e7eb;
         }
 
-        .email-list-wrapper {
-            padding: 24px 32px;
+        .stat-card h3 {
+            font-size: 14px;
+            color: var(--apple-gray);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--apple-blue);
+        }
+
+        .filters-bar {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e5e7eb;
+            margin-bottom: 20px;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .filter-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+
+        .email-list-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e5e7eb;
+            overflow: hidden;
         }
 
         .email-table {
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid var(--border);
+            width: 100%;
         }
 
         .email-item {
             display: grid;
-            grid-template-columns: 40px 2fr 3fr 1fr 80px 150px;
-            gap: 16px;
+            grid-template-columns: 40px 1fr 2fr 150px 120px 120px;
+            gap: 15px;
             padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid #f3f4f6;
             align-items: center;
-            transition: all 0.2s;
             cursor: pointer;
-        }
-
-        .email-item:last-child {
-            border-bottom: none;
+            transition: background 0.2s;
         }
 
         .email-item:hover {
-            background: #F9F9FB;
+            background: #f9fafb;
         }
 
-        .col-checkbox {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .email-checkbox {
+        .col-checkbox input {
             width: 18px;
             height: 18px;
             cursor: pointer;
-            accent-color: var(--apple-blue);
         }
 
         .col-recipient {
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 600;
             color: #1c1c1e;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
         }
 
         .col-subject {
@@ -404,14 +215,24 @@ $sql = "SELECT
             gap: 8px;
         }
 
+        .label-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .col-attachment {
+            text-align: center;
+        }
+
         .col-date {
             font-size: 13px;
             color: var(--apple-gray);
             text-align: right;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 6px;
         }
 
         .empty-state {
@@ -425,6 +246,73 @@ $sql = "SELECT
             opacity: 0.3;
             margin-bottom: 16px;
         }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            padding: 20px;
+        }
+
+        .pagination a,
+        .pagination span {
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #1c1c1e;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .pagination a:hover {
+            background: var(--apple-light-gray);
+        }
+
+        .pagination .active {
+            background: var(--apple-blue);
+            color: white;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: var(--apple-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        @media (max-width: 768px) {
+            .email-item {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .stats-row {
+                flex-direction: column;
+            }
+        }
     </style>
 </head>
 <body>
@@ -432,175 +320,161 @@ $sql = "SELECT
         <?php include 'sidebar.php'; ?>
 
         <div class="main-content">
-            <!-- Email List -->
-            <div class="email-list-container">
-                <div class="email-list-wrapper">
-                    <div class="email-table">
-                        <?php if (empty($sentEmails)): ?>
-                        <div class="empty-state">
-                            <span class="material-icons">inbox</span>
-                            <h3>No emails found</h3>
-                            <p>Try adjusting your filters or search query</p>
-                        </div>
-                        <?php else: ?>
-                            <?php foreach ($sentEmails as $email): ?>
-                            <div class="email-item" data-email-id="<?= $email['id'] ?>" data-tracking-token="<?= htmlspecialchars($email['tracking_token'] ?? '') ?>">
-                                <div class="col-checkbox">
-                                    <input type="checkbox" 
-                                           class="email-checkbox" 
-                                           value="<?= $email['id'] ?>">
-                                </div>
+            <!-- Header -->
+            <div class="header">
+                <h1>Sent Emails</h1>
+                <p>Total: <?= $totalEmails ?> emails</p>
+            </div>
 
-                                <div class="col-recipient">
-                                    <?= htmlspecialchars($email['recipient_email']) ?>
-                                </div>
-
-                                <div class="col-subject">
-                                    <?= htmlspecialchars($email['subject']) ?>
-                                </div>
-
-                                <div class="col-label">
-                                    <!-- Label display here -->
-                                </div>
-
-                                <!-- READ STATUS COLUMN -->
-                                <div class="read-status-col">
-                                    <?php if (!empty($email['tracking_token'])): ?>
-                                        <?php if ($email['is_read']): ?>
-                                            <span class="material-icons read-tick-icon read" title="Read">done_all</span>
-                                            <span class="read-time">
-                                                <?= date('M j, g:i A', strtotime($email['first_read_at'])) ?>
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="material-icons read-tick-icon unread" title="Sent">done_all</span>
-                                        <?php endif; ?>
-                                    <?php else: ?>
-                                        <span class="no-tracking">No tracking</span>
-                                    <?php endif; ?>
-                                </div>
-
-                                <div class="col-date">
-                                    <?php if (!empty($email['attachment_names'])): ?>
-                                    <span class="material-icons" style="font-size: 16px;">attach_file</span>
-                                    <?php endif; ?>
-                                    <?= date('M j, Y', strtotime($email['sent_at'])) ?>
-                                </div>
-                            </div>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </div>
+            <!-- Stats Row -->
+            <div class="stats-row">
+                <div class="stat-card">
+                    <h3>Total Sent</h3>
+                    <div class="value"><?= $totalEmails ?></div>
+                </div>
+                <div class="stat-card">
+                    <h3>Labeled</h3>
+                    <div class="value"><?= $totalEmails - $unlabeledCount ?></div>
+                </div>
+                <div class="stat-card">
+                    <h3>Unlabeled</h3>
+                    <div class="value"><?= $unlabeledCount ?></div>
+                </div>
+                <div class="stat-card">
+                    <h3>Labels</h3>
+                    <div class="value"><?= count($labels) ?></div>
                 </div>
             </div>
+
+            <!-- Filters Bar -->
+            <div class="filters-bar">
+                <form method="GET" action="">
+                    <div class="filters-grid">
+                        <div class="filter-group">
+                            <label>Search</label>
+                            <input type="text" name="search" placeholder="Search emails..." value="<?= htmlspecialchars($filters['search']) ?>">
+                        </div>
+                        <div class="filter-group">
+                            <label>Recipient</label>
+                            <input type="email" name="recipient" placeholder="Filter by recipient..." value="<?= htmlspecialchars($filters['recipient']) ?>">
+                        </div>
+                        <div class="filter-group">
+                            <label>Label</label>
+                            <select name="label_id">
+                                <option value="">All Labels</option>
+                                <option value="unlabeled" <?= $filters['label_id'] === 'unlabeled' ? 'selected' : '' ?>>Unlabeled</option>
+                                <?php foreach ($labels as $label): ?>
+                                <option value="<?= $label['label_id'] ?>" <?= $filters['label_id'] == $label['label_id'] ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($label['label_name']) ?> (<?= $label['email_count'] ?>)
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Date From</label>
+                            <input type="date" name="date_from" value="<?= htmlspecialchars($filters['date_from']) ?>">
+                        </div>
+                        <div class="filter-group">
+                            <label>Date To</label>
+                            <input type="date" name="date_to" value="<?= htmlspecialchars($filters['date_to']) ?>">
+                        </div>
+                        <div class="filter-group" style="display: flex; align-items: flex-end; gap: 10px;">
+                            <button type="submit" class="btn">
+                                <i class="fas fa-search"></i>
+                                Filter
+                            </button>
+                            <?php if ($hasActiveFilters): ?>
+                            <a href="sent_history.php" class="btn btn-secondary">
+                                <i class="fas fa-times"></i>
+                                Clear
+                            </a>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Email List -->
+            <div class="email-list-container">
+                <div class="email-table">
+                    <?php if (empty($sentEmails)): ?>
+                    <div class="empty-state">
+                        <span class="material-icons">inbox</span>
+                        <h3>No emails found</h3>
+                        <p>Try adjusting your filters or search query</p>
+                    </div>
+                    <?php else: ?>
+                        <?php foreach ($sentEmails as $email): ?>
+                        <div class="email-item" onclick="window.location.href='view_sent_email.php?id=<?= $email['id'] ?>'">
+                            <div class="col-checkbox" onclick="event.stopPropagation();">
+                                <input type="checkbox" class="email-checkbox" value="<?= $email['id'] ?>">
+                            </div>
+
+                            <div class="col-recipient">
+                                <?= htmlspecialchars($email['recipient_email']) ?>
+                            </div>
+
+                            <div class="col-subject">
+                                <?= htmlspecialchars($email['subject']) ?>
+                                <?php if (!empty($email['article_title']) && $email['article_title'] != $email['subject']): ?>
+                                <span style="color: #9ca3af;"> - <?= htmlspecialchars($email['article_title']) ?></span>
+                                <?php endif; ?>
+                            </div>
+
+                            <div class="col-label">
+                                <?php if (!empty($email['label_name'])): ?>
+                                <span class="label-badge" style="background-color: <?= htmlspecialchars($email['label_color'] ?? '#6b7280') ?>">
+                                    <?= htmlspecialchars($email['label_name']) ?>
+                                </span>
+                                <?php endif; ?>
+                            </div>
+
+                            <div class="col-attachment">
+                                <?php if ($email['has_attachments']): ?>
+                                <span class="material-icons" style="font-size: 18px; color: var(--apple-gray);">attach_file</span>
+                                <?php if (!empty($email['attachment_count'])): ?>
+                                <span style="font-size: 12px; color: var(--apple-gray);">(<?= $email['attachment_count'] ?>)</span>
+                                <?php endif; ?>
+                                <?php endif; ?>
+                            </div>
+
+                            <div class="col-date">
+                                <?= date('M j, Y', strtotime($email['sent_at'])) ?>
+                                <div style="font-size: 11px; color: #9ca3af;">
+                                    <?= date('g:i A', strtotime($email['sent_at'])) ?>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <?php if ($totalPages > 1): ?>
+            <div class="pagination">
+                <?php if ($page > 1): ?>
+                <a href="?page=<?= $page - 1 ?>&<?= http_build_query($filters) ?>">
+                    <i class="fas fa-chevron-left"></i> Previous
+                </a>
+                <?php endif; ?>
+
+                <?php for ($i = max(1, $page - 2); $i <= min($totalPages, $page + 2); $i++): ?>
+                    <?php if ($i == $page): ?>
+                        <span class="active"><?= $i ?></span>
+                    <?php else: ?>
+                        <a href="?page=<?= $i ?>&<?= http_build_query($filters) ?>"><?= $i ?></a>
+                    <?php endif; ?>
+                <?php endfor; ?>
+
+                <?php if ($page < $totalPages): ?>
+                <a href="?page=<?= $page + 1 ?>&<?= http_build_query($filters) ?>">
+                    Next <i class="fas fa-chevron-right"></i>
+                </a>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
         </div>
     </div>
-
-    <script>
-        // REAL-TIME READ RECEIPT UPDATES
-        let pollingInterval = null;
-        const POLL_INTERVAL_MS = 5000; // Poll every 5 seconds
-
-        function startReadReceiptPolling() {
-            pollingInterval = setInterval(updateReadReceipts, POLL_INTERVAL_MS);
-        }
-
-        async function updateReadReceipts() {
-            const emailItems = document.querySelectorAll('.email-item[data-tracking-token]');
-            const trackingTokens = [];
-            
-            emailItems.forEach(item => {
-                const token = item.getAttribute('data-tracking-token');
-                if (token && !item.querySelector('.read-tick-icon.read')) {
-                    trackingTokens.push(token);
-                }
-            });
-
-            if (trackingTokens.length === 0) {
-                return; // No unread emails to check
-            }
-
-            try {
-                const response = await fetch('check_read_status.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ tokens: trackingTokens })
-                });
-
-                const data = await response.json();
-
-                if (data.success && data.read_statuses) {
-                    data.read_statuses.forEach(status => {
-                        if (status.is_read) {
-                            updateEmailReadUI(status.tracking_token, status.first_read_at);
-                        }
-                    });
-                }
-
-            } catch (error) {
-                console.error('Error checking read status:', error);
-            }
-        }
-
-        function updateEmailReadUI(trackingToken, firstReadAt) {
-            const emailItem = document.querySelector(`[data-tracking-token="${trackingToken}"]`);
-            if (!emailItem) return;
-
-            const tickIcon = emailItem.querySelector('.read-tick-icon');
-            const readStatusCol = emailItem.querySelector('.read-status-col');
-
-            if (tickIcon && tickIcon.classList.contains('unread')) {
-                // Animate tick to blue
-                tickIcon.classList.remove('unread');
-                tickIcon.classList.add('read', 'read-animating');
-
-                // Remove animation class after animation completes
-                setTimeout(() => {
-                    tickIcon.classList.remove('read-animating');
-                }, 500);
-
-                // Add read time
-                const readTime = document.createElement('span');
-                readTime.className = 'read-time';
-                readTime.textContent = formatReadTime(firstReadAt);
-                readStatusCol.appendChild(readTime);
-
-                // Optional: Play notification sound or show toast
-                console.log('Email read:', trackingToken);
-            }
-        }
-
-        function formatReadTime(timestamp) {
-            const date = new Date(timestamp);
-            const month = date.toLocaleString('default', { month: 'short' });
-            const day = date.getDate();
-            const hours = date.getHours();
-            const minutes = date.getMinutes();
-            const ampm = hours >= 12 ? 'PM' : 'AM';
-            const displayHours = hours % 12 || 12;
-            const displayMinutes = minutes < 10 ? '0' + minutes : minutes;
-            
-            return `${month} ${day}, ${displayHours}:${displayMinutes} ${ampm}`;
-        }
-
-        // Start polling when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            startReadReceiptPolling();
-        });
-
-        // Stop polling when page is hidden
-        document.addEventListener('visibilitychange', function() {
-            if (document.hidden) {
-                clearInterval(pollingInterval);
-            } else {
-                startReadReceiptPolling();
-            }
-        });
-
-        // Clean up on page unload
-        window.addEventListener('beforeunload', function() {
-            clearInterval(pollingInterval);
-        });
-    </script>
 </body>
 </html>

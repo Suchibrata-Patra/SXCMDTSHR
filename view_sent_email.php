@@ -1,5 +1,5 @@
 <?php
-// view_sent_email.php - Enhanced with label display and editing
+// view_sent_email.php - View single sent email (Simplified 2-Table Version)
 session_start();
 require 'config.php';
 require 'db_config.php';
@@ -20,53 +20,59 @@ if (!$emailId) {
     exit();
 }
 
-// Fetch email from database
+// Fetch email from database - SIMPLIFIED
 try {
     $pdo = getDatabaseConnection();
     if (!$pdo) {
         die("Database connection failed");
     }
     
-    // Query from v_user_sent view which properly joins emails, user_email_access, and labels
-    $stmt = $pdo->prepare("
-        SELECT * 
-        FROM v_user_sent 
-        WHERE id = :id AND sender_email = :sender
-    ");
-    $stmt->execute([
-        ':id' => $emailId,
-        ':sender' => $userEmail
-    ]);
-    
-    $email = $stmt->fetch();
+    // Single table query - much simpler!
+    $email = getSentEmailById($emailId, $userEmail);
     
     if (!$email) {
         header("Location: sent_history.php");
         exit();
     }
+    
+    // Get attachments if any
+    $attachments = [];
+    if ($email['has_attachments']) {
+        $attachments = getSentEmailAttachments($pdo, $emailId);
+    }
+    
 } catch (PDOException $e) {
     error_log("Error fetching email: " . $e->getMessage());
     die("Error loading email");
 }
 
-// Get all labels for the dropdown
-$allLabels = getUserLabels($userEmail);
+// Get all unique labels for the dropdown (from sent_emails table)
+$allLabels = getUserLabelsFromSentEmails($userEmail);
+
+// Handle label update
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_label'])) {
+    $newLabelId = !empty($_POST['label_id']) ? intval($_POST['label_id']) : null;
+    $newLabelName = !empty($_POST['label_name']) ? trim($_POST['label_name']) : null;
+    $newLabelColor = !empty($_POST['label_color']) ? trim($_POST['label_color']) : null;
+    
+    if (updateSentEmailLabel($pdo, $emailId, $newLabelId, $newLabelName, $newLabelColor)) {
+        $_SESSION['success_message'] = 'Label updated successfully';
+        header("Location: view_sent_email.php?id=$emailId");
+        exit();
+    } else {
+        $_SESSION['error_message'] = 'Failed to update label';
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>
-        <?= htmlspecialchars($email['subject']) ?> - SXC MDTS
-    </title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500&display=swap"
-        rel="stylesheet">
+    <title><?= htmlspecialchars($email['subject']) ?> - SXC MDTS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-
     <style>
         * {
             margin: 0;
@@ -75,13 +81,11 @@ $allLabels = getUserLabels($userEmail);
         }
 
         body {
-            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
             background: #f6f8fc;
             min-height: 100vh;
-            padding: 0;
         }
 
-        /* Top Navigation Bar */
         .top-nav {
             background: white;
             border-bottom: 1px solid #e0e0e0;
@@ -108,13 +112,12 @@ $allLabels = getUserLabels($userEmail);
             padding: 8px 16px;
             background: transparent;
             border: 1px solid #dadce0;
-            border-radius: 4px;
+            border-radius: 8px;
             color: #5f6368;
             text-decoration: none;
             font-size: 14px;
             font-weight: 500;
             transition: all 0.15s;
-            cursor: pointer;
         }
 
         .back-button:hover {
@@ -123,44 +126,38 @@ $allLabels = getUserLabels($userEmail);
         }
 
         .email-subject-nav {
-            font-family: 'Google Sans', sans-serif;
             font-size: 18px;
-            font-weight: 400;
+            font-weight: 600;
             color: #202124;
         }
 
-        .nav-actions {
-            display: flex;
-            gap: 12px;
-        }
-
-        /* Email Container */
         .email-container {
             max-width: 900px;
             margin: 24px auto;
             background: white;
-            border-radius: 8px;
-            box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e5e7eb;
             overflow: hidden;
         }
 
-        /* Email Header Info */
         .email-header {
             padding: 24px;
             border-bottom: 1px solid #e0e0e0;
         }
 
         .email-subject {
-            font-family: 'Google Sans', sans-serif;
-            font-size: 22px;
-            font-weight: 400;
+            font-size: 24px;
+            font-weight: 700;
             color: #202124;
             margin-bottom: 16px;
-            line-height: 1.3;
         }
 
-        /* Label Badge in Header */
-        .label-badge-large {
+        .label-section {
+            margin-bottom: 16px;
+        }
+
+        .label-badge {
             display: inline-flex;
             align-items: center;
             gap: 8px;
@@ -169,411 +166,342 @@ $allLabels = getUserLabels($userEmail);
             font-size: 13px;
             font-weight: 600;
             color: white;
-            margin-bottom: 12px;
         }
 
         .label-editor {
-            display: inline-flex;
+            display: flex;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 12px;
+            gap: 10px;
+            margin-top: 10px;
         }
 
         .label-select {
-            padding: 6px 12px;
+            padding: 8px 12px;
             border: 1px solid #dadce0;
-            border-radius: 4px;
-            font-size: 13px;
-            font-family: 'Roboto', sans-serif;
+            border-radius: 8px;
+            font-size: 14px;
             cursor: pointer;
-        }
-
-        .label-select:focus {
-            outline: none;
-            border-color: #1a73e8;
         }
 
         .btn-save-label {
-            padding: 6px 12px;
-            background: #1a73e8;
+            padding: 8px 16px;
+            background: #007AFF;
             color: white;
             border: none;
-            border-radius: 4px;
-            font-size: 13px;
-            font-weight: 500;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .btn-save-label:hover {
-            background: #1765cc;
-        }
-
-        .btn-edit-label {
-            background: transparent;
-            border: 1px solid #dadce0;
-            padding: 4px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            color: #5f6368;
             transition: all 0.2s;
         }
 
-        .btn-edit-label:hover {
-            background: #f8f9fa;
+        .btn-save-label:hover {
+            background: #0056b3;
         }
 
-        .email-meta-grid {
+        .email-meta {
             display: grid;
-            gap: 12px;
-            font-size: 14px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
         }
 
-        .meta-row {
-            display: grid;
-            grid-template-columns: 100px 1fr;
-            gap: 12px;
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
         }
 
         .meta-label {
-            color: #5f6368;
-            font-weight: 500;
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .meta-value {
-            color: #202124;
+            font-size: 14px;
+            color: #1c1c1e;
+            font-weight: 500;
         }
 
-        .meta-value-muted {
-            color: #5f6368;
-            font-size: 13px;
-        }
-
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 4px 10px;
-            background: #e8f0fe;
-            color: #1a73e8;
-            border-radius: 12px;
-            font-size: 12px;
-            margin-right: 6px;
-        }
-
-        /* Email Body */
         .email-body {
             padding: 24px;
         }
 
-        .email-body iframe {
-            width: 100%;
-            border: none;
-            min-height: 400px;
+        .article-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1c1c1e;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f3f4f6;
         }
 
-        /* Info Notice */
-        .info-notice {
-            background: #e8f0fe;
-            color: #1967d2;
-            padding: 12px 24px;
+        .email-content {
+            font-size: 15px;
+            line-height: 1.7;
+            color: #374151;
+        }
+
+        .attachments-section {
+            padding: 24px;
+            border-top: 1px solid #e0e0e0;
+            background: #f9fafb;
+        }
+
+        .attachments-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1c1c1e;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .attachment-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .attachment-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .attachment-item:hover {
+            border-color: #007AFF;
+            box-shadow: 0 2px 8px rgba(0, 122, 255, 0.1);
+        }
+
+        .attachment-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f3f4f6;
+            border-radius: 8px;
+            color: #6b7280;
+        }
+
+        .attachment-info {
+            flex: 1;
+        }
+
+        .attachment-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1c1c1e;
+        }
+
+        .attachment-size {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .btn-download {
+            padding: 6px 12px;
+            background: #007AFF;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-download:hover {
+            background: #0056b3;
+        }
+
+        .success-message {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
             display: flex;
             align-items: center;
             gap: 10px;
-            font-size: 13px;
         }
 
-        /* Success Message */
-        .success-message {
-            display: none;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 16px;
-            background: #e6f4ea;
-            color: #137333;
-            border-radius: 4px;
-            margin-bottom: 12px;
-            font-size: 14px;
-        }
-
-        .success-message.active {
+        .error-message {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
             display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        /* Print Styles */
-        @media print {
-
-            .top-nav,
-            .back-button,
-            .btn-edit-label,
-            .info-notice {
-                display: none !important;
-            }
-
-            .email-container {
-                box-shadow: none;
-                max-width: 100%;
-                margin: 0;
-            }
-
-            .email-header {
-                border-bottom: 2px solid #000;
-            }
-        }
-
-        /* Mobile Responsive */
         @media (max-width: 768px) {
-            .email-container {
-                margin: 0;
-                border-radius: 0;
-            }
-
-            .email-header {
-                padding: 16px;
-            }
-
-            .meta-row {
-                grid-template-columns: 80px 1fr;
-            }
-
-            .email-subject-nav {
-                font-size: 16px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                max-width: 200px;
+            .email-meta {
+                grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
-
 <body>
     <div class="top-nav">
         <div class="nav-left">
             <a href="sent_history.php" class="back-button">
-                <i class="fa-solid fa-arrow-left"></i>
-                Back to Sent
+                <i class="fas fa-arrow-left"></i>
+                Back to Sent Emails
             </a>
-            <span class="email-subject-nav">
-                <?= htmlspecialchars($email['subject']) ?>
-            </span>
-        </div>
-        <div class="nav-actions">
-            <button class="back-button" onclick="window.print()">
-                <i class="fa-solid fa-print"></i>
-                Print
-            </button>
+            <span class="email-subject-nav"><?= htmlspecialchars($email['subject']) ?></span>
         </div>
     </div>
 
     <div class="email-container">
         <div class="email-header">
-            <div id="successMessage" class="success-message">
-                <span class="material-icons" style="font-size: 18px;">check_circle</span>
-                Label updated successfully!
+            <?php if (isset($_SESSION['success_message'])): ?>
+            <div class="success-message">
+                <i class="fas fa-check-circle"></i>
+                <?= htmlspecialchars($_SESSION['success_message']) ?>
             </div>
+            <?php unset($_SESSION['success_message']); endif; ?>
 
-            <!-- Label Display/Editor -->
-            <div id="labelDisplay">
+            <?php if (isset($_SESSION['error_message'])): ?>
+            <div class="error-message">
+                <i class="fas fa-exclamation-circle"></i>
+                <?= htmlspecialchars($_SESSION['error_message']) ?>
+            </div>
+            <?php unset($_SESSION['error_message']); endif; ?>
+
+            <h1 class="email-subject"><?= htmlspecialchars($email['subject']) ?></h1>
+
+            <!-- Label Section -->
+            <div class="label-section">
                 <?php if (!empty($email['label_name'])): ?>
-                <div class="label-badge-large"
-                    style="background-color: <?= htmlspecialchars($email['label_color']) ?>;">
-                    <span class="material-icons" style="font-size: 16px;">label</span>
+                <span class="label-badge" style="background-color: <?= htmlspecialchars($email['label_color'] ?? '#6b7280') ?>">
+                    <i class="fas fa-tag"></i>
                     <?= htmlspecialchars($email['label_name']) ?>
-                </div>
-                <button class="btn-edit-label" onclick="showLabelEditor()">
-                    <i class="fa-solid fa-edit"></i> Change Label
-                </button>
-                <?php else: ?>
-                <button class="btn-edit-label" onclick="showLabelEditor()">
-                    <span class="material-icons" style="font-size: 14px; vertical-align: middle;">add</span>
-                    Add Label
-                </button>
-                <?php endif; ?>
-            </div>
-
-            <div id="labelEditor" class="label-editor" style="display: none;">
-                <select id="labelSelect" class="label-select">
-                    <option value="">No Label</option>
-                    <?php foreach ($allLabels as $label): ?>
-                    <option value="<?= $label['id'] ?>" <?=($email['label_id']==$label['id']) ? 'selected' : '' ?>>
-                        <?= htmlspecialchars($label['label_name']) ?>
-                    </option>
-                    <?php endforeach; ?>
-                </select>
-                <button class="btn-save-label" onclick="saveLabel()">Save</button>
-                <button class="btn-edit-label" onclick="hideLabelEditor()">Cancel</button>
-            </div>
-
-            <h1 class="email-subject">
-                <?= htmlspecialchars($email['subject']) ?>
-            </h1>
-
-            <div class="email-meta-grid">
-                <div class="meta-row">
-                    <span class="meta-label">From:</span>
-                    <span class="meta-value">
-                        <?= htmlspecialchars($email['sender_email']) ?>
-                    </span>
-                </div>
-
-                <div class="meta-row">
-                    <span class="meta-label">To:</span>
-                    <span class="meta-value">
-                        <?= htmlspecialchars($email['recipient_email']) ?>
-                    </span>
-                </div>
-
-                <?php if (!empty($email['cc_list'])): ?>
-                <div class="meta-row">
-                    <span class="meta-label">CC:</span>
-                    <span class="meta-value">
-                        <?= htmlspecialchars($email['cc_list']) ?>
-                    </span>
-                </div>
+                </span>
                 <?php endif; ?>
 
-                <?php if (!empty($email['bcc_list'])): ?>
-                <div class="meta-row">
-                    <span class="meta-label">BCC:</span>
-                    <span class="meta-value">
-                        <?= htmlspecialchars($email['bcc_list']) ?>
-                    </span>
-                </div>
-                <?php endif; ?>
-
-                <div class="meta-row">
-                    <span class="meta-label">Date:</span>
-                    <span class="meta-value-muted">
-                        <?= date('l, F j, Y \a\t g:i A', strtotime($email['sent_at'])) ?>
-                    </span>
-                </div>
-
-                <?php if (!empty($email['article_title'])): ?>
-                <div class="meta-row">
-                    <span class="meta-label">Article:</span>
-                    <span class="meta-value">
-                        <?= htmlspecialchars($email['article_title']) ?>
-                    </span>
-                </div>
-                <?php endif; ?>
-
-                <?php if (!empty($email['attachment_names'])): ?>
-                <div class="meta-row">
-                    <span class="meta-label">Attachments:</span>
-                    <span class="meta-value">
-                        <?php
-                        $attachments = explode(', ', $email['attachment_names']);
-                        foreach ($attachments as $attachment):
-                        ?>
-                        <span class="badge">
-                            <i class="fa-solid fa-paperclip"></i>
-                            <?= htmlspecialchars($attachment) ?>
-                        </span>
+                <!-- Label Editor -->
+                <form method="POST" class="label-editor">
+                    <select name="label_id" class="label-select" onchange="updateLabelData(this)">
+                        <option value="">-- No Label --</option>
+                        <?php foreach ($allLabels as $label): ?>
+                        <option value="<?= $label['id'] ?>" 
+                                data-name="<?= htmlspecialchars($label['label_name']) ?>"
+                                data-color="<?= htmlspecialchars($label['label_color']) ?>"
+                                <?= $email['label_id'] == $label['id'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($label['label_name']) ?>
+                        </option>
                         <?php endforeach; ?>
+                    </select>
+                    <input type="hidden" name="label_name" id="label_name">
+                    <input type="hidden" name="label_color" id="label_color">
+                    <button type="submit" name="update_label" class="btn-save-label">
+                        <i class="fas fa-save"></i> Update Label
+                    </button>
+                </form>
+            </div>
+
+            <!-- Email Metadata -->
+            <div class="email-meta">
+                <div class="meta-item">
+                    <span class="meta-label">From</span>
+                    <span class="meta-value">
+                        <?= htmlspecialchars($email['sender_name'] ?? $email['sender_email']) ?>
+                        <br><small style="color: #6b7280;"><?= htmlspecialchars($email['sender_email']) ?></small>
                     </span>
                 </div>
+                <div class="meta-item">
+                    <span class="meta-label">To</span>
+                    <span class="meta-value"><?= htmlspecialchars($email['recipient_email']) ?></span>
+                </div>
+                <?php if (!empty($email['cc_list'])): ?>
+                <div class="meta-item">
+                    <span class="meta-label">CC</span>
+                    <span class="meta-value"><?= htmlspecialchars($email['cc_list']) ?></span>
+                </div>
                 <?php endif; ?>
+                <?php if (!empty($email['bcc_list'])): ?>
+                <div class="meta-item">
+                    <span class="meta-label">BCC</span>
+                    <span class="meta-value"><?= htmlspecialchars($email['bcc_list']) ?></span>
+                </div>
+                <?php endif; ?>
+                <div class="meta-item">
+                    <span class="meta-label">Sent At</span>
+                    <span class="meta-value">
+                        <?= date('F j, Y \a\t g:i A', strtotime($email['sent_at'])) ?>
+                    </span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Message ID</span>
+                    <span class="meta-value" style="font-size: 12px; word-break: break-all;">
+                        <?= htmlspecialchars($email['message_id'] ?? 'N/A') ?>
+                    </span>
+                </div>
             </div>
         </div>
 
-        <div class="info-notice">
-            <i class="fa-solid fa-info-circle"></i>
-            This is a preview of the email as it was sent. The layout and styling match the original email template.
+        <!-- Email Body -->
+        <div class="email-body">
+            <?php if (!empty($email['article_title'])): ?>
+            <div class="article-title"><?= htmlspecialchars($email['article_title']) ?></div>
+            <?php endif; ?>
+
+            <div class="email-content">
+                <?= $email['body_html'] ?? nl2br(htmlspecialchars($email['body_text'] ?? '')) ?>
+            </div>
         </div>
 
-        <div class="email-body">
-            <iframe id="emailFrame" srcdoc="<?= htmlspecialchars($email['body_html']) ?>"></iframe>
+        <!-- Attachments -->
+        <?php if (!empty($attachments)): ?>
+        <div class="attachments-section">
+            <div class="attachments-title">
+                <i class="fas fa-paperclip"></i>
+                Attachments (<?= count($attachments) ?>)
+            </div>
+            <div class="attachment-list">
+                <?php foreach ($attachments as $attachment): ?>
+                <div class="attachment-item">
+                    <div class="attachment-icon">
+                        <i class="fas fa-file"></i>
+                    </div>
+                    <div class="attachment-info">
+                        <div class="attachment-name"><?= htmlspecialchars($attachment['original_filename']) ?></div>
+                        <div class="attachment-size"><?= formatFileSize($attachment['file_size']) ?></div>
+                    </div>
+                    <a href="download_attachment.php?id=<?= encryptFileId($attachment['id']) ?>" class="btn-download">
+                        <i class="fas fa-download"></i>
+                        Download
+                    </a>
+                </div>
+                <?php endforeach; ?>
+            </div>
         </div>
+        <?php endif; ?>
     </div>
 
     <script>
-        const emailId = <?= $emailId ?>;
-
-        function showLabelEditor() {
-            document.getElementById('labelDisplay').style.display = 'none';
-            document.getElementById('labelEditor').style.display = 'inline-flex';
+        function updateLabelData(select) {
+            const selectedOption = select.options[select.selectedIndex];
+            const labelName = selectedOption.getAttribute('data-name') || '';
+            const labelColor = selectedOption.getAttribute('data-color') || '';
+            
+            document.getElementById('label_name').value = labelName;
+            document.getElementById('label_color').value = labelColor;
         }
-
-        function hideLabelEditor() {
-            document.getElementById('labelDisplay').style.display = 'block';
-            document.getElementById('labelEditor').style.display = 'none';
-        }
-
-        async function saveLabel() {
-            const labelId = document.getElementById('labelSelect').value;
-
-            try {
-                const formData = new FormData();
-                formData.append('ajax', '1');
-                formData.append('email_id', emailId);
-                formData.append('label_id', labelId || '');
-
-                const response = await fetch('update_email_label.php', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    // Show success message
-                    const successMsg = document.getElementById('successMessage');
-                    successMsg.classList.add('active');
-
-                    // Reload page after short delay
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1000);
-                } else {
-                    alert('Failed to update label');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred');
-            }
-        }
-
-        // Auto-resize iframe to fit content
-        const iframe = document.getElementById('emailFrame');
-
-        iframe.addEventListener('load', function () {
-            try {
-                const contentHeight = iframe.contentWindow.document.body.scrollHeight + 40;
-                iframe.style.height = contentHeight + 'px';
-
-                const iframeDoc = iframe.contentWindow.document;
-                const style = iframeDoc.createElement('style');
-                style.textContent = `
-                    body {
-                        margin: 0;
-                        padding: 20px;
-                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-                        line-height: 1.6;
-                        color: #333;
-                    }
-                    img {
-                        max-width: 100%;
-                        height: auto;
-                    }
-                    table {
-                        border-collapse: collapse;
-                        max-width: 100%;
-                    }
-                `;
-                iframeDoc.head.appendChild(style);
-            } catch (e) {
-                console.error('Could not resize iframe:', e);
-                iframe.style.height = '800px';
-            }
-        });
-
-        // Handle back button with history
-        window.addEventListener('popstate', function () {
-            window.location.href = 'sent_history.php';
-        });
     </script>
 </body>
-
 </html>
