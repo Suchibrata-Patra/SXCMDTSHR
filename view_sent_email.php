@@ -121,6 +121,7 @@ if ($email['has_attachments']) {
             max-width: 900px;
             margin: 60px auto;
             padding: 0 40px;
+            background-color: #0071e3;
         }
 
         /* Action Buttons - Minimalist */
