@@ -354,6 +354,8 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
             color: #1c1c1e;
             margin: 0;
             padding: 0;
+            height: 100vh;
+            overflow: hidden;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
@@ -362,15 +364,18 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
         .app-container {
             display: flex;
             min-height: 100vh;
+            height: 100vh;
             width: 100%;
             background: var(--apple-bg);
+            overflow: hidden;
         }
 
         .main-content-wrapper {
             flex: 1;
             display: flex;
             flex-direction: column;
-            overflow-x: hidden;
+            overflow: hidden;
+            min-height: 0;
         }
 
         /* ========== MAIN CONTENT ========== */
@@ -379,6 +384,7 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            min-height: 0;
         }
 
         /* ========== HEADER ========== */
@@ -525,23 +531,37 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
             flex: 1;
             display: flex;
             overflow: hidden;
+            height: 100%;
+            min-height: 0;
         }
 
         .messages-pane {
-            width: 30%;
+            width: 40%;
             display: flex;
             flex-direction: column;
             border-right: 1px solid var(--border);
             background: white;
             overflow: hidden;
+            min-height: 0;
+            height: 100%;
         }
 
         .message-view-pane {
-            width: 70%;
+            width: 60%;
             display: flex;
             flex-direction: column;
             background: #FAFAFA;
             overflow: hidden;
+            min-height: 0;
+            height: 100%;
+        }
+
+        #messageViewContent {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-height: 0;
         }
 
         /* ========== TOOLBAR ========== */
@@ -634,6 +654,8 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
         .messages-area {
             flex: 1;
             overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 0;
         }
 
         .messages-container {
@@ -790,7 +812,9 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
         .message-view-body {
             flex: 1;
             overflow-y: auto;
+            overflow-x: hidden;
             padding: 20px;
+            min-height: 0;
         }
 
         .message-detail {
