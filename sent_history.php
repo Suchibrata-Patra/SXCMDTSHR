@@ -263,10 +263,10 @@ function getSentEmailById($emailId, $userEmail) {
 
 // Initial data load
 $messages = getSentEmails($userEmail, 50, 0) ?? [];
-// $totalCount = getSentEmailCount($userEmail) ?? 0;
-// $labeledCount = $totalCount - getUnlabeledEmailCount($userEmail);
-// $unlabeledCount = getUnlabeledEmailCount($userEmail) ?? 0;
-// $labels = getLabelCounts($userEmail) ?? [];
+$totalCount = getSentEmailCount($userEmail) ?? 0;
+$labeledCount = $totalCount - getUnlabeledEmailCount($userEmail);
+$unlabeledCount = getUnlabeledEmailCount($userEmail) ?? 0;
+$labels = getLabelCounts($userEmail) ?? [];
 
 ?>
 <!DOCTYPE html>
