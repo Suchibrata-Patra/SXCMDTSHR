@@ -111,7 +111,7 @@ if ($email['has_attachments']) {
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: rgb(239, 240, 243);
+            background-color: rgb(190, 190, 192);
             color: var(--apple-text);
             line-height: 1.47059;
             letter-spacing: -0.022em;
