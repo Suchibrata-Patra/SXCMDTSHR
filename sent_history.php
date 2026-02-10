@@ -37,7 +37,89 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
 
 // Check if filters are active
 $hasActiveFilters = !empty(array_filter($filters));
-
+/**
+ * Fetches sent emails for a specific user with support for filtering and pagination.
+ * * @param string $userEmail The email address of the sender.
+ * @param int $limit Number of records to return (default 50).
+ * @param int $offset Starting record index for pagination (default 0).
+ * @param array $filters Associative array of filters: 'search', 'recipient', 'label_id', 'date_from', 'date_to'.
+ * @return array Array of associative arrays containing email data and attachment stats.
+ */
+function getSentEmails($userEmail, $limit = 50, $offset = 0, $filters = []) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return [];
+        
+        // Base query with subqueries to get attachment details efficiently
+        $sql = "SELECT 
+                    se.*,
+                    (SELECT GROUP_CONCAT(original_filename SEPARATOR ', ')
+                     FROM sent_email_attachments sea
+                     WHERE sea.sent_email_id = se.id) as attachment_names,
+                    (SELECT COUNT(*)
+                     FROM sent_email_attachments sea
+                     WHERE sea.sent_email_id = se.id) as attachment_count
+                FROM sent_emails se
+                WHERE se.sender_email = :email
+                AND se.is_deleted = 0";
+        
+        $params = [':email' => $userEmail];
+        
+        // Apply Search Filter (Subject, Body, Recipient, or Article Title)
+        if (!empty($filters['search'])) {
+            $sql .= " AND (se.recipient_email LIKE :search 
+                        OR se.subject LIKE :search 
+                        OR se.body_text LIKE :search 
+                        OR se.article_title LIKE :search)";
+            $params[':search'] = '%' . $filters['search'] . '%';
+        }
+        
+        // Apply Specific Recipient Filter
+        if (!empty($filters['recipient'])) {
+            $sql .= " AND se.recipient_email LIKE :recipient";
+            $params[':recipient'] = '%' . $filters['recipient'] . '%';
+        }
+        
+        // Apply Label Filter
+        if (!empty($filters['label_id'])) {
+            if ($filters['label_id'] === 'unlabeled') {
+                $sql .= " AND se.label_id IS NULL";
+            } else {
+                $sql .= " AND se.label_id = :label_id";
+                $params[':label_id'] = $filters['label_id'];
+            }
+        }
+        
+        // Apply Date Range Filters
+        if (!empty($filters['date_from'])) {
+            $sql .= " AND DATE(se.sent_at) >= :date_from";
+            $params[':date_from'] = $filters['date_from'];
+        }
+        if (!empty($filters['date_to'])) {
+            $sql .= " AND DATE(se.sent_at) <= :date_to";
+            $params[':date_to'] = $filters['date_to'];
+        }
+        
+        // Order and Pagination
+        $sql .= " ORDER BY se.sent_at DESC LIMIT :limit OFFSET :offset";
+        
+        $stmt = $pdo->prepare($sql);
+        
+        // Bind all params including typed integers for LIMIT/OFFSET
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+        
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+    } catch (PDOException $e) {
+        error_log("Error in getSentEmails: " . $e->getMessage());
+        return [];
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
