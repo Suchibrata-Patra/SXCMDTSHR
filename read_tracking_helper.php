@@ -1,7 +1,7 @@
 <?php
 /**
- * Read Tracking Helper Functions
- * Provides utility functions for email tracking system
+ * Read Tracking Helper Functions - FIXED VERSION
+ * Handles both emails and sent_emails tables
  */
 
 /**
@@ -18,17 +18,17 @@ function generateTrackingToken() {
 function getBaseUrl() {
     // OPTION 1: Hardcoded URL (RECOMMENDED for production)
     // Uncomment and set your actual domain:
-    return 'https://hr.holidayseva.com';
+    // return 'https://yourdomain.com';
     
-    // // OPTION 2: Auto-detect (may fail behind load balancers/proxies)
-    // $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    // $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    // OPTION 2: Auto-detect (may fail behind load balancers/proxies)
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
     
-    // // Remove port if it's standard
-    // if (($protocol === 'https' && strpos($host, ':443') !== false) ||
-    //     ($protocol === 'http' && strpos($host, ':80') !== false)) {
-    //     $host = preg_replace('/:\d+$/', '', $host);
-    // }
+    // Remove port if it's standard
+    if (($protocol === 'https' && strpos($host, ':443') !== false) ||
+        ($protocol === 'http' && strpos($host, ':80') !== false)) {
+        $host = preg_replace('/:\d+$/', '', $host);
+    }
     
     return $protocol . '://' . $host;
 }
@@ -58,7 +58,7 @@ function injectTrackingPixel($emailBody, $trackingToken) {
 }
 
 /**
- * Initialize email tracking record
+ * Initialize email tracking record for EMAILS table
  * Creates a tracking record in email_read_tracking table
  */
 function initializeEmailTracking($emailId, $senderEmail, $recipientEmail) {
@@ -66,6 +66,14 @@ function initializeEmailTracking($emailId, $senderEmail, $recipientEmail) {
         $pdo = getDatabaseConnection();
         if (!$pdo) {
             error_log("Failed to get database connection in initializeEmailTracking");
+            return false;
+        }
+        
+        // Verify the email exists in emails table
+        $stmt = $pdo->prepare("SELECT id FROM emails WHERE id = ?");
+        $stmt->execute([$emailId]);
+        if (!$stmt->fetch()) {
+            error_log("Email ID $emailId does not exist in emails table - cannot create tracking record");
             return false;
         }
         
@@ -106,12 +114,157 @@ function initializeEmailTracking($emailId, $senderEmail, $recipientEmail) {
 }
 
 /**
- * Legacy support for sent_emails table
+ * Initialize tracking for SENT_EMAILS table (legacy)
+ * This creates a dummy email record in emails table first to satisfy foreign key
  */
 function initializeLegacyEmailTracking($sentEmailId, $senderEmail, $recipientEmail) {
-    // For backward compatibility with sent_emails table
-    // Use negative ID to distinguish from emails table
-    return initializeEmailTracking(-abs($sentEmailId), $senderEmail, $recipientEmail);
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) {
+            error_log("Failed to get database connection in initializeLegacyEmailTracking");
+            return false;
+        }
+        
+        // Check if sent_email exists
+        $stmt = $pdo->prepare("SELECT id, subject, message_body FROM sent_emails WHERE id = ?");
+        $stmt->execute([$sentEmailId]);
+        $sentEmail = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$sentEmail) {
+            error_log("Sent email ID $sentEmailId not found in sent_emails table");
+            return false;
+        }
+        
+        // Check if we already created a corresponding email record
+        $stmt = $pdo->prepare("
+            SELECT e.id, ert.tracking_token 
+            FROM emails e
+            LEFT JOIN email_read_tracking ert ON e.id = ert.email_id
+            WHERE e.message_id = ?
+        ");
+        
+        $legacyMessageId = "legacy_sent_email_{$sentEmailId}";
+        $stmt->execute([$legacyMessageId]);
+        $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($existing) {
+            // Already have tracking for this sent_email
+            if ($existing['tracking_token']) {
+                return $existing['tracking_token'];
+            }
+            // Has email record but no tracking, create tracking
+            return initializeEmailTracking($existing['id'], $senderEmail, $recipientEmail);
+        }
+        
+        // Create a corresponding record in emails table
+        $stmt = $pdo->prepare("
+            INSERT INTO emails (
+                email_uuid,
+                tracking_token,
+                message_id,
+                sender_email,
+                recipient_email,
+                subject,
+                body_html,
+                email_type,
+                email_date,
+                sent_at,
+                created_at
+            ) VALUES (
+                UUID(),
+                NULL,
+                ?,
+                ?,
+                ?,
+                ?,
+                ?,
+                'sent',
+                NOW(),
+                NOW(),
+                NOW()
+            )
+        ");
+        
+        $stmt->execute([
+            $legacyMessageId,
+            $senderEmail,
+            $recipientEmail,
+            $sentEmail['subject'] ?? 'Legacy Email',
+            $sentEmail['message_body'] ?? ''
+        ]);
+        
+        $newEmailId = $pdo->lastInsertId();
+        
+        error_log("Created email record ID $newEmailId for legacy sent_email ID $sentEmailId");
+        
+        // Now create tracking for this new email record
+        $trackingToken = initializeEmailTracking($newEmailId, $senderEmail, $recipientEmail);
+        
+        // Update sent_emails table with tracking token
+        if ($trackingToken) {
+            $stmt = $pdo->prepare("UPDATE sent_emails SET tracking_token = ? WHERE id = ?");
+            $stmt->execute([$trackingToken, $sentEmailId]);
+        }
+        
+        return $trackingToken;
+        
+    } catch (PDOException $e) {
+        error_log("Error initializing legacy email tracking: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * ALTERNATIVE: Initialize tracking WITHOUT foreign key requirement
+ * This modifies the tracking record to use a special email_id = 0 for legacy emails
+ * 
+ * WARNING: This requires removing or modifying the foreign key constraint!
+ */
+function initializeLegacyEmailTrackingNoFK($sentEmailId, $senderEmail, $recipientEmail) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) {
+            error_log("Failed to get database connection");
+            return false;
+        }
+        
+        // Check if tracking already exists for this sent_email
+        // Using negative email_id to indicate it's from sent_emails table
+        $legacyEmailId = -abs($sentEmailId);
+        
+        $stmt = $pdo->prepare("SELECT tracking_token FROM email_read_tracking WHERE email_id = ?");
+        $stmt->execute([$legacyEmailId]);
+        $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($existing) {
+            return $existing['tracking_token'];
+        }
+        
+        // Generate new tracking token
+        $trackingToken = generateTrackingToken();
+        
+        // Insert tracking record with negative ID (requires FK to be removed/modified)
+        $stmt = $pdo->prepare("
+            INSERT INTO email_read_tracking (
+                email_id, tracking_token, sender_email, recipient_email,
+                is_read, total_opens, valid_opens, created_at
+            ) VALUES (?, ?, ?, ?, 0, 0, 0, NOW())
+        ");
+        
+        $stmt->execute([$legacyEmailId, $trackingToken, $senderEmail, $recipientEmail]);
+        
+        // Update sent_emails table with tracking token
+        $stmt = $pdo->prepare("UPDATE sent_emails SET tracking_token = ? WHERE id = ?");
+        $stmt->execute([$trackingToken, $sentEmailId]);
+        
+        error_log("Initialized legacy tracking for sent_email ID: $sentEmailId, token: $trackingToken");
+        
+        return $trackingToken;
+        
+    } catch (PDOException $e) {
+        error_log("Error initializing legacy tracking (no FK): " . $e->getMessage());
+        return false;
+    }
 }
 
 /**
@@ -136,10 +289,35 @@ function getEmailReadStatus($emailId) {
 }
 
 /**
- * Legacy support
+ * Legacy support - get by sent_emails ID
  */
 function getLegacyEmailReadStatus($sentEmailId) {
-    return getEmailReadStatus(-abs($sentEmailId));
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return null;
+        
+        // First try to find via message_id
+        $legacyMessageId = "legacy_sent_email_{$sentEmailId}";
+        $stmt = $pdo->prepare("
+            SELECT ert.* 
+            FROM email_read_tracking ert
+            JOIN emails e ON ert.email_id = e.id
+            WHERE e.message_id = ?
+        ");
+        $stmt->execute([$legacyMessageId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($result) {
+            return $result;
+        }
+        
+        // If not found, try negative ID approach
+        return getEmailReadStatus(-abs($sentEmailId));
+        
+    } catch (PDOException $e) {
+        error_log("Error getting legacy read status: " . $e->getMessage());
+        return null;
+    }
 }
 
 /**
@@ -261,10 +439,42 @@ function isLikelyProxy($ipAddress) {
         return true;
     }
     
-    // Could add more sophisticated proxy detection here
-    // For now, just flag private IPs
-    
     return false;
 }
 
+/**
+ * Database connection helper
+ */
+function getDatabaseConnection() {
+    // Try to use existing connection function from db_config.php
+    if (function_exists('getDBConnection')) {
+        return getDBConnection();
+    }
+    
+    // Fallback - should match your db_config.php credentials
+    try {
+        // Update these values to match your database
+        $host = 'localhost';
+        $dbname = 'u955994755_SXC_MDTS';
+        $username = 'your_username';  // CHANGE THIS
+        $password = 'your_password';  // CHANGE THIS
+        
+        $pdo = new PDO(
+            "mysql:host=$host;dbname=$dbname;charset=utf8mb4",
+            $username,
+            $password,
+            [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false
+            ]
+        );
+        
+        return $pdo;
+        
+    } catch (PDOException $e) {
+        error_log("Database connection failed: " . $e->getMessage());
+        return null;
+    }
+}
 ?>
