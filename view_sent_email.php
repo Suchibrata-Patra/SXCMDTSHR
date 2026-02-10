@@ -77,29 +77,26 @@ $attachments = [];
 if ($email['has_attachments']) {
     $attachments = getSentEmailAttachments($emailId);
 }
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>
-        <?= htmlspecialchars($email['subject']) ?> - SXC MDTS
-    </title>
+    <title><?= htmlspecialchars($email['subject']) ?> - SXC MDTS</title>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    
     <style>
         :root {
-            --apple-bg: #F5F5F7;
-            --apple-card: rgba(255, 255, 255, 0.8);
-            --apple-blue: #0071e3;
-            --apple-text: #1d1d1f;
-            --apple-text-secondary: #86868b;
-            --apple-border: rgba(0, 0, 0, 0.08);
+            --sf-blue: #007AFF;
+            --sf-gray: #8E8E93;
+            --sf-bg: #F2F2F7;
+            --sf-card: rgba(255, 255, 255, 0.72);
+            --sf-border: rgba(0, 0, 0, 0.08);
+            --text-main: #1D1D1F;
+            --text-secondary: #6E6E73;
         }
 
         * {
@@ -110,390 +107,322 @@ if ($email['has_attachments']) {
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: rgb(190, 190, 192);
-            color: var(--apple-text);
-            line-height: 1.47059;
-            letter-spacing: -0.022em;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+            background-color: var(--sf-bg);
+            color: var(--text-main);
+            overflow-x: hidden;
         }
 
-        .container {
-            max-width: 900px;
-            margin: 5px auto;
-            padding: 0 40px;
-        }
-
-        /* Action Buttons - Minimalist */
-        .action-buttons {
+        /* Top Navigation Bar (Frosted Glass) */
+        .top-nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(242, 242, 247, 0.8);
+            backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 0.5px solid var(--sf-border);
+            padding: 12px 24px;
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 16px;
-            margin-bottom: 5px;
         }
 
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 16px;
-            border-radius: 980px;
-            /* Highly rounded pill buttons */
-            font-weight: 400;
-            font-size: 14px;
-            text-decoration: none;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        .nav-left { display: flex; align-items: center; gap: 12px; }
+
+        .btn-icon {
+            background: none;
             border: none;
-            cursor: pointer;
-        }
-
-        .btn-primary {
-            background: var(--apple-blue);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #0077ed;
-            opacity: 0.9;
-        }
-
-        .btn-secondary {
-            background: rgba(0, 0, 0, 0.05);
-            color: var(--apple-blue);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(0, 0, 0, 0.1);
-        }
-
-        .btn-danger {
-            background: transparent;
-            color: #ff3b30;
-        }
-
-        .btn-danger:hover {
-            background: rgba(255, 59, 48, 0.1);
-        }
-
-        /* Email Header */
-        .email-header {
-            background: var(--apple-card);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 24px;
-            padding: 40px;
-            margin-bottom: 24px;
-            border: 1px solid var(--apple-border);
-        }
-
-        .email-subject {
-            font-size: 32px;
-            font-weight: 700;
-            letter-spacing: -0.015em;
-            color: var(--apple-text);
-            margin-bottom: 24px;
-        }
-
-        .email-meta {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            padding-top: 24px;
-            border-top: 1px solid var(--apple-border);
-        }
-
-        .meta-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 13px;
-            color: var(--apple-text-secondary);
-        }
-
-        .meta-label {
-            font-weight: 500;
-            color: var(--apple-text);
-            width: 50px;
-            display: inline-block;
-        }
-
-        /* Label Badge */
-        .label-badge {
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        /* Email Body */
-        .email-body {
-            background: white;
-            border-radius: 24px;
-            padding: 40px;
-            margin-bottom: 24px;
-            border: 1px solid var(--apple-border);
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.02);
-        }
-
-        .article-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 24px;
-            color: var(--apple-text);
-        }
-
-        .email-content {
+            color: var(--sf-blue);
             font-size: 17px;
-            line-height: 1.6;
-            color: #333;
-        }
-
-        /* Attachments - Glassmorphic Cards */
-        .attachments-section {
-            background: var(--apple-card);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            padding: 32px;
-            border: 1px solid var(--apple-border);
-        }
-
-        .attachments-title {
-            font-size: 15px;
-            font-weight: 600;
-            margin-bottom: 20px;
-            color: var(--apple-text-secondary);
             display: flex;
             align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 400;
+            transition: opacity 0.2s;
+        }
+
+        .btn-icon:hover { opacity: 0.7; }
+
+        /* Main Content Wrapper */
+        .viewport {
+            max-width: 860px;
+            margin: 32px auto;
+            padding: 0 20px;
+            animation: slideUp 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Email Card Layout */
+        .mail-sheet {
+            background: #FFFFFF;
+            border-radius: 18px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.04);
+            border: 0.5px solid var(--sf-border);
+            overflow: hidden;
+        }
+
+        .header-section {
+            padding: 32px 40px;
+            border-bottom: 0.5px solid var(--sf-border);
+            background: linear-gradient(to bottom, #ffffff, #fafafa);
+        }
+
+        .subject-line {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+
+        .meta-container {
+            display: grid;
             gap: 8px;
         }
 
-        .attachments-grid {
+        .meta-row {
+            display: flex;
+            font-size: 14px;
+            align-items: baseline;
+        }
+
+        .meta-key {
+            color: var(--text-secondary);
+            width: 60px;
+            flex-shrink: 0;
+        }
+
+        .meta-value {
+            color: var(--text-main);
+            font-weight: 400;
+        }
+
+        .meta-value .email-addr {
+            color: var(--sf-gray);
+            font-size: 13px;
+        }
+
+        .date-pill {
+            margin-top: 12px;
+            font-size: 12px;
+            color: var(--sf-gray);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Body Content */
+        .content-section {
+            padding: 40px;
+            font-size: 17px;
+            line-height: 1.6;
+            color: #3A3A3C;
+        }
+
+        .content-section img {
+            max-width: 100%;
+            border-radius: 12px;
+        }
+
+        /* Attachments Section - Apple Style Cells */
+        .attachment-area {
+            background: #F9F9F9;
+            padding: 24px 40px;
+            border-top: 0.5px solid var(--sf-border);
+        }
+
+        .attachment-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+        }
+
+        .attachment-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 16px;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
         }
 
-        .attachment-card {
-            background: rgba(255, 255, 255, 0.5);
-            border: 1px solid var(--apple-border);
-            border-radius: 18px;
-            padding: 16px;
-            transition: all 0.3s ease;
-            text-align: center;
-        }
-
-        .attachment-card:hover {
+        .attachment-cell {
             background: white;
-            transform: scale(1.02);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            border: 0.5px solid var(--sf-border);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
         }
 
-        .attachment-icon {
+        .attachment-cell:hover {
+            background: #F2F2F7;
+        }
+
+        .attachment-cell:active {
+            transform: scale(0.98);
+        }
+
+        .file-icon-box {
             width: 40px;
             height: 40px;
-            background: transparent;
-            margin: 0 auto 12px;
+            background: var(--sf-blue);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
         }
 
-        .attachment-icon .material-icons {
-            font-size: 32px;
-            color: var(--apple-blue);
-        }
-
-        .attachment-name {
-            font-size: 13px;
+        .file-info { overflow: hidden; }
+        .file-name {
+            font-size: 14px;
             font-weight: 500;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            margin-bottom: 4px;
+        }
+        .file-size {
+            font-size: 12px;
+            color: var(--sf-gray);
         }
 
-        .attachment-size {
-            font-size: 11px;
-            color: var(--apple-text-secondary);
+        /* Danger Action */
+        .btn-delete {
+            background: #FF3B30;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
         }
 
-        @media (max-width: 768px) {
-            .container {
-                padding: 20px;
-                margin-top: 20px;
-            }
-
-            .email-meta {
-                grid-template-columns: 1fr;
-            }
-
-            .email-subject {
-                font-size: 26px;
-            }
-        }
-
-        @media print {
-            .action-buttons {
-                display: none;
-            }
-
-            body {
-                background: white;
-            }
-
-            .email-header,
-            .email-body,
-            .attachments-section {
-                border: none;
-                box-shadow: none;
-                padding: 20px 0;
-            }
+        @media (max-width: 600px) {
+            .header-section, .content-section, .attachment-area { padding: 24px; }
+            .subject-line { font-size: 22px; }
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <div class="action-buttons">
-            <a href="sent_history.php" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i>
-                Back to Sent Emails
+    <nav class="top-nav">
+        <div class="nav-left">
+            <a href="sent_history.php" class="btn-icon">
+                <span class="material-icons-round">arrow_back_ios</span>
+                Sent
             </a>
-            <button onclick="window.print()" class="btn btn-primary">
-                <i class="fas fa-print"></i>
-                Print
+        </div>
+        <div class="nav-right" style="display: flex; gap: 20px;">
+            <button onclick="window.print()" class="btn-icon">
+                <span class="material-icons-round">print</span>
             </button>
-            <button onclick="deleteEmail()" class="btn btn-danger">
-                <i class="fas fa-trash"></i>
-                Delete
+            <button onclick="deleteEmail()" class="btn-icon" style="color: #FF3B30;">
+                <span class="material-icons-round">delete_outline</span>
             </button>
         </div>
+    </nav>
 
-        <div class="email-header">
-            <h1 class="email-subject">
-                <?= htmlspecialchars($email['subject']) ?>
-            </h1>
-
-            <div class="email-meta">
-                <div class="meta-item">
-                    <span class="material-icons">person</span>
-                    <span>
-                        <span class="meta-label">From:</span>
-                        <?= htmlspecialchars($email['sender_name'] ?? $email['sender_email']) ?>
-                        &lt;
-                        <?= htmlspecialchars($email['sender_email']) ?>&gt;
-                    </span>
+    <main class="viewport">
+        <article class="mail-sheet">
+            <header class="header-section">
+                <h1 class="subject-line"><?= htmlspecialchars($email['subject']) ?></h1>
+                
+                <div class="meta-container">
+                    <div class="meta-row">
+                        <span class="meta-key">From</span>
+                        <span class="meta-value">
+                            <strong><?= htmlspecialchars($email['sender_name'] ?? 'Unknown') ?></strong> 
+                            <span class="email-addr">&lt;<?= htmlspecialchars($email['sender_email']) ?>&gt;</span>
+                        </span>
+                    </div>
+                    <div class="meta-row">
+                        <span class="meta-key">To</span>
+                        <span class="meta-value"><?= htmlspecialchars($email['recipient_email']) ?></span>
+                    </div>
+                    <?php if (!empty($email['cc_list'])): ?>
+                    <div class="meta-row">
+                        <span class="meta-key">Cc</span>
+                        <span class="meta-value"><?= htmlspecialchars($email['cc_list']) ?></span>
+                    </div>
+                    <?php endif; ?>
                 </div>
 
-                <div class="meta-item">
-                    <span class="material-icons">email</span>
-                    <span>
-                        <span class="meta-label">To:</span>
-                        <?= htmlspecialchars($email['recipient_email']) ?>
-                    </span>
+                <div class="date-pill">
+                    <?= date('l, M j, Y • g:i A', strtotime($email['sent_at'])) ?>
                 </div>
+            </header>
 
-                <?php if (!empty($email['cc_list'])): ?>
-                <div class="meta-item">
-                    <span class="material-icons">group</span>
-                    <span>
-                        <span class="meta-label">CC:</span>
-                        <?= htmlspecialchars($email['cc_list']) ?>
-                    </span>
-                </div>
+            <section class="content-section">
+                <?php if (!empty($email['article_title'])): ?>
+                    <h2 style="margin-bottom: 20px; font-weight: 600;"><?= htmlspecialchars($email['article_title']) ?></h2>
                 <?php endif; ?>
 
-                <div class="meta-item">
-                    <span class="material-icons">schedule</span>
-                    <span>
-                        <?= date('M d, Y h:i A', strtotime($email['sent_at'])) ?>
-                    </span>
+                <div class="email-text">
+                    <?php 
+                        if (!empty($email['body_html'])) {
+                            echo $email['body_html']; 
+                        } else {
+                            echo nl2br(htmlspecialchars($email['body_text'] ?? 'No content'));
+                        }
+                    ?>
                 </div>
+            </section>
 
-                <?php if (!empty($email['label_name'])): ?>
-                <div class="meta-item">
-                    <span class="label-badge"
-                        style="background: <?= htmlspecialchars($email['label_color'] ?? '#6b7280') ?>">
-                        <?= htmlspecialchars($email['label_name']) ?>
-                    </span>
+            <?php if (!empty($attachments)): ?>
+            <footer class="attachment-area">
+                <div class="attachment-label">Attachments (<?= count($attachments) ?>)</div>
+                <div class="attachment-grid">
+                    <?php foreach ($attachments as $attachment): ?>
+                    <div class="attachment-cell" onclick="downloadAttachment('<?= htmlspecialchars($attachment['file_path']) ?>', '<?= htmlspecialchars($attachment['original_filename']) ?>')">
+                        <div class="file-icon-box">
+                            <span class="material-icons-round">description</span>
+                        </div>
+                        <div class="file-info">
+                            <div class="file-name"><?= htmlspecialchars($attachment['original_filename']) ?></div>
+                            <div class="file-size"><?= formatFileSize($attachment['file_size']) ?></div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
                 </div>
-                <?php endif; ?>
-            </div>
-        </div>
-
-        <div class="email-body">
-            <?php if (!empty($email['article_title'])): ?>
-            <div class="article-title">
-                <?= htmlspecialchars($email['article_title']) ?>
-            </div>
+            </footer>
             <?php endif; ?>
-
-            <div class="email-content">
-                <?php 
-                if (!empty($email['body_html'])) {
-                    echo $email['body_html'];
-                } else {
-                    echo nl2br(htmlspecialchars($email['body_text'] ?? 'No content'));
-                }
-                ?>
-            </div>
-        </div>
-
-        <?php if (!empty($attachments)): ?>
-        <div class="attachments-section">
-            <div class="attachments-title">
-                <span class="material-icons">attach_file</span>
-                Attachments (
-                <?= count($attachments) ?>)
-            </div>
-
-            <div class="attachments-grid">
-                <?php foreach ($attachments as $attachment): ?>
-                <div class="attachment-card"
-                    onclick="downloadAttachment('<?= htmlspecialchars($attachment['file_path']) ?>', '<?= htmlspecialchars($attachment['original_filename']) ?>')">
-                    <div class="attachment-icon">
-                        <span class="material-icons">insert_drive_file</span>
-                    </div>
-                    <div class="attachment-name">
-                        <?= htmlspecialchars($attachment['original_filename']) ?>
-                    </div>
-                    <div class="attachment-size">
-                        <?= formatFileSize($attachment['file_size']) ?>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        <?php endif; ?>
-    </div>
+        </article>
+    </main>
 
     <script>
         function downloadAttachment(filePath, filename) {
             const link = document.createElement('a');
             link.href = filePath;
             link.download = filename;
+            document.body.appendChild(link);
             link.click();
+            document.body.removeChild(link);
         }
 
         function deleteEmail() {
-            if (!confirm('Are you sure you want to delete this email?')) {
-                return;
+            // Pro-level confirmation (Native style)
+            if (confirm('Delete Message?\nThis action cannot be undone.')) {
+                fetch('sent_history.php?action=delete&id=<?= $emailId ?>')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            window.location.href = 'sent_history.php';
+                        } else {
+                            alert('Something went wrong.');
+                        }
+                    });
             }
-
-            fetch('sent_history.php?action=delete&id=<?= $emailId ?>')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('Email deleted successfully');
-                        window.location.href = 'sent_history.php';
-                    } else {
-                        alert('Failed to delete email');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Failed to delete email');
-                });
         }
     </script>
 </body>
-
 </html>
