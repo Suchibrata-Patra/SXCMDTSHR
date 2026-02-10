@@ -1,794 +1,582 @@
-<!DOCTYPE html
-    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<?php
+// view_sent_email.php - View single sent email (Simplified 2-Table Version)
+session_start();
+require 'config.php';
+require 'db_config.php';
+
+// Security check
+if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
+    header("Location: login.php");
+    exit();
+}
+
+$userEmail = $_SESSION['smtp_user'];
+
+// Get email ID
+$emailId = isset($_GET['id']) ? intval($_GET['id']) : 0;
+
+if (!$emailId) {
+    header("Location: sent_history.php");
+    exit();
+}
+
+// Fetch email from database - SIMPLIFIED
+try {
+
+    model of teh thinsgs to be debveloped 
+    $pdo = getDatabaseConnection();
+    if (!$pdo) {
+        die("Database connection failed");
+    }
+    
+    // Single table query - much simpler!
+    $email = getSentEmailById($emailId, $userEmail);
+    
+    if (!$email) {
+        header("Location: sent_history.php");
+        exit();
+    }
+    
+    // Get attachments if any
+    $attachments = [];
+    if ($email['has_attachments']) {
+        $attachments = getSentEmailAttachments($pdo, $emailId);
+    }
+    
+} catch (PDOException $e) {
+    error_log("Error fetching email: " . $e->getMessage());
+    die("Error loading email");
+}
+
+// Get all unique labels for the dropdown (from sent_emails table)
+$allLabels = getUserLabelsFromSentEmails($userEmail);
+
+// Handle label update
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_label'])) {
+    $newLabelId = !empty($_POST['label_id']) ? intval($_POST['label_id']) : null;
+    $newLabelName = !empty($_POST['label_name']) ? trim($_POST['label_name']) : null;
+    $newLabelColor = !empty($_POST['label_color']) ? trim($_POST['label_color']) : null;
+    
+    if (updateSentEmailLabel($pdo, $emailId, $newLabelId, $newLabelName, $newLabelColor)) {
+        $_SESSION['success_message'] = 'Label updated successfully';
+        header("Location: view_sent_email.php?id=$emailId");
+        exit();
+    } else {
+        $_SESSION['error_message'] = 'Failed to update label';
+    }
+}
+function getSentEmailById($emailId, $userEmail) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return null;
+        
+        $stmt = $pdo->prepare("
+            SELECT * FROM sent_emails_new
+            WHERE id = :id AND sender_email = :email AND is_deleted = 0
+        ");
+        
+        $stmt->execute([
+            'id' => $emailId,
+            'email' => $userEmail
+        ]);
+        
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+        
+    } catch (PDOException $e) {
+        error_log("Error getting sent email: " . $e->getMessage());
+        return null;
+    }
+}
+function getUserLabelsFromSentEmails($userEmail) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return [];
+        
+        $stmt = $pdo->prepare("
+            SELECT DISTINCT
+                label_id as id,
+                label_name,
+                label_color
+            FROM sent_emails_new
+            WHERE sender_email = :email
+            AND is_deleted = 0
+            AND label_id IS NOT NULL
+            ORDER BY label_name
+        ");
+        
+        $stmt->execute(['email' => $userEmail]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+    } catch (PDOException $e) {
+        error_log("Error getting user labels: " . $e->getMessage());
+        return [];
+    }
+}
+
+?>
+<!DOCTYPE html>
+<html lang="en">
 
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="x-apple-disable-message-reformatting" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <title>St. Xavier's College (Autonomous) - Official Communication</title>
-    <style type="text/css">
-        /* Reset and Client Fixes */
-        body {
-            margin: 0 !important;
-            padding: 0 !important;
-            width: 100% !important;
-            -webkit-text-size-adjust: 100%;
-            -ms-text-size-adjust: 100%;
-        }
-
-        table {
-            border-collapse: collapse !important;
-            mso-table-lspace: 0pt;
-            mso-table-rspace: 0pt;
-        }
-
-        img {
-            border: 0;
-            outline: none;
-            text-decoration: none;
-            -ms-interpolation-mode: bicubic;
-            display: block;
-        }
-
-        a {
-            text-decoration: none;
-            color: #226799;
-        }
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <?= htmlspecialchars($email['subject']) ?> - SXC MDTS
+    </title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
         * {
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-
-        /* Base Styles - Nature Exact Match */
-        body,
-        #bodyTable {
-            height: 100% !important;
-            width: 100% !important;
-            background-color: #ffffff;
-        }
-
-        /* Typography - Nature's Exact Fonts */
-        .sans-serif {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-        }
-
-        .serif {
-            font-family: 'Merriweather', 'Georgia', serif;
-        }
-
-        /* Nature Header - Exact Match */
-        .nature-header {
-            background-color: #ffffff;
-            border-bottom: 5px solid #000000;
-            padding: 0;
-        }
-
-        .nature-logo {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-size: 48px;
-            font-weight: 900;
-            color: #000000;
-            margin: 0;
-            padding: 15px 0 15px 96px;
-            letter-spacing: -1px;
-            line-height: 1;
-        }
-
-        .college-name {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-size: 24px;
-            font-weight: 900;
-            color: #000000;
             margin: 0;
             padding: 0;
-            letter-spacing: -0.5px;
-            line-height: 1.2;
+            box-sizing: border-box;
         }
 
-        .college-credentials {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-size: 11px;
-            color: #444444;
-            line-height: 1.6;
-            margin: 8px 0 0 0;
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f6f8fc;
+            min-height: 100vh;
         }
 
-        /* Navigation Bar */
-        .nav-bar {
-            background-color: #ffffff;
-            border-bottom: 3px solid #000000;
-            padding: 18px 96px;
+        .top-nav {
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
 
-        .nav-item {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-size: 15px;
-            color: #000000;
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            color: #5f6368;
+            text-decoration: none;
+            font-size: 14px;
             font-weight: 500;
-            display: inline;
-            margin-right: 35px;
+            transition: all 0.15s;
         }
 
-        /* Breadcrumb */
-        .breadcrumb-section {
-            background-color: #fafafa;
-            padding: 18px 96px;
+        .back-button:hover {
+            background: #f8f9fa;
+            border-color: #bdc1c6;
+        }
+
+        .email-subject-nav {
+            font-size: 18px;
+            font-weight: 600;
+            color: #202124;
+        }
+
+        .email-container {
+            max-width: 900px;
+            margin: 24px auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e5e7eb;
+            overflow: hidden;
+        }
+
+        .email-header {
+            padding: 24px;
             border-bottom: 1px solid #e0e0e0;
         }
 
-        .breadcrumb {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-size: 13px;
-            color: #666666;
-            margin: 0;
-        }
-
-        .breadcrumb a {
-            color: #226799;
-            text-decoration: none;
-        }
-
-        /* Main Content Container */
-        .content-wrapper {
-            max-width: 1440px;
-            margin: 0 auto;
-            padding: 0;
-            background-color: #ffffff;
-        }
-
-        .content-grid {
-            padding: 40px 96px;
-        }
-
-        /* Left Column - Main Content */
-        .main-content {
-            width: 65%;
-            padding-right: 60px;
-        }
-
-        /* Right Sidebar */
-        .sidebar {
-            width: 35%;
-            padding-left: 30px;
-            border-left: 1px solid #e0e0e0;
-        }
-
-        /* Article Metadata */
-        .article-meta {
-            margin: 10px 0 10px 0;
-        }
-
-        .article-type {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-size: 13px;
-            color: #000000;
-            font-weight: 600;
-            display: inline;
-            margin-right: 10px;
-        }
-
-        .open-access-badge {
-            display: inline;
-            background-color: #ffffff;
-            border: 1px solid #c77700;
-            color: #c77700;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-size: 10px;
-            font-weight: 600;
-            padding: 4px 7px;
-            margin-right: 8px;
-            text-transform: capitalize;
-            border-radius: 4px;
-        }
-
-        .published-date {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-size: 11px;
-            color: #666666;
-            display: inline;
-        }
-
-        /* Article Title */
-        .article-title {
-            font-family: 'Merriweather', 'Georgia', serif;
-            font-size: 1.875rem;
-            font-weight: 700;
-            color: #000000;
-            margin: 1.2rem 0 28px 0;
-            line-height: 1.2;
-            letter-spacing: -0.5px;
-        }
-
-        /* Authors */
-        .authors {
-            margin: 0 0 20px 0;
-        }
-
-        .author-name {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-size: 15px;
-            color: #226799;
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .author-separator {
-            color: #000000;
-            margin: 0 5px;
-            font-weight: 600;
-        }
-
-        /* Journal Citation */
-        .journal-citation {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-size: 14px;
-            color: #000000;
-            margin: 0 0 35px 0;
-        }
-
-        .journal-name {
-            font-style: italic;
-            color: #226799;
-            text-decoration: none;
-        }
-
-        .cite-link {
-            color: #226799;
-            text-decoration: none;
-            margin-left: 15px;
-        }
-
-        /* Section Headings */
-        .section-heading {
-            font-family: 'Merriweather', 'Georgia', serif;
+        .email-subject {
             font-size: 24px;
             font-weight: 700;
-            color: #000000;
-            margin: 45px 0 25px 0;
-            line-height: 1.3;
+            color: #202124;
+            margin-bottom: 16px;
         }
 
-        /* Body Text - Nature Exact Style */
-        .body-text {
-            font-family: 'Merriweather', 'Georgia', serif;
-            font-size: 18px;
-            color: #222222;
-            line-height: 1.75;
-            margin: 0 0 22px 0;
-            font-weight: 400;
+        .label-section {
+            margin-bottom: 16px;
         }
 
-        .body-text sup {
-            font-size: 12px;
-            vertical-align: super;
-            line-height: 0;
-        }
-
-        .body-text a {
-            color: #226799;
-            text-decoration: none;
-        }
-
-        /* Sidebar Elements */
-        .sidebar-download-btn {
-            background-color: #226799;
-            color: #ffffff !important;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-size: 15px;
+        .label-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: 16px;
+            font-size: 13px;
             font-weight: 600;
-            text-decoration: none;
-            display: block;
-            padding: 14px 20px;
-            text-align: center;
-            margin: 0 0 30px 0;
-            border: 1.5px solid #226799;
+            color: white;
         }
 
-        .sidebar-download-btn:hover {
-            background-color: #ffffff;
-            color: #226799 !important;
+        .label-editor {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
         }
 
+        .label-select {
+            padding: 8px 12px;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
 
-        .sidebar-section-title {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        .btn-save-label {
+            padding: 8px 16px;
+            background: #007AFF;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-save-label:hover {
+            background: #0056b3;
+        }
+
+        .email-meta {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .meta-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .meta-value {
+            font-size: 14px;
+            color: #1c1c1e;
+            font-weight: 500;
+        }
+
+        .email-body {
+            padding: 24px;
+        }
+
+        .article-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1c1c1e;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f3f4f6;
+        }
+
+        .email-content {
+            font-size: 15px;
+            line-height: 1.7;
+            color: #374151;
+        }
+
+        .attachments-section {
+            padding: 24px;
+            border-top: 1px solid #e0e0e0;
+            background: #f9fafb;
+        }
+
+        .attachments-title {
             font-size: 16px;
             font-weight: 700;
-            color: #000000;
-            margin: 0 0 15px 0;
-            padding-bottom: 12px;
-            border-bottom: 2px solid #e0e0e0;
+            color: #1c1c1e;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .sidebar-tab {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        .attachment-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .attachment-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .attachment-item:hover {
+            border-color: #007AFF;
+            box-shadow: 0 2px 8px rgba(0, 122, 255, 0.1);
+        }
+
+        .attachment-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f3f4f6;
+            border-radius: 8px;
+            color: #6b7280;
+        }
+
+        .attachment-info {
+            flex: 1;
+        }
+
+        .attachment-name {
             font-size: 14px;
             font-weight: 600;
-            color: #000000;
-            display: inline-block;
-            margin-right: 20px;
-            padding-bottom: 10px;
-            border-bottom: 3px solid #000000;
+            color: #1c1c1e;
         }
 
-        .sidebar-link {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-size: 14px;
-            color: #145482;
-            text-decoration: none;
-            display: block;
-            font-weight: 500;
-            margin: 0 0 12px 0;
-            line-height: 1.5;
-        }
-
-        .sidebar-link:hover {
-            text-decoration: underline;
-        }
-
-        /* Footer */
-        .footer-wrapper {
-            background-color: #0d324b;
-            border-top: 1px solid #e0e0e0;
-            padding: 45px 96px;
-        }
-
-        .footer-content {
-            max-width: 1440px;
-            margin: 0 auto;
-        }
-
-        .footer-section-heading {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        .attachment-size {
             font-size: 12px;
-            font-weight: 700;
-            color: #ffffff;
-            margin: 0 0 15px 0;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
+            color: #6b7280;
         }
 
-        .footer-text {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        .btn-download {
+            padding: 6px 12px;
+            background: #007AFF;
+            color: white;
+            border: none;
+            border-radius: 6px;
             font-size: 13px;
-            color: #ffffff;
-            line-height: 1.7;
-            margin: 0 0 10px 0;
-        }
-
-        .footer-link {
-            color: white !important;
+            font-weight: 600;
+            cursor: pointer;
             text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .footer-divider {
-            height: 1px;
-            background-color: #eaeaea;
-            margin: 35px 0;
+        .btn-download:hover {
+            background: #0056b3;
         }
 
-        /* Mobile-specific visibility classes */
-        .mobile-only {
-            display: none !important;
+        .success-message {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .desktop-only {
-            /* display: block !important; */
+        .error-message {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        /* Responsive Design */
-        @media only screen and (max-width: 1024px) {
-            .nature-logo {
-                padding-left: 40px !important;
-            }
-
-            .nav-bar {
-                padding: 18px 40px !important;
-            }
-
-            .breadcrumb-section {
-                padding: 18px 40px !important;
-            }
-
-            .content-grid {
-                padding: 40px 40px !important;
-            }
-
-            .footer-wrapper {
-                padding: 45px 40px !important;
-            }
-
-            .main-content {
-                width: 60% !important;
-                padding-right: 40px !important;
-            }
-
-            .sidebar {
-                width: 40% !important;
-            }
-        }
-
-        @media only screen and (max-width: 768px) {
-            .nature-logo {
-                font-size: 36px !important;
-                padding: 12px 0 12px 25px !important;
-            }
-
-            .college-name {
-                font-size: 18px !important;
-            }
-
-            .college-credentials {
-                font-size: 9px !important;
-                line-height: 1.5 !important;
-            }
-
-            .open-access-badge {
-                font-size: 9px !important;
-                padding: 3px 6px !important;
-            }
-
-            .published-date {
-                font-size: 9px !important;
-            }
-
-            .nav-bar {
-                padding: 15px 25px !important;
-            }
-
-            .nav-item {
-                font-size: 13px !important;
-                margin-right: 20px !important;
-            }
-
-            .breadcrumb-section {
-                padding: 15px 25px !important;
-            }
-
-            .content-grid {
-                display: block !important;
-                padding: 0px 25px !important;
-            }
-
-            .main-content {
-                width: 100% !important;
-                padding-right: 0 !important;
-                margin-bottom: 40px !important;
-            }
-
-            .sidebar {
-                width: 100% !important;
-                padding-left: 0 !important;
-                border-left: none !important;
-                border-top: 1px solid #e0e0e0 !important;
-                padding-top: 30px !important;
-            }
-
-            .article-title {
-                font-size: 30px !important;
-            }
-
-            .body-text {
-                font-size: 16px !important;
-            }
-
-            .footer-wrapper {
-                padding: 35px 25px !important;
-            }
-
-            /* Mobile layout reordering */
-            .mobile-only {
-                display: block !important;
-            }
-
-            .desktop-only {
-                display: none !important;
-            }
-
-            /* Mobile button styling */
-            .mobile-only .sidebar-download-btn {
-                margin: 20px 0 3px 0 !important;
-            }
-
-            /* Mobile sections styling */
-            .sidebar {
-                order: 2 !important;
-            }
-        }
-
-        @media only screen and (max-width: 480px) {
-            .nature-logo {
-                font-size: 32px !important;
-                padding: 10px 0 10px 20px !important;
-            }
-
-            .college-name {
-                font-size: 16px !important;
-            }
-
-            .college-credentials {
-                font-size: 8px !important;
-                line-height: 1.4 !important;
-            }
-
-            .open-access-badge {
-                font-size: 8px !important;
-                padding: 3px 5px !important;
-            }
-
-            .published-date {
-                font-size: 8px !important;
-            }
-
-            .nav-item {
-                display: block !important;
-                margin-bottom: 10px !important;
-            }
-
-            .article-title {
-                font-size: 1.2rem !important;
-            }
-
-            .section-heading {
-                font-size: 1.1rem !important;
-            }
-
-            .body-text {
-                font-size: 15px !important;
-            }
-
-            .open-access-badge {
-                display: block !important;
-                margin: 10px 0 !important;
+        @media (max-width: 768px) {
+            .email-meta {
+                grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 
-<body style="margin: 0; padding: 0; background-color: #ffffff;">
+<body>
+    <div class="top-nav">
+        <div class="nav-left">
+            <a href="sent_history.php" class="back-button">
+                <i class="fas fa-arrow-left"></i>
+                Back to Sent Emails
+            </a>
+            <span class="email-subject-nav">
+                <?= htmlspecialchars($email['subject']) ?>
+            </span>
+        </div>
+    </div>
 
-    <table border="0" cellpadding="0" cellspacing="0" width="100%" id="bodyTable">
-        <tr>
-            <td>
+    <div class="email-container">
+        <div class="email-header">
+            <?php if (isset($_SESSION['success_message'])): ?>
+            <div class="success-message">
+                <i class="fas fa-check-circle"></i>
+                <?= htmlspecialchars($_SESSION['success_message']) ?>
+            </div>
+            <?php unset($_SESSION['success_message']); endif; ?>
 
-                <!-- Nature Header -->
-                <table border="0" cellpadding="0" cellspacing="0" width="100%" class="nature-header">
-                    <tr>
-                        <td>
-                            <table border="0" cellpadding="0" cellspacing="0" style="padding: 15px 0 15px 96px;">
-                                <tr>
-                                    <td valign="middle">
-                                        <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg"
-                                            alt="SXC Logo" width="60"
-                                            style="display: block; width: 90px; height: auto;">
-                                    </td>
-                                    <td valign="middle" style="padding-left: 20px;">
-                                        <h1 class="college-name">
-                                            St. Xavier's College (Autonomous), Kolkata
-                                        </h1>
-                                        <p class="college-credentials">
-                                            Autonomous College (2006) | College with Potential for Excellence
-                                            (2006) | College of Excellence (2014), NAAC A++ Grade | 4th Cycle (2024) |
-                                            ISO
-                                            9001:2015 Certified | NIRF India Ranking 2025: 8th Position
-                                        </p>
-                                        <!-- Article Metadata -->
-                                        <div class="article-meta">
-                                            <!-- <span class="article-type">Invitation</span> -->
-                                            <span class="open-access-badge">Official Invitation for Campus
-                                                Recruitment - MSc Data Science (2026)</span>
-                                            <!-- <span class="published-date">Published: {{DATE}}</span> -->
-                                            <span class="published-date">Published: 26/10/2026</span>
-                                        </div>
-                                    </td>
-                                    <td style="width: 10%;">
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                </table>
+            <?php if (isset($_SESSION['error_message'])): ?>
+            <div class="error-message">
+                <i class="fas fa-exclamation-circle"></i>
+                <?= htmlspecialchars($_SESSION['error_message']) ?>
+            </div>
+            <?php unset($_SESSION['error_message']); endif; ?>
 
-                <!-- Navigation Bar -->
-                <table border="0" cellpadding="0" cellspacing="0" width="100%" class="nav-bar">
-                    <tr>
-                        <!-- <td>
-                            <span class="nav-item">Placement Home</span>
-                            <span class="nav-item">About the Programme</span>
-                            <span class="nav-item">Recruiter Information</span>
-                            <span class="nav-item">Contact Us</span>
-                        </td> -->
-                    </tr>
-                </table>
+            <h1 class="email-subject">
+                <?= htmlspecialchars($email['subject']) ?>
+            </h1>
 
-                <!-- Mobile Connect Button (Shows only on mobile after header) -->
-                <table border="0" cellpadding="0" cellspacing="0" width="100%" class="mobile-only"
-                    style="padding: 20px 25px 0 25px;">
-                    <tr>
-                        <td>
-                            <a href="mailto:placement@sxccal.edu" class="sidebar-download-btn">
-                                Connect With Placement Cell
-                            </a>
-                        </td>
-                    </tr>
-                </table>
+            <!-- Label Section -->
+            <div class="label-section">
+                <?php if (!empty($email['label_name'])): ?>
+                <span class="label-badge"
+                    style="background-color: <?= htmlspecialchars($email['label_color'] ?? '#6b7280') ?>">
+                    <i class="fas fa-tag"></i>
+                    <?= htmlspecialchars($email['label_name']) ?>
+                </span>
+                <?php endif; ?>
 
-                <!-- Main Content Area -->
-                <table border="0" cellpadding="0" cellspacing="0" width="100%">
-                    <tr>
-                        <td>
-                            <div class="content-wrapper">
-                                <table border="0" cellpadding="0" cellspacing="0" width="100%" class="content-grid">
-                                    <tr>
-                                        <!-- Left Column - Main Content -->
-                                        <td class="main-content" valign="top">
+                <!-- Label Editor -->
+                <form method="POST" class="label-editor">
+                    <select name="label_id" class="label-select" onchange="updateLabelData(this)">
+                        <option value="">-- No Label --</option>
+                        <?php foreach ($allLabels as $label): ?>
+                        <option value="<?= $label['id'] ?>" data-name="<?= htmlspecialchars($label['label_name']) ?>"
+                            data-color="<?= htmlspecialchars($label['label_color']) ?>"
+                            <?=$email['label_id']==$label['id'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($label['label_name']) ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <input type="hidden" name="label_name" id="label_name">
+                    <input type="hidden" name="label_color" id="label_color">
+                    <button type="submit" name="update_label" class="btn-save-label">
+                        <i class="fas fa-save"></i> Update Label
+                    </button>
+                </form>
+            </div>
 
-                                            <!-- Article Title -->
-                                            <h1 class="article-title">
-                                                <!-- Co-Ordial Invitation for on-campus placement drive.  -->
-                                                This is the email Tagline
-                                            </h1>
-
-                                            <!-- Authors -->
-                                            <div class="authors">
-                                                <a href="https://www.linkedin.com/in/durba-bhattacharya-b3821773/"
-                                                    class="author-name">Dr. Durba Bhattacharya</a>
-                                                <span class="author-separator"> [ HOD of Dept. of Data Science ]</span>
-                                                <!-- <a href="#" class="author-name">Programme Overview</a> -->
-                                            </div>
-
-                                            <!-- Abstract/Greeting Section -->
-                                            <h2 class="section-heading">Communication</h2>
-
-                                            <p class="body-text">
-                                                Dear Esteemed Corporate Partner,
-                                            </p>
-                                            <!-- Dynamic Message Content -->
-                                            <div style="
-    font-family: 'Merriweather', 'Georgia', serif;
-    font-size: 0.8rem;
-    color: #222222;
-    line-height: 1.75;
-    text-align: justify;
-  ">
-                                                <p><br></p>
-                                            </div>
-
-
-                                            <!-- Signature Section -->
-                                            <div
-                                                style="margin-top: 50px; padding-top: 35px; border-top: 1px solid #d0d0d0;">
-                                                <p class="body-text" style="margin-bottom: 5px;">
-
-                                                </p>
-                                                <p class="body-text" style="font-weight: 700; margin-bottom: 5px;">
-
-                                                </p>
-                                                <p
-                                                    style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; color: #666666; margin: 0 0 10px 0;">
-
-                                                </p>
-                                                <div
-                                                    style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; color: #888888; margin-top: 10px; line-height: 1.6;">
-
-                                                </div>
-                                            </div>
-
-                                            <!-- Mobile Quick Sections (Shows only on mobile at bottom of main content) -->
-                                            <div class="mobile-only"
-                                                style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #e0e0e0;">
-                                                <h3 class="sidebar-section-title">
-                                                    <span class="sidebar-tab">Quick Sections</span>
-                                                </h3>
-                                                <a href="#" class="sidebar-link">About St. Xavier's College</a>
-                                                <a href="#" class="sidebar-link">Training & Placement Cell</a>
-                                                <a href="#" class="sidebar-link">Why Recruit Our Students</a>
-                                                <a href="#" class="sidebar-link">Academic & Technical Curriculum</a>
-                                                <a href="#" class="sidebar-link">Recruitment Process & Guidelines</a>
-                                                <a href="#" class="sidebar-link">Contact Information</a>
-                                            </div>
-
-                                        </td>
-
-                                        <!-- Right Sidebar (Desktop Only) -->
-                                        <td class="sidebar desktop-only" valign="top" style="padding-top: 20px;">
-
-                                            <!-- Download Button -->
-                                            <a href="mailto:placement@sxccal.edu" class="sidebar-download-btn">
-                                                Connect With Placement Cell
-                                            </a>
-
-                                            <!-- Sections -->
-                                            <div>
-                                                <h3 class="sidebar-section-title">
-                                                    <span class="sidebar-tab">Quick Sections</span>
-                                                </h3>
-                                                <a href="#" class="sidebar-link">About St. Xavier's College</a>
-                                                <a href="#" class="sidebar-link">Training & Placement Cell</a>
-                                                <a href="#" class="sidebar-link">Why Recruit Our Students</a>
-                                                <a href="#" class="sidebar-link">Academic & Technical Curriculum</a>
-                                                <a href="#" class="sidebar-link">Recruitment Process & Guidelines</a>
-                                                <a href="#" class="sidebar-link">Contact Information</a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </td>
-                    </tr>
-                </table>
-
-                <!-- Footer -->
-                <!-- Footer -->
-                <div class="footer-wrapper">
-                    <div class="footer-content">
-
-                        <!-- Footer Columns -->
-                        <div class="footer-columns">
-                            <!-- Left Column - Institution -->
-                            <div class="footer-column">
-                                <h3 class="footer-section-heading">Institution</h3>
-                                <p class="footer-text" style="font-weight: 700;">
-                                    St. Xavier's College (Autonomous)
-                                </p>
-                                <p class="footer-text">
-                                    30, Mother Teresa Sarani<br>
-                                    Kolkata - 700016, West Bengal, India
-                                </p>
-                            </div>
-
-                            <!-- Right Column - Contact -->
-                            <div class="footer-column">
-                                <h3 class="footer-section-heading">Contact</h3>
-                                <p class="footer-text">
-                                    <strong>Phone:</strong> <a href="tel:+91033 2255 1101"
-                                        class="footer-link">+91-33-2155-1867</a><br>
-                                    <strong>Email:</strong> <a href="mailto:placement@sxccal.edu"
-                                        class="footer-link">placement@sxccal.edu</a><br>
-                                    <strong>Web:</strong> <a href="https://www.sxccal.edu"
-                                        class="footer-link">www.sxccal.edu</a>
-                                </p>
-                            </div>
-                        </div>
-
-                        <!-- Divider -->
-                        <!-- <div class="footer-divider"></div> -->
-
-                        <!-- Footer Bottom Section -->
-                        <div class="footer-bottom" style="color: white;">
-                            <!-- Left - Legal Links -->
-                            <div class="footer-bottom-left" style="color: white !important;">
-                                <div class="footer-legal-links" style="color: white !important;">
-                                    <a href="https://www.sxccaa.net/privacypolicy.php" style="color: white;">Privacy
-                                        Policy</a> |
-                                    <a href="#" style="color: white;">Use of cookies</a> |
-                                    <a href="https://sxccal.edu/college-administration"
-                                        style="color: white;">Administration</a> |
-                                    <a href="#" style="color: white;">Accessibility</a> |
-                                    <a href="https://sxccal.edu/academic-rules-and-regulations"
-                                        style="color: white;">Academic Rules &
-                                        Regulations</a>
-                                </div>
-                            </div>
-
-                            <!-- Right - Copyright -->
-                            <div class="footer-bottom-right">
-                                <p class="footer-copyright">
-                                    © 2026 Dept. of Statistics & Data Science St. Xavier's College (Autonomous), Kolkata
-                                </p>
-                            </div>
-                        </div>
-
-                    </div>
+            <!-- Email Metadata -->
+            <div class="email-meta">
+                <div class="meta-item">
+                    <span class="meta-label">From</span>
+                    <span class="meta-value">
+                        <?= htmlspecialchars($email['sender_name'] ?? $email['sender_email']) ?>
+                        <br><small style="color: #6b7280;">
+                            <?= htmlspecialchars($email['sender_email']) ?>
+                        </small>
+                    </span>
                 </div>
+                <div class="meta-item">
+                    <span class="meta-label">To</span>
+                    <span class="meta-value">
+                        <?= htmlspecialchars($email['recipient_email']) ?>
+                    </span>
+                </div>
+                <?php if (!empty($email['cc_list'])): ?>
+                <div class="meta-item">
+                    <span class="meta-label">CC</span>
+                    <span class="meta-value">
+                        <?= htmlspecialchars($email['cc_list']) ?>
+                    </span>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($email['bcc_list'])): ?>
+                <div class="meta-item">
+                    <span class="meta-label">BCC</span>
+                    <span class="meta-value">
+                        <?= htmlspecialchars($email['bcc_list']) ?>
+                    </span>
+                </div>
+                <?php endif; ?>
+                <div class="meta-item">
+                    <span class="meta-label">Sent At</span>
+                    <span class="meta-value">
+                        <?= date('F j, Y \a\t g:i A', strtotime($email['sent_at'])) ?>
+                    </span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Message ID</span>
+                    <span class="meta-value" style="font-size: 12px; word-break: break-all;">
+                        <?= htmlspecialchars($email['message_id'] ?? 'N/A') ?>
+                    </span>
+                </div>
+            </div>
+        </div>
 
-            </td>
-        </tr>
-    </table>
+        <!-- Email Body -->
+        <div class="email-body">
+            <?php if (!empty($email['article_title'])): ?>
+            <div class="article-title">
+                <?= htmlspecialchars($email['article_title']) ?>
+            </div>
+            <?php endif; ?>
 
+            <div class="email-content">
+                <?= $email['body_html'] ?? nl2br(htmlspecialchars($email['body_text'] ?? '')) ?>
+            </div>
+        </div>
+
+        <!-- Attachments -->
+        <?php if (!empty($attachments)): ?>
+        <div class="attachments-section">
+            <div class="attachments-title">
+                <i class="fas fa-paperclip"></i>
+                Attachments (
+                <?= count($attachments) ?>)
+            </div>
+            <div class="attachment-list">
+                <?php foreach ($attachments as $attachment): ?>
+                <div class="attachment-item">
+                    <div class="attachment-icon">
+                        <i class="fas fa-file"></i>
+                    </div>
+                    <div class="attachment-info">
+                        <div class="attachment-name">
+                            <?= htmlspecialchars($attachment['original_filename']) ?>
+                        </div>
+                        <div class="attachment-size">
+                            <?= formatFileSize($attachment['file_size']) ?>
+                        </div>
+                    </div>
+                    <a href="download_attachment.php?id=<?= encryptFileId($attachment['id']) ?>" class="btn-download">
+                        <i class="fas fa-download"></i>
+                        Download
+                    </a>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+    </div>
+
+    <script>
+        function updateLabelData(select) {
+            const selectedOption = select.options[select.selectedIndex];
+            const labelName = selectedOption.getAttribute('data-name') || '';
+            const labelColor = selectedOption.getAttribute('data-color') || '';
+
+            document.getElementById('label_name').value = labelName;
+            document.getElementById('label_color').value = labelColor;
+        }
+    </script>
 </body>
 
 </html>

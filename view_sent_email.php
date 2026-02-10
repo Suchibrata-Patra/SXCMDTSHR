@@ -38,7 +38,7 @@ try {
     // Get attachments if any
     $attachments = [];
     if ($email['has_attachments']) {
-        $attachments = getSentEmailAttachments($pdo, $emailId);
+        // $attachments = getSentEmailAttachments($pdo, $emailId);
     }
     
 } catch (PDOException $e) {
