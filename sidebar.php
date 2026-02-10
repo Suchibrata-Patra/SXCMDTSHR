@@ -401,7 +401,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             <span>Trash</span>
         </a>
         
-        <a href="send.php" class="nav-item <?= ($current_page == 'send') ? 'active' : ''; ?>">
+        <a href="#" class="nav-item <?= ($current_page == 'send') ? 'active' : ''; ?>">
             <span class="material-icons">analytics</span>
             <span>Analytics</span>
         </a>
