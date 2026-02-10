@@ -333,6 +333,85 @@ function saveSentEmail($pdo, $emailData) {
         return null;
     }
 }
+function getSentEmails($userEmail, $limit = 50, $offset = 0, $filters = []) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return [];
+        
+        $sql = "SELECT 
+                    se.*,
+                    (SELECT GROUP_CONCAT(original_filename SEPARATOR ', ')
+                     FROM sent_email_attachments_new sea
+                     WHERE sea.sent_email_id = se.id) as attachment_names,
+                    (SELECT COUNT(*)
+                     FROM sent_email_attachments_new sea
+                     WHERE sea.sent_email_id = se.id) as attachment_count
+                FROM sent_emails_new se
+                WHERE se.sender_email = :email
+                AND se.is_deleted = 0";
+        
+        $params = ['email' => $userEmail];
+        
+        // Apply search filter
+        if (!empty($filters['search'])) {
+            $sql .= " AND (se.recipient_email LIKE :search 
+                        OR se.subject LIKE :search 
+                        OR se.body_text LIKE :search 
+                        OR se.article_title LIKE :search)";
+            $params['search'] = '%' . $filters['search'] . '%';
+        }
+        
+        // Apply recipient filter
+        if (!empty($filters['recipient'])) {
+            $sql .= " AND se.recipient_email LIKE :recipient";
+            $params['recipient'] = '%' . $filters['recipient'] . '%';
+        }
+        
+        // Apply subject filter
+        if (!empty($filters['subject'])) {
+            $sql .= " AND se.subject LIKE :subject";
+            $params['subject'] = '%' . $filters['subject'] . '%';
+        }
+        
+        // Apply label filter
+        if (!empty($filters['label_id'])) {
+            if ($filters['label_id'] === 'unlabeled') {
+                $sql .= " AND se.label_id IS NULL";
+            } else {
+                $sql .= " AND se.label_id = :label_id";
+                $params['label_id'] = $filters['label_id'];
+            }
+        }
+        
+        // Apply date range filters
+        if (!empty($filters['date_from'])) {
+            $sql .= " AND DATE(se.sent_at) >= :date_from";
+            $params['date_from'] = $filters['date_from'];
+        }
+        if (!empty($filters['date_to'])) {
+            $sql .= " AND DATE(se.sent_at) <= :date_to";
+            $params['date_to'] = $filters['date_to'];
+        }
+        
+        $sql .= " ORDER BY se.sent_at DESC LIMIT :limit OFFSET :offset";
+        
+        $stmt = $pdo->prepare($sql);
+        
+        foreach ($params as $key => $value) {
+            $stmt->bindValue(':' . $key, $value);
+        }
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+        
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+    } catch (PDOException $e) {
+        error_log("Error fetching sent emails: " . $e->getMessage());
+        return [];
+    }
+}
+
 /**
  * Show success page
  */
