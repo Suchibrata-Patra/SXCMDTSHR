@@ -395,7 +395,7 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
             display: flex;
             justify-content: space-between;
             align-items: center;
-            display:none;
+            display: none;
         }
 
         .header-left {
@@ -495,18 +495,18 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
         }
 
         .stat-icon.total {
-            background: rgb(229,56,81,0.1);
-            color: rgb(229,56,81);
+            background: rgb(229, 56, 81, 0.1);
+            color: rgb(229, 56, 81);
         }
 
         .stat-icon.labeled {
-            background: rgb(144,236,64,0.1);
-            color: rgb(144,236,64);
+            background: rgb(144, 236, 64, 0.1);
+            color: rgb(144, 236, 64);
         }
 
         .stat-icon.unlabeled {
-            background: rgb(20,121,246,0.1);
-            color: rgb(20,121,246);
+            background: rgb(20, 121, 246, 0.1);
+            color: rgb(20, 121, 246);
         }
 
         .stat-content {
@@ -728,7 +728,7 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
             color: #1c1c1e;
             font-size: 14px;
             margin-right: 0.5rem;
-            color:#1479f6;
+            color: rgb(45, 45, 45);
         }
 
         .message-date {
@@ -851,7 +851,7 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
             padding: 10px;
             min-height: 0;
         }
-        
+
         .message-detail {
             background: white;
             border-radius: 10px;
@@ -1095,136 +1095,147 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
 
         <div class="main-content-wrapper">
             <div class="main-content">
-        <!-- Header -->
-        <div class="page-header">
-            <div class="header-left">
-                <h1 class="page-title">Sent Emails</h1>
-                <p class="page-subtitle">Manage your sent email history</p>
-            </div>
-            <div class="header-actions">
-                <button class="btn btn-primary" onclick="window.location.href='index.php'">
-                    <span class="material-icons">add</span>
-                    Compose Email
-                </button>
-            </div>
-        </div>
-
-        <!-- Stats Bar -->
-        <div class="stats-bar">
-            <div class="stat-item">
-                <div class="stat-icon total">
-                    <span class="material-icons">mail</span>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-number" id="totalCount"><?= $totalCount ?></div>
-                    <div class="stat-label">Total Sent</div>
-                </div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-icon labeled">
-                    <span class="material-icons">label</span>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-number" id="labeledCount"><?= $labeledCount ?></div>
-                    <div class="stat-label">Labeled</div>
-                </div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-icon unlabeled">
-                    <span class="material-icons">label_off</span>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-number" id="unlabeledCount"><?= $unlabeledCount ?></div>
-                    <div class="stat-label">Unlabeled</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Content Wrapper -->
-        <div class="content-wrapper">
-            <!-- Messages Pane -->
-            <div class="messages-pane">
-                <!-- Toolbar -->
-                <div class="toolbar">
-                    <div class="search-box">
-                        <span class="material-icons">search</span>
-                        <input type="text" id="searchInput" placeholder="Search sent emails..." oninput="searchMessages()">
-                        <span class="material-icons clear-search" id="clearSearch" onclick="clearSearch()">close</span>
+                <!-- Header -->
+                <div class="page-header">
+                    <div class="header-left">
+                        <h1 class="page-title">Sent Emails</h1>
+                        <p class="page-subtitle">Manage your sent email history</p>
                     </div>
-                    <div class="filter-group">
-                        <select id="labelFilter" class="filter-select" onchange="filterByLabel()">
-                            <option value="">All Labels</option>
-                            <option value="unlabeled">Unlabeled</option>
-                            <?php foreach ($labels as $label): ?>
-                            <option value="<?= $label['label_id'] ?>">
-                                <?= htmlspecialchars($label['label_name']) ?> (<?= $label['email_count'] ?>)
-                            </option>
-                            <?php endforeach; ?>
-                        </select>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" onclick="window.location.href='index.php'">
+                            <span class="material-icons">add</span>
+                            Compose Email
+                        </button>
                     </div>
                 </div>
 
-                <!-- Messages Area -->
-                <div class="messages-area">
-                    <div class="messages-container" id="messagesContainer">
-                        <?php if (empty($messages)): ?>
-                        <div class="empty-state">
-                            <div class="empty-icon">📧</div>
-                            <div class="empty-title">No sent emails</div>
-                            <div class="empty-text">Your sent emails will appear here</div>
+                <!-- Stats Bar -->
+                <div class="stats-bar">
+                    <div class="stat-item">
+                        <div class="stat-icon total">
+                            <span class="material-icons">mail</span>
                         </div>
-                        <?php else: ?>
-                        <?php foreach ($messages as $msg): ?>
-                        <div class="message-item" onclick="viewMessage(<?= $msg['id'] ?>)" data-message-id="<?= $msg['id'] ?>">
-                            <div class="message-content">
-                                <div class="message-header">
-                                    <div class="message-recipient">
-                                        <?= htmlspecialchars($msg['recipient_email']) ?>
-                                    </div>
-                                    <div class="message-date">
-                                        <?= date('M j', strtotime($msg['sent_at'])) ?>
-                                    </div>
-                                </div>
-                                <div class="message-subject">
-                                    <?= htmlspecialchars($msg['subject']) ?>
-                                </div>
-                                <div class="message-preview">
-                                    <?= htmlspecialchars(strip_tags($msg['body_text']) ?: 'No preview available') ?>
-                                </div>
-                                <div class="message-badges">
-                                    <?php if (!empty($msg['label_name'])): ?>
-                                    <span class="badge badge-label" style="background: <?= htmlspecialchars($msg['label_color'] ?? '#6b7280') ?>">
-                                        <?= htmlspecialchars($msg['label_name']) ?>
-                                    </span>
-                                    <?php endif; ?>
-                                    <?php if ($msg['has_attachments']): ?>
-                                    <span class="badge badge-attachment">
-                                        <span class="material-icons">attach_file</span>
-                                        <?= $msg['attachment_count'] ?? '1' ?>
-                                    </span>
-                                    <?php endif; ?>
-                                </div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="totalCount">
+                                <?= $totalCount ?>
+                            </div>
+                            <div class="stat-label">Total Sent</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon labeled">
+                            <span class="material-icons">label</span>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="labeledCount">
+                                <?= $labeledCount ?>
+                            </div>
+                            <div class="stat-label">Labeled</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon unlabeled">
+                            <span class="material-icons">label_off</span>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="unlabeledCount">
+                                <?= $unlabeledCount ?>
+                            </div>
+                            <div class="stat-label">Unlabeled</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Wrapper -->
+                <div class="content-wrapper">
+                    <!-- Messages Pane -->
+                    <div class="messages-pane">
+                        <!-- Toolbar -->
+                        <div class="toolbar">
+                            <div class="search-box">
+                                <span class="material-icons">search</span>
+                                <input type="text" id="searchInput" placeholder="Search sent emails..."
+                                    oninput="searchMessages()">
+                                <span class="material-icons clear-search" id="clearSearch"
+                                    onclick="clearSearch()">close</span>
+                            </div>
+                            <div class="filter-group">
+                                <select id="labelFilter" class="filter-select" onchange="filterByLabel()">
+                                    <option value="">All Labels</option>
+                                    <option value="unlabeled">Unlabeled</option>
+                                    <?php foreach ($labels as $label): ?>
+                                    <option value="<?= $label['label_id'] ?>">
+                                        <?= htmlspecialchars($label['label_name']) ?> (
+                                        <?= $label['email_count'] ?>)
+                                    </option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                         </div>
-                        <?php endforeach; ?>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Message View Pane -->
-            <div class="message-view-pane" id="messageViewPane">
-                <div id="messageViewContent">
-                    <div class="empty-state">
-                        <div class="empty-icon">📨</div>
-                        <div class="empty-title">No message selected</div>
-                        <div class="empty-text">Click on an email to view its contents</div>
+                        <!-- Messages Area -->
+                        <div class="messages-area">
+                            <div class="messages-container" id="messagesContainer">
+                                <?php if (empty($messages)): ?>
+                                <div class="empty-state">
+                                    <div class="empty-icon">📧</div>
+                                    <div class="empty-title">No sent emails</div>
+                                    <div class="empty-text">Your sent emails will appear here</div>
+                                </div>
+                                <?php else: ?>
+                                <?php foreach ($messages as $msg): ?>
+                                <div class="message-item" onclick="viewMessage(<?= $msg['id'] ?>)"
+                                    data-message-id="<?= $msg['id'] ?>">
+                                    <div class="message-content">
+                                        <div class="message-header">
+                                            <div class="message-recipient">
+                                                <?= htmlspecialchars($msg['recipient_email']) ?>
+                                            </div>
+                                            <div class="message-date">
+                                                <?= date('M j', strtotime($msg['sent_at'])) ?>
+                                            </div>
+                                        </div>
+                                        <div class="message-subject">
+                                            <?= htmlspecialchars($msg['subject']) ?>
+                                        </div>
+                                        <div class="message-preview">
+                                            <?= htmlspecialchars(strip_tags($msg['body_text']) ?: 'No preview available') ?>
+                                        </div>
+                                        <div class="message-badges">
+                                            <?php if (!empty($msg['label_name'])): ?>
+                                            <span class="badge badge-label"
+                                                style="background: <?= htmlspecialchars($msg['label_color'] ?? '#6b7280') ?>">
+                                                <?= htmlspecialchars($msg['label_name']) ?>
+                                            </span>
+                                            <?php endif; ?>
+                                            <?php if ($msg['has_attachments']): ?>
+                                            <span class="badge badge-attachment">
+                                                <span class="material-icons">attach_file</span>
+                                                <?= $msg['attachment_count'] ?? '1' ?>
+                                            </span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php endforeach; ?>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Message View Pane -->
+                    <div class="message-view-pane" id="messageViewPane">
+                        <div id="messageViewContent">
+                            <div class="empty-state">
+                                <div class="empty-icon">📨</div>
+                                <div class="empty-title">No message selected</div>
+                                <div class="empty-text">Click on an email to view its contents</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-    </div> <!-- /main-content-wrapper -->
+        </div> <!-- /main-content-wrapper -->
     </div> <!-- /app-container -->
 
     <script>
@@ -1242,7 +1253,7 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
             if (messageId) {
                 viewMessage(parseInt(messageId));
             }
-            
+
             // Load all messages initially
             loadAllMessages();
         });
@@ -1297,10 +1308,10 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
                 const label = (msg.label_name || '').toLowerCase();
 
                 return recipient.includes(searchLower) ||
-                       subject.includes(searchLower) ||
-                       body.includes(searchLower) ||
-                       article.includes(searchLower) ||
-                       label.includes(searchLower);
+                    subject.includes(searchLower) ||
+                    body.includes(searchLower) ||
+                    article.includes(searchLower) ||
+                    label.includes(searchLower);
             });
 
             displayMessages(filteredMessages, searchTerm);
@@ -1401,7 +1412,7 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
         async function filterByLabel() {
             currentFilters.label_id = document.getElementById('labelFilter').value;
             await loadAllMessages();
-            
+
             // Reapply search if there's a search term
             if (currentFilters.search) {
                 searchMessages();
