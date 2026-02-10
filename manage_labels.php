@@ -206,7 +206,7 @@ $labels = getLabelCounts($userEmail);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        .label-name {
+        .main_label_names {
             font-weight: 600;
             font-size: 15px;
         }
@@ -465,7 +465,7 @@ $labels = getLabelCounts($userEmail);
                             <td>
                                 <div class="label-display">
                                     <div class="label-color-box" style="background-color: <?= htmlspecialchars($label['label_color']) ?>;"></div>
-                                    <span class="label-name"><?= htmlspecialchars($label['label_name']) ?></span>
+                                    <span class="main_label_names"><?= htmlspecialchars($label['label_name']) ?></span>
                                 </div>
                             </td>
                             <td>
