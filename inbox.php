@@ -151,67 +151,6 @@ $lastSync = getLastSyncDate($userEmail);
             -moz-osx-font-smoothing: grayscale;
         }
 
-        html {
-            scroll-behavior: smooth;
-        }
-
-        /* Smooth scrolling momentum */
-        .messages-area {
-            -webkit-overflow-scrolling: touch;
-            scroll-behavior: smooth;
-        }
-
-        /* Yellow highlight for search results */
-        .highlight {
-            background: #FFE58F;
-            padding: 2px 4px;
-            border-radius: 3px;
-            font-weight: 600;
-            box-shadow: 0 1px 3px rgba(255, 229, 143, 0.4);
-            animation: highlightPulse 0.5s ease-out;
-        }
-
-        @keyframes highlightPulse {
-            0% {
-                background: #FFD700;
-                transform: scale(1.05);
-            }
-            100% {
-                background: #FFE58F;
-                transform: scale(1);
-            }
-        }
-
-        /* Search results info */
-        .search-results-info {
-            margin-top: 8px;
-            padding: 8px 12px;
-            background: rgb(20,121,246,0.1);
-            color: rgb(20,121,246);
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            opacity: 0;
-            transform: translateY(-5px);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .search-results-info.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* Enhanced message item transitions */
-        .message-item {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .message-item.search-hidden {
-            display: none !important;
-            opacity: 0;
-            transform: scale(0.95);
-        }
-
         /* ========== MAIN CONTENT ========== */
         .main-content {
             flex: 1;
@@ -998,7 +937,6 @@ $lastSync = getLastSyncDate($userEmail);
                     <div class="search-box">
                         <span class="material-icons">search</span>
                         <input type="text" id="searchInput" placeholder="Search..." onkeyup="searchMessages()">
-                        <div class="search-results-info" id="searchResultsInfo"></div>
                     </div>
 
                     <div class="filter-group">
@@ -1292,120 +1230,7 @@ $lastSync = getLastSyncDate($userEmail);
             fetchMessages();
         }
 
-        // Store original message HTML for restoration
-        let originalMessageHTML = new Map();
-        let currentSearchQuery = '';
-        let isClientSideSearch = true; // Flag to control search mode
-
         function searchMessages() {
-            const searchInput = document.getElementById('searchInput');
-            const searchQuery = searchInput.value.trim().toLowerCase();
-            const messagesList = document.querySelectorAll('.message-item');
-            const searchResultsInfo = document.getElementById('searchResultsInfo');
-            
-            // If search is empty, restore all messages
-            if (!searchQuery) {
-                messagesList.forEach(msg => {
-                    // Restore original HTML if it exists
-                    if (originalMessageHTML.has(msg)) {
-                        msg.innerHTML = originalMessageHTML.get(msg);
-                    }
-                    msg.classList.remove('search-hidden');
-                });
-                searchResultsInfo.classList.remove('visible');
-                searchResultsInfo.textContent = '';
-                return;
-            }
-
-            let visibleCount = 0;
-
-            messagesList.forEach(msg => {
-                // Store original HTML if not already stored
-                if (!originalMessageHTML.has(msg)) {
-                    originalMessageHTML.set(msg, msg.innerHTML);
-                }
-
-                // Get text content from the message
-                const senderEl = msg.querySelector('.msg-sender');
-                const subjectEl = msg.querySelector('.msg-subject');
-                const previewEl = msg.querySelector('.msg-preview');
-
-                const sender = senderEl ? senderEl.textContent.toLowerCase() : '';
-                const subject = subjectEl ? subjectEl.textContent.toLowerCase() : '';
-                const preview = previewEl ? previewEl.textContent.toLowerCase() : '';
-
-                // Check if any field matches the search query
-                const isMatch = sender.includes(searchQuery) || 
-                              subject.includes(searchQuery) || 
-                              preview.includes(searchQuery);
-
-                if (isMatch) {
-                    // Restore original HTML first
-                    msg.innerHTML = originalMessageHTML.get(msg);
-
-                    // Re-select elements after restoration
-                    const newSenderEl = msg.querySelector('.msg-sender');
-                    const newSubjectEl = msg.querySelector('.msg-subject');
-                    const newPreviewEl = msg.querySelector('.msg-preview');
-
-                    // Apply highlighting to matching fields
-                    if (sender.includes(searchQuery) && newSenderEl) {
-                        newSenderEl.innerHTML = highlightText(newSenderEl.textContent, searchQuery);
-                    }
-                    if (subject.includes(searchQuery) && newSubjectEl) {
-                        newSubjectEl.innerHTML = highlightText(newSubjectEl.textContent, searchQuery);
-                    }
-                    if (preview.includes(searchQuery) && newPreviewEl) {
-                        newPreviewEl.innerHTML = highlightText(newPreviewEl.textContent, searchQuery);
-                    }
-
-                    msg.classList.remove('search-hidden');
-                    visibleCount++;
-                } else {
-                    msg.classList.add('search-hidden');
-                }
-            });
-
-            // Update search results info
-            searchResultsInfo.textContent = `Found ${visibleCount} message${visibleCount !== 1 ? 's' : ''}`;
-            searchResultsInfo.classList.add('visible');
-
-            // Smooth scroll to top
-            const messagesArea = document.querySelector('.messages-area');
-            if (messagesArea) {
-                messagesArea.scrollTo({
-                    top: 0,
-                    behavior: 'smooth'
-                });
-            }
-        }
-
-        // Helper function to highlight matching text
-        function highlightText(text, query) {
-            if (!query || !text) return text;
-            
-            // Escape special regex characters
-            const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const regex = new RegExp(`(${escapedQuery})`, 'gi');
-            
-            return text.replace(regex, '<span class="highlight">$1</span>');
-        }
-
-        // Debounce function for better performance
-        function debounce(func, delay) {
-            let timeoutId;
-            return function (...args) {
-                clearTimeout(timeoutId);
-                timeoutId = setTimeout(() => func.apply(this, args), delay);
-            };
-        }
-
-        // Optionally, you can debounce the search for even smoother performance
-        // const debouncedSearch = debounce(searchMessages, 150);
-        // Then change onkeyup="debouncedSearch()" in the input
-
-        // Original server-side search function (keep as backup)
-        function serverSideSearch() {
             currentSearchQuery = document.getElementById('searchInput').value;
             fetchMessages();
         }
@@ -1570,25 +1395,6 @@ $lastSync = getLastSyncDate($userEmail);
             if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
                 e.preventDefault();
                 syncMessages();
-            }
-            
-            // Ctrl/Cmd + F to focus search
-            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-                e.preventDefault();
-                const searchInput = document.getElementById('searchInput');
-                searchInput.focus();
-                searchInput.select();
-            }
-            
-            // Escape to clear search
-            if (e.key === 'Escape' && document.activeElement === document.getElementById('searchInput')) {
-                const searchInput = document.getElementById('searchInput');
-                if (searchInput.value) {
-                    searchInput.value = '';
-                    searchMessages();
-                } else {
-                    searchInput.blur();
-                }
             }
         });
     </script>
