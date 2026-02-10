@@ -3,6 +3,7 @@
 session_start();
 require 'config.php';
 require 'db_config.php';
+require_once 'read_tracking_helper.php';
 
 if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     header("Location: login.php");
@@ -49,68 +50,60 @@ function getSentEmailsWithTracking($userEmail, $limit = 100, $offset = 0, $filte
         $userId = getUserId($pdo, $userEmail);
         if (!$userId) return [];
 
-        // Query with joins for user_email_access (for labels) and read tracking
+        // Query with LEFT JOIN to read tracking
 $sql = "SELECT 
-            e.*,
-            uea.label_id,
-            uea.is_deleted,
-            l.label_name,
-            l.label_color,
+            se.*,
             rt.tracking_token,
-            rt.is_read AS tracking_is_read,
+            rt.is_read,
             rt.first_read_at,
             rt.total_opens,
             rt.valid_opens,
             rt.device_type,
             rt.browser,
             rt.os
-        FROM emails e
-        INNER JOIN user_email_access uea ON e.id = uea.email_id
-        LEFT JOIN labels l ON uea.label_id = l.id
-        LEFT JOIN email_read_tracking rt ON rt.email_id = e.id
-        WHERE e.sender_email = :email
-        AND e.email_type = 'sent'
-        AND uea.access_type = 'sender'
-        AND uea.is_deleted = 0";
+        FROM emails se
+        LEFT JOIN email_read_tracking rt ON rt.email_id = se.id
+        WHERE se.sender_email = :email
+        AND se.email_type = 'sent'";
         
         $params = [':email' => $userEmail];
 
         // Apply Search Filter
         if (!empty($filters['search'])) {
-            $sql .= " AND (e.recipient_email LIKE :search 
-                        OR e.subject LIKE :search 
-                        OR e.body_html LIKE :search 
-                        OR e.article_title LIKE :search)";
+            $sql .= " AND (se.recipient_email LIKE :search 
+                        OR se.subject LIKE :search 
+                        OR se.message_body LIKE :search 
+                        OR se.article_title LIKE :search)";
             $params[':search'] = '%' . $filters['search'] . '%';
         }
 
         // Apply Recipient Filter
         if (!empty($filters['recipient'])) {
-            $sql .= " AND e.recipient_email LIKE :recipient";
+            $sql .= " AND se.recipient_email LIKE :recipient";
             $params[':recipient'] = '%' . $filters['recipient'] . '%';
         }
 
         // Apply Label Filter
         if (!empty($filters['label_id'])) {
             if ($filters['label_id'] === 'unlabeled') {
-                $sql .= " AND uea.label_id IS NULL";
+                $sql .= " AND se.label_id IS NULL";
             } else {
-                $sql .= " AND uea.label_id = :label_id";
+                $sql .= " AND se.label_id = :label_id";
                 $params[':label_id'] = $filters['label_id'];
             }
         }
 
         // Apply Date Range Filters
         if (!empty($filters['date_from'])) {
-            $sql .= " AND DATE(e.sent_at) >= :date_from";
+            $sql .= " AND DATE(se.sent_at) >= :date_from";
             $params[':date_from'] = $filters['date_from'];
         }
         if (!empty($filters['date_to'])) {
-            $sql .= " AND DATE(e.sent_at) <= :date_to";
+            $sql .= " AND DATE(se.sent_at) <= :date_to";
             $params[':date_to'] = $filters['date_to'];
         }
 
-        $sql .= " ORDER BY e.sent_at DESC LIMIT :limit OFFSET :offset";
+        $sql .= " ORDER BY se.sent_at DESC LIMIT :limit OFFSET :offset";
 
         $stmt = $pdo->prepare($sql);
         
