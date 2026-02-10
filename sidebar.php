@@ -391,6 +391,10 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             <span class="material-icons">edit</span>
             <span>Compose</span>
         </a>
+        <a href="bunch_mailer.php" class="nav-item <?= ($current_page == 'bunch_mailer') ? 'active' : ''; ?>">
+            <span class="material-icons">edit</span>
+            <span>Bunch</span>
+        </a>
         
         <a href="sent_history.php" class="nav-item <?= ($current_page == 'sent_history') ? 'active' : ''; ?>">
             <span class="material-icons">send</span>
