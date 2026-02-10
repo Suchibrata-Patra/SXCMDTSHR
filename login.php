@@ -514,10 +514,10 @@ function authenticateWithSMTP($email, $password) {
                 </button>
             </form>
 
-            <div class="security-info">
+            <!-- <div class="security-info">
                 <strong>🛡️ Enhanced Security:</strong> This login uses advanced security features including rate limiting, 
                 brute force protection, and activity monitoring.
-            </div>
+            </div> -->
 
             <footer>
                 St. Xavier's College (Autonomous), Kolkata<br>
