@@ -847,7 +847,7 @@ $lastSync = getLastSyncDate($userEmail);
     <!-- ========== MAIN CONTENT ========== -->
     <div class="main-content">
         <!-- Header -->
-        <div class="page-header">
+        <!-- <div class="page-header">
             <div class="header-left">
                 <h1 class="page-title">📬 Inbox</h1>
                 <p class="page-subtitle">View and manage your incoming emails</p>
@@ -863,7 +863,7 @@ $lastSync = getLastSyncDate($userEmail);
                     <span class="material-icons">edit</span>
                 </button>
             </div>
-        </div>
+        </div> -->
 
         <!-- Stats bar -->
         <div class="stats-bar">
@@ -903,6 +903,17 @@ $lastSync = getLastSyncDate($userEmail);
                 </div>
             </div>
 
+            <div class="header-actions">
+                <button class="btn-icon" onclick="syncMessages()" title="Sync now" id="syncBtn">
+                    <span class="material-icons">sync</span>
+                </button>
+                <button class="btn-icon" onclick="forceRefresh()" title="Force refresh" id="refreshBtn">
+                    <span class="material-icons">refresh</span>
+                </button>
+                <button class="btn-icon" onclick="location.href='index.php'">
+                    <span class="material-icons">edit</span>
+                </button>
+            </div>
             <div class="sync-info">
                 <span class="material-icons">schedule</span>
                 <span id="lastSyncText">
