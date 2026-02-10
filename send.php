@@ -183,11 +183,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         ], $emailTemplate);
         
         // ==================== Set Email Content ====================
-        $trackingToken = generateTrackingToken();
-        $emailBodyWithTracking = injectTrackingPixel($emailBody, $trackingToken);
         $mail->isHTML(true);
         $mail->Subject = $subject;
-        $mail->Body = $emailBodyWithTracking; // Use the version with the pixel
+        $mail->Body = $emailBody;
         // Create plain text alternative (strip HTML tags from message)
         $plainTextMessage = strip_tags($messageContent);
         $mail->AltBody = "Article: " . $articleTitle . "\n\n" . $plainTextMessage . "\n\n" . 
@@ -221,7 +219,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         // Prepare email data
                         $emailData = [
                             'email_uuid' => $emailUuid,
-                            'tracking_token' => $trackingToken, // ADD THIS LINE
                             'message_id' => $messageId,
                             'sender_email' => $_SESSION['smtp_user'],
                             'sender_name' => $displayName,
@@ -241,11 +238,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         $emailId = saveEmailToDatabase($pdo, $emailData);
                         
                         if ($emailId) {
-                            $trackingInitialized = initializeEmailTracking($emailId, $_SESSION['smtp_user'], $recipient);
-    
-                         if ($trackingInitialized) {
-                                      error_log("✓ Tracking initialized with token: $trackingToken");
-                                 }
                             error_log("✓ Email saved to database (ID: $emailId, UUID: $emailUuid)");
                             
                             // Create email access record for sender
