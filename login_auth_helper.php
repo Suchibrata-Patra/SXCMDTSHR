@@ -107,7 +107,17 @@ function checkRateLimit($email, $ipAddress) {
 function recordFailedAttempt($email, $ipAddress, $reason = 'Invalid credentials') {
     try {
         $pdo = getDatabaseConnection();
-        if (!$pdo) return false;
+        if (!$pdo) {
+            error_log("CRITICAL: Cannot record failed attempt - no DB connection");
+            return false;
+        }
+        
+        // Check if failed_login_attempts table exists
+        $stmt = $pdo->query("SHOW TABLES LIKE 'failed_login_attempts'");
+        if ($stmt->rowCount() === 0) {
+            error_log("ERROR: failed_login_attempts table does not exist! Run migration_login_activity.sql");
+            return false;
+        }
         
         // Get current attempt count
         $rateLimit = checkRateLimit($email, $ipAddress);
@@ -124,7 +134,7 @@ function recordFailedAttempt($email, $ipAddress, $reason = 'Invalid credentials'
             VALUES (:email, :ip, NOW(), :reason, :blocked, :block_until)
         ");
         
-        $stmt->execute([
+        $success = $stmt->execute([
             ':email' => $email,
             ':ip' => $ipAddress,
             ':reason' => $reason,
@@ -132,14 +142,20 @@ function recordFailedAttempt($email, $ipAddress, $reason = 'Invalid credentials'
             ':block_until' => $blockUntil
         ]);
         
-        if ($shouldBlock) {
-            error_log("SECURITY: Account $email blocked from IP $ipAddress until $blockUntil");
+        if ($success) {
+            error_log("✓ Failed attempt recorded: Email=$email, IP=$ipAddress, Attempt=$newAttemptCount, Blocked=" . ($shouldBlock ? 'YES' : 'NO'));
+            
+            if ($shouldBlock) {
+                error_log("🚨 SECURITY: Account $email LOCKED from IP $ipAddress until $blockUntil");
+            }
+        } else {
+            error_log("✗ Failed to record failed attempt for $email");
         }
         
-        return true;
+        return $success;
         
     } catch (PDOException $e) {
-        error_log("Failed to record login attempt: " . $e->getMessage());
+        error_log("EXCEPTION in recordFailedAttempt: " . $e->getMessage());
         return false;
     }
 }
@@ -179,7 +195,10 @@ function clearFailedAttempts($email, $ipAddress) {
 function recordLoginActivity($email, $userId, $status = 'success', $failureReason = null) {
     try {
         $pdo = getDatabaseConnection();
-        if (!$pdo) return null;
+        if (!$pdo) {
+            error_log("CRITICAL: Cannot record login activity - no DB connection");
+            return null;
+        }
         
         $ipAddress = getClientIP();
         $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
@@ -189,6 +208,13 @@ function recordLoginActivity($email, $userId, $status = 'success', $failureReaso
         // Optional: Get geolocation (requires external API)
         // $location = getGeoLocation($ipAddress);
         
+        // Check if login_activity table exists
+        $stmt = $pdo->query("SHOW TABLES LIKE 'login_activity'");
+        if ($stmt->rowCount() === 0) {
+            error_log("ERROR: login_activity table does not exist! Run migration_login_activity.sql");
+            return null;
+        }
+        
         $stmt = $pdo->prepare("
             INSERT INTO login_activity 
             (user_id, email, login_timestamp, login_status, failure_reason,
@@ -197,7 +223,7 @@ function recordLoginActivity($email, $userId, $status = 'success', $failureReaso
                     :ip, :user_agent, :session_id, :fingerprint)
         ");
         
-        $stmt->execute([
+        $success = $stmt->execute([
             ':user_id' => $userId,
             ':email' => $email,
             ':status' => $status,
@@ -208,9 +234,20 @@ function recordLoginActivity($email, $userId, $status = 'success', $failureReaso
             ':fingerprint' => $deviceFingerprint
         ]);
         
+        if (!$success) {
+            error_log("ERROR: Failed to insert login activity for $email");
+            return null;
+        }
+        
         $loginActivityId = $pdo->lastInsertId();
         
-        // Check for suspicious activity
+        if ($loginActivityId) {
+            error_log("✓ Login activity recorded: ID=$loginActivityId, Email=$email, Status=$status, IP=$ipAddress");
+        } else {
+            error_log("WARNING: Login activity executed but no ID returned for $email");
+        }
+        
+        // Check for suspicious activity only on success
         if ($status === 'success') {
             checkSuspiciousLogin($loginActivityId, $email, $ipAddress);
         }
@@ -218,7 +255,8 @@ function recordLoginActivity($email, $userId, $status = 'success', $failureReaso
         return $loginActivityId;
         
     } catch (PDOException $e) {
-        error_log("Failed to record login activity: " . $e->getMessage());
+        error_log("EXCEPTION in recordLoginActivity: " . $e->getMessage());
+        error_log("SQL Error Code: " . $e->getCode());
         return null;
     }
 }
@@ -271,36 +309,55 @@ function recordLogoutActivity($sessionId, $reason = 'user_logout') {
 /**
  * Create user session with security
  */
-function createUserSession($userId, $loginActivityId, $rememberMe = false) {
+function createUserSession($userId, $loginActivityId) {
     try {
         $pdo = getDatabaseConnection();
-        if (!$pdo) return false;
+        if (!$pdo) {
+            error_log("CRITICAL: Cannot create session - no DB connection");
+            return false;
+        }
         
         $sessionId = session_id();
         $ipAddress = getClientIP();
         $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
-        $expiresAt = date('Y-m-d H:i:s', time() + ($rememberMe ? REMEMBER_ME_DURATION : SESSION_TIMEOUT));
+        // Fixed session timeout - always 1 hour
+        $expiresAt = date('Y-m-d H:i:s', time() + SESSION_TIMEOUT);
         
-        $stmt = $pdo->prepare("
-            INSERT INTO user_sessions
-            (user_id, session_id, login_activity_id, ip_address, user_agent, 
-             created_at, last_activity, expires_at, is_active)
-            VALUES (:user_id, :session_id, :login_id, :ip, :user_agent,
-                    NOW(), NOW(), :expires_at, 1)
-        ");
-        
-        return $stmt->execute([
-            ':user_id' => $userId,
-            ':session_id' => $sessionId,
-            ':login_id' => $loginActivityId,
-            ':ip' => $ipAddress,
-            ':user_agent' => $userAgent,
-            ':expires_at' => $expiresAt
-        ]);
+        // Check if user_sessions table exists
+        $stmt = $pdo->query("SHOW TABLES LIKE 'user_sessions'");
+        if ($stmt->rowCount() > 0) {
+            $stmt = $pdo->prepare("
+                INSERT INTO user_sessions
+                (user_id, session_id, login_activity_id, ip_address, user_agent, 
+                 created_at, last_activity, expires_at, is_active)
+                VALUES (:user_id, :session_id, :login_id, :ip, :user_agent,
+                        NOW(), NOW(), :expires_at, 1)
+            ");
+            
+            $success = $stmt->execute([
+                ':user_id' => $userId,
+                ':session_id' => $sessionId,
+                ':login_id' => $loginActivityId,
+                ':ip' => $ipAddress,
+                ':user_agent' => $userAgent,
+                ':expires_at' => $expiresAt
+            ]);
+            
+            if ($success) {
+                error_log("✓ Session created for user $userId (session: $sessionId)");
+            } else {
+                error_log("✗ Failed to create session for user $userId");
+            }
+            
+            return $success;
+        } else {
+            error_log("WARNING: user_sessions table does not exist - session not tracked");
+            return true; // Don't fail login if table missing
+        }
         
     } catch (PDOException $e) {
         error_log("Failed to create session: " . $e->getMessage());
-        return false;
+        return false; // Don't fail login on session creation error
     }
 }
 

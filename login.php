@@ -42,7 +42,6 @@ $blockUntil = null;
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $userEmail = filter_var($_POST['email'] ?? '', FILTER_SANITIZE_EMAIL);
     $userPass = $_POST['app_password'] ?? '';
-    $rememberMe = isset($_POST['remember_me']);
     
     // Validate input
     if (empty($userEmail) || empty($userPass)) {
@@ -98,7 +97,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     session_regenerate_id(true);
                     
                     // Create session record
-                    createUserSession($userId, $loginActivityId, $rememberMe);
+                    createUserSession($userId, $loginActivityId);
                     
                     // Load IMAP config
                     loadImapConfigToSession($userEmail, $userPass);
@@ -500,11 +499,6 @@ function authenticateWithSMTP($email, $password) {
                     </label>
                 </div>
 
-                <label class="checkbox-container">
-                    <input type="checkbox" name="remember_me" id="remember_me">
-                    <span>Keep me signed in for 30 days</span>
-                </label>
-
                 <button 
                     type="submit" 
                     id="submitBtn"
@@ -514,10 +508,10 @@ function authenticateWithSMTP($email, $password) {
                 </button>
             </form>
 
-            <!-- <div class="security-info">
+            <div class="security-info">
                 <strong>🛡️ Enhanced Security:</strong> This login uses advanced security features including rate limiting, 
                 brute force protection, and activity monitoring.
-            </div> -->
+            </div>
 
             <footer>
                 St. Xavier's College (Autonomous), Kolkata<br>
