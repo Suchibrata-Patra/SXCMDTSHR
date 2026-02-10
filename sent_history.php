@@ -487,7 +487,7 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
         .stat-icon {
             width: 32px;
             height: 32px;
-            border-radius: 8px;
+            border-radius: 50px;
             display: flex;
             align-items: center;
             justify-content: center;
