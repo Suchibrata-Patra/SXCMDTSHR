@@ -1,145 +1,227 @@
-<?php
-/**
- * Minimal CSV Preview - No dependencies
- */
-
-// Enable error reporting to see what's wrong
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-ini_set('log_errors', 1);
-
-// Start output buffering to catch any errors
-ob_start();
-
-try {
-    // Start session
-    session_start();
-    
-    // Set JSON header
-    header('Content-Type: application/json');
-    
-    // Check if user is logged in (minimal check)
-    if (!isset($_SESSION['smtp_user'])) {
-        throw new Exception('Not logged in. Please login first.');
-    }
-    
-    // Get action
-    $action = $_GET['action'] ?? '';
-    
-    if ($action !== 'preview') {
-        throw new Exception('Invalid action');
-    }
-    
-    // Check if file was uploaded
-    if (!isset($_FILES['csv_file'])) {
-        throw new Exception('No CSV file uploaded');
-    }
-    
-    $csvFile = $_FILES['csv_file'];
-    
-    // Check for upload errors
-    if ($csvFile['error'] !== UPLOAD_ERR_OK) {
-        throw new Exception('File upload error code: ' . $csvFile['error']);
-    }
-    
-    // Check file exists
-    if (!file_exists($csvFile['tmp_name'])) {
-        throw new Exception('Uploaded file not found');
-    }
-    
-    // Check file extension
-    $ext = strtolower(pathinfo($csvFile['name'], PATHINFO_EXTENSION));
-    if ($ext !== 'csv') {
-        throw new Exception('File must be a CSV file');
-    }
-    
-    // Open CSV file
-    $handle = fopen($csvFile['tmp_name'], 'r');
-    if (!$handle) {
-        throw new Exception('Could not open CSV file');
-    }
-    
-    // Read header
-    $header = fgetcsv($handle);
-    if (!$header) {
-        fclose($handle);
-        throw new Exception('CSV file is empty');
-    }
-    
-    // Clean headers (remove BOM)
-    $header = array_map(function($h) {
-        $h = str_replace("\xEF\xBB\xBF", '', $h);
-        return trim($h);
-    }, $header);
-    
-    // Check required columns
-    $required = [
-        'mail_id', 'receiver_name', 'Mail_Subject', 'Article_Title',
-        'Personalised_message', 'closing_wish', 'Name', 'Designation',
-        'Additional_information', 'Attachments'
-    ];
-    
-    $missing = [];
-    foreach ($required as $col) {
-        if (!in_array($col, $header)) {
-            $missing[] = $col;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Preview Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
         }
-    }
-    
-    if (!empty($missing)) {
-        fclose($handle);
-        throw new Exception('Missing columns: ' . implode(', ', $missing));
-    }
-    
-    // Create column map
-    $colMap = array_flip($header);
-    
-    // Read preview rows
-    $preview = [];
-    $total = 0;
-    $max = 10;
-    
-    while (($row = fgetcsv($handle)) !== false) {
-        $total++;
-        
-        if (count($preview) < $max) {
-            $preview[] = [
-                'row_number' => $total,
-                'mail_id' => $row[$colMap['mail_id']] ?? '',
-                'receiver_name' => $row[$colMap['receiver_name']] ?? '',
-                'subject' => $row[$colMap['Mail_Subject']] ?? '',
-                'article_title' => $row[$colMap['Article_Title']] ?? '',
-                'message_preview' => substr($row[$colMap['Personalised_message']] ?? '', 0, 100) . '...',
-                'closing_wish' => $row[$colMap['closing_wish']] ?? '',
-                'sender_name' => $row[$colMap['Name']] ?? '',
-                'sender_designation' => $row[$colMap['Designation']] ?? ''
-            ];
+        .upload-area {
+            border: 2px dashed #ccc;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
         }
-    }
-    
-    fclose($handle);
-    
-    // Clear output buffer
-    ob_end_clean();
-    
-    // Return success
-    echo json_encode([
-        'success' => true,
-        'preview_rows' => $preview,
-        'total_rows' => $total,
-        'headers' => $header,
-        'message' => "Found $total email(s) in CSV file. Preview showing first " . count($preview) . " rows."
-    ]);
-    
-} catch (Exception $e) {
-    // Clear output buffer
-    ob_end_clean();
-    
-    // Return error
-    header('Content-Type: application/json');
-    echo json_encode([
-        'success' => false,
-        'error' => $e->getMessage()
-    ]);
-}
-?>
+        .upload-area:hover {
+            border-color: #007AFF;
+            background: #f0f8ff;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+        .error {
+            background: #fee;
+            color: #c00;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #efe;
+            color: #060;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background: #007AFF;
+            color: white;
+        }
+        .log {
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log div {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>CSV Preview Test</h1>
+    <p>This test page will help debug the CSV preview functionality.</p>
+
+    <div class="upload-area" onclick="document.getElementById('csvInput').click()">
+        <h3>📤 Click to Upload CSV File</h3>
+        <p>Or drag and drop a CSV file here</p>
+    </div>
+    <input type="file" id="csvInput" accept=".csv" style="display: none;" onchange="handleFile(this.files[0])">
+
+    <div id="result"></div>
+    <div id="log" class="log"></div>
+
+    <script>
+        const resultDiv = document.getElementById('result');
+        const logDiv = document.getElementById('log');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#c00' : type === 'success' ? '#060' : '#000';
+            logDiv.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        async function handleFile(file) {
+            if (!file) {
+                log('No file selected', 'error');
+                return;
+            }
+
+            log(`File selected: ${file.name} (${file.size} bytes, type: ${file.type})`);
+
+            if (!file.name.endsWith('.csv')) {
+                log('Warning: File does not have .csv extension', 'error');
+            }
+
+            resultDiv.innerHTML = '<div class="result">Loading preview...</div>';
+
+            const formData = new FormData();
+            formData.append('csv_file', file);
+
+            log('Sending request to csv_preview_standalone.php?action=preview');
+
+            try {
+                const response = await fetch('csv_preview_standalone.php?action=preview', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                log(`Response status: ${response.status} ${response.statusText}`);
+
+                const contentType = response.headers.get('content-type');
+                log(`Content-Type: ${contentType}`);
+
+                const text = await response.text();
+                log(`Response length: ${text.length} characters`);
+                log(`First 200 chars: ${text.substring(0, 200)}`);
+
+                let result;
+                try {
+                    result = JSON.parse(text);
+                    log('JSON parsed successfully', 'success');
+                } catch (e) {
+                    log('JSON parse error: ' + e.message, 'error');
+                    resultDiv.innerHTML = `<div class="error">
+                        <h3>❌ Invalid JSON Response</h3>
+                        <p>The server returned invalid JSON. This could be a PHP error.</p>
+                        <pre style="background: #fff; padding: 10px; overflow-x: auto;">${escapeHtml(text)}</pre>
+                    </div>`;
+                    return;
+                }
+
+                if (result.success) {
+                    log(`Preview successful! ${result.total_rows} total rows`, 'success');
+                    displayPreview(result);
+                } else {
+                    log('Preview failed: ' + result.error, 'error');
+                    resultDiv.innerHTML = `<div class="error">
+                        <h3>❌ Preview Failed</h3>
+                        <p>${escapeHtml(result.error)}</p>
+                        ${result.debug_info ? `<pre>${JSON.stringify(result.debug_info, null, 2)}</pre>` : ''}
+                    </div>`;
+                }
+            } catch (error) {
+                log('Fetch error: ' + error.message, 'error');
+                resultDiv.innerHTML = `<div class="error">
+                    <h3>❌ Request Failed</h3>
+                    <p>${escapeHtml(error.message)}</p>
+                    <p>Check browser console for more details.</p>
+                </div>`;
+            }
+        }
+
+        function displayPreview(result) {
+            let html = `<div class="success">
+                <h3>✅ Preview Loaded Successfully</h3>
+                <p>${result.message}</p>
+                <p><strong>Total Rows:</strong> ${result.total_rows}</p>
+                <p><strong>Preview Rows:</strong> ${result.preview_rows.length}</p>
+            </div>`;
+
+            html += '<table><thead><tr>';
+            html += '<th>#</th><th>Email</th><th>Name</th><th>Subject</th><th>Article</th><th>Message</th>';
+            html += '</tr></thead><tbody>';
+
+            result.preview_rows.forEach(row => {
+                html += `<tr>
+                    <td>${row.row_number}</td>
+                    <td>${escapeHtml(row.mail_id)}</td>
+                    <td>${escapeHtml(row.receiver_name)}</td>
+                    <td>${escapeHtml(row.subject)}</td>
+                    <td>${escapeHtml(row.article_title)}</td>
+                    <td>${escapeHtml(row.message_preview)}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            resultDiv.innerHTML = html;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Drag and drop
+        const uploadArea = document.querySelector('.upload-area');
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#007AFF';
+            uploadArea.style.background = '#f0f8ff';
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = '#ccc';
+            uploadArea.style.background = '';
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#ccc';
+            uploadArea.style.background = '';
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        });
+
+        log('Test page loaded. Ready to upload CSV file.');
+    </script>
+</body>
+</html>
