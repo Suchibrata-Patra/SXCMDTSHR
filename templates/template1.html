@@ -9,8 +9,8 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <title>St. Xavier's College (Autonomous) - Official Communication</title>
     <style type="text/css">
-        /* Reset and Client Fixes */
-        body {
+        /* Reset and Client Fixes - Scoped to template1 */
+        .template1_body {
             margin: 0 !important;
             padding: 0 !important;
             width: 100% !important;
@@ -18,13 +18,13 @@
             -ms-text-size-adjust: 100%;
         }
 
-        table {
+        .template1_body table {
             border-collapse: collapse !important;
             mso-table-lspace: 0pt;
             mso-table-rspace: 0pt;
         }
 
-        img {
+        .template1_body img {
             border: 0;
             outline: none;
             text-decoration: none;
@@ -32,41 +32,41 @@
             display: block;
         }
 
-        a {
+        .template1_body a {
             text-decoration: none;
             color: #226799;
         }
 
-        * {
+        .template1_body * {
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
 
         /* Base Styles - Nature Exact Match */
-        body,
-        #bodyTable {
+        .template1_body,
+        #template1_bodyTable {
             height: 100% !important;
             width: 100% !important;
             background-color: #ffffff;
         }
 
         /* Typography - Nature's Exact Fonts */
-        .sans-serif {
+        .template1_sans-serif {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
         }
 
-        .serif {
+        .template1_serif {
             font-family: 'Merriweather', 'Georgia', serif;
         }
 
         /* Nature Header - Exact Match */
-        .nature-header {
+        .template1_nature-header {
             background-color: #ffffff;
             border-bottom: 5px solid #000000;
             padding: 0;
         }
 
-        .nature-logo {
+        .template1_nature-logo {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 48px;
             font-weight: 900;
@@ -77,7 +77,7 @@
             line-height: 1;
         }
 
-        .college-name {
+        .template1_college-name {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 24px;
             font-weight: 900;
@@ -88,7 +88,7 @@
             line-height: 1.2;
         }
 
-        .college-credentials {
+        .template1_college-credentials {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 11px;
             color: #444444;
@@ -97,13 +97,13 @@
         }
 
         /* Navigation Bar */
-        .nav-bar {
+        .template1_nav-bar {
             background-color: #ffffff;
             border-bottom: 3px solid #000000;
             padding: 18px 96px;
         }
 
-        .nav-item {
+        .template1_nav-item {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 15px;
             color: #000000;
@@ -113,55 +113,55 @@
         }
 
         /* Breadcrumb */
-        .breadcrumb-section {
+        .template1_breadcrumb-section {
             background-color: #fafafa;
             padding: 18px 96px;
             border-bottom: 1px solid #e0e0e0;
         }
 
-        .breadcrumb {
+        .template1_breadcrumb {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 13px;
             color: #666666;
             margin: 0;
         }
 
-        .breadcrumb a {
+        .template1_breadcrumb a {
             color: #226799;
             text-decoration: none;
         }
 
         /* Main Content Container */
-        .content-wrapper {
+        .template1_content-wrapper {
             max-width: 1440px;
             margin: 0 auto;
             padding: 0;
             background-color: #ffffff;
         }
 
-        .content-grid {
+        .template1_content-grid {
             padding: 40px 96px;
         }
 
         /* Left Column - Main Content */
-        .main-content {
+        .template1_main-content {
             width: 65%;
             padding-right: 60px;
         }
 
         /* Right Sidebar */
-        .sidebar {
+        .template1_sidebar {
             width: 35%;
             padding-left: 30px;
             border-left: 1px solid #e0e0e0;
         }
 
         /* Article Metadata */
-        .article-meta {
+        .template1_article-meta {
             margin: 10px 0 10px 0;
         }
 
-        .article-type {
+        .template1_article-type {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 13px;
             color: #000000;
@@ -170,7 +170,7 @@
             margin-right: 10px;
         }
 
-        .open-access-badge {
+        .template1_open-access-badge {
             display: inline;
             background-color: #ffffff;
             border: 1px solid #c77700;
@@ -184,7 +184,7 @@
             border-radius: 4px;
         }
 
-        .published-date {
+        .template1_published-date {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 11px;
             color: #666666;
@@ -192,7 +192,7 @@
         }
 
         /* Article Title */
-        .article-title {
+        .template1_article-title {
             font-family: 'Merriweather', 'Georgia', serif;
             font-size: 1.875rem;
             font-weight: 700;
@@ -203,11 +203,11 @@
         }
 
         /* Authors */
-        .authors {
+        .template1_authors {
             margin: 0 0 20px 0;
         }
 
-        .author-name {
+        .template1_author-name {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 15px;
             color: #226799;
@@ -215,34 +215,34 @@
             font-weight: 600;
         }
 
-        .author-separator {
+        .template1_author-separator {
             color: #000000;
             margin: 0 5px;
             font-weight: 600;
         }
 
         /* Journal Citation */
-        .journal-citation {
+        .template1_journal-citation {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 14px;
             color: #000000;
             margin: 0 0 35px 0;
         }
 
-        .journal-name {
+        .template1_journal-name {
             font-style: italic;
             color: #226799;
             text-decoration: none;
         }
 
-        .cite-link {
+        .template1_cite-link {
             color: #226799;
             text-decoration: none;
             margin-left: 15px;
         }
 
         /* Section Headings */
-        .section-heading {
+        .template1_section-heading {
             font-family: 'Merriweather', 'Georgia', serif;
             font-size: 24px;
             font-weight: 700;
@@ -252,7 +252,7 @@
         }
 
         /* Body Text - Nature Exact Style */
-        .body-text {
+        .template1_body-text {
             font-family: 'Merriweather', 'Georgia', serif;
             font-size: 18px;
             color: #222222;
@@ -261,19 +261,19 @@
             font-weight: 400;
         }
 
-        .body-text sup {
+        .template1_body-text sup {
             font-size: 12px;
             vertical-align: super;
             line-height: 0;
         }
 
-        .body-text a {
+        .template1_body-text a {
             color: #226799;
             text-decoration: none;
         }
 
         /* Sidebar Elements */
-        .sidebar-download-btn {
+        .template1_sidebar-download-btn {
             background-color: #226799;
             color: #ffffff !important;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -287,13 +287,13 @@
             border: 1.5px solid #226799;
         }
 
-        .sidebar-download-btn:hover {
+        .template1_sidebar-download-btn:hover {
             background-color: #ffffff;
             color: #226799 !important;
         }
 
 
-        .sidebar-section-title {
+        .template1_sidebar-section-title {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 16px;
             font-weight: 700;
@@ -303,7 +303,7 @@
             border-bottom: 2px solid #e0e0e0;
         }
 
-        .sidebar-tab {
+        .template1_sidebar-tab {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 14px;
             font-weight: 600;
@@ -314,7 +314,7 @@
             border-bottom: 3px solid #000000;
         }
 
-        .sidebar-link {
+        .template1_sidebar-link {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 14px;
             color: #145482;
@@ -325,23 +325,23 @@
             line-height: 1.5;
         }
 
-        .sidebar-link:hover {
+        .template1_sidebar-link:hover {
             text-decoration: underline;
         }
 
         /* Footer */
-        .footer-wrapper {
+        .template1_footer-wrapper {
             background-color: #0d324b;
             border-top: 1px solid #e0e0e0;
             padding: 45px 96px;
         }
 
-        .footer-content {
+        .template1_footer-content {
             max-width: 1440px;
             margin: 0 auto;
         }
 
-        .footer-section-heading {
+        .template1_footer-section-heading {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 12px;
             font-weight: 700;
@@ -351,7 +351,7 @@
             text-transform: uppercase;
         }
 
-        .footer-text {
+        .template1_footer-text {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 13px;
             color: #ffffff;
@@ -359,107 +359,107 @@
             margin: 0 0 10px 0;
         }
 
-        .footer-link {
+        .template1_footer-link {
             color: white !important;
             text-decoration: none;
         }
 
-        .footer-divider {
+        .template1_footer-divider {
             height: 1px;
             background-color: #eaeaea;
             margin: 35px 0;
         }
 
         /* Mobile-specific visibility classes */
-        .mobile-only {
+        .template1_mobile-only {
             display: none !important;
         }
 
-        .desktop-only {
+        .template1_desktop-only {
             /* display: block !important; */
         }
 
         /* Responsive Design */
         @media only screen and (max-width: 1024px) {
-            .nature-logo {
+            .template1_nature-logo {
                 padding-left: 40px !important;
             }
 
-            .nav-bar {
+            .template1_nav-bar {
                 padding: 18px 40px !important;
             }
 
-            .breadcrumb-section {
+            .template1_breadcrumb-section {
                 padding: 18px 40px !important;
             }
 
-            .content-grid {
+            .template1_content-grid {
                 padding: 40px 40px !important;
             }
 
-            .footer-wrapper {
+            .template1_footer-wrapper {
                 padding: 45px 40px !important;
             }
 
-            .main-content {
+            .template1_main-content {
                 width: 60% !important;
                 padding-right: 40px !important;
             }
 
-            .sidebar {
+            .template1_sidebar {
                 width: 40% !important;
             }
         }
 
         @media only screen and (max-width: 768px) {
-            .nature-logo {
+            .template1_nature-logo {
                 font-size: 36px !important;
                 padding: 12px 0 12px 25px !important;
             }
 
-            .college-name {
+            .template1_college-name {
                 font-size: 18px !important;
             }
 
-            .college-credentials {
+            .template1_college-credentials {
                 font-size: 9px !important;
                 line-height: 1.5 !important;
             }
 
-            .open-access-badge {
+            .template1_open-access-badge {
                 font-size: 9px !important;
                 padding: 3px 6px !important;
             }
 
-            .published-date {
+            .template1_published-date {
                 font-size: 9px !important;
             }
 
-            .nav-bar {
+            .template1_nav-bar {
                 padding: 15px 25px !important;
             }
 
-            .nav-item {
+            .template1_nav-item {
                 font-size: 13px !important;
                 margin-right: 20px !important;
             }
 
-            .breadcrumb-section {
+            .template1_breadcrumb-section {
                 padding: 15px 25px !important;
             }
 
-            .content-grid {
+            .template1_content-grid {
                 display: block !important;
                 padding: 0px 25px !important;
             }
 
-            .main-content {
+            .template1_main-content {
                 width: 100% !important;
                 padding-right: 0 !important;
                 margin-bottom: 40px !important;
             }
 
-            .sidebar {
+            .template1_sidebar {
                 width: 100% !important;
                 padding-left: 0 !important;
                 border-left: none !important;
@@ -467,80 +467,80 @@
                 padding-top: 30px !important;
             }
 
-            .article-title {
+            .template1_article-title {
                 font-size: 30px !important;
             }
 
-            .body-text {
+            .template1_body-text {
                 font-size: 16px !important;
             }
 
-            .footer-wrapper {
+            .template1_footer-wrapper {
                 padding: 35px 25px !important;
             }
 
             /* Mobile layout reordering */
-            .mobile-only {
+            .template1_mobile-only {
                 display: block !important;
             }
 
-            .desktop-only {
+            .template1_desktop-only {
                 display: none !important;
             }
 
             /* Mobile button styling */
-            .mobile-only .sidebar-download-btn {
+            .template1_mobile-only .template1_sidebar-download-btn {
                 margin: 20px 0 3px 0 !important;
             }
 
             /* Mobile sections styling */
-            .sidebar {
+            .template1_sidebar {
                 order: 2 !important;
             }
         }
 
         @media only screen and (max-width: 480px) {
-            .nature-logo {
+            .template1_nature-logo {
                 font-size: 32px !important;
                 padding: 10px 0 10px 20px !important;
             }
 
-            .college-name {
+            .template1_college-name {
                 font-size: 16px !important;
             }
 
-            .college-credentials {
+            .template1_college-credentials {
                 font-size: 8px !important;
                 line-height: 1.4 !important;
             }
 
-            .open-access-badge {
+            .template1_open-access-badge {
                 font-size: 8px !important;
                 padding: 3px 5px !important;
             }
 
-            .published-date {
+            .template1_published-date {
                 font-size: 8px !important;
             }
 
-            .nav-item {
+            .template1_nav-item {
                 display: block !important;
                 margin-bottom: 10px !important;
             }
 
-            .article-title {
+            .template1_article-title {
                 font-size: 1.2rem !important;
             }
 
-            .section-heading {
+            .template1_section-heading {
                 font-size: 1.1rem !important;
             }
 
-            .body-text {
+            .template1_body-text {
                 font-size: 15px !important;
             }
 
-            .open-access-badge {
+            .template1_open-access-badge {
                 display: block !important;
                 margin: 10px 0 !important;
             }
@@ -548,14 +548,14 @@
     </style>
 </head>
 
-<body style="margin: 0; padding: 0; background-color: #ffffff;">
+<body class="template1_body">
 
-    <table border="0" cellpadding="0" cellspacing="0" width="100%" id="bodyTable">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" id="template1_bodyTable">
         <tr>
             <td>
 
                 <!-- Nature Header -->
-                <table border="0" cellpadding="0" cellspacing="0" width="100%" class="nature-header">
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" class="template1_nature-header">
                     <tr>
                         <td>
                             <table border="0" cellpadding="0" cellspacing="0" style="padding: 15px 0 15px 96px;">
@@ -566,22 +566,22 @@
                                             style="display: block; width: 90px; height: auto;">
                                     </td>
                                     <td valign="middle" style="padding-left: 20px;">
-                                        <h1 class="college-name">
+                                        <h1 class="template1_college-name">
                                             St. Xavier's College (Autonomous), Kolkata
                                         </h1>
-                                        <p class="college-credentials">
+                                        <p class="template1_college-credentials">
                                             Autonomous College (2006) | College with Potential for Excellence
                                             (2006) | College of Excellence (2014), NAAC A++ Grade | 4th Cycle (2024) |
                                             ISO
                                             9001:2015 Certified | NIRF India Ranking 2025: 8th Position
                                         </p>
                                         <!-- Article Metadata -->
-                                        <div class="article-meta">
-                                            <!-- <span class="article-type">Invitation</span> -->
-                                            <span class="open-access-badge">Official Invitation for Campus
+                                        <div class="template1_article-meta">
+                                            <!-- <span class="template1_article-type">Invitation</span> -->
+                                            <span class="template1_open-access-badge">Official Invitation for Campus
                                                 Recruitment - MSc Data Science (2026)</span>
-                                            <!-- <span class="published-date">Published: {{DATE}}</span> -->
-                                            <span class="published-date">Published: 26/10/2026</span>
+                                            <!-- <span class="template1_published-date">Published: {{DATE}}</span> -->
+                                            <span class="template1_published-date">Published: {{DATE}}</span>
                                         </div>
                                     </td>
                                     <td style="width: 10%;">
@@ -593,23 +593,23 @@
                 </table>
 
                 <!-- Navigation Bar -->
-                <table border="0" cellpadding="0" cellspacing="0" width="100%" class="nav-bar">
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" class="template1_nav-bar">
                     <tr>
                         <!-- <td>
-                            <span class="nav-item">Placement Home</span>
-                            <span class="nav-item">About the Programme</span>
-                            <span class="nav-item">Recruiter Information</span>
-                            <span class="nav-item">Contact Us</span>
+                            <span class="template1_nav-item">Placement Home</span>
+                            <span class="template1_nav-item">About the Programme</span>
+                            <span class="template1_nav-item">Recruiter Information</span>
+                            <span class="template1_nav-item">Contact Us</span>
                         </td> -->
                     </tr>
                 </table>
 
                 <!-- Mobile Connect Button (Shows only on mobile after header) -->
-                <table border="0" cellpadding="0" cellspacing="0" width="100%" class="mobile-only"
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" class="template1_mobile-only"
                     style="padding: 20px 25px 0 25px;">
                     <tr>
                         <td>
-                            <a href="mailto:placement@sxccal.edu" class="sidebar-download-btn">
+                            <a href="mailto:placement@sxccal.edu" class="template1_sidebar-download-btn">
                                 Connect With Placement Cell
                             </a>
                         </td>
@@ -620,30 +620,32 @@
                 <table border="0" cellpadding="0" cellspacing="0" width="100%">
                     <tr>
                         <td>
-                            <div class="content-wrapper">
-                                <table border="0" cellpadding="0" cellspacing="0" width="100%" class="content-grid">
+                            <div class="template1_content-wrapper">
+                                <table border="0" cellpadding="0" cellspacing="0" width="100%"
+                                    class="template1_content-grid">
                                     <tr>
                                         <!-- Left Column - Main Content -->
-                                        <td class="main-content" valign="top">
+                                        <td class="template1_main-content" valign="top">
 
                                             <!-- Article Title -->
-                                            <h1 class="article-title">
+                                            <h1 class="template1_article-title">
                                                 <!-- Co-Ordial Invitation for on-campus placement drive.  -->
                                                 {{articletitle}}
                                             </h1>
 
                                             <!-- Authors -->
-                                            <div class="authors">
+                                            <div class="template1_authors">
                                                 <a href="https://www.linkedin.com/in/durba-bhattacharya-b3821773/"
-                                                    class="author-name">Dr. Durba Bhattacharya</a>
-                                                <span class="author-separator"> [ HOD of Dept. of Data Science ]</span>
-                                                <!-- <a href="#" class="author-name">Programme Overview</a> -->
+                                                    class="template1_author-name">Dr. Durba Bhattacharya</a>
+                                                <span class="template1_author-separator"> [ HOD of Dept. of Data Science
+                                                    ]</span>
+                                                <!-- <a href="#" class="template1_author-name">Programme Overview</a> -->
                                             </div>
 
                                             <!-- Abstract/Greeting Section -->
-                                            <h2 class="section-heading">Communication</h2>
+                                            <h2 class="template1_section-heading">Communication</h2>
 
-                                            <p class="body-text">
+                                            <p class="template1_body-text">
                                                 Dear Esteemed Corporate Partner,
                                             </p>
                                             <!-- Dynamic Message Content -->
@@ -661,10 +663,11 @@
                                             <!-- Signature Section -->
                                             <div
                                                 style="margin-top: 50px; padding-top: 35px; border-top: 1px solid #d0d0d0;">
-                                                <p class="body-text" style="margin-bottom: 5px;">
+                                                <p class="template1_body-text" style="margin-bottom: 5px;">
                                                     {{SIGNATURE_WISH}}
                                                 </p>
-                                                <p class="body-text" style="font-weight: 700; margin-bottom: 5px;">
+                                                <p class="template1_body-text"
+                                                    style="font-weight: 700; margin-bottom: 5px;">
                                                     {{SIGNATURE_NAME}}
                                                 </p>
                                                 <p
@@ -678,40 +681,48 @@
                                             </div>
 
                                             <!-- Mobile Quick Sections (Shows only on mobile at bottom of main content) -->
-                                            <div class="mobile-only"
+                                            <div class="template1_mobile-only"
                                                 style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #e0e0e0;">
-                                                <h3 class="sidebar-section-title">
-                                                    <span class="sidebar-tab">Quick Sections</span>
+                                                <h3 class="template1_sidebar-section-title">
+                                                    <span class="template1_sidebar-tab">Quick Sections</span>
                                                 </h3>
-                                                <a href="#" class="sidebar-link">About St. Xavier's College</a>
-                                                <a href="#" class="sidebar-link">Training & Placement Cell</a>
-                                                <a href="#" class="sidebar-link">Why Recruit Our Students</a>
-                                                <a href="#" class="sidebar-link">Academic & Technical Curriculum</a>
-                                                <a href="#" class="sidebar-link">Recruitment Process & Guidelines</a>
-                                                <a href="#" class="sidebar-link">Contact Information</a>
+                                                <a href="#" class="template1_sidebar-link">About St. Xavier's
+                                                    College</a>
+                                                <a href="#" class="template1_sidebar-link">Training & Placement Cell</a>
+                                                <a href="#" class="template1_sidebar-link">Why Recruit Our Students</a>
+                                                <a href="#" class="template1_sidebar-link">Academic & Technical
+                                                    Curriculum</a>
+                                                <a href="#" class="template1_sidebar-link">Recruitment Process &
+                                                    Guidelines</a>
+                                                <a href="#" class="template1_sidebar-link">Contact Information</a>
                                             </div>
 
                                         </td>
 
                                         <!-- Right Sidebar (Desktop Only) -->
-                                        <td class="sidebar desktop-only" valign="top" style="padding-top: 20px;">
+                                        <td class="template1_sidebar template1_desktop-only" valign="top"
+                                            style="padding-top: 20px;">
 
                                             <!-- Download Button -->
-                                            <a href="mailto:placement@sxccal.edu" class="sidebar-download-btn">
+                                            <a href="mailto:placement@sxccal.edu"
+                                                class="template1_sidebar-download-btn">
                                                 Connect With Placement Cell
                                             </a>
 
                                             <!-- Sections -->
                                             <div>
-                                                <h3 class="sidebar-section-title">
-                                                    <span class="sidebar-tab">Quick Sections</span>
+                                                <h3 class="template1_sidebar-section-title">
+                                                    <span class="template1_sidebar-tab">Quick Sections</span>
                                                 </h3>
-                                                <a href="#" class="sidebar-link">About St. Xavier's College</a>
-                                                <a href="#" class="sidebar-link">Training & Placement Cell</a>
-                                                <a href="#" class="sidebar-link">Why Recruit Our Students</a>
-                                                <a href="#" class="sidebar-link">Academic & Technical Curriculum</a>
-                                                <a href="#" class="sidebar-link">Recruitment Process & Guidelines</a>
-                                                <a href="#" class="sidebar-link">Contact Information</a>
+                                                <a href="#" class="template1_sidebar-link">About St. Xavier's
+                                                    College</a>
+                                                <a href="#" class="template1_sidebar-link">Training & Placement Cell</a>
+                                                <a href="#" class="template1_sidebar-link">Why Recruit Our Students</a>
+                                                <a href="#" class="template1_sidebar-link">Academic & Technical
+                                                    Curriculum</a>
+                                                <a href="#" class="template1_sidebar-link">Recruitment Process &
+                                                    Guidelines</a>
+                                                <a href="#" class="template1_sidebar-link">Contact Information</a>
                                             </div>
                                         </td>
                                     </tr>
@@ -723,45 +734,45 @@
 
                 <!-- Footer -->
                 <!-- Footer -->
-                <div class="footer-wrapper">
-                    <div class="footer-content">
+                <div class="template1_footer-wrapper">
+                    <div class="template1_footer-content">
 
                         <!-- Footer Columns -->
-                        <div class="footer-columns">
+                        <div class="template1_footer-columns">
                             <!-- Left Column - Institution -->
-                            <div class="footer-column">
-                                <h3 class="footer-section-heading">Institution</h3>
-                                <p class="footer-text" style="font-weight: 700;">
+                            <div class="template1_footer-column">
+                                <h3 class="template1_footer-section-heading">Institution</h3>
+                                <p class="template1_footer-text" style="font-weight: 700;">
                                     St. Xavier's College (Autonomous)
                                 </p>
-                                <p class="footer-text">
+                                <p class="template1_footer-text">
                                     30, Mother Teresa Sarani<br>
                                     Kolkata - 700016, West Bengal, India
                                 </p>
                             </div>
 
                             <!-- Right Column - Contact -->
-                            <div class="footer-column">
-                                <h3 class="footer-section-heading">Contact</h3>
-                                <p class="footer-text">
+                            <div class="template1_footer-column">
+                                <h3 class="template1_footer-section-heading">Contact</h3>
+                                <p class="template1_footer-text">
                                     <strong>Phone:</strong> <a href="tel:+91033 2255 1101"
-                                        class="footer-link">+91-33-2155-1867</a><br>
+                                        class="template1_footer-link">+91-33-2155-1867</a><br>
                                     <strong>Email:</strong> <a href="mailto:placement@sxccal.edu"
-                                        class="footer-link">placement@sxccal.edu</a><br>
+                                        class="template1_footer-link">placement@sxccal.edu</a><br>
                                     <strong>Web:</strong> <a href="https://www.sxccal.edu"
-                                        class="footer-link">www.sxccal.edu</a>
+                                        class="template1_footer-link">www.sxccal.edu</a>
                                 </p>
                             </div>
                         </div>
 
                         <!-- Divider -->
-                        <!-- <div class="footer-divider"></div> -->
+                        <!-- <div class="template1_footer-divider"></div> -->
 
                         <!-- Footer Bottom Section -->
-                        <div class="footer-bottom" style="color: white;">
+                        <div class="template1_footer-bottom" style="color: white;">
                             <!-- Left - Legal Links -->
-                            <div class="footer-bottom-left" style="color: white !important;">
-                                <div class="footer-legal-links" style="color: white !important;">
+                            <div class="template1_footer-bottom-left" style="color: white !important;">
+                                <div class="template1_footer-legal-links" style="color: white !important;">
                                     <a href="https://www.sxccaa.net/privacypolicy.php" style="color: white;">Privacy
                                         Policy</a> |
                                     <a href="#" style="color: white;">Use of cookies</a> |
@@ -775,8 +786,8 @@
                             </div>
 
                             <!-- Right - Copyright -->
-                            <div class="footer-bottom-right">
-                                <p class="footer-copyright">
+                            <div class="template1_footer-bottom-right">
+                                <p class="template1_footer-copyright">
                                     © 2026 Dept. of Statistics & Data Science St. Xavier's College (Autonomous), Kolkata
                                 </p>
                             </div>
