@@ -1144,7 +1144,7 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
                 <!-- Toolbar -->
                 <div class="toolbar">
                     <div class="search-box">
-                        <span class="material-icons">search</span>
+                        <!-- <span class="material-icons">search</span> -->
                         <input type="text" id="searchInput" placeholder="Search sent emails..." oninput="searchMessages()">
                         <span class="material-icons clear-search" id="clearSearch" onclick="clearSearch()">close</span>
                     </div>
