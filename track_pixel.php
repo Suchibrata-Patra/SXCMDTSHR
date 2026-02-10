@@ -11,7 +11,7 @@
 // ============================================
 // DEBUG CONFIGURATION
 // ============================================
-define('TESTING_MODE', false);  // Set to TRUE to bypass all filtering
+define('TESTING_MODE', true);  // Set to TRUE to bypass all filtering
 define('DEBUG_LOG_FILE', __DIR__ . '/tracking_debug.log');
 define('ENABLE_CONSOLE_DEBUG', true); // Adds HTML comments to pixel response
 
