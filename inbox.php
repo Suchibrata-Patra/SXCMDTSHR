@@ -859,7 +859,7 @@ $lastSync = getLastSyncDate($userEmail);
                 <button class="btn-icon" onclick="forceRefresh()" title="Force refresh" id="refreshBtn">
                     <span class="material-icons">refresh</span>
                 </button>
-                <button class="btn btn-primary" onclick="location.href='index.php'">
+                <button class="btn-icon" onclick="location.href='index.php'">
                     <span class="material-icons">edit</span>
                 </button>
             </div>
