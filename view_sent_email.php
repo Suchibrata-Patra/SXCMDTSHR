@@ -93,256 +93,243 @@ if ($email['has_attachments']) {
         rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+    :root {
+        --apple-bg: #F5F5F7;
+        --apple-card: rgba(255, 255, 255, 0.8);
+        --apple-blue: #0071e3;
+        --apple-text: #1d1d1f;
+        --apple-text-secondary: #86868b;
+        --apple-border: rgba(0, 0, 0, 0.08);
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background-color: var(--apple-bg);
+        color: var(--apple-text);
+        line-height: 1.47059;
+        letter-spacing: -0.022em;
+    }
+
+    .container {
+        max-width: 900px;
+        margin: 60px auto;
+        padding: 0 40px;
+    }
+
+    /* Action Buttons - Minimalist */
+    .action-buttons {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 40px;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 980px; /* Highly rounded pill buttons */
+        font-weight: 400;
+        font-size: 14px;
+        text-decoration: none;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-primary {
+        background: var(--apple-blue);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #0077ed;
+        opacity: 0.9;
+    }
+
+    .btn-secondary {
+        background: rgba(0, 0, 0, 0.05);
+        color: var(--apple-blue);
+    }
+
+    .btn-secondary:hover {
+        background: rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-danger {
+        background: transparent;
+        color: #ff3b30;
+    }
+
+    .btn-danger:hover {
+        background: rgba(255, 59, 48, 0.1);
+    }
+
+    /* Email Header */
+    .email-header {
+        background: var(--apple-card);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 24px;
+        padding: 40px;
+        margin-bottom: 24px;
+        border: 1px solid var(--apple-border);
+    }
+
+    .email-subject {
+        font-size: 32px;
+        font-weight: 700;
+        letter-spacing: -0.015em;
+        color: var(--apple-text);
+        margin-bottom: 24px;
+    }
+
+    .email-meta {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        padding-top: 24px;
+        border-top: 1px solid var(--apple-border);
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        color: var(--apple-text-secondary);
+    }
+
+    .meta-label {
+        font-weight: 500;
+        color: var(--apple-text);
+        width: 50px;
+        display: inline-block;
+    }
+
+    /* Label Badge */
+    .label-badge {
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* Email Body */
+    .email-body {
+        background: white;
+        border-radius: 24px;
+        padding: 40px;
+        margin-bottom: 24px;
+        border: 1px solid var(--apple-border);
+        box-shadow: 0 4px 24px rgba(0,0,0,0.02);
+    }
+
+    .article-title {
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 24px;
+        color: var(--apple-text);
+    }
+
+    .email-content {
+        font-size: 17px;
+        line-height: 1.6;
+        color: #333;
+    }
+
+    /* Attachments - Glassmorphic Cards */
+    .attachments-section {
+        background: var(--apple-card);
+        backdrop-filter: blur(20px);
+        border-radius: 24px;
+        padding: 32px;
+        border: 1px solid var(--apple-border);
+    }
+
+    .attachments-title {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: var(--apple-text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .attachments-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 16px;
+    }
+
+    .attachment-card {
+        background: rgba(255, 255, 255, 0.5);
+        border: 1px solid var(--apple-border);
+        border-radius: 18px;
+        padding: 16px;
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+
+    .attachment-card:hover {
+        background: white;
+        transform: scale(1.02);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    }
+
+    .attachment-icon {
+        width: 40px;
+        height: 40px;
+        background: transparent;
+        margin: 0 auto 12px;
+    }
+
+    .attachment-icon .material-icons {
+        font-size: 32px;
+        color: var(--apple-blue);
+    }
+
+    .attachment-name {
+        font-size: 13px;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 4px;
+    }
+
+    .attachment-size {
+        font-size: 11px;
+        color: var(--apple-text-secondary);
+    }
+
+    @media (max-width: 768px) {
+        .container { padding: 20px; margin-top: 20px; }
+        .email-meta { grid-template-columns: 1fr; }
+        .email-subject { font-size: 26px; }
+    }
+
+    @media print {
+        .action-buttons { display: none; }
+        body { background: white; }
+        .email-header, .email-body, .attachments-section { 
+            border: none; 
+            box-shadow: none; 
+            padding: 20px 0;
         }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #f8f9fa;
-            color: #1c1c1e;
-            line-height: 1.6;
-        }
-
-        .container {
-            max-width: 1000px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
-
-        .email-header {
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-            border: 1px solid #e5e7eb;
-        }
-
-        .email-subject {
-            font-size: 28px;
-            font-weight: 700;
-            color: #1c1c1e;
-            margin-bottom: 20px;
-        }
-
-        .email-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            padding: 15px 0;
-            border-top: 1px solid #e5e7eb;
-        }
-
-        .meta-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            color: #6b7280;
-        }
-
-        .meta-item .material-icons {
-            font-size: 18px;
-            color: #9ca3af;
-        }
-
-        .meta-label {
-            font-weight: 600;
-            color: #374151;
-        }
-
-        .label-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-            color: white;
-        }
-
-        .email-body {
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-            border: 1px solid #e5e7eb;
-        }
-
-        .article-title {
-            font-size: 24px;
-            font-weight: 700;
-            color: #1c1c1e;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #e5e7eb;
-        }
-
-        .email-content {
-            font-size: 15px;
-            line-height: 1.8;
-            color: #374151;
-        }
-
-        .attachments-section {
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-            border: 1px solid #e5e7eb;
-        }
-
-        .attachments-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 18px;
-            font-weight: 700;
-            color: #1c1c1e;
-            margin-bottom: 20px;
-        }
-
-        .attachments-title .material-icons {
-            color: #007AFF;
-        }
-
-        .attachments-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-        }
-
-        .attachment-card {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-            background: #f9fafb;
-            border-radius: 12px;
-            border: 1px solid #e5e7eb;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .attachment-card:hover {
-            background: #f3f4f6;
-            border-color: #007AFF;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.1);
-        }
-
-        .attachment-icon {
-            width: 48px;
-            height: 48px;
-            background: #007AFF;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 12px;
-        }
-
-        .attachment-icon .material-icons {
-            font-size: 28px;
-            color: white;
-        }
-
-        .attachment-name {
-            font-size: 13px;
-            font-weight: 600;
-            color: #1c1c1e;
-            text-align: center;
-            word-break: break-word;
-            margin-bottom: 4px;
-        }
-
-        .attachment-size {
-            font-size: 12px;
-            color: #6b7280;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 14px;
-            text-decoration: none;
-            transition: all 0.3s;
-            border: none;
-            cursor: pointer;
-        }
-
-        .btn-primary {
-            background: #007AFF;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #0056b3;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 122, 255, 0.3);
-        }
-
-        .btn-secondary {
-            background: #dfdfdf;
-            color: rgb(0, 0, 0);
-        }
-
-        .btn-secondary:hover {
-            background: #000000;
-            transform: translateY(-2px);
-        }
-
-        .btn-danger {
-            background: #ef4444;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #dc2626;
-            transform: translateY(-2px);
-        }
-
-        @media print {
-            .action-buttons {
-                display: none;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                margin: 20px auto;
-            }
-
-            .email-subject {
-                font-size: 22px;
-            }
-
-            .email-meta {
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            .attachments-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    }
+</style>
 </head>
 
 <body>
