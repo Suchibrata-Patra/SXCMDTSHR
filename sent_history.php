@@ -1,7 +1,8 @@
 <?php
 /**
  * CORRECTED PHP PORTION for sent_history.php
- * Replace lines 1-250 with this corrected version
+ * Works with sent_emails_new table structure
+ * Replace lines 1-270 with this code
  */
 
 session_start();
@@ -31,7 +32,7 @@ if (isset($_GET['action'])) {
             if (isset($_GET['label_id'])) $filters['label_id'] = $_GET['label_id'];
             
             $messages = getSentEmails($userEmail, $limit, $offset, $filters);
-            $total = getSentEmailCount($userEmail, $filters);
+            $total = getSentEmailCountLocal($userEmail, $filters);
             
             echo json_encode([
                 'success' => true,
@@ -51,9 +52,9 @@ if (isset($_GET['action'])) {
                     try {
                         $pdo = getDatabaseConnection();
                         $stmt = $pdo->prepare("
-                            SELECT * FROM sent_emails_new 
-                            WHERE email_id = ? 
-                            ORDER BY created_at ASC
+                            SELECT * FROM sent_email_attachments_new 
+                            WHERE sent_email_id = ? 
+                            ORDER BY uploaded_at ASC
                         ");
                         $stmt->execute([$messageId]);
                         $attachments = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -73,29 +74,22 @@ if (isset($_GET['action'])) {
             $messageId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
             try {
                 $pdo = getDatabaseConnection();
-                $userId = getUserId($pdo, $userEmail);
-                
-                if ($userId) {
-                    // Mark as deleted in user_email_access
-                    $stmt = $pdo->prepare("
-                        UPDATE user_email_access 
-                        SET is_deleted = 1 
-                        WHERE email_id = ? AND user_id = ? AND access_type = 'sender'
-                    ");
-                    $success = $stmt->execute([$messageId, $userId]);
-                    echo json_encode(['success' => $success]);
-                } else {
-                    echo json_encode(['success' => false, 'error' => 'User not found']);
-                }
+                $stmt = $pdo->prepare("
+                    UPDATE sent_emails_new 
+                    SET is_deleted = 1 
+                    WHERE id = ? AND sender_email = ?
+                ");
+                $success = $stmt->execute([$messageId, $userEmail]);
+                echo json_encode(['success' => $success]);
             } catch (PDOException $e) {
                 echo json_encode(['success' => false, 'error' => $e->getMessage()]);
             }
             exit();
             
         case 'get_counts':
-            $total = getSentEmailCount($userEmail);
-            $labeled = getSentEmailCount($userEmail, ['has_label' => true]);
-            $unlabeled = getUnlabeledEmailCount($userEmail);
+            $total = getSentEmailCountLocal($userEmail);
+            $labeled = getSentEmailCountLocal($userEmail, ['has_label' => true]);
+            $unlabeled = getSentEmailCountLocal($userEmail, ['label_id' => 'unlabeled']);
             
             echo json_encode([
                 'success' => true,
@@ -108,78 +102,69 @@ if (isset($_GET['action'])) {
 }
 
 /**
- * Get sent emails for a user with filters
+ * Get sent emails from sent_emails_new table
  */
 function getSentEmails($userEmail, $limit = 50, $offset = 0, $filters = []) {
     try {
         $pdo = getDatabaseConnection();
         if (!$pdo) return [];
         
-        $userId = getUserId($pdo, $userEmail);
-        if (!$userId) return [];
-        
         $sql = "SELECT 
-                    e.*,
-                    uea.label_id,
-                    l.name as label_name,
-                    l.color as label_color,
+                    se.*,
                     (SELECT GROUP_CONCAT(original_filename SEPARATOR ', ')
-                     FROM email_attachments ea
-                     WHERE ea.email_id = e.id) as attachment_names,
+                     FROM sent_email_attachments_new sea
+                     WHERE sea.sent_email_id = se.id) as attachment_names,
                     (SELECT COUNT(*)
-                     FROM email_attachments ea
-                     WHERE ea.email_id = e.id) as attachment_count
-                FROM emails e
-                JOIN user_email_access uea ON e.id = uea.email_id
-                LEFT JOIN labels l ON uea.label_id = l.id
-                WHERE uea.user_id = :user_id
-                AND uea.access_type = 'sender'
-                AND uea.is_deleted = 0";
+                     FROM sent_email_attachments_new sea
+                     WHERE sea.sent_email_id = se.id) as attachment_count
+                FROM sent_emails_new se
+                WHERE se.sender_email = :email
+                AND se.is_deleted = 0";
         
-        $params = ['user_id' => $userId];
+        $params = ['email' => $userEmail];
         
         // Apply search filter
         if (!empty($filters['search'])) {
-            $sql .= " AND (e.recipient_email LIKE :search 
-                        OR e.subject LIKE :search 
-                        OR e.body_text LIKE :search 
-                        OR e.article_title LIKE :search)";
+            $sql .= " AND (se.recipient_email LIKE :search 
+                        OR se.subject LIKE :search 
+                        OR se.body_text LIKE :search 
+                        OR se.article_title LIKE :search)";
             $params['search'] = '%' . $filters['search'] . '%';
         }
         
         // Apply recipient filter
         if (!empty($filters['recipient'])) {
-            $sql .= " AND e.recipient_email LIKE :recipient";
+            $sql .= " AND se.recipient_email LIKE :recipient";
             $params['recipient'] = '%' . $filters['recipient'] . '%';
         }
         
         // Apply subject filter
         if (!empty($filters['subject'])) {
-            $sql .= " AND e.subject LIKE :subject";
+            $sql .= " AND se.subject LIKE :subject";
             $params['subject'] = '%' . $filters['subject'] . '%';
         }
         
         // Apply label filter
         if (!empty($filters['label_id'])) {
             if ($filters['label_id'] === 'unlabeled') {
-                $sql .= " AND uea.label_id IS NULL";
+                $sql .= " AND se.label_id IS NULL";
             } else {
-                $sql .= " AND uea.label_id = :label_id";
+                $sql .= " AND se.label_id = :label_id";
                 $params['label_id'] = $filters['label_id'];
             }
         }
         
         // Apply date range filters
         if (!empty($filters['date_from'])) {
-            $sql .= " AND DATE(e.sent_at) >= :date_from";
+            $sql .= " AND DATE(se.sent_at) >= :date_from";
             $params['date_from'] = $filters['date_from'];
         }
         if (!empty($filters['date_to'])) {
-            $sql .= " AND DATE(e.sent_at) <= :date_to";
+            $sql .= " AND DATE(se.sent_at) <= :date_to";
             $params['date_to'] = $filters['date_to'];
         }
         
-        $sql .= " ORDER BY e.sent_at DESC LIMIT :limit OFFSET :offset";
+        $sql .= " ORDER BY se.sent_at DESC LIMIT :limit OFFSET :offset";
         
         $stmt = $pdo->prepare($sql);
         
@@ -199,47 +184,136 @@ function getSentEmails($userEmail, $limit = 50, $offset = 0, $filters = []) {
 }
 
 /**
- * Get a specific sent email by ID
+ * Get sent email count from sent_emails_new table
+ */
+function getSentEmailCountLocal($userEmail, $filters = []) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return 0;
+        
+        $sql = "SELECT COUNT(*) as count 
+                FROM sent_emails_new
+                WHERE sender_email = :email 
+                AND is_deleted = 0";
+        
+        $params = ['email' => $userEmail];
+        
+        // Apply has_label filter
+        if (!empty($filters['has_label'])) {
+            $sql .= " AND label_id IS NOT NULL";
+        }
+        
+        if (!empty($filters['search'])) {
+            $sql .= " AND (recipient_email LIKE :search OR subject LIKE :search OR body_text LIKE :search OR article_title LIKE :search)";
+            $params['search'] = '%' . $filters['search'] . '%';
+        }
+        
+        if (!empty($filters['recipient'])) {
+            $sql .= " AND recipient_email LIKE :recipient";
+            $params['recipient'] = '%' . $filters['recipient'] . '%';
+        }
+        
+        if (!empty($filters['subject'])) {
+            $sql .= " AND subject LIKE :subject";
+            $params['subject'] = '%' . $filters['subject'] . '%';
+        }
+        
+        if (!empty($filters['label_id'])) {
+            if ($filters['label_id'] === 'unlabeled') {
+                $sql .= " AND label_id IS NULL";
+            } else {
+                $sql .= " AND label_id = :label_id";
+                $params['label_id'] = $filters['label_id'];
+            }
+        }
+        
+        if (!empty($filters['date_from'])) {
+            $sql .= " AND DATE(sent_at) >= :date_from";
+            $params['date_from'] = $filters['date_from'];
+        }
+        if (!empty($filters['date_to'])) {
+            $sql .= " AND DATE(sent_at) <= :date_to";
+            $params['date_to'] = $filters['date_to'];
+        }
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $result = $stmt->fetch();
+        
+        return $result['count'] ?? 0;
+        
+    } catch (PDOException $e) {
+        error_log("Error counting sent emails: " . $e->getMessage());
+        return 0;
+    }
+}
+
+/**
+ * Get single sent email by ID from sent_emails_new table
  */
 function getSentEmailById($emailId, $userEmail) {
     try {
         $pdo = getDatabaseConnection();
         if (!$pdo) return null;
         
-        $userId = getUserId($pdo, $userEmail);
-        if (!$userId) return null;
-        
         $stmt = $pdo->prepare("
-            SELECT 
-                e.*,
-                uea.label_id,
-                l.name as label_name,
-                l.color as label_color
-            FROM emails e
-            JOIN user_email_access uea ON e.id = uea.email_id
-            LEFT JOIN labels l ON uea.label_id = l.id
-            WHERE e.id = :email_id 
-            AND uea.user_id = :user_id
-            AND uea.access_type = 'sender'
-            AND uea.is_deleted = 0
-            LIMIT 1
+            SELECT * FROM sent_emails_new
+            WHERE id = :id AND sender_email = :email AND is_deleted = 0
         ");
         
         $stmt->execute([
-            'email_id' => $emailId,
-            'user_id' => $userId
+            'id' => $emailId,
+            'email' => $userEmail
         ]);
         
         return $stmt->fetch(PDO::FETCH_ASSOC);
         
     } catch (PDOException $e) {
-        error_log("Error fetching sent email by ID: " . $e->getMessage());
+        error_log("Error getting sent email: " . $e->getMessage());
         return null;
     }
 }
 
-// Continue with HTML portion from line 251 onwards...
+/**
+ * Get label counts for sent emails
+ */
+function getLabelCountsForSent($userEmail) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return [];
+        
+        $stmt = $pdo->prepare("
+            SELECT 
+                label_id,
+                label_name,
+                label_color,
+                COUNT(*) as count
+            FROM sent_emails_new
+            WHERE sender_email = :email 
+            AND is_deleted = 0
+            AND label_id IS NOT NULL
+            GROUP BY label_id, label_name, label_color
+            ORDER BY label_name
+        ");
+        
+        $stmt->execute(['email' => $userEmail]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+    } catch (PDOException $e) {
+        error_log("Error getting label counts: " . $e->getMessage());
+        return [];
+    }
+}
+
+// Initial data load for the page
+$messages = getSentEmails($userEmail, 50, 0) ?? [];
+$totalCount = getSentEmailCountLocal($userEmail) ?? 0;
+$labeledCount = getSentEmailCountLocal($userEmail, ['has_label' => true]) ?? 0;
+$unlabeledCount = getSentEmailCountLocal($userEmail, ['label_id' => 'unlabeled']) ?? 0;
+$labels = getLabelCountsForSent($userEmail) ?? [];
+
 ?>
+<!-- HTML portion starts here at line 271 -->
 <!DOCTYPE html>
 <html lang="en">
 
