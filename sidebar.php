@@ -181,6 +181,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         border: none;
         cursor: pointer;
         transition: all 0.2s;
+        text-decoration:none;
     }
 
     .label-settings-btn:hover {
