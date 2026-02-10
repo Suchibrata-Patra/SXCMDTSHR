@@ -495,8 +495,8 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
         }
 
         .stat-icon.total {
-            background: rgb(111,23,45,0.1);
-            color: rgb(111,23,45);
+            background: rgb(229,56,81,0.1);
+            color: rgb(229,56,81);
         }
 
         .stat-icon.labeled {
