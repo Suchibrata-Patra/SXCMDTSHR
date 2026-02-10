@@ -119,7 +119,7 @@ if ($email['has_attachments']) {
 
         .container {
             max-width: 900px;
-            margin: 60px auto;
+            margin: 5px auto;
             padding: 0 40px;
         }
 
