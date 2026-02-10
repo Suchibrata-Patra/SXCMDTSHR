@@ -375,65 +375,17 @@ function linkAttachmentsToEmail($pdo, $emailId, $emailUuid, $senderId, $attachme
  * Get label counts for user
  */
 function getLabelCounts($userEmail) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) {
-            return [];
-        }
-        
-        $userId = getUserId($pdo, $userEmail);
-        if (!$userId) {
-            return [];
-        }
-        
-        // Check if we can join with user_email_access
-        $stmt = $pdo->query("SHOW TABLES LIKE 'user_email_access'");
-        $hasUserEmailAccess = $stmt->rowCount() > 0;
-        
-        if ($hasUserEmailAccess) {
-            $sql = "SELECT 
-                        l.id, 
-                        l.label_name, 
-                        l.label_color,
-                        l.created_at,
-                        COUNT(DISTINCT uea.email_id) as count
-                    FROM labels l
-                    LEFT JOIN user_email_access uea ON l.id = uea.label_id 
-                        AND uea.user_id = :user_id
-                        AND uea.is_deleted = 0
-                    WHERE l.user_email = :user_email
-                    GROUP BY l.id, l.label_name, l.label_color, l.created_at
-                    ORDER BY l.label_name ASC";
-            
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([
-                ':user_id' => $userId,
-                ':user_email' => $userEmail
-            ]);
-        } else {
-            // Simple fallback
-            $sql = "SELECT 
-                        id, 
-                        label_name, 
-                        label_color,
-                        created_at,
-                        0 as count
-                    FROM labels
-                    WHERE user_email = :user_email
-                    ORDER BY label_name ASC";
-            
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([':user_email' => $userEmail]);
-        }
-        
-        return $stmt->fetchAll();
-        
-    } catch (PDOException $e) {
-        error_log("Error fetching label counts: " . $e->getMessage());
-        return [];
-    }
+    global $pdo;
+    $stmt = $pdo->prepare("
+        SELECT l.*, COUNT(uea.id) as email_count 
+        FROM labels l 
+        LEFT JOIN user_email_access uea ON l.id = uea.label_id 
+        WHERE l.user_email = ? 
+        GROUP BY l.id
+    ");
+    $stmt->execute([$userEmail]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
 /**
  * Create a new label
  */

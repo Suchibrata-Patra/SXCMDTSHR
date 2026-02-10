@@ -469,11 +469,15 @@ $labels = getLabelCounts($userEmail);
                                 </div>
                             </td>
                             <td>
-                                <span class="label-count"><?= $label['email_count'] ?> emails</span>
-                            </td>
-                            <td>
-                                <span class="label-count"><?= date('M j, Y', strtotime($label['created_at'])) ?></span>
-                            </td>
+    <span class="label-count">
+        <?= htmlspecialchars($label['email_count'] ?? '0') ?> emails
+    </span>
+</td>
+<td>
+    <span class="label-count">
+        <?= !empty($label['created_at']) ? date('M j, Y', strtotime($label['created_at'])) : 'N/A' ?>
+    </span>
+</td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
