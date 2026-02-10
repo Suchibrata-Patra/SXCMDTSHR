@@ -1397,6 +1397,202 @@ $lastSync = getLastSyncDate($userEmail);
                 syncMessages();
             }
         });
+
+        // ========== CLIENT-SIDE SEARCH WITH YELLOW HIGHLIGHTING ==========
+        
+        // Store original content for each message item
+        const originalMessageContent = new Map();
+        
+        // Initialize original content storage
+        function storeOriginalContent() {
+            const messageItems = document.querySelectorAll('.message-item');
+            messageItems.forEach(item => {
+                const id = item.dataset.messageId;
+                const senderEl = item.querySelector('.message-sender');
+                const subjectEl = item.querySelector('.message-subject');
+                const previewEl = item.querySelector('.message-preview');
+                
+                if (senderEl && subjectEl && previewEl) {
+                    originalMessageContent.set(id, {
+                        sender: senderEl.innerHTML,
+                        subject: subjectEl.innerHTML,
+                        preview: previewEl.innerHTML
+                    });
+                }
+            });
+        }
+        
+        // Escape special regex characters
+        function escapeRegExpSearch(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+        
+        // Highlight matching text with yellow background
+        function highlightMatches(text, searchTerm) {
+            if (!searchTerm || !text) return text;
+            
+            const escapedTerm = escapeRegExpSearch(searchTerm);
+            const regex = new RegExp(`(${escapedTerm})`, 'gi');
+            return text.replace(regex, '<mark style="background-color: #FFEB3B; color: #000; padding: 2px 0; border-radius: 2px; font-weight: 600;">$1</mark>');
+        }
+        
+        // Remove all highlights and restore original content
+        function removeAllHighlights() {
+            const messageItems = document.querySelectorAll('.message-item');
+            messageItems.forEach(item => {
+                const id = item.dataset.messageId;
+                const original = originalMessageContent.get(id);
+                
+                if (original) {
+                    const senderEl = item.querySelector('.message-sender');
+                    const subjectEl = item.querySelector('.message-subject');
+                    const previewEl = item.querySelector('.message-preview');
+                    
+                    if (senderEl) senderEl.innerHTML = original.sender;
+                    if (subjectEl) subjectEl.innerHTML = original.subject;
+                    if (previewEl) previewEl.innerHTML = original.preview;
+                }
+            });
+        }
+        
+        // Perform client-side search and highlight
+        function performClientSideSearch() {
+            const searchInput = document.getElementById('searchInput');
+            const searchTerm = searchInput ? searchInput.value.trim() : '';
+            
+            // If search is empty, restore original content
+            if (!searchTerm) {
+                removeAllHighlights();
+                // Show all messages
+                const messageItems = document.querySelectorAll('.message-item');
+                messageItems.forEach(item => {
+                    item.style.display = 'flex';
+                });
+                return;
+            }
+            
+            const searchLower = searchTerm.toLowerCase();
+            const messageItems = document.querySelectorAll('.message-item');
+            let visibleCount = 0;
+            
+            messageItems.forEach(item => {
+                const id = item.dataset.messageId;
+                const original = originalMessageContent.get(id);
+                
+                if (!original) return;
+                
+                // Get text content for matching
+                const senderText = original.sender.replace(/<[^>]*>/g, '').toLowerCase();
+                const subjectText = original.subject.replace(/<[^>]*>/g, '').toLowerCase();
+                const previewText = original.preview.replace(/<[^>]*>/g, '').toLowerCase();
+                
+                // Check if search term matches
+                const senderMatch = senderText.includes(searchLower);
+                const subjectMatch = subjectText.includes(searchLower);
+                const previewMatch = previewText.includes(searchLower);
+                
+                const isMatch = senderMatch || subjectMatch || previewMatch;
+                
+                if (isMatch) {
+                    item.style.display = 'flex';
+                    visibleCount++;
+                    
+                    // Apply highlighting
+                    const senderEl = item.querySelector('.message-sender');
+                    const subjectEl = item.querySelector('.message-subject');
+                    const previewEl = item.querySelector('.message-preview');
+                    
+                    if (senderMatch && senderEl) {
+                        senderEl.innerHTML = highlightMatches(original.sender.replace(/<[^>]*>/g, ''), searchTerm);
+                    } else if (senderEl) {
+                        senderEl.innerHTML = original.sender;
+                    }
+                    
+                    if (subjectMatch && subjectEl) {
+                        subjectEl.innerHTML = highlightMatches(original.subject.replace(/<[^>]*>/g, ''), searchTerm);
+                    } else if (subjectEl) {
+                        subjectEl.innerHTML = original.subject;
+                    }
+                    
+                    if (previewMatch && previewEl) {
+                        previewEl.innerHTML = highlightMatches(original.preview.replace(/<[^>]*>/g, ''), searchTerm);
+                    } else if (previewEl) {
+                        previewEl.innerHTML = original.preview;
+                    }
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            // Show "no results" message if needed
+            const messageList = document.getElementById('messageList');
+            if (visibleCount === 0 && messageList) {
+                // Check if no-results message already exists
+                let noResultsDiv = document.getElementById('searchNoResults');
+                if (!noResultsDiv) {
+                    noResultsDiv = document.createElement('div');
+                    noResultsDiv.id = 'searchNoResults';
+                    noResultsDiv.style.cssText = 'text-align: center; padding: 60px 20px; color: #8E8E93;';
+                    noResultsDiv.innerHTML = `
+                        <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
+                        <div style="font-size: 18px; font-weight: 600; color: #1c1c1e; margin-bottom: 8px;">No results found</div>
+                        <div style="font-size: 14px;">Try adjusting your search terms</div>
+                    `;
+                    messageList.appendChild(noResultsDiv);
+                }
+                noResultsDiv.style.display = 'block';
+            } else {
+                const noResultsDiv = document.getElementById('searchNoResults');
+                if (noResultsDiv) {
+                    noResultsDiv.style.display = 'none';
+                }
+            }
+        }
+        
+        // Override the existing searchMessages function to use client-side search
+        const originalSearchMessages = searchMessages;
+        searchMessages = function() {
+            // Store original content if not already stored
+            if (originalMessageContent.size === 0) {
+                storeOriginalContent();
+            }
+            
+            // Perform client-side search with highlighting
+            performClientSideSearch();
+        };
+        
+        // Store original content after messages are loaded
+        const originalFetchMessages = fetchMessages;
+        fetchMessages = async function() {
+            await originalFetchMessages();
+            
+            // Wait a bit for DOM to update, then store original content
+            setTimeout(() => {
+                storeOriginalContent();
+            }, 100);
+        };
+        
+        // Attach search event listener
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                // Store original content on page load
+                setTimeout(() => {
+                    storeOriginalContent();
+                }, 500);
+                
+                // Real-time search as user types
+                searchInput.addEventListener('input', performClientSideSearch);
+                
+                // Clear search on ESC key
+                searchInput.addEventListener('keyup', (e) => {
+                    if (e.key === 'Escape') {
+                        searchInput.value = '';
+                        performClientSideSearch();
+                    }
+                });
+            }
+        });
     </script>
 </body>
 
