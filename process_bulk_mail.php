@@ -123,6 +123,8 @@ try {
 function handleCSVPreview($pdo, $userId) {
     try {
         error_log("=== CSV Preview Started ===");
+        error_log("POST data: " . print_r($_POST, true));
+        error_log("FILES data: " . print_r($_FILES, true));
         
         if (!isset($_FILES['csv_file'])) {
             throw new Exception('No CSV file uploaded. Please select a CSV file and try again.');
@@ -130,28 +132,57 @@ function handleCSVPreview($pdo, $userId) {
 
         $csvFile = $_FILES['csv_file'];
         
+        error_log("CSV file details: " . print_r($csvFile, true));
+        
         if ($csvFile['error'] !== UPLOAD_ERR_OK) {
-            throw new Exception('CSV file upload error');
+            $errorMessages = [
+                UPLOAD_ERR_INI_SIZE => 'File exceeds upload_max_filesize directive',
+                UPLOAD_ERR_FORM_SIZE => 'File exceeds MAX_FILE_SIZE directive',
+                UPLOAD_ERR_PARTIAL => 'File was only partially uploaded',
+                UPLOAD_ERR_NO_FILE => 'No file was uploaded',
+                UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder',
+                UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+                UPLOAD_ERR_EXTENSION => 'Upload stopped by extension'
+            ];
+            $errorMsg = $errorMessages[$csvFile['error']] ?? "Upload error code: {$csvFile['error']}";
+            throw new Exception($errorMsg);
+        }
+        
+        if (!file_exists($csvFile['tmp_name'])) {
+            throw new Exception('Uploaded file not found on server');
         }
         
         // Validate file extension
         $fileExt = strtolower(pathinfo($csvFile['name'], PATHINFO_EXTENSION));
         if ($fileExt !== 'csv') {
-            throw new Exception('Invalid file type. Please upload a CSV file.');
+            throw new Exception('Invalid file type. Please upload a CSV file. Received: ' . $fileExt);
         }
 
+        error_log("Opening CSV file: {$csvFile['tmp_name']}");
+        
         // Read CSV file
         $handle = fopen($csvFile['tmp_name'], 'r');
         if (!$handle) {
-            throw new Exception('Could not open CSV file for reading.');
+            throw new Exception('Could not open CSV file for reading. Please check file permissions.');
         }
 
         // Read header row
         $header = fgetcsv($handle);
+        error_log("Raw header: " . print_r($header, true));
+        
         if (!$header || empty($header)) {
             fclose($handle);
             throw new Exception('CSV file is empty or has no header row');
         }
+        
+        // Clean headers (remove BOM and whitespace)
+        $header = array_map(function($h) {
+            // Remove UTF-8 BOM if present
+            $h = str_replace("\xEF\xBB\xBF", '', $h);
+            return trim($h);
+        }, $header);
+
+        error_log("Cleaned CSV columns: " . implode(', ', $header));
 
         // Validate required columns
         $requiredColumns = [

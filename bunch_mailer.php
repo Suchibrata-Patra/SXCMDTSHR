@@ -923,6 +923,8 @@ try {
         async function handleCSVSelect(file) {
             if (!file) return;
 
+            console.log('CSV file selected:', file.name, file.size, file.type);
+
             csvFile = file;
             csvData = [];
 
@@ -934,24 +936,44 @@ try {
             const formData = new FormData();
             formData.append('csv_file', file);
 
+            console.log('Sending preview request...');
+
             try {
                 const response = await fetch('process_bulk_mail.php?action=preview', {
                     method: 'POST',
                     body: formData
                 });
 
-                const result = await response.json();
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const text = await response.text();
+                console.log('Raw response:', text);
+                
+                let result;
+                try {
+                    result = JSON.parse(text);
+                } catch (e) {
+                    console.error('JSON parse error:', e);
+                    throw new Error('Server returned invalid JSON: ' + text.substring(0, 100));
+                }
+
+                console.log('Parsed result:', result);
 
                 if (result.success) {
                     csvData = result.preview_rows;
                     displayPreview(result);
                 } else {
-                    alert('Error: ' + result.error);
+                    alert('Error: ' + (result.error || 'Unknown error'));
+                    console.error('Server error:', result);
                     previewSection.classList.remove('show');
                 }
             } catch (error) {
-                console.error('Error:', error);
-                alert('Failed to preview CSV file');
+                console.error('Fetch error:', error);
+                alert('Failed to preview CSV file: ' + error.message);
                 previewSection.classList.remove('show');
             }
         }
