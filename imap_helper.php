@@ -247,9 +247,7 @@ function getAttachmentMetadata($connection, $msgNum) {
     return $attachments;
 }
 
-/**
- * Get file type category based on extension
- */
+
 function getFileTypeCategory($extension) {
     $categories = [
         'image' => ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'],
@@ -271,9 +269,7 @@ function getFileTypeCategory($extension) {
     return 'file';
 }
 
-/**
- * Get file icon emoji based on extension
- */
+
 function getFileIcon($extension) {
     $icons = [
         'pdf' => '📄',
@@ -301,9 +297,7 @@ function getFileIcon($extension) {
     return $icons[$extension] ?? '📎';
 }
 
-/**
- * Get message body (prioritizes plain text, falls back to HTML)
- */
+
 function getMessageBody($connection, $msgNum) {
     $body = '';
     
@@ -344,9 +338,7 @@ function getMessageBody($connection, $msgNum) {
     return trim($body);
 }
 
-/**
- * Decode message body based on encoding type
- */
+
 function decodeBody($body, $encoding) {
     switch ($encoding) {
         case 0: // 7BIT
