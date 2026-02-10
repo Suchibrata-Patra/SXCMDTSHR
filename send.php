@@ -263,7 +263,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             // Also save to sent_emails table if it exists (backward compatibility)
                             try {
                                 $stmt = $pdo->prepare("
-                                    INSERT INTO emails 
+                                    INSERT INTO sent_emails_new 
                                     (sender_email, recipient_email, subject, article_title, sent_at, current_status) 
                                     VALUES (?, ?, ?, ?, NOW(), 'sent')
                                 ");
