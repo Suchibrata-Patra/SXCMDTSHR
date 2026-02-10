@@ -25,6 +25,44 @@ function formatFileSize($bytes, $precision = 2) {
 
     return round($size, $precision) . ' ' . $units[$power];
 }
+/**
+ * Link existing attachment records to a sent email
+ *
+ * @param PDO   $pdo
+ * @param int   $emailId
+ * @param string $emailUuid
+ * @param array $attachmentIdsForDB   // e.g. [12, 15, 19]
+ *
+ * @return bool
+ */
+function linkAttachmentsToSentEmail(PDO $pdo, int $emailId, string $emailUuid, array $attachmentIdsForDB): bool
+{
+    if ($emailId <= 0 || empty($emailUuid) || empty($attachmentIdsForDB)) {
+        return false;
+    }
+
+    $sql = "
+        INSERT INTO sent_email_attachments (email_id, email_uuid, attachment_id)
+        VALUES (:email_id, :email_uuid, :attachment_id)
+    ";
+
+    $stmt = $pdo->prepare($sql);
+
+    foreach ($attachmentIdsForDB as $attId) {
+        if (!is_numeric($attId)) {
+            continue;
+        }
+
+        $stmt->execute([
+            ':email_id'      => $emailId,
+            ':email_uuid'    => $emailUuid,
+            ':attachment_id' => $attId
+        ]);
+    }
+
+    return true;
+}
+
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
