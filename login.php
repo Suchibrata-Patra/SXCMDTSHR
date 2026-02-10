@@ -507,12 +507,6 @@ function authenticateWithSMTP($email, $password) {
                     <?php echo ($blockUntil ? 'Account Locked' : 'Verify & Proceed'); ?>
                 </button>
             </form>
-
-            <div class="security-info">
-                <strong>🛡️ Enhanced Security:</strong> This login uses advanced security features including rate limiting, 
-                brute force protection, and activity monitoring.
-            </div>
-
             <footer>
                 St. Xavier's College (Autonomous), Kolkata<br>
                 Mail Delivery & Tracking System v2.0
