@@ -528,7 +528,7 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
         }
 
         .messages-pane {
-            width: 40%;
+            width: 30%;
             display: flex;
             flex-direction: column;
             border-right: 1px solid var(--border);
@@ -537,7 +537,7 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
         }
 
         .message-view-pane {
-            width: 60%;
+            width: 70%;
             display: flex;
             flex-direction: column;
             background: #FAFAFA;
