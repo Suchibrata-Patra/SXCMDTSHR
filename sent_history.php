@@ -60,7 +60,7 @@ $sql = "SELECT
             rt.device_type,
             rt.browser,
             rt.os
-        FROM sent_emails se
+        FROM emails se
         LEFT JOIN email_read_tracking rt ON rt.email_id = se.id
         WHERE se.sender_email = :email
         AND se.email_type = 'sent'";
