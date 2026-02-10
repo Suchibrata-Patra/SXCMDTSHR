@@ -250,116 +250,137 @@ try {
             background: rgba(0, 122, 255, 0.05);
         }
 
-        .file-drop-zone.has-file {
-            border-color: var(--success-green);
-            background: rgba(52, 199, 89, 0.05);
-        }
-
-        .upload-icon {
+        .file-drop-zone i {
             font-size: 48px;
-            color: var(--apple-blue);
+            color: var(--apple-gray);
             margin-bottom: 16px;
         }
 
-        .upload-text h3 {
+        .file-drop-zone h3 {
             font-size: 16px;
             font-weight: 600;
             color: #1c1c1e;
             margin-bottom: 8px;
         }
 
-        .upload-text p {
+        .file-drop-zone p {
             font-size: 14px;
             color: var(--apple-gray);
-            margin-bottom: 16px;
         }
 
-        .browse-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
-            background: var(--apple-blue);
-            color: white;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .browse-btn:hover {
-            background: #0056b3;
-            transform: translateY(-1px);
-        }
-
-        #csvFileInput {
+        .file-input {
             display: none;
         }
 
-        /* File Info Display */
-        .file-info {
+        /* CSV Preview Section */
+        .preview-section {
             display: none;
-            margin-top: 20px;
-            padding: 16px;
-            background: var(--apple-bg);
-            border-radius: 10px;
-            border: 1px solid var(--border);
+            margin-top: 30px;
         }
 
-        .file-info.show {
+        .preview-section.show {
             display: block;
         }
 
-        .file-info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-        }
-
-        .file-info-item {
+        .preview-header {
             display: flex;
-            flex-direction: column;
-            gap: 4px;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
         }
 
-        .file-info-label {
-            font-size: 12px;
-            font-weight: 500;
-            color: var(--apple-gray);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .file-info-value {
+        .preview-info {
             font-size: 14px;
+            color: var(--apple-gray);
+        }
+
+        .preview-table-container {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .preview-table th {
+            background: var(--apple-bg);
+            padding: 12px;
+            text-align: left;
+            font-size: 12px;
             font-weight: 600;
-            color: #1c1c1e;
+            color: var(--apple-gray);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
-        .remove-file-btn {
-            margin-top: 12px;
-            padding: 8px 16px;
-            background: var(--error-red);
-            color: white;
-            border: none;
-            border-radius: 8px;
+        .preview-table td {
+            padding: 12px;
             font-size: 13px;
-            font-weight: 500;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .preview-table tbody tr:hover {
+            background: rgba(0, 122, 255, 0.05);
+        }
+
+        .row-number {
+            color: var(--apple-gray);
+            font-weight: 600;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 10px;
+            border: none;
+            font-size: 15px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
         }
 
-        .remove-file-btn:hover {
-            background: #cc2f26;
+        .btn-primary {
+            background: var(--apple-blue);
+            color: white;
         }
 
-        /* Attachment Upload */
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .btn-secondary {
+            background: var(--apple-gray);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #6e6e73;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Attachment Section */
         .attachment-section {
             margin-top: 30px;
-            padding-top: 30px;
-            border-top: 1px solid var(--border);
         }
 
         .attachment-drop-zone {
@@ -368,9 +389,8 @@ try {
             padding: 30px;
             text-align: center;
             background: var(--apple-bg);
-            transition: all 0.3s;
             cursor: pointer;
-            margin-bottom: 20px;
+            transition: all 0.3s;
         }
 
         .attachment-drop-zone:hover {
@@ -390,11 +410,10 @@ try {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 12px 16px;
+            padding: 16px;
             background: var(--apple-bg);
             border-radius: 10px;
-            margin-bottom: 10px;
-            border: 1px solid var(--border);
+            margin-top: 10px;
         }
 
         .attachment-info {
@@ -406,20 +425,19 @@ try {
         .attachment-icon {
             width: 40px;
             height: 40px;
-            background: var(--apple-blue);
-            color: white;
             border-radius: 8px;
+            background: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            font-size: 20px;
+            color: var(--apple-blue);
         }
 
         .attachment-details h4 {
             font-size: 14px;
             font-weight: 600;
-            color: #1c1c1e;
-            margin-bottom: 2px;
+            margin-bottom: 4px;
         }
 
         .attachment-details p {
@@ -428,76 +446,24 @@ try {
         }
 
         .remove-attachment-btn {
-            padding: 6px 12px;
+            padding: 8px 16px;
             background: var(--error-red);
             color: white;
             border: none;
-            border-radius: 6px;
-            font-size: 12px;
+            border-radius: 8px;
             cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .remove-attachment-btn:hover {
-            background: #cc2f26;
-        }
-
-        /* ========== ACTION BUTTONS ========== */
-        .action-buttons {
-            display: flex;
-            gap: 12px;
-            margin-top: 30px;
-        }
-
-        .btn {
-            flex: 1;
-            padding: 14px 24px;
-            border-radius: 10px;
-            font-size: 15px;
+            font-size: 13px;
             font-weight: 600;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
         }
 
-        .btn-primary {
-            background: var(--apple-blue);
-            color: white;
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            background: #0056b3;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
-        }
-
-        .btn-primary:disabled {
-            background: var(--apple-gray);
-            cursor: not-allowed;
-            opacity: 0.5;
-        }
-
-        .btn-secondary {
-            background: white;
-            color: var(--apple-blue);
-            border: 2px solid var(--apple-blue);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(0, 122, 255, 0.05);
-        }
-
-        /* ========== PROGRESS SECTION ========== */
+        /* Progress Section */
         .progress-section {
             background: white;
             border-radius: 16px;
             padding: 30px;
             border: 1px solid var(--border);
             box-shadow: var(--card-shadow);
+            margin-bottom: 30px;
             display: none;
         }
 
@@ -505,16 +471,11 @@ try {
             display: block;
         }
 
-        .progress-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-
         .progress-stats {
-            display: flex;
-            gap: 30px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 24px;
         }
 
         .progress-stat {
@@ -522,55 +483,65 @@ try {
         }
 
         .progress-stat-value {
-            font-size: 24px;
+            font-size: 32px;
             font-weight: 700;
             color: #1c1c1e;
         }
 
         .progress-stat-label {
-            font-size: 12px;
-            font-weight: 500;
+            font-size: 13px;
             color: var(--apple-gray);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            margin-top: 4px;
         }
 
         .progress-bar-container {
             background: var(--apple-bg);
-            height: 8px;
             border-radius: 10px;
+            height: 12px;
             overflow: hidden;
-            margin-bottom: 24px;
+            margin-bottom: 12px;
         }
 
         .progress-bar {
             height: 100%;
             background: linear-gradient(90deg, var(--apple-blue), var(--success-green));
             width: 0%;
-            transition: width 0.3s ease;
+            transition: width 0.3s;
+        }
+
+        .progress-percent {
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--apple-gray);
         }
 
         .current-email-info {
-            padding: 16px;
             background: var(--apple-bg);
+            padding: 16px;
             border-radius: 10px;
-            border-left: 4px solid var(--apple-blue);
-            margin-bottom: 20px;
+            margin-top: 20px;
+            display: none;
         }
 
-        .current-email-info h4 {
+        .current-email-info.show {
+            display: block;
+        }
+
+        .current-email-text {
             font-size: 14px;
-            font-weight: 600;
-            color: #1c1c1e;
-            margin-bottom: 8px;
-        }
-
-        .current-email-info p {
-            font-size: 13px;
             color: var(--apple-gray);
         }
 
         /* Email Log */
+        .email-log-section {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            border: 1px solid var(--border);
+            box-shadow: var(--card-shadow);
+        }
+
         .email-log {
             max-height: 400px;
             overflow-y: auto;
@@ -578,7 +549,6 @@ try {
 
         .log-item {
             display: flex;
-            align-items: center;
             gap: 12px;
             padding: 12px;
             border-bottom: 1px solid var(--border);
@@ -589,10 +559,10 @@ try {
         }
 
         .log-status {
-            width: 8px;
-            height: 8px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
-            flex-shrink: 0;
+            margin-top: 4px;
         }
 
         .log-status.success {
@@ -601,16 +571,6 @@ try {
 
         .log-status.error {
             background: var(--error-red);
-        }
-
-        .log-status.processing {
-            background: var(--apple-blue);
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
         }
 
         .log-content {
@@ -626,248 +586,295 @@ try {
         .log-time {
             font-size: 12px;
             color: var(--apple-gray);
+            margin-top: 4px;
         }
 
         .log-message {
-            font-size: 12px;
+            font-size: 13px;
             color: var(--error-red);
             margin-top: 4px;
         }
 
-        /* ========== ALERTS ========== */
-        .alert {
-            padding: 14px 16px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 14px;
+        /* Queue List Section */
+        .queue-section {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            border: 1px solid var(--border);
+            box-shadow: var(--card-shadow);
+            margin-bottom: 30px;
         }
 
-        .alert.info {
+        .queue-table-container {
+            overflow-x: auto;
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        .queue-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .queue-table th {
+            background: var(--apple-bg);
+            padding: 12px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--apple-gray);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .queue-table td {
+            padding: 12px;
+            font-size: 13px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .queue-table tbody tr:hover {
+            background: rgba(0, 122, 255, 0.05);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-badge.pending {
+            background: rgba(255, 149, 0, 0.1);
+            color: var(--warning-orange);
+        }
+
+        .status-badge.processing {
             background: rgba(0, 122, 255, 0.1);
             color: var(--apple-blue);
-            border: 1px solid rgba(0, 122, 255, 0.2);
         }
 
-        .alert.success {
+        .status-badge.completed {
             background: rgba(52, 199, 89, 0.1);
             color: var(--success-green);
-            border: 1px solid rgba(52, 199, 89, 0.2);
         }
 
-        .alert.error {
+        .status-badge.failed {
             background: rgba(255, 59, 48, 0.1);
             color: var(--error-red);
-            border: 1px solid rgba(255, 59, 48, 0.2);
-        }
-
-        .alert .material-icons {
-            font-size: 20px;
-        }
-
-        /* Loading Spinner */
-        .spinner {
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
-    <div class="app-container" style="display: flex; width: 100%;">
-        <?php include 'sidebar.php'; ?>
-        
-        <div class="main-content">
-            <div class="page-header">
-                <div class="header-content">
-                    <div class="header-left">
-                        <h1>Bulk Email Sender</h1>
-                        <p>Send personalized emails to multiple recipients from CSV</p>
+    <?php include 'sidebar.php'; ?>
+    
+    <div class="main-content">
+        <div class="page-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1>Bulk Mailer</h1>
+                    <p>Send emails to multiple recipients from CSV</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <!-- Status Cards -->
+            <div class="status-grid">
+                <div class="status-card">
+                    <div class="status-card-header">
+                        <div class="status-icon pending">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="status-label">Pending</div>
                     </div>
+                    <div class="status-value" id="pendingCount"><?= $pendingCount ?></div>
+                </div>
+
+                <div class="status-card">
+                    <div class="status-card-header">
+                        <div class="status-icon processing">
+                            <i class="fas fa-spinner"></i>
+                        </div>
+                        <div class="status-label">Processing</div>
+                    </div>
+                    <div class="status-value" id="processingCount"><?= $processingCount ?></div>
+                </div>
+
+                <div class="status-card">
+                    <div class="status-card-header">
+                        <div class="status-icon completed">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="status-label">Completed</div>
+                    </div>
+                    <div class="status-value" id="completedCount"><?= $completedCount ?></div>
+                </div>
+
+                <div class="status-card">
+                    <div class="status-card-header">
+                        <div class="status-icon failed">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </div>
+                        <div class="status-label">Failed</div>
+                    </div>
+                    <div class="status-value" id="failedCount"><?= $failedCount ?></div>
                 </div>
             </div>
 
-            <div class="content-area">
-                <!-- Status Cards -->
-                <div class="status-grid">
-                    <div class="status-card">
-                        <div class="status-card-header">
-                            <div class="status-icon pending">
-                                <span class="material-icons">schedule</span>
-                            </div>
-                            <span class="status-label">Pending</span>
-                        </div>
-                        <div class="status-value" id="pendingCount"><?= $pendingCount ?></div>
-                    </div>
+            <!-- Upload Section -->
+            <div class="upload-section">
+                <h2 class="section-title">
+                    <span class="material-icons">upload_file</span>
+                    Upload CSV File
+                </h2>
 
-                    <div class="status-card">
-                        <div class="status-card-header">
-                            <div class="status-icon processing">
-                                <span class="material-icons">sync</span>
-                            </div>
-                            <span class="status-label">Processing</span>
-                        </div>
-                        <div class="status-value" id="processingCount"><?= $processingCount ?></div>
+                <div class="upload-container">
+                    <div class="file-drop-zone" id="csvDropZone" onclick="document.getElementById('csvFileInput').click()">
+                        <i class="fas fa-file-csv"></i>
+                        <h3>Drop CSV file here or click to browse</h3>
+                        <p>CSV must contain required columns: mail_id, receiver_name, Mail_Subject, Article_Title, etc.</p>
                     </div>
-
-                    <div class="status-card">
-                        <div class="status-card-header">
-                            <div class="status-icon completed">
-                                <span class="material-icons">check_circle</span>
-                            </div>
-                            <span class="status-label">Completed</span>
-                        </div>
-                        <div class="status-value" id="completedCount"><?= $completedCount ?></div>
-                    </div>
-
-                    <div class="status-card">
-                        <div class="status-card-header">
-                            <div class="status-icon failed">
-                                <span class="material-icons">error</span>
-                            </div>
-                            <span class="status-label">Failed</span>
-                        </div>
-                        <div class="status-value" id="failedCount"><?= $failedCount ?></div>
-                    </div>
+                    <input type="file" id="csvFileInput" class="file-input" accept=".csv" onchange="handleCSVSelect(this.files[0])">
                 </div>
 
-                <!-- Upload Section -->
-                <div class="upload-section">
-                    <h2 class="section-title">
-                        <span class="material-icons">upload_file</span>
-                        Upload CSV File
-                    </h2>
-
-                    <div class="alert info">
-                        <span class="material-icons">info</span>
-                        <span>CSV must have columns: mail_id, receiver_name, Mail_Subject, Article_Title, Personalised_message, closing_wish, Name, Designation, Additional_information, Attachments</span>
+                <!-- CSV Preview -->
+                <div class="preview-section" id="previewSection">
+                    <div class="preview-header">
+                        <h3 class="section-title">CSV Preview</h3>
+                        <div class="preview-info" id="previewInfo"></div>
+                    </div>
+                    
+                    <div class="preview-table-container">
+                        <table class="preview-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Email</th>
+                                    <th>Name</th>
+                                    <th>Subject</th>
+                                    <th>Article Title</th>
+                                    <th>Message Preview</th>
+                                </tr>
+                            </thead>
+                            <tbody id="previewTableBody"></tbody>
+                        </table>
                     </div>
 
-                    <div class="upload-container">
-                        <div class="file-drop-zone" id="fileDropZone">
-                            <div class="upload-icon">
-                                <i class="fas fa-cloud-upload-alt"></i>
-                            </div>
-                            <div class="upload-text">
-                                <h3>Drop CSV file here or click to browse</h3>
-                                <p>Maximum file size: 10MB</p>
-                                <button type="button" class="browse-btn" onclick="document.getElementById('csvFileInput').click()">
-                                    <span class="material-icons">folder_open</span>
-                                    Browse Files
-                                </button>
-                            </div>
-                            <input type="file" id="csvFileInput" accept=".csv" />
-                        </div>
-
-                        <div class="file-info" id="fileInfo">
-                            <div class="file-info-grid">
-                                <div class="file-info-item">
-                                    <span class="file-info-label">File Name</span>
-                                    <span class="file-info-value" id="fileName">-</span>
-                                </div>
-                                <div class="file-info-item">
-                                    <span class="file-info-label">File Size</span>
-                                    <span class="file-info-value" id="fileSize">-</span>
-                                </div>
-                                <div class="file-info-item">
-                                    <span class="file-info-label">Total Recipients</span>
-                                    <span class="file-info-value" id="recipientCount">-</span>
-                                </div>
-                            </div>
-                            <button type="button" class="remove-file-btn" onclick="removeCSVFile()">
-                                <i class="fas fa-trash"></i> Remove File
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Attachment Section -->
-                    <div class="attachment-section">
-                        <h3 class="section-title">
-                            <span class="material-icons">attach_file</span>
-                            Common Attachment (Optional)
-                        </h3>
-                        <p style="font-size: 13px; color: var(--apple-gray); margin-bottom: 16px;">
-                            Upload one file that will be attached to all emails. Individual attachments from CSV are not yet supported.
-                        </p>
-
-                        <div class="attachment-drop-zone" id="attachmentDropZone">
-                            <div class="upload-icon" style="font-size: 36px;">
-                                <i class="fas fa-paperclip"></i>
-                            </div>
-                            <div class="upload-text">
-                                <h3 style="font-size: 14px;">Drop attachment here or click to browse</h3>
-                                <p style="font-size: 12px;">Supported: PDF, DOC, DOCX, XLS, XLSX, images (Max 20MB)</p>
-                                <button type="button" class="browse-btn" onclick="document.getElementById('attachmentInput').click()">
-                                    <span class="material-icons">attach_file</span>
-                                    Browse Files
-                                </button>
-                            </div>
-                            <input type="file" id="attachmentInput" style="display: none;" />
-                        </div>
-
-                        <div class="attachment-list" id="attachmentList">
-                            <!-- Attachment items will be added here -->
-                        </div>
-                    </div>
-
-                    <!-- Action Buttons -->
                     <div class="action-buttons">
-                        <button type="button" class="btn btn-secondary" onclick="clearQueue()">
-                            <span class="material-icons">delete_sweep</span>
-                            Clear Queue
+                        <button class="btn btn-primary" id="confirmUploadBtn" onclick="confirmAndUpload()">
+                            <i class="fas fa-check"></i> Confirm & Upload
                         </button>
-                        <button type="button" class="btn btn-primary" id="sendBtn" disabled onclick="startSending()">
-                            <span class="material-icons">send</span>
-                            Start Sending
+                        <button class="btn btn-secondary" onclick="cancelPreview()">
+                            <i class="fas fa-times"></i> Cancel
                         </button>
                     </div>
                 </div>
 
-                <!-- Progress Section -->
-                <div class="progress-section" id="progressSection">
-                    <h2 class="section-title">
-                        <span class="material-icons">trending_up</span>
-                        Sending Progress
-                    </h2>
+                <!-- Attachment Section -->
+                <div class="attachment-section">
+                    <h3 class="section-title">
+                        <span class="material-icons">attach_file</span>
+                        Common Attachment (Optional)
+                    </h3>
+                    
+                    <div class="attachment-drop-zone" id="attachmentDropZone" onclick="document.getElementById('attachmentInput').click()">
+                        <i class="fas fa-paperclip"></i>
+                        <p>Click to add a common attachment for all emails</p>
+                    </div>
+                    <input type="file" id="attachmentInput" class="file-input" onchange="handleAttachmentSelect(this.files[0])">
+                    
+                    <div class="attachment-list" id="attachmentList"></div>
+                </div>
 
-                    <div class="progress-header">
-                        <div class="progress-stats">
-                            <div class="progress-stat">
-                                <div class="progress-stat-value" id="sentCount">0</div>
-                                <div class="progress-stat-label">Sent</div>
-                            </div>
-                            <div class="progress-stat">
-                                <div class="progress-stat-value" id="remainingCount">0</div>
-                                <div class="progress-stat-label">Remaining</div>
-                            </div>
-                            <div class="progress-stat">
-                                <div class="progress-stat-value" id="progressPercent">0%</div>
-                                <div class="progress-stat-label">Progress</div>
-                            </div>
+                <div class="action-buttons" id="uploadActions" style="display: none;">
+                    <button class="btn btn-primary" id="sendBtn" onclick="startSending()">
+                        <i class="fas fa-paper-plane"></i> Start Sending
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearQueue()">
+                        <i class="fas fa-trash"></i> Clear Queue
+                    </button>
+                </div>
+            </div>
+
+            <!-- Progress Section -->
+            <div class="progress-section" id="progressSection">
+                <h2 class="section-title">
+                    <span class="material-icons">trending_up</span>
+                    Sending Progress
+                </h2>
+
+                <div class="progress-stats">
+                    <div class="progress-stat">
+                        <div class="progress-stat-value" id="sentCount">0</div>
+                        <div class="progress-stat-label">Sent</div>
+                    </div>
+                    <div class="progress-stat">
+                        <div class="progress-stat-value" id="remainingCount">0</div>
+                        <div class="progress-stat-label">Remaining</div>
+                    </div>
+                    <div class="progress-stat">
+                        <div class="progress-stat-value" id="progressPercent">0%</div>
+                        <div class="progress-stat-label">Progress</div>
+                    </div>
+                </div>
+
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+
+                <div class="current-email-info" id="currentEmailInfo">
+                    <div class="current-email-text" id="currentEmailText"></div>
+                </div>
+            </div>
+
+            <!-- Queue List -->
+            <div class="queue-section">
+                <h2 class="section-title">
+                    <span class="material-icons">list</span>
+                    Email Queue
+                </h2>
+
+                <div class="queue-table-container">
+                    <table class="queue-table">
+                        <thead>
+                            <tr>
+                                <th>Recipient</th>
+                                <th>Name</th>
+                                <th>Subject</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody id="queueTableBody">
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: var(--apple-gray);">No emails in queue</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Email Log -->
+            <div class="email-log-section">
+                <h2 class="section-title">
+                    <span class="material-icons">history</span>
+                    Activity Log
+                </h2>
+                <div class="email-log" id="emailLog">
+                    <div class="log-item">
+                        <div class="log-status" style="background: var(--apple-gray);"></div>
+                        <div class="log-content">
+                            <div class="log-email">No activity yet</div>
+                            <div class="log-time">Upload a CSV file to begin</div>
                         </div>
-                    </div>
-
-                    <div class="progress-bar-container">
-                        <div class="progress-bar" id="progressBar"></div>
-                    </div>
-
-                    <div class="current-email-info" id="currentEmailInfo" style="display: none;">
-                        <h4>Currently Sending</h4>
-                        <p id="currentEmailText">-</p>
-                    </div>
-
-                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">Email Log</h3>
-                    <div class="email-log" id="emailLog">
-                        <!-- Log items will be added here -->
                     </div>
                 </div>
             </div>
@@ -879,132 +886,154 @@ try {
         let csvData = [];
         let attachmentId = null;
         let isSending = false;
-        let sendingInterval = null;
 
-        // File drop zone handling
-        const fileDropZone = document.getElementById('fileDropZone');
+        const csvDropZone = document.getElementById('csvDropZone');
         const csvFileInput = document.getElementById('csvFileInput');
-        const fileInfo = document.getElementById('fileInfo');
-        const sendBtn = document.getElementById('sendBtn');
-
-        // Prevent default drag behaviors
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            fileDropZone.addEventListener(eventName, preventDefaults, false);
-            document.body.addEventListener(eventName, preventDefaults, false);
-        });
-
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        // Highlight drop zone when dragging over it
-        ['dragenter', 'dragover'].forEach(eventName => {
-            fileDropZone.addEventListener(eventName, () => {
-                fileDropZone.classList.add('drag-over');
-            }, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            fileDropZone.addEventListener(eventName, () => {
-                fileDropZone.classList.remove('drag-over');
-            }, false);
-        });
-
-        // Handle dropped files
-        fileDropZone.addEventListener('drop', (e) => {
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                handleCSVFile(files[0]);
-            }
-        });
-
-        // Handle file selection
-        csvFileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                handleCSVFile(e.target.files[0]);
-            }
-        });
-
-        function handleCSVFile(file) {
-            if (!file.name.endsWith('.csv')) {
-                alert('Please upload a CSV file');
-                return;
-            }
-
-            if (file.size > 10 * 1024 * 1024) {
-                alert('File size exceeds 10MB limit');
-                return;
-            }
-
-            csvFile = file;
-            fileDropZone.classList.add('has-file');
-            fileInfo.classList.add('show');
-            
-            document.getElementById('fileName').textContent = file.name;
-            document.getElementById('fileSize').textContent = formatBytes(file.size);
-
-            // Parse CSV to count recipients
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const text = e.target.result;
-                const lines = text.trim().split('\n');
-                csvData = lines.slice(1).filter(line => line.trim()); // Skip header
-                
-                document.getElementById('recipientCount').textContent = csvData.length;
-                sendBtn.disabled = csvData.length === 0;
-            };
-            reader.readAsText(file);
-        }
-
-        function removeCSVFile() {
-            csvFile = null;
-            csvData = [];
-            csvFileInput.value = '';
-            fileDropZone.classList.remove('has-file');
-            fileInfo.classList.remove('show');
-            sendBtn.disabled = true;
-        }
-
-        // Attachment handling
+        const previewSection = document.getElementById('previewSection');
+        const previewTableBody = document.getElementById('previewTableBody');
+        const previewInfo = document.getElementById('previewInfo');
         const attachmentDropZone = document.getElementById('attachmentDropZone');
         const attachmentInput = document.getElementById('attachmentInput');
         const attachmentList = document.getElementById('attachmentList');
+        const sendBtn = document.getElementById('sendBtn');
+        const uploadActions = document.getElementById('uploadActions');
 
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            attachmentDropZone.addEventListener(eventName, preventDefaults, false);
+        // CSV drag and drop
+        csvDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            csvDropZone.classList.add('drag-over');
         });
 
-        ['dragenter', 'dragover'].forEach(eventName => {
-            attachmentDropZone.addEventListener(eventName, () => {
-                attachmentDropZone.style.borderColor = 'var(--apple-blue)';
-                attachmentDropZone.style.background = 'rgba(0, 122, 255, 0.05)';
-            }, false);
+        csvDropZone.addEventListener('dragleave', () => {
+            csvDropZone.classList.remove('drag-over');
         });
 
-        ['dragleave', 'drop'].forEach(eventName => {
-            attachmentDropZone.addEventListener(eventName, () => {
-                attachmentDropZone.style.borderColor = 'var(--border)';
-                attachmentDropZone.style.background = 'var(--apple-bg)';
-            }, false);
-        });
-
-        attachmentDropZone.addEventListener('drop', (e) => {
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                uploadAttachment(files[0]);
+        csvDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            csvDropZone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file && file.name.endsWith('.csv')) {
+                handleCSVSelect(file);
+            } else {
+                alert('Please drop a CSV file');
             }
         });
 
-        attachmentInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                uploadAttachment(e.target.files[0]);
-            }
-        });
+        // Handle CSV file selection - Preview first
+        async function handleCSVSelect(file) {
+            if (!file) return;
 
-        function uploadAttachment(file) {
+            csvFile = file;
+            csvData = [];
+
+            // Show loading
+            previewTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px;">Loading preview...</td></tr>';
+            previewSection.classList.add('show');
+
+            // Send to server for preview
+            const formData = new FormData();
+            formData.append('csv_file', file);
+
+            try {
+                const response = await fetch('process_bulk_mail.php?action=preview', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    csvData = result.preview_rows;
+                    displayPreview(result);
+                } else {
+                    alert('Error: ' + result.error);
+                    previewSection.classList.remove('show');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to preview CSV file');
+                previewSection.classList.remove('show');
+            }
+        }
+
+        function displayPreview(result) {
+            previewInfo.textContent = result.message;
+            
+            previewTableBody.innerHTML = '';
+            
+            result.preview_rows.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="row-number">${row.row_number}</td>
+                    <td>${row.mail_id}</td>
+                    <td>${row.receiver_name}</td>
+                    <td>${row.subject}</td>
+                    <td>${row.article_title}</td>
+                    <td>${row.message_preview}</td>
+                `;
+                previewTableBody.appendChild(tr);
+            });
+        }
+
+        function cancelPreview() {
+            csvFile = null;
+            csvData = [];
+            csvFileInput.value = '';
+            previewSection.classList.remove('show');
+        }
+
+        // Confirm and upload CSV to queue
+        async function confirmAndUpload() {
+            if (!csvFile) {
+                alert('No CSV file selected');
+                return;
+            }
+
+            document.getElementById('confirmUploadBtn').disabled = true;
+            document.getElementById('confirmUploadBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+
+            const formData = new FormData();
+            formData.append('csv_file', csvFile);
+            if (attachmentId) {
+                formData.append('attachment_id', attachmentId);
+            }
+
+            try {
+                const response = await fetch('process_bulk_mail.php?action=upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(`Successfully uploaded! ${result.queued_count} emails added to queue.`);
+                    previewSection.classList.remove('show');
+                    uploadActions.style.display = 'flex';
+                    
+                    // Refresh queue list and status
+                    loadQueueList();
+                    refreshStatus();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to upload CSV');
+            } finally {
+                document.getElementById('confirmUploadBtn').disabled = false;
+                document.getElementById('confirmUploadBtn').innerHTML = '<i class="fas fa-check"></i> Confirm & Upload';
+            }
+        }
+
+        // Attachment handling
+        async function handleAttachmentSelect(file) {
+            if (!file) return;
+
             const formData = new FormData();
             formData.append('file', file);
+
+            attachmentDropZone.innerHTML = '<i class="fas fa-spinner fa-spin"></i><p>Uploading...</p>';
 
             const xhr = new XMLHttpRequest();
             xhr.open('POST', 'upload_handler.php', true);
@@ -1017,6 +1046,7 @@ try {
                         displayAttachment(response);
                     } else {
                         alert('Upload failed: ' + response.error);
+                        attachmentDropZone.innerHTML = '<i class="fas fa-paperclip"></i><p>Click to add a common attachment for all emails</p>';
                     }
                 }
             };
@@ -1076,59 +1106,29 @@ try {
             return icons[extension] || 'fas fa-file';
         }
 
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-        }
-
         // Start sending process
         async function startSending() {
-            if (!csvFile || csvData.length === 0) {
-                alert('Please upload a CSV file first');
-                return;
-            }
-
             if (isSending) {
                 alert('Already sending emails');
                 return;
             }
 
-            if (!confirm(`Start sending ${csvData.length} emails?`)) {
+            const status = await getStatus();
+            if (status.pending === 0) {
+                alert('No pending emails in queue');
                 return;
             }
 
-            // Upload CSV and populate queue
-            const formData = new FormData();
-            formData.append('csv_file', csvFile);
-            if (attachmentId) {
-                formData.append('attachment_id', attachmentId);
+            if (!confirm(`Start sending ${status.pending} emails?`)) {
+                return;
             }
 
-            try {
-                const response = await fetch('process_bulk_mail.php?action=upload', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    document.getElementById('progressSection').classList.add('show');
-                    isSending = true;
-                    sendBtn.disabled = true;
-                    
-                    // Start processing
-                    processQueue();
-                } else {
-                    alert('Error: ' + result.error);
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Failed to start sending');
-            }
+            document.getElementById('progressSection').classList.add('show');
+            isSending = true;
+            sendBtn.disabled = true;
+            
+            // Start processing
+            processQueue();
         }
 
         // Process queue
@@ -1179,7 +1179,7 @@ try {
 
             // Update current email
             if (data.current_email) {
-                document.getElementById('currentEmailInfo').style.display = 'block';
+                document.getElementById('currentEmailInfo').classList.add('show');
                 document.getElementById('currentEmailText').textContent = 
                     `Sending to: ${data.current_email.recipient} - ${data.current_email.subject}`;
             }
@@ -1193,6 +1193,9 @@ try {
                     result.status === 'completed' ? 'success' : 'error'
                 );
             }
+            
+            // Refresh queue list
+            loadQueueList();
         }
 
         function addLog(email, message, status) {
@@ -1217,7 +1220,7 @@ try {
 
         function finishSending() {
             isSending = false;
-            document.getElementById('currentEmailInfo').style.display = 'none';
+            document.getElementById('currentEmailInfo').classList.remove('show');
             alert('All emails have been processed!');
             
             // Reload counts
@@ -1247,19 +1250,71 @@ try {
             }
         }
 
-        // Auto-refresh status every 5 seconds if not sending
+        // Load queue list
+        async function loadQueueList() {
+            try {
+                const response = await fetch('process_bulk_mail.php?action=queue_list');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const tbody = document.getElementById('queueTableBody');
+                    
+                    if (result.queue.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--apple-gray);">No emails in queue</td></tr>';
+                        return;
+                    }
+                    
+                    tbody.innerHTML = '';
+                    result.queue.forEach(item => {
+                        const tr = document.createElement('tr');
+                        const createdDate = new Date(item.created_at).toLocaleString();
+                        
+                        tr.innerHTML = `
+                            <td>${item.recipient_email}</td>
+                            <td>${item.recipient_name || '-'}</td>
+                            <td>${item.subject}</td>
+                            <td><span class="status-badge ${item.status}">${item.status}</span></td>
+                            <td>${createdDate}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading queue:', error);
+            }
+        }
+
+        // Get status
+        async function getStatus() {
+            try {
+                const response = await fetch('process_bulk_mail.php?action=status');
+                const result = await response.json();
+                return result;
+            } catch (error) {
+                console.error('Error getting status:', error);
+                return { pending: 0, processing: 0, completed: 0, failed: 0, total: 0 };
+            }
+        }
+
+        // Refresh status
+        async function refreshStatus() {
+            const status = await getStatus();
+            if (status.success) {
+                document.getElementById('pendingCount').textContent = status.pending || 0;
+                document.getElementById('processingCount').textContent = status.processing || 0;
+                document.getElementById('completedCount').textContent = status.completed || 0;
+                document.getElementById('failedCount').textContent = status.failed || 0;
+            }
+        }
+
+        // Load queue list on page load
+        loadQueueList();
+
+        // Auto-refresh status and queue every 5 seconds if not sending
         setInterval(() => {
             if (!isSending) {
-                fetch('process_bulk_mail.php?action=status')
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.success) {
-                            document.getElementById('pendingCount').textContent = data.pending || 0;
-                            document.getElementById('processingCount').textContent = data.processing || 0;
-                            document.getElementById('completedCount').textContent = data.completed || 0;
-                            document.getElementById('failedCount').textContent = data.failed || 0;
-                        }
-                    });
+                refreshStatus();
+                loadQueueList();
             }
         }, 5000);
     </script>
