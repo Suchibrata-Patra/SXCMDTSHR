@@ -441,40 +441,4 @@ function isLikelyProxy($ipAddress) {
     
     return false;
 }
-
-/**
- * Database connection helper
- */
-function getDatabaseConnection() {
-    // Try to use existing connection function from db_config.php
-    if (function_exists('getDBConnection')) {
-        return getDBConnection();
-    }
-    
-    // Fallback - should match your db_config.php credentials
-    try {
-        // Update these values to match your database
-        $host = 'localhost';
-        $dbname = 'u955994755_SXC_MDTS';
-        $username = 'your_username';  // CHANGE THIS
-        $password = 'your_password';  // CHANGE THIS
-        
-        $pdo = new PDO(
-            "mysql:host=$host;dbname=$dbname;charset=utf8mb4",
-            $username,
-            $password,
-            [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES => false
-            ]
-        );
-        
-        return $pdo;
-        
-    } catch (PDOException $e) {
-        error_log("Database connection failed: " . $e->getMessage());
-        return null;
-    }
-}
 ?>
