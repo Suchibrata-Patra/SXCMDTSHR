@@ -17,9 +17,7 @@ if (!$emailId) {
     exit();
 }
 
-/**
- * Get sent email by ID
- */
+/**  Get sent email by ID */
 function getSentEmailById($emailId, $userEmail) {
     try {
         $pdo = getDatabaseConnection();
@@ -37,9 +35,7 @@ function getSentEmailById($emailId, $userEmail) {
     }
 }
 
-/**
- * Get attachments for a sent email
- */
+/* Get attachments for a sent email */
 function getSentEmailAttachments($emailId) {
     try {
         $pdo = getDatabaseConnection();
@@ -58,9 +54,7 @@ function getSentEmailAttachments($emailId) {
     }
 }
 
-/**
- * Format file size
- */
+/* Format file size */
 function formatFileSize($bytes) {
     if ($bytes <= 0) return "0 B";
     $units = ['B', 'KB', 'MB', 'GB', 'TB'];
