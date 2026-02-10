@@ -81,12 +81,16 @@ if ($email['has_attachments']) {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($email['subject']) ?> - SXC MDTS</title>
+    <title>
+        <?= htmlspecialchars($email['subject']) ?> - SXC MDTS
+    </title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         * {
@@ -295,12 +299,12 @@ if ($email['has_attachments']) {
         }
 
         .btn-secondary {
-            background: #6b7280;
-            color: white;
+            background: #dfdfdf;
+            color: rgb(0, 0, 0);
         }
 
         .btn-secondary:hover {
-            background: #4b5563;
+            background: #000000;
             transform: translateY(-2px);
         }
 
@@ -340,6 +344,7 @@ if ($email['has_attachments']) {
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="action-buttons">
@@ -358,46 +363,50 @@ if ($email['has_attachments']) {
         </div>
 
         <div class="email-header">
-            <h1 class="email-subject"><?= htmlspecialchars($email['subject']) ?></h1>
-            
+            <h1 class="email-subject">
+                <?= htmlspecialchars($email['subject']) ?>
+            </h1>
+
             <div class="email-meta">
                 <div class="meta-item">
                     <span class="material-icons">person</span>
                     <span>
-                        <span class="meta-label">From:</span> 
+                        <span class="meta-label">From:</span>
                         <?= htmlspecialchars($email['sender_name'] ?? $email['sender_email']) ?>
-                        &lt;<?= htmlspecialchars($email['sender_email']) ?>&gt;
+                        &lt;
+                        <?= htmlspecialchars($email['sender_email']) ?>&gt;
                     </span>
                 </div>
-                
+
                 <div class="meta-item">
                     <span class="material-icons">email</span>
                     <span>
-                        <span class="meta-label">To:</span> 
+                        <span class="meta-label">To:</span>
                         <?= htmlspecialchars($email['recipient_email']) ?>
                     </span>
                 </div>
-                
+
                 <?php if (!empty($email['cc_list'])): ?>
                 <div class="meta-item">
                     <span class="material-icons">group</span>
                     <span>
-                        <span class="meta-label">CC:</span> 
+                        <span class="meta-label">CC:</span>
                         <?= htmlspecialchars($email['cc_list']) ?>
                     </span>
                 </div>
                 <?php endif; ?>
-                
+
                 <div class="meta-item">
                     <span class="material-icons">schedule</span>
                     <span>
                         <?= date('M d, Y h:i A', strtotime($email['sent_at'])) ?>
                     </span>
                 </div>
-                
+
                 <?php if (!empty($email['label_name'])): ?>
                 <div class="meta-item">
-                    <span class="label-badge" style="background: <?= htmlspecialchars($email['label_color'] ?? '#6b7280') ?>">
+                    <span class="label-badge"
+                        style="background: <?= htmlspecialchars($email['label_color'] ?? '#6b7280') ?>">
                         <?= htmlspecialchars($email['label_name']) ?>
                     </span>
                 </div>
@@ -411,7 +420,7 @@ if ($email['has_attachments']) {
                 <?= htmlspecialchars($email['article_title']) ?>
             </div>
             <?php endif; ?>
-            
+
             <div class="email-content">
                 <?php 
                 if (!empty($email['body_html'])) {
@@ -427,12 +436,14 @@ if ($email['has_attachments']) {
         <div class="attachments-section">
             <div class="attachments-title">
                 <span class="material-icons">attach_file</span>
-                Attachments (<?= count($attachments) ?>)
+                Attachments (
+                <?= count($attachments) ?>)
             </div>
-            
+
             <div class="attachments-grid">
                 <?php foreach ($attachments as $attachment): ?>
-                <div class="attachment-card" onclick="downloadAttachment('<?= htmlspecialchars($attachment['file_path']) ?>', '<?= htmlspecialchars($attachment['original_filename']) ?>')">
+                <div class="attachment-card"
+                    onclick="downloadAttachment('<?= htmlspecialchars($attachment['file_path']) ?>', '<?= htmlspecialchars($attachment['original_filename']) ?>')">
                     <div class="attachment-icon">
                         <span class="material-icons">insert_drive_file</span>
                     </div>
@@ -479,4 +490,5 @@ if ($email['has_attachments']) {
         }
     </script>
 </body>
+
 </html>
