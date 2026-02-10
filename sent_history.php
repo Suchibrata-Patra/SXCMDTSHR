@@ -720,6 +720,8 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
             justify-content: space-between;
             align-items: start;
             margin-bottom: 4px;
+            font-sizr:0.8rem;
+            color:grey;
         }
 
         .message-recipient {
