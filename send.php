@@ -276,7 +276,63 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         showErrorPage($e->getMessage());
     }
 }
-
+/**
+ * Save sent email to sent_emails_new table
+ */
+function saveSentEmail($pdo, $emailData) {
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO sent_emails_new (
+                email_uuid, message_id, sender_email, sender_name,
+                recipient_email, cc_list, bcc_list, reply_to,
+                subject, article_title, body_text, body_html,
+                label_id, label_name, label_color,
+                has_attachments, email_type, sent_at, created_at
+            ) VALUES (
+                :email_uuid, :message_id, :sender_email, :sender_name,
+                :recipient_email, :cc_list, :bcc_list, :reply_to,
+                :subject, :article_title, :body_text, :body_html,
+                :label_id, :label_name, :label_color,
+                :has_attachments, :email_type, NOW(), NOW()
+            )
+        ");
+        
+        $stmt->execute([
+            'email_uuid' => $emailData['email_uuid'],
+            'message_id' => $emailData['message_id'] ?? null,
+            'sender_email' => $emailData['sender_email'],
+            'sender_name' => $emailData['sender_name'] ?? null,
+            'recipient_email' => $emailData['recipient_email'],
+            'cc_list' => $emailData['cc_list'] ?? null,
+            'bcc_list' => $emailData['bcc_list'] ?? null,
+            'reply_to' => $emailData['reply_to'] ?? null,
+            'subject' => $emailData['subject'],
+            'article_title' => $emailData['article_title'] ?? null,
+            'body_text' => $emailData['body_text'] ?? null,
+            'body_html' => $emailData['body_html'] ?? null,
+            'label_id' => $emailData['label_id'] ?? null,
+            'label_name' => $emailData['label_name'] ?? null,
+            'label_color' => $emailData['label_color'] ?? null,
+            'has_attachments' => $emailData['has_attachments'] ?? 0,
+            'email_type' => $emailData['email_type'] ?? 'sent'
+        ]);
+        
+        $emailId = $pdo->lastInsertId();
+        
+        if ($emailId) {
+            error_log("✓ Sent email saved to database (ID: $emailId, UUID: {$emailData['email_uuid']})");
+        } else {
+            error_log("✗ Failed to save sent email to database");
+        }
+        
+        return $emailId;
+        
+    } catch (PDOException $e) {
+        error_log("Error saving sent email: " . $e->getMessage());
+        error_log("SQL Error Details: " . print_r($e->errorInfo, true));
+        return null;
+    }
+}
 /**
  * Show success page
  */
