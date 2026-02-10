@@ -118,9 +118,13 @@ function getInboxMessageById($messageId, $userEmail) {
         if (!$pdo) return null;
         
         $stmt = $pdo->prepare("
-            SELECT * FROM inbox_messages 
-            WHERE id = :id AND user_email = :email AND is_deleted = 0
-        ");
+    SELECT * FROM inbox_messages
+    WHERE id = :id
+      AND user_email = :email
+      AND is_deleted = 0
+      AND subject != 'Login Verification'
+");
+
         
         $stmt->execute([
             ':id' => $messageId,
