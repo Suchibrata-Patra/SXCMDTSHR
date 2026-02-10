@@ -37,9 +37,7 @@ try {
     
     // Get attachments if any
     $attachments = [];
-    if ($email['has_attachments']) {
-        // $attachments = getSentEmailAttachments($pdo, $emailId);
-    }
+
     
 } catch (PDOException $e) {
     error_log("Error fetching email: " . $e->getMessage());
