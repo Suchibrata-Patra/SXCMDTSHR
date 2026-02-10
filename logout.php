@@ -1,24 +1,40 @@
 <?php
-// Start the session to access existing session data
+/**
+ * ============================================================
+ * SECURE LOGOUT HANDLER
+ * ============================================================
+ * Properly logs out user and records activity
+ * ============================================================
+ */
+
 session_start();
+require_once 'db_config.php';
+require_once 'login_auth_helper.php';
 
-// Unset all session variables
-$_SESSION = array();
-
-// If it's desired to kill the session, also delete the session cookie.
-// This will completely log out the user from the browser's perspective.
-if (ini_get("session.use_cookies")) {
-    $params = session_get_cookie_params();
-    setcookie(session_name(), '', time() - 42000,
-        $params["path"], $params["domain"],
-        $params["secure"], $params["httponly"]
-    );
+// Record logout activity
+if (isset($_SESSION['authenticated']) && $_SESSION['authenticated'] === true) {
+    $sessionId = session_id();
+    recordLogoutActivity($sessionId, 'user_logout');
+    
+    error_log("User logout: {$_SESSION['smtp_user']} from IP " . getClientIP());
 }
 
-// Finally, destroy the session.
+// Clear all session variables
+$_SESSION = array();
+
+// Delete session cookie
+if (isset($_COOKIE[session_name()])) {
+    setcookie(session_name(), '', time() - 3600, '/');
+}
+
+// Destroy the session
 session_destroy();
 
-// Redirect the user back to the login page
-header("Location: login.php");
+// Start new session for logout message
+session_start();
+$_SESSION['logout_message'] = 'You have been logged out successfully.';
+
+// Redirect to login
+header("Location: login.php?logged_out=1");
 exit();
 ?>
