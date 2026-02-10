@@ -63,6 +63,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_label'])) {
         $_SESSION['error_message'] = 'Failed to update label';
     }
 }
+function getSentEmailById($emailId, $userEmail) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return null;
+        
+        $stmt = $pdo->prepare("
+            SELECT * FROM sent_emails_new
+            WHERE id = :id AND sender_email = :email AND is_deleted = 0
+        ");
+        
+        $stmt->execute([
+            'id' => $emailId,
+            'email' => $userEmail
+        ]);
+        
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+        
+    } catch (PDOException $e) {
+        error_log("Error getting sent email: " . $e->getMessage());
+        return null;
+    }
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
