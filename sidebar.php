@@ -407,8 +407,8 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             <span>Inbox</span>
         </a>
         <a href="#" class="nav-item <?= ($current_page == 'send') ? 'active' : ''; ?>">
-            <span class="material-icons">analytics</span>
-            <span><span style="font-weight:200;font-size:0.5rem;color:green;">Delivery</span><br><span>Status</span> </span>
+            <span class="material-icons">info</span>
+            <span>Delivery Status</span>
         </a>
 
         <!-- Section Divider -->
