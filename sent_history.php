@@ -1012,6 +1012,7 @@ $messages = getSentEmails($userEmail, 50, 0);
 </head>
 
 <body>
+    <?php require ('sidebar.php') ?>
     <div class="container">
         <!-- Header -->
         <div class="header">
