@@ -110,6 +110,42 @@ function getUserLabelsFromSentEmails($userEmail) {
         return [];
     }
 }
+function createLabel($userEmail, $labelName, $labelColor = '#0973dc') {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) {
+            return false;
+        }
+        
+        // Check if labels table exists
+        $stmt = $pdo->query("SHOW TABLES LIKE 'labels'");
+        if ($stmt->rowCount() == 0) {
+            return false;
+        }
+        
+        // Check if label already exists
+        $stmt = $pdo->prepare("SELECT id FROM labels WHERE user_email = ? AND label_name = ?");
+        $stmt->execute([$userEmail, $labelName]);
+        
+        if ($stmt->fetch()) {
+            return ['error' => 'Label already exists'];
+        }
+        
+        $sql = "INSERT INTO labels (user_email, label_name, label_color, created_at) 
+                VALUES (?, ?, ?, NOW())";
+        
+        $stmt = $pdo->prepare($sql);
+        $result = $stmt->execute([$userEmail, $labelName, $labelColor]);
+        
+        return $result ? $pdo->lastInsertId() : false;
+        
+    } catch (PDOException $e) {
+        error_log("Error creating label: " . $e->getMessage());
+        return false;
+    }
+}
+
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
