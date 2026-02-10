@@ -31,33 +31,44 @@ function formatFileSize($bytes, $precision = 2) {
  * @param PDO   $pdo
  * @param int   $emailId
  * @param string $emailUuid
- * @param array $attachmentIdsForDB   // e.g. [12, 15, 19]
+ * @param array $attachmentsData   // Array of attachment data from session
  *
  * @return bool
  */
-function linkAttachmentsToSentEmail(PDO $pdo, int $emailId, string $emailUuid, array $attachmentIdsForDB): bool
+function linkAttachmentsToSentEmail(PDO $pdo, int $emailId, string $emailUuid, array $attachmentsData): bool
 {
-    if ($emailId <= 0 || empty($emailUuid) || empty($attachmentIdsForDB)) {
+    if ($emailId <= 0 || empty($emailUuid) || empty($attachmentsData)) {
         return false;
     }
 
     $sql = "
-        INSERT INTO sent_email_attachments_new (email_id, email_uuid, attachment_id)
-        VALUES (:email_id, :email_uuid, :attachment_id)
+        INSERT INTO sent_email_attachments_new 
+        (sent_email_id, email_uuid, original_filename, stored_filename, file_path, 
+         file_size, mime_type, file_extension, upload_session_id, uploaded_at)
+        VALUES 
+        (:sent_email_id, :email_uuid, :original_filename, :stored_filename, :file_path, 
+         :file_size, :mime_type, :file_extension, :upload_session_id, :uploaded_at)
     ";
 
     $stmt = $pdo->prepare($sql);
 
-    foreach ($attachmentIdsForDB as $attId) {
-        if (!is_numeric($attId)) {
-            continue;
+    foreach ($attachmentsData as $attachment) {
+        try {
+            $stmt->execute([
+                ':sent_email_id'      => $emailId,
+                ':email_uuid'         => $emailUuid,
+                ':original_filename'  => $attachment['original_name'] ?? 'unknown',
+                ':stored_filename'    => $attachment['path'] ?? '',
+                ':file_path'          => 'uploads/attachments/' . ($attachment['path'] ?? ''),
+                ':file_size'          => $attachment['file_size'] ?? 0,
+                ':mime_type'          => $attachment['mime_type'] ?? 'application/octet-stream',
+                ':file_extension'     => $attachment['extension'] ?? '',
+                ':upload_session_id'  => $attachment['id'] ?? null,
+                ':uploaded_at'        => date('Y-m-d H:i:s')
+            ]);
+        } catch (Exception $e) {
+            error_log("Error saving attachment to database: " . $e->getMessage());
         }
-
-        $stmt->execute([
-            ':email_id'      => $emailId,
-            ':email_uuid'    => $emailUuid,
-            ':attachment_id' => $attId
-        ]);
     }
 
     return true;
@@ -168,10 +179,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             
                             $attachments[] = [
                                 'id' => $attachmentId,
-                                'name' => $fileName,
-                                'size' => formatFileSize($attachment['file_size'] ?? 0),
+                                'original_name' => $fileName,
+                                'path' => $relativePath,
+                                'file_size' => $attachment['file_size'] ?? 0,
                                 'extension' => $attachment['extension'] ?? 'file',
-                                'mime_type' => $attachment['mime_type'] ?? 'application/octet-stream'
+                                'mime_type' => $attachment['mime_type'] ?? 'application/octet-stream',
+                                'size_formatted' => formatFileSize($attachment['file_size'] ?? 0)
                             ];
                             
                             $attachmentIdsForDB[] = $attachmentId;
@@ -267,11 +280,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         error_log("✓ Sent email saved to database (ID: $emailId, UUID: $emailUuid)");
                         
                         // Link attachments to email if any
-                        if (!empty($attachmentIdsForDB)) {
-                            $attachmentsLinked = linkAttachmentsToSentEmail($pdo, $emailId, $emailUuid, $attachmentIdsForDB);
+                        if (!empty($attachments)) {
+                            $attachmentsLinked = linkAttachmentsToSentEmail($pdo, $emailId, $emailUuid, $attachments);
                             
                             if ($attachmentsLinked) {
-                                error_log("✓ Successfully linked " . count($attachmentIdsForDB) . " attachments to email");
+                                error_log("✓ Successfully linked " . count($attachments) . " attachments to email");
                             } else {
                                 error_log("✗ Failed to link attachments to email");
                             }
