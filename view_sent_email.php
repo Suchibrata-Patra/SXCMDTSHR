@@ -27,12 +27,11 @@ try {
         die("Database connection failed");
     }
     
-    // FIXED: Changed 'email_labels' to 'labels'
+    // Query from v_user_sent view which properly joins emails, user_email_access, and labels
     $stmt = $pdo->prepare("
-        SELECT se.*, l.label_name, l.label_color 
-        FROM sent_emails se 
-        LEFT JOIN labels l ON se.label_id = l.id 
-        WHERE se.id = :id AND se.sender_email = :sender
+        SELECT * 
+        FROM v_user_sent 
+        WHERE id = :id AND sender_email = :sender
     ");
     $stmt->execute([
         ':id' => $emailId,
@@ -485,7 +484,7 @@ $allLabels = getUserLabels($userEmail);
         </div>
 
         <div class="email-body">
-            <iframe id="emailFrame" srcdoc="<?= htmlspecialchars($email['message_body']) ?>"></iframe>
+            <iframe id="emailFrame" srcdoc="<?= htmlspecialchars($email['body_html']) ?>"></iframe>
         </div>
     </div>
 
