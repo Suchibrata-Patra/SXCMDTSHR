@@ -875,7 +875,7 @@ $lastSync = getLastSyncDate($userEmail);
                     <div class="stat-number" id="totalCount">
                         <?= $totalCount ?>
                     </div>
-                    <div class="stat-label">Total</div>
+                    <div class="stat-label">Total Received</div>
                 </div>
             </div>
 
