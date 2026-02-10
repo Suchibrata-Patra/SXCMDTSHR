@@ -12,6 +12,19 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+function formatFileSize($bytes, $precision = 2) {
+    if ($bytes <= 0) {
+        return "0 B";
+    }
+
+    $units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+    $power = floor(log($bytes, 1024));
+    $power = min($power, count($units) - 1);
+
+    $size = $bytes / pow(1024, $power);
+
+    return round($size, $precision) . ' ' . $units[$power];
+}
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
