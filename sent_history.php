@@ -533,6 +533,7 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
             flex-direction: column;
             border-right: 1px solid var(--border);
             background: white;
+            overflow: hidden;
         }
 
         .message-view-pane {
@@ -540,6 +541,7 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
             display: flex;
             flex-direction: column;
             background: #FAFAFA;
+            overflow: hidden;
         }
 
         /* ========== TOOLBAR ========== */
