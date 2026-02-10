@@ -1,3 +1,111 @@
+<?php
+/**
+ * Professional Inbox Page - Refactored with External Sidebar
+ */
+
+session_start();
+
+// Security check
+if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
+    header("Location: login.php");
+    exit();
+}
+
+require_once 'inbox_functions.php';
+require_once 'imap_helper.php';
+
+$userEmail = $_SESSION['smtp_user'];
+
+// Handle AJAX requests
+if (isset($_GET['action'])) {
+    header('Content-Type: application/json');
+    
+    switch ($_GET['action']) {
+        case 'fetch_messages':
+            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
+            $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
+            
+            $filters = [];
+            if (isset($_GET['search'])) $filters['search'] = $_GET['search'];
+            if (isset($_GET['unread_only'])) $filters['unread_only'] = true;
+            if (isset($_GET['starred_only'])) $filters['starred_only'] = true;
+            if (isset($_GET['new_only'])) $filters['new_only'] = true;
+            
+            $messages = getInboxMessages($userEmail, $limit, $offset, $filters);
+            $total = getInboxMessageCount($userEmail, $filters);
+            
+            echo json_encode([
+                'success' => true,
+                'messages' => $messages,
+                'total' => $total
+            ]);
+            exit();
+            
+        case 'sync':
+            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
+            $forceRefresh = isset($_GET['force']) && $_GET['force'] === 'true';
+            
+            $result = fetchNewMessagesFromSession($userEmail, $limit, $forceRefresh);
+            echo json_encode($result);
+            exit();
+            
+        case 'get_message':
+            $messageId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+            $message = getInboxMessageById($messageId, $userEmail);
+            
+            if ($message) {
+                // Mark as read
+                markMessageAsRead($messageId, $userEmail);
+                echo json_encode(['success' => true, 'message' => $message]);
+            } else {
+                echo json_encode(['success' => false, 'error' => 'Message not found']);
+            }
+            exit();
+            
+        case 'mark_read':
+            $messageId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+            $success = markMessageAsRead($messageId, $userEmail);
+            echo json_encode(['success' => $success]);
+            exit();
+            
+        case 'mark_unread':
+            $messageId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+            $success = markMessageAsUnread($messageId, $userEmail);
+            echo json_encode(['success' => $success]);
+            exit();
+            
+        case 'toggle_star':
+            $messageId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+            $success = toggleStarMessage($messageId, $userEmail);
+            echo json_encode(['success' => $success]);
+            exit();
+            
+        case 'delete':
+            $messageId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+            $success = deleteInboxMessage($messageId, $userEmail);
+            echo json_encode(['success' => $success]);
+            exit();
+            
+        case 'get_counts':
+            $unread = getUnreadCount($userEmail);
+            $new = getNewCount($userEmail);
+            echo json_encode([
+                'success' => true,
+                'unread' => $unread,
+                'new' => $new
+            ]);
+            exit();
+    }
+}
+
+// Initial data load
+$messages = getInboxMessages($userEmail, 50, 0) ?? [];
+$totalCount = getInboxMessageCount($userEmail) ?? 0;
+$unreadCount = getUnreadCount($userEmail) ?? 0;
+$newCount = getNewCount($userEmail) ?? 0;
+$lastSync = getLastSyncDate($userEmail);
+
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
