@@ -846,7 +846,7 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
             flex: 1;
             overflow-y: auto;
             overflow-x: hidden;
-            padding: 20px;
+            padding: 0px;
             min-height: 0;
         }
 
