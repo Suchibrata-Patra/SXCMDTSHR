@@ -1213,11 +1213,23 @@ function switchAttachmentTab(tabName) {
     console.log('Loading drive files...'); // Debug
     
     try {
-        const url = 'bulk_mail_backend.php?action=list_drive_files';
+        // Get current page directory and construct absolute URL
+        const currentPath = window.location.pathname;
+        const directory = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
+        const url = directory + 'bulk_mail_backend.php?action=list_drive_files';
+        
+        console.log('Current path:', currentPath); // Debug
+        console.log('Directory:', directory); // Debug
         console.log('Fetching:', url); // Debug
         
-        const response = await fetch(url);
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
         console.log('Response status:', response.status); // Debug
+        console.log('Response URL:', response.url); // Debug
         
         const data = await response.json();
         console.log('Response data:', data); // Debug

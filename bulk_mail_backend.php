@@ -12,8 +12,28 @@ require_once 'db_config.php';
 // Set JSON header
 header('Content-Type: application/json');
 
-// Drive directory configuration
-define('DRIVE_DIR', '/files/public_html/SXC_MDTS/File_Drive');
+// Drive directory configuration - try multiple possible locations
+$possiblePaths = [
+    __DIR__ . '/File_Drive',
+    $_SERVER['DOCUMENT_ROOT'] . '/SXC_MDTS/File_Drive',
+    dirname(__FILE__) . '/File_Drive',
+    '/home/u955994755/public_html/SXC_MDTS/File_Drive', // Common cPanel path
+];
+
+$driveDir = null;
+foreach ($possiblePaths as $path) {
+    if (is_dir($path)) {
+        $driveDir = $path;
+        break;
+    }
+}
+
+if (!$driveDir) {
+    error_log("File_Drive not found. Tried: " . implode(', ', $possiblePaths));
+    $driveDir = __DIR__ . '/File_Drive'; // Fallback
+}
+
+define('DRIVE_DIR', $driveDir);
 
 // Get action from request
 $action = $_GET['action'] ?? '';
