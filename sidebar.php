@@ -7,7 +7,7 @@ require_once 'db_config.php';
 $sidebarLabels = getLabelCounts($userEmail);
 $unlabeledCount = getUnlabeledEmailCount($userEmail);
 ?>
-
+<?php  require 'header.php' ?>
 <style>
     :root {
         --apple-blue: #007AFF;
