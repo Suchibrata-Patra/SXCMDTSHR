@@ -1168,8 +1168,6 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     document.querySelectorAll('.tab').forEach(tab => {
         tab.classList.remove('active');
     });
-    // Remove this line that causes the error:
-    // event.target.closest('.tab').classList.add('active');
     
     // Add these lines instead:
     const tabs = document.querySelectorAll('.tab');
@@ -1178,14 +1176,19 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     } else if (tabName === 'queue') {
         tabs[1].classList.add('active');
     }
+    
+    // Show/hide content sections
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById(`${tabName}Tab`).classList.add('active');
+}
 
-       function switchAttachmentTab(tabName) {
+function switchAttachmentTab(tabName) {
     // Update attachment tab buttons
     document.querySelectorAll('.attachment-tab').forEach(tab => {
         tab.classList.remove('active');
     });
-    // Remove this line:
-    // event.target.closest('.attachment-tab').classList.add('active');
     
     // Add these lines instead:
     const tabs = document.querySelectorAll('.attachment-tab');
@@ -1194,15 +1197,30 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     } else if (tabName === 'upload') {
         tabs[1].classList.add('active');
     }
+    
+    // Show/hide attachment sections
+    document.querySelectorAll('.attachment-tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById(`${tabName}AttachmentTab`).classList.add('active');
+}
 
         // ========== DRIVE FILES ==========
         async function loadDriveFiles() {
     const container = document.getElementById('driveFilesList');
     const loading = document.querySelector('#driveAttachmentTab .loading');
     
+    console.log('Loading drive files...'); // Debug
+    
     try {
-        const response = await fetch('bulk_mail_backend.php?action=list_drive_files');
+        const url = 'bulk_mail_backend.php?action=list_drive_files';
+        console.log('Fetching:', url); // Debug
+        
+        const response = await fetch(url);
+        console.log('Response status:', response.status); // Debug
+        
         const data = await response.json();
+        console.log('Response data:', data); // Debug
 
         if (data.success && data.files && data.files.length > 0) {
             loading.style.display = 'none';
@@ -1245,7 +1263,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             <div class="empty-state">
                 <div class="empty-state-icon">❌</div>
                 <h3>Failed to load drive files</h3>
-                <p>Check console for details</p>
+                <p>Check console for details: ${error.message}</p>
             </div>
         `;
     }

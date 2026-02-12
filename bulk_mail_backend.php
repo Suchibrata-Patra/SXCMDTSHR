@@ -18,6 +18,9 @@ define('DRIVE_DIR', '/files/public_html/SXC_MDTS/File_Drive');
 // Get action from request
 $action = $_GET['action'] ?? '';
 
+// Debug logging (remove after fixing)
+error_log("Backend called - Action: '$action', GET params: " . print_r($_GET, true));
+
 try {
     $pdo = getDatabaseConnection();
     
@@ -319,7 +322,7 @@ try {
             break;
             
         default:
-            throw new Exception('Invalid action: ' . $action);
+            throw new Exception('Invalid action: "' . $action . '". Request method: ' . $_SERVER['REQUEST_METHOD'] . ', Query string: ' . ($_SERVER['QUERY_STRING'] ?? 'empty'));
     }
     
 } catch (Exception $e) {
