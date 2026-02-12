@@ -1163,44 +1163,37 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         let selectedAttachmentPath = null;
 
         // ========== TAB SWITCHING ==========
-        function switchTab(tabName) {
-            // Update tab buttons
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            event.target.closest('.tab').classList.add('active');
+       function switchTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    // Remove this line that causes the error:
+    // event.target.closest('.tab').classList.add('active');
+    
+    // Add these lines instead:
+    const tabs = document.querySelectorAll('.tab');
+    if (tabName === 'upload') {
+        tabs[0].classList.add('active');
+    } else if (tabName === 'queue') {
+        tabs[1].classList.add('active');
+    }
 
-            // Update tab content
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-
-            if (tabName === 'upload') {
-                document.getElementById('uploadTab').classList.add('active');
-            } else if (tabName === 'queue') {
-                document.getElementById('queueTab').classList.add('active');
-                loadQueue();
-            }
-        }
-
-        function switchAttachmentTab(tabName) {
-            // Update attachment tab buttons
-            document.querySelectorAll('.attachment-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            event.target.closest('.attachment-tab').classList.add('active');
-
-            // Update attachment tab content
-            document.querySelectorAll('.attachment-content').forEach(content => {
-                content.classList.remove('active');
-            });
-
-            if (tabName === 'drive') {
-                document.getElementById('driveAttachmentTab').classList.add('active');
-            } else if (tabName === 'upload') {
-                document.getElementById('uploadAttachmentTab').classList.add('active');
-            }
-        }
+       function switchAttachmentTab(tabName) {
+    // Update attachment tab buttons
+    document.querySelectorAll('.attachment-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    // Remove this line:
+    // event.target.closest('.attachment-tab').classList.add('active');
+    
+    // Add these lines instead:
+    const tabs = document.querySelectorAll('.attachment-tab');
+    if (tabName === 'drive') {
+        tabs[0].classList.add('active');
+    } else if (tabName === 'upload') {
+        tabs[1].classList.add('active');
+    }
 
         // ========== DRIVE FILES ==========
         async function loadDriveFiles() {
