@@ -471,16 +471,6 @@ $lastSync = getLastSyncDate($userEmail);
             background: linear-gradient(90deg, #f9fcff 0%, #FAFAFA 100%);
         }
 
-        .message-item.new::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 3px;
-            background: var(--success-green);
-        }
-
         .message-star {
             cursor: pointer;
             color: var(--apple-light-gray);
@@ -496,6 +486,19 @@ $lastSync = getLastSyncDate($userEmail);
 
         .message-star.starred {
             color: var(--warning-orange);
+        }
+
+        .message-important {
+            color: var(--warning-orange);
+            font-size: 18px;
+            margin-top: 2px;
+        }
+
+        .sender-email-hint {
+            font-size: 11px;
+            color: var(--apple-gray);
+            font-weight: 400;
+            margin-left: 4px;
         }
 
         .message-content {
@@ -520,8 +523,7 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .message-sender strong,
-        .message-subject strong,
-        .message-preview strong {
+        .message-subject strong {
             font-weight: 600;
             color: var(--apple-gray);
             margin-right: 4px;
@@ -567,13 +569,10 @@ $lastSync = getLastSyncDate($userEmail);
             overflow: hidden;
             line-height: 1.5;
             margin-bottom: 4px;
+            font-style: italic;
         }
-
-        .message-footer {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 6px;
+            line-height: 1.5;
+            margin-bottom: 4px;
         }
 
         .message-id-badge {
@@ -1106,22 +1105,25 @@ $lastSync = getLastSyncDate($userEmail);
             container.innerHTML = messages.map(msg => {
                 const classes = ['message-item'];
                 if (msg.is_read == 0) classes.push('unread');
-                if (msg.is_new == 1) classes.push('new');
                 if (msg.id == currentMessageId) classes.push('selected');
 
-                // Extract first 150 characters for preview
-                const preview = msg.body ? msg.body.substring(0, 150) : 'No preview available';
-                
-                // Extract email address from sender field
-                // Try to extract email from "Name <email@domain.com>" format
-                let senderEmail = msg.sender || 'Unknown Sender';
-                const emailMatch = msg.sender ? msg.sender.match(/<([^>]+)>/) : null;
-                if (emailMatch && emailMatch[1]) {
-                    senderEmail = emailMatch[1];
-                } else if (msg.sender && msg.sender.includes('@')) {
-                    // If it's just an email without angle brackets
-                    senderEmail = msg.sender;
+                // Use body_preview if available, otherwise strip HTML from body
+                let preview = '';
+                if (msg.body_preview && msg.body_preview.trim()) {
+                    preview = msg.body_preview.substring(0, 150);
+                } else if (msg.body) {
+                    // Strip HTML tags and get plain text
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = msg.body;
+                    const plainText = tempDiv.textContent || tempDiv.innerText || '';
+                    preview = plainText.substring(0, 150);
+                } else {
+                    preview = 'No preview available';
                 }
+                
+                // Get sender email and name
+                const senderEmail = msg.sender_email || 'unknown@email.com';
+                const senderName = msg.sender_name || senderEmail;
                 
                 // Get subject or use default
                 const subjectDisplay = msg.subject || '(No Subject)';
@@ -1133,12 +1135,13 @@ $lastSync = getLastSyncDate($userEmail);
                                   onclick="toggleStar(${msg.id}, event)">
                                 ${msg.is_starred == 1 ? 'star' : 'star_border'}
                             </span>
+                            ${msg.is_important == 1 ? '<span class="material-icons message-important" title="Important">label_important</span>' : ''}
                         </span>
 
                         <div class="message-content">
                             <div class="message-header">
                                 <span class="message-sender" title="${escapeHtml(senderEmail)}">
-                                    <strong>From:</strong> ${escapeHtml(senderEmail)}
+                                    <strong>From:</strong> ${escapeHtml(senderName)} ${senderName !== senderEmail ? '<span class="sender-email-hint">&lt;' + escapeHtml(senderEmail) + '&gt;</span>' : ''}
                                 </span>
                             </div>
                             <div class="message-subject-line">
@@ -1148,10 +1151,7 @@ $lastSync = getLastSyncDate($userEmail);
                                 ${msg.has_attachments == 1 ? '<span class="inline-attachment-icon material-icons" title="Has attachments">attach_file</span>' : ''}
                             </div>
                             <div class="message-preview" title="${escapeHtml(preview)}">
-                                <strong>Preview:</strong> ${escapeHtml(preview)}${msg.body && msg.body.length > 150 ? '...' : ''}
-                            </div>
-                            <div class="message-footer">
-                                ${msg.is_new == 1 ? '<span class="badge badge-new-inline">NEW</span>' : ''}
+                                ${escapeHtml(preview)}${preview.length >= 150 ? '...' : ''}
                             </div>
                         </div>
                         
