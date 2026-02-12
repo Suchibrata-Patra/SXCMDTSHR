@@ -576,9 +576,9 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .message-id-badge {
-            font-size: 10px;
+            font-size: 5px;
             color: var(--apple-gray);
-            background: var(--apple-bg);
+            background: rgb(239, 239, 239);
             padding: 2px 6px;
             border-radius: 4px;
             font-weight: 500;
