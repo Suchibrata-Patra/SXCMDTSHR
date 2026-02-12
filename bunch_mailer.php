@@ -1,1344 +1,1313 @@
-<?php
-session_start();
-require_once 'db_config.php';
-
-// Security check
-if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
-    header("Location: login.php");
-    exit();
-}
-
-// Load user settings
-$settingsFile = 'settings.json';
-$settings = [];
-
-if (file_exists($settingsFile)) {
-    $jsonContent = file_get_contents($settingsFile);
-    $allSettings = json_decode($jsonContent, true) ?? [];
-    $settings = $allSettings[$_SESSION['smtp_user']] ?? [];
-}
-
-$settings = array_merge([
-    'display_name' => "St. Xavier's College",
-    'signature' => '',
-    'default_subject_prefix' => ''
-], $settings);
-
-$_SESSION['user_settings'] = $settings;
-
-// Get database connection
-$pdo = getDatabaseConnection();
-$userId = getUserId($pdo, $_SESSION['smtp_user']);
-
-// Get pending count in queue
-$pendingCount = 0;
-$processingCount = 0;
-$completedCount = 0;
-$failedCount = 0;
-
-try {
-    $stmt = $pdo->prepare("SELECT status, COUNT(*) as count FROM bulk_mail_queue WHERE user_id = ? GROUP BY status");
-    $stmt->execute([$userId]);
-    $statusCounts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    foreach ($statusCounts as $row) {
-        switch ($row['status']) {
-            case 'pending':
-                $pendingCount = $row['count'];
-                break;
-            case 'processing':
-                $processingCount = $row['count'];
-                break;
-            case 'completed':
-                $completedCount = $row['count'];
-                break;
-            case 'failed':
-                $failedCount = $row['count'];
-                break;
-        }
-    }
-} catch (Exception $e) {
-    error_log("Error getting queue counts: " . $e->getMessage());
-}
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bulk Mailer — SXC MDTS</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <title>Bulk Email Campaign Manager</title>
     <style>
-        :root {
-            --apple-blue: #007AFF;
-            --apple-gray: #8E8E93;
-            --apple-bg: #F2F2F7;
-            --glass: rgba(255, 255, 255, 0.7);
-            --border: #E5E5EA;
-            --success-green: #34C759;
-            --warning-orange: #FF9500;
-            --error-red: #FF3B30;
-            --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        }
-
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
+        
         body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            background: var(--apple-bg);
-            color: #1c1c1e;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
         }
-
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .content-area {
-            flex: 1;
-            overflow-y: auto;
-            padding: 40px;
-        }
-
-        /* ========== HEADER ========== */
-        .page-header {
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
             background: white;
-            border-bottom: 1px solid var(--border);
-            padding: 24px 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
         }
-
-        .header-content {
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        
+        .user-info {
+            text-align: right;
+            opacity: 0.95;
+        }
+        
+        .user-email {
+            font-size: 13px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+        }
+        
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+            font-weight: 600;
+            color: #666;
+        }
+        
+        .tab:hover {
+            background: #fff;
+            color: #667eea;
+        }
+        
+        .tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 30px;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .upload-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .upload-zone {
+            border: 3px dashed #ccc;
+            border-radius: 12px;
+            padding: 60px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+        
+        .upload-zone:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        .upload-zone.dragover {
+            border-color: #667eea;
+            background: #e3e9ff;
+            transform: scale(1.02);
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: #667eea;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .mapping-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .mapping-modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            max-width: 1400px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 24px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-close {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.2s;
+        }
+        
+        .modal-close:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+        }
+        
+        .modal-body {
+            padding: 30px;
+        }
+        
+        .mapping-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 30px;
+        }
+        
+        .column-list {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .column-list h3 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: #333;
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            gap: 8px;
         }
-
-        .header-left h1 {
-            font-size: 28px;
-            font-weight: 700;
-            color: #1c1c1e;
+        
+        .column-item {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            cursor: move;
+            transition: all 0.2s;
+        }
+        
+        .column-item:hover {
+            border-color: #667eea;
+            transform: translateX(4px);
+        }
+        
+        .column-item.dragging {
+            opacity: 0.5;
+        }
+        
+        .column-name {
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .column-samples {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+        
+        .expected-field {
+            background: white;
+            border: 2px dashed #e0e0e0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            min-height: 60px;
+            transition: all 0.2s;
+        }
+        
+        .expected-field.required::before {
+            content: '* ';
+            color: #f44336;
+            font-weight: bold;
+        }
+        
+        .expected-field.dragover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        .expected-field.mapped {
+            border-style: solid;
+            border-color: #4caf50;
+            background: #f1f8f4;
+        }
+        
+        .field-label {
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 4px;
         }
-
-        .header-left p {
-            font-size: 14px;
-            color: var(--apple-gray);
+        
+        .field-description {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
         }
-
-        /* ========== STATUS CARDS ========== */
-        .status-grid {
+        
+        .mapped-column {
+            background: #667eea;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+        }
+        
+        .remove-mapping {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .badge {
+            background: #ff9800;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .badge.required {
+            background: #f44336;
+        }
+        
+        .badge.optional {
+            background: #9e9e9e;
+        }
+        
+        .badge.email {
+            background: #2196f3;
+        }
+        
+        .queue-section {
+            margin-top: 30px;
+        }
+        
+        .queue-stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
-
-        .status-card {
-            background: white;
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 24px;
             border-radius: 12px;
-            padding: 20px;
-            border: 1px solid var(--border);
-            box-shadow: var(--card-shadow);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
-
-        .status-card-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-
-        .status-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
-
-        .status-icon.pending {
-            background: rgba(255, 149, 0, 0.1);
-            color: var(--warning-orange);
-        }
-
-        .status-icon.processing {
-            background: rgba(0, 122, 255, 0.1);
-            color: var(--apple-blue);
-        }
-
-        .status-icon.completed {
-            background: rgba(52, 199, 89, 0.1);
-            color: var(--success-green);
-        }
-
-        .status-icon.failed {
-            background: rgba(255, 59, 48, 0.1);
-            color: var(--error-red);
-        }
-
-        .status-label {
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--apple-gray);
-        }
-
-        .status-value {
-            font-size: 32px;
+        
+        .stat-value {
+            font-size: 36px;
             font-weight: 700;
-            color: #1c1c1e;
-        }
-
-        /* ========== UPLOAD SECTION ========== */
-        .upload-section {
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
-            border: 1px solid var(--border);
-            box-shadow: var(--card-shadow);
-            margin-bottom: 30px;
-        }
-
-        .section-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #1c1c1e;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .section-title .material-icons {
-            color: var(--apple-blue);
-        }
-
-        /* File Upload Area */
-        .upload-container {
-            position: relative;
-        }
-
-        .file-drop-zone {
-            border: 2px dashed var(--border);
-            border-radius: 12px;
-            padding: 40px;
-            text-align: center;
-            background: var(--apple-bg);
-            transition: all 0.3s;
-            cursor: pointer;
-        }
-
-        .file-drop-zone:hover,
-        .file-drop-zone.drag-over {
-            border-color: var(--apple-blue);
-            background: rgba(0, 122, 255, 0.05);
-        }
-
-        .file-drop-zone i {
-            font-size: 48px;
-            color: var(--apple-gray);
-            margin-bottom: 16px;
-        }
-
-        .file-drop-zone h3 {
-            font-size: 16px;
-            font-weight: 600;
-            color: #1c1c1e;
             margin-bottom: 8px;
         }
-
-        .file-drop-zone p {
-            font-size: 14px;
-            color: var(--apple-gray);
-        }
-
-        .file-input {
-            display: none;
-        }
-
-        /* CSV Preview Section */
-        .preview-section {
-            display: none;
-            margin-top: 30px;
-        }
-
-        .preview-section.show {
-            display: block;
-        }
-
-        .preview-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .preview-info {
-            font-size: 14px;
-            color: var(--apple-gray);
-        }
-
-        .preview-table-container {
-            overflow-x: auto;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .preview-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .preview-table th {
-            background: var(--apple-bg);
-            padding: 12px;
-            text-align: left;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--apple-gray);
-            border-bottom: 1px solid var(--border);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        .preview-table td {
-            padding: 12px;
+        
+        .stat-label {
             font-size: 13px;
-            border-bottom: 1px solid var(--border);
+            opacity: 0.9;
         }
-
-        .preview-table tbody tr:hover {
-            background: rgba(0, 122, 255, 0.05);
-        }
-
-        .row-number {
-            color: var(--apple-gray);
-            font-weight: 600;
-        }
-
-        /* Action Buttons */
-        .action-buttons {
-            display: flex;
-            gap: 12px;
-            margin-top: 20px;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            border-radius: 10px;
-            border: none;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s;
-        }
-
-        .btn-primary {
-            background: var(--apple-blue);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #0056b3;
-        }
-
-        .btn-secondary {
-            background: var(--apple-gray);
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background: #6e6e73;
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* Attachment Section */
-        .attachment-section {
-            margin-top: 30px;
-        }
-
-        .attachment-drop-zone {
-            border: 2px dashed var(--border);
-            border-radius: 12px;
-            padding: 30px;
-            text-align: center;
-            background: var(--apple-bg);
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .attachment-drop-zone:hover {
-            border-color: var(--apple-blue);
-            background: rgba(0, 122, 255, 0.05);
-        }
-
-        .attachment-list {
-            display: none;
-        }
-
-        .attachment-list.show {
-            display: block;
-        }
-
-        .attachment-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 16px;
-            background: var(--apple-bg);
-            border-radius: 10px;
-            margin-top: 10px;
-        }
-
-        .attachment-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .attachment-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            background: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            color: var(--apple-blue);
-        }
-
-        .attachment-details h4 {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .attachment-details p {
-            font-size: 12px;
-            color: var(--apple-gray);
-        }
-
-        .remove-attachment-btn {
-            padding: 8px 16px;
-            background: var(--error-red);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-        }
-
-        /* Progress Section */
-        .progress-section {
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
-            border: 1px solid var(--border);
-            box-shadow: var(--card-shadow);
-            margin-bottom: 30px;
-            display: none;
-        }
-
-        .progress-section.show {
-            display: block;
-        }
-
-        .progress-stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin-bottom: 24px;
-        }
-
-        .progress-stat {
-            text-align: center;
-        }
-
-        .progress-stat-value {
-            font-size: 32px;
-            font-weight: 700;
-            color: #1c1c1e;
-        }
-
-        .progress-stat-label {
-            font-size: 13px;
-            color: var(--apple-gray);
-            margin-top: 4px;
-        }
-
-        .progress-bar-container {
-            background: var(--apple-bg);
-            border-radius: 10px;
-            height: 12px;
-            overflow: hidden;
-            margin-bottom: 12px;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, var(--apple-blue), var(--success-green));
-            width: 0%;
-            transition: width 0.3s;
-        }
-
-        .progress-percent {
-            text-align: center;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--apple-gray);
-        }
-
-        .current-email-info {
-            background: var(--apple-bg);
-            padding: 16px;
-            border-radius: 10px;
-            margin-top: 20px;
-            display: none;
-        }
-
-        .current-email-info.show {
-            display: block;
-        }
-
-        .current-email-text {
-            font-size: 14px;
-            color: var(--apple-gray);
-        }
-
-        /* Email Log */
-        .email-log-section {
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
-            border: 1px solid var(--border);
-            box-shadow: var(--card-shadow);
-        }
-
-        .email-log {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .log-item {
-            display: flex;
-            gap: 12px;
-            padding: 12px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .log-item:last-child {
-            border-bottom: none;
-        }
-
-        .log-status {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-top: 4px;
-        }
-
-        .log-status.success {
-            background: var(--success-green);
-        }
-
-        .log-status.error {
-            background: var(--error-red);
-        }
-
-        .log-content {
-            flex: 1;
-        }
-
-        .log-email {
-            font-size: 14px;
-            font-weight: 600;
-            color: #1c1c1e;
-        }
-
-        .log-time {
-            font-size: 12px;
-            color: var(--apple-gray);
-            margin-top: 4px;
-        }
-
-        .log-message {
-            font-size: 13px;
-            color: var(--error-red);
-            margin-top: 4px;
-        }
-
-        /* Queue List Section */
-        .queue-section {
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
-            border: 1px solid var(--border);
-            box-shadow: var(--card-shadow);
-            margin-bottom: 30px;
-        }
-
-        .queue-table-container {
-            overflow-x: auto;
-            max-height: 500px;
-            overflow-y: auto;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            margin-top: 20px;
-        }
-
+        
         .queue-table {
             width: 100%;
             border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-
+        
         .queue-table th {
-            background: var(--apple-bg);
-            padding: 12px;
+            background: #f8f9fa;
+            padding: 16px;
             text-align: left;
-            font-size: 12px;
             font-weight: 600;
-            color: var(--apple-gray);
-            border-bottom: 1px solid var(--border);
-            position: sticky;
-            top: 0;
-            z-index: 10;
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
         }
-
+        
         .queue-table td {
-            padding: 12px;
-            font-size: 13px;
-            border-bottom: 1px solid var(--border);
+            padding: 14px 16px;
+            border-bottom: 1px solid #f0f0f0;
         }
-
-        .queue-table tbody tr:hover {
-            background: rgba(0, 122, 255, 0.05);
+        
+        .queue-table tr:hover {
+            background: #f8f9fa;
         }
-
+        
         .status-badge {
-            display: inline-block;
             padding: 4px 12px;
             border-radius: 12px;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 600;
-            text-transform: uppercase;
+            display: inline-block;
         }
-
-        .status-badge.pending {
-            background: rgba(255, 149, 0, 0.1);
-            color: var(--warning-orange);
+        
+        .status-pending {
+            background: #fff3e0;
+            color: #e65100;
         }
-
-        .status-badge.processing {
-            background: rgba(0, 122, 255, 0.1);
-            color: var(--apple-blue);
+        
+        .status-processing {
+            background: #e3f2fd;
+            color: #0d47a1;
         }
-
-        .status-badge.completed {
-            background: rgba(52, 199, 89, 0.1);
-            color: var(--success-green);
+        
+        .status-completed {
+            background: #e8f5e9;
+            color: #1b5e20;
         }
-
-        .status-badge.failed {
-            background: rgba(255, 59, 48, 0.1);
-            color: var(--error-red);
+        
+        .status-failed {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-success {
+            background: #4caf50;
+        }
+        
+        .btn-danger {
+            background: #f44336;
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .alert {
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        
+        .alert-info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            color: #0d47a1;
+        }
+        
+        .alert-success {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            color: #1b5e20;
+        }
+        
+        .alert-warning {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            color: #e65100;
+        }
+        
+        .alert-error {
+            background: #ffebee;
+            border-left: 4px solid #f44336;
+            color: #c62828;
+        }
+        
+        .progress-container {
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .progress-container.active {
+            display: block;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+            width: 0%;
+        }
+        
+        .progress-text {
+            font-size: 13px;
+            color: #666;
+            text-align: center;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+        
+        @media (max-width: 768px) {
+            .mapping-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .queue-stats {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
-    <?php include 'sidebar.php'; ?>
-    
-    <div class="main-content">
-        <div class="page-header">
-            <div class="header-content">
-                <div class="header-left">
-                    <h1>Bulk Mailer</h1>
-                    <p>Send emails to multiple recipients from CSV</p>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>📧 Bulk Email Campaign Manager</h1>
+                <p>Upload CSV, map columns, and send bulk emails with ease</p>
+            </div>
+            <div class="user-info">
+                <div class="user-email" id="userEmail">Loading...</div>
+            </div>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('upload')">
+                📁 Upload CSV
+            </div>
+            <div class="tab" onclick="switchTab('queue')">
+                📋 Email Queue
+            </div>
+            <div class="tab" onclick="switchTab('history')">
+                📊 Campaign History
+            </div>
+        </div>
+        
+        <!-- Upload Tab -->
+        <div class="tab-content active" id="upload-tab">
+            <div class="upload-section">
+                <h2 style="margin-bottom: 20px;">Upload CSV File</h2>
+                
+                <div class="alert alert-info">
+                    <span>💡</span>
+                    <div>
+                        <strong>Smart Column Mapping:</strong>
+                        <p style="margin-top: 4px;">Upload any CSV format - our system will automatically detect and map your columns! No need to match exact column names.</p>
+                    </div>
+                </div>
+                
+                <div class="upload-zone" id="uploadZone">
+                    <div class="upload-icon">📁</div>
+                    <h3>Drop your CSV file here</h3>
+                    <p>or click to browse</p>
+                    <p style="margin-top: 12px; font-size: 13px; color: #666;">Any CSV structure supported • Auto-detects columns • Smart mapping</p>
+                    <input type="file" id="fileInput" class="file-input" accept=".csv">
+                </div>
+                
+                <div id="uploadResult" style="margin-top: 20px;"></div>
+            </div>
+        </div>
+        
+        <!-- Queue Tab -->
+        <div class="tab-content" id="queue-tab">
+            <div class="queue-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>Email Queue Status</h2>
+                    <div class="button-group" style="margin: 0;">
+                        <button class="btn btn-small" onclick="refreshQueue()">
+                            🔄 Refresh
+                        </button>
+                        <button class="btn btn-success btn-small" onclick="processQueue()" id="processQueueBtn">
+                            ▶️ Process Queue
+                        </button>
+                        <button class="btn btn-danger btn-small" onclick="clearQueue()">
+                            🗑️ Clear Pending
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="queue-stats" id="queueStats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-pending">0</div>
+                        <div class="stat-label">Pending</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);">
+                        <div class="stat-value" id="stat-processing">0</div>
+                        <div class="stat-label">Processing</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);">
+                        <div class="stat-value" id="stat-completed">0</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);">
+                        <div class="stat-value" id="stat-failed">0</div>
+                        <div class="stat-label">Failed</div>
+                    </div>
+                </div>
+                
+                <div class="progress-container" id="processingProgress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">Processing emails...</div>
+                </div>
+                
+                <div id="queueTableContainer">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Loading queue...
+                    </div>
                 </div>
             </div>
         </div>
-
-        <div class="content-area">
-            <!-- Status Cards -->
-            <div class="status-grid">
-                <div class="status-card">
-                    <div class="status-card-header">
-                        <div class="status-icon pending">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                        <div class="status-label">Pending</div>
-                    </div>
-                    <div class="status-value" id="pendingCount"><?= $pendingCount ?></div>
-                </div>
-
-                <div class="status-card">
-                    <div class="status-card-header">
-                        <div class="status-icon processing">
-                            <i class="fas fa-spinner"></i>
-                        </div>
-                        <div class="status-label">Processing</div>
-                    </div>
-                    <div class="status-value" id="processingCount"><?= $processingCount ?></div>
-                </div>
-
-                <div class="status-card">
-                    <div class="status-card-header">
-                        <div class="status-icon completed">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                        <div class="status-label">Completed</div>
-                    </div>
-                    <div class="status-value" id="completedCount"><?= $completedCount ?></div>
-                </div>
-
-                <div class="status-card">
-                    <div class="status-card-header">
-                        <div class="status-icon failed">
-                            <i class="fas fa-exclamation-circle"></i>
-                        </div>
-                        <div class="status-label">Failed</div>
-                    </div>
-                    <div class="status-value" id="failedCount"><?= $failedCount ?></div>
-                </div>
-            </div>
-
-            <!-- Upload Section -->
-            <div class="upload-section">
-                <h2 class="section-title">
-                    <span class="material-icons">upload_file</span>
-                    Upload CSV File
-                </h2>
-
-                <div class="upload-container">
-                    <div class="file-drop-zone" id="csvDropZone" onclick="document.getElementById('csvFileInput').click()">
-                        <i class="fas fa-file-csv"></i>
-                        <h3>Drop CSV file here or click to browse</h3>
-                        <p>CSV must contain required columns: mail_id, receiver_name, Mail_Subject, Article_Title, etc.</p>
-                    </div>
-                    <input type="file" id="csvFileInput" class="file-input" accept=".csv" onchange="handleCSVSelect(this.files[0])">
-                </div>
-
-                <!-- CSV Preview -->
-                <div class="preview-section" id="previewSection">
-                    <div class="preview-header">
-                        <h3 class="section-title">CSV Preview</h3>
-                        <div class="preview-info" id="previewInfo"></div>
-                    </div>
-                    
-                    <div class="preview-table-container">
-                        <table class="preview-table">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Email</th>
-                                    <th>Name</th>
-                                    <th>Subject</th>
-                                    <th>Article Title</th>
-                                    <th>Message Preview</th>
-                                </tr>
-                            </thead>
-                            <tbody id="previewTableBody"></tbody>
-                        </table>
-                    </div>
-
-                    <div class="action-buttons">
-                        <button class="btn btn-primary" id="confirmUploadBtn" onclick="confirmAndUpload()">
-                            <i class="fas fa-check"></i> Confirm & Upload
-                        </button>
-                        <button class="btn btn-secondary" onclick="cancelPreview()">
-                            <i class="fas fa-times"></i> Cancel
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Attachment Section -->
-                <div class="attachment-section">
-                    <h3 class="section-title">
-                        <span class="material-icons">attach_file</span>
-                        Common Attachment (Optional)
-                    </h3>
-                    
-                    <div class="attachment-drop-zone" id="attachmentDropZone" onclick="document.getElementById('attachmentInput').click()">
-                        <i class="fas fa-paperclip"></i>
-                        <p>Click to add a common attachment for all emails</p>
-                    </div>
-                    <input type="file" id="attachmentInput" class="file-input" onchange="handleAttachmentSelect(this.files[0])">
-                    
-                    <div class="attachment-list" id="attachmentList"></div>
-                </div>
-
-                <div class="action-buttons" id="uploadActions" style="display: none;">
-                    <button class="btn btn-primary" id="sendBtn" onclick="startSending()">
-                        <i class="fas fa-paper-plane"></i> Start Sending
-                    </button>
-                    <button class="btn btn-secondary" onclick="clearQueue()">
-                        <i class="fas fa-trash"></i> Clear Queue
-                    </button>
-                </div>
-            </div>
-
-            <!-- Progress Section -->
-            <div class="progress-section" id="progressSection">
-                <h2 class="section-title">
-                    <span class="material-icons">trending_up</span>
-                    Sending Progress
-                </h2>
-
-                <div class="progress-stats">
-                    <div class="progress-stat">
-                        <div class="progress-stat-value" id="sentCount">0</div>
-                        <div class="progress-stat-label">Sent</div>
-                    </div>
-                    <div class="progress-stat">
-                        <div class="progress-stat-value" id="remainingCount">0</div>
-                        <div class="progress-stat-label">Remaining</div>
-                    </div>
-                    <div class="progress-stat">
-                        <div class="progress-stat-value" id="progressPercent">0%</div>
-                        <div class="progress-stat-label">Progress</div>
-                    </div>
-                </div>
-
-                <div class="progress-bar-container">
-                    <div class="progress-bar" id="progressBar"></div>
-                </div>
-
-                <div class="current-email-info" id="currentEmailInfo">
-                    <div class="current-email-text" id="currentEmailText"></div>
-                </div>
-            </div>
-
-            <!-- Queue List -->
+        
+        <!-- History Tab -->
+        <div class="tab-content" id="history-tab">
             <div class="queue-section">
-                <h2 class="section-title">
-                    <span class="material-icons">list</span>
-                    Email Queue
-                </h2>
-
-                <div class="queue-table-container">
-                    <table class="queue-table">
-                        <thead>
-                            <tr>
-                                <th>Recipient</th>
-                                <th>Name</th>
-                                <th>Subject</th>
-                                <th>Status</th>
-                                <th>Created</th>
-                            </tr>
-                        </thead>
-                        <tbody id="queueTableBody">
-                            <tr>
-                                <td colspan="5" style="text-align: center; color: var(--apple-gray);">No emails in queue</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Email Log -->
-            <div class="email-log-section">
-                <h2 class="section-title">
-                    <span class="material-icons">history</span>
-                    Activity Log
-                </h2>
-                <div class="email-log" id="emailLog">
-                    <div class="log-item">
-                        <div class="log-status" style="background: var(--apple-gray);"></div>
-                        <div class="log-content">
-                            <div class="log-email">No activity yet</div>
-                            <div class="log-time">Upload a CSV file to begin</div>
-                        </div>
+                <h2 style="margin-bottom: 20px;">Campaign History</h2>
+                
+                <div id="historyContainer">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <h3>No campaigns yet</h3>
+                        <p>Upload a CSV to start your first campaign</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <script>
-        let csvFile = null;
-        let csvData = [];
-        let attachmentId = null;
-        let isSending = false;
-
-        const csvDropZone = document.getElementById('csvDropZone');
-        const csvFileInput = document.getElementById('csvFileInput');
-        const previewSection = document.getElementById('previewSection');
-        const previewTableBody = document.getElementById('previewTableBody');
-        const previewInfo = document.getElementById('previewInfo');
-        const attachmentDropZone = document.getElementById('attachmentDropZone');
-        const attachmentInput = document.getElementById('attachmentInput');
-        const attachmentList = document.getElementById('attachmentList');
-        const sendBtn = document.getElementById('sendBtn');
-        const uploadActions = document.getElementById('uploadActions');
-
-        // CSV drag and drop
-        csvDropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            csvDropZone.classList.add('drag-over');
-        });
-
-        csvDropZone.addEventListener('dragleave', () => {
-            csvDropZone.classList.remove('drag-over');
-        });
-
-        csvDropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            csvDropZone.classList.remove('drag-over');
-            const file = e.dataTransfer.files[0];
-            if (file && file.name.endsWith('.csv')) {
-                handleCSVSelect(file);
-            } else {
-                alert('Please drop a CSV file');
-            }
-        });
-
-        // Handle CSV file selection - Preview first
-        async function handleCSVSelect(file) {
-            if (!file) return;
-
-            console.log('CSV file selected:', file.name, file.size, file.type);
-
-            csvFile = file;
-            csvData = [];
-
-            // Show loading
-            previewTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px;">Loading preview...</td></tr>';
-            previewSection.classList.add('show');
-
-            // Send to server for preview
-            const formData = new FormData();
-            formData.append('csv_file', file);
-
-            console.log('Sending preview request...');
-
-            try {
-                const response = await fetch('process_bulk_mail.php?action=preview', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                console.log('Response status:', response.status);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const text = await response.text();
-                console.log('Raw response:', text);
-                
-                let result;
-                try {
-                    result = JSON.parse(text);
-                } catch (e) {
-                    console.error('JSON parse error:', e);
-                    throw new Error('Server returned invalid JSON: ' + text.substring(0, 100));
-                }
-
-                console.log('Parsed result:', result);
-
-                if (result.success) {
-                    csvData = result.preview_rows;
-                    displayPreview(result);
-                } else {
-                    alert('Error: ' + (result.error || 'Unknown error'));
-                    console.error('Server error:', result);
-                    previewSection.classList.remove('show');
-                }
-            } catch (error) {
-                console.error('Fetch error:', error);
-                alert('Failed to preview CSV file: ' + error.message);
-                previewSection.classList.remove('show');
-            }
-        }
-
-        function displayPreview(result) {
-            previewInfo.textContent = result.message;
+    
+    <!-- Column Mapping Modal -->
+    <div class="mapping-modal" id="mappingModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h2>Map Your CSV Columns</h2>
+                    <p style="margin-top: 4px; opacity: 0.9;">Drag columns from left to right to map them</p>
+                </div>
+                <button class="modal-close" onclick="closeMappingModal()">×</button>
+            </div>
             
-            previewTableBody.innerHTML = '';
-            
-            result.preview_rows.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="row-number">${row.row_number}</td>
-                    <td>${row.mail_id}</td>
-                    <td>${row.receiver_name}</td>
-                    <td>${row.subject}</td>
-                    <td>${row.article_title}</td>
-                    <td>${row.message_preview}</td>
-                `;
-                previewTableBody.appendChild(tr);
-            });
-        }
-
-        function cancelPreview() {
-            csvFile = null;
-            csvData = [];
-            csvFileInput.value = '';
-            previewSection.classList.remove('show');
-        }
-
-        // Confirm and upload CSV to queue
-        async function confirmAndUpload() {
-            if (!csvFile) {
-                alert('No CSV file selected');
-                return;
-            }
-
-            document.getElementById('confirmUploadBtn').disabled = true;
-            document.getElementById('confirmUploadBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
-
-            const formData = new FormData();
-            formData.append('csv_file', csvFile);
-            if (attachmentId) {
-                formData.append('attachment_id', attachmentId);
-            }
-
-            try {
-                const response = await fetch('process_bulk_mail.php?action=upload', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    alert(`Successfully uploaded! ${result.queued_count} emails added to queue.`);
-                    previewSection.classList.remove('show');
-                    uploadActions.style.display = 'flex';
-                    
-                    // Refresh queue list and status
-                    loadQueueList();
-                    refreshStatus();
-                } else {
-                    alert('Error: ' + result.error);
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Failed to upload CSV');
-            } finally {
-                document.getElementById('confirmUploadBtn').disabled = false;
-                document.getElementById('confirmUploadBtn').innerHTML = '<i class="fas fa-check"></i> Confirm & Upload';
-            }
-        }
-
-        // Attachment handling
-        async function handleAttachmentSelect(file) {
-            if (!file) return;
-
-            const formData = new FormData();
-            formData.append('file', file);
-
-            attachmentDropZone.innerHTML = '<i class="fas fa-spinner fa-spin"></i><p>Uploading...</p>';
-
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', 'upload_handler.php', true);
-
-            xhr.onload = function() {
-                if (xhr.status === 200) {
-                    const response = JSON.parse(xhr.responseText);
-                    if (response.success) {
-                        attachmentId = response.id;
-                        displayAttachment(response);
-                    } else {
-                        alert('Upload failed: ' + response.error);
-                        attachmentDropZone.innerHTML = '<i class="fas fa-paperclip"></i><p>Click to add a common attachment for all emails</p>';
-                    }
-                }
-            };
-
-            xhr.send(formData);
-        }
-
-        function displayAttachment(attachment) {
-            attachmentDropZone.style.display = 'none';
-            attachmentList.classList.add('show');
-            
-            const ext = attachment.extension.toUpperCase();
-            const icon = getFileIcon(ext);
-            
-            attachmentList.innerHTML = `
-                <div class="attachment-item">
-                    <div class="attachment-info">
-                        <div class="attachment-icon">
-                            <i class="${icon}"></i>
-                        </div>
-                        <div class="attachment-details">
-                            <h4>${attachment.original_name}</h4>
-                            <p>${attachment.formatted_size} • ${ext}</p>
-                        </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <span>💡</span>
+                    <div>
+                        <strong>Auto-Detection Active:</strong>
+                        <p style="margin-top: 4px;">We've automatically mapped columns we recognized (shown in green). Review and adjust as needed.</p>
                     </div>
-                    <button class="remove-attachment-btn" onclick="removeAttachment()">
-                        <i class="fas fa-times"></i> Remove
+                </div>
+                
+                <div id="csvInfo" style="margin-bottom: 20px;"></div>
+                
+                <div class="mapping-container">
+                    <div class="column-list">
+                        <h3>
+                            <span>📋</span> Your CSV Columns
+                        </h3>
+                        <div id="csvColumns"></div>
+                    </div>
+                    
+                    <div class="column-list">
+                        <h3>
+                            <span>🎯</span> Expected Fields
+                        </h3>
+                        <div id="expectedFields"></div>
+                    </div>
+                </div>
+                
+                <div class="button-group" style="justify-content: flex-end;">
+                    <button class="btn btn-secondary" onclick="closeMappingModal()">
+                        Cancel
+                    </button>
+                    <button class="btn btn-success" onclick="processWithMapping()" id="processMappingBtn">
+                        ✓ Process CSV
                     </button>
                 </div>
-            `;
-        }
-
-        function removeAttachment() {
-            attachmentId = null;
-            attachmentDropZone.style.display = 'block';
-            attachmentList.classList.remove('show');
-            attachmentList.innerHTML = '';
-            attachmentInput.value = '';
-        }
-
-        function getFileIcon(extension) {
-            const icons = {
-                'PDF': 'fas fa-file-pdf',
-                'DOC': 'fas fa-file-word',
-                'DOCX': 'fas fa-file-word',
-                'XLS': 'fas fa-file-excel',
-                'XLSX': 'fas fa-file-excel',
-                'PPT': 'fas fa-file-powerpoint',
-                'PPTX': 'fas fa-file-powerpoint',
-                'JPG': 'fas fa-file-image',
-                'JPEG': 'fas fa-file-image',
-                'PNG': 'fas fa-file-image',
-                'GIF': 'fas fa-file-image',
-                'ZIP': 'fas fa-file-archive',
-                'RAR': 'fas fa-file-archive'
-            };
-            return icons[extension] || 'fas fa-file';
-        }
-
-        // Start sending process
-        async function startSending() {
-            if (isSending) {
-                alert('Already sending emails');
-                return;
-            }
-
-            const status = await getStatus();
-            if (status.pending === 0) {
-                alert('No pending emails in queue');
-                return;
-            }
-
-            if (!confirm(`Start sending ${status.pending} emails?`)) {
-                return;
-            }
-
-            document.getElementById('progressSection').classList.add('show');
-            isSending = true;
-            sendBtn.disabled = true;
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Global variables
+        let currentFile = null;
+        let csvData = null;
+        let columnMapping = {};
+        let expectedFields = {};
+        let draggedElement = null;
+        let queueRefreshInterval = null;
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkSession();
+            await fetchExpectedFields();
+            initializeUpload();
+            loadQueue();
             
-            // Start processing
-            processQueue();
-        }
-
-        // Process queue
-        async function processQueue() {
-            if (!isSending) return;
-
+            // Auto-refresh queue every 5 seconds when on queue tab
+            queueRefreshInterval = setInterval(() => {
+                if (document.getElementById('queue-tab').classList.contains('active')) {
+                    loadQueue();
+                }
+            }, 5000);
+        });
+        
+        // Check if user is logged in
+        async function checkSession() {
             try {
-                const response = await fetch('process_bulk_mail.php?action=process', {
-                    method: 'POST'
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    updateProgress(result);
-
-                    if (result.has_more) {
-                        // Continue processing after a short delay
-                        setTimeout(processQueue, 1000);
-                    } else {
-                        // All done
-                        finishSending();
-                    }
+                const response = await fetch('process_bulk_mail.php?action=test');
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('userEmail').textContent = data.user_email || 'User';
+                } else {
+                    showAlert('error', 'Session expired. Please login again.');
+                    // Redirect to login page
+                    setTimeout(() => window.location.href = 'index.html', 2000);
                 }
             } catch (error) {
-                console.error('Error:', error);
-                addLog('System Error', 'Failed to process queue', 'error');
+                console.error('Session check failed:', error);
             }
         }
-
-        function updateProgress(data) {
-            // Update counts
-            document.getElementById('pendingCount').textContent = data.pending || 0;
-            document.getElementById('processingCount').textContent = data.processing || 0;
-            document.getElementById('completedCount').textContent = data.completed || 0;
-            document.getElementById('failedCount').textContent = data.failed || 0;
-
-            // Update progress stats
-            const total = data.total || 1;
-            const sent = data.completed || 0;
-            const remaining = total - sent - (data.failed || 0);
-            const percent = Math.round((sent / total) * 100);
-
-            document.getElementById('sentCount').textContent = sent;
-            document.getElementById('remainingCount').textContent = remaining;
-            document.getElementById('progressPercent').textContent = percent + '%';
-            document.getElementById('progressBar').style.width = percent + '%';
-
-            // Update current email
-            if (data.current_email) {
-                document.getElementById('currentEmailInfo').classList.add('show');
-                document.getElementById('currentEmailText').textContent = 
-                    `Sending to: ${data.current_email.recipient} - ${data.current_email.subject}`;
+        
+        // Fetch expected fields configuration
+        async function fetchExpectedFields() {
+            try {
+                const response = await fetch('bulk_mail_backend.php?action=get_expected_fields');
+                const data = await response.json();
+                
+                if (data.success) {
+                    expectedFields = data.expected_fields;
+                }
+            } catch (error) {
+                console.error('Error fetching expected fields:', error);
             }
-
-            // Add to log
-            if (data.last_result) {
-                const result = data.last_result;
-                addLog(
-                    result.recipient,
-                    result.status === 'completed' ? 'Sent successfully' : result.error_message,
-                    result.status === 'completed' ? 'success' : 'error'
-                );
-            }
-            
-            // Refresh queue list
-            loadQueueList();
         }
-
-        function addLog(email, message, status) {
-            const emailLog = document.getElementById('emailLog');
-            const logItem = document.createElement('div');
-            logItem.className = 'log-item';
+        
+        // Initialize file upload
+        function initializeUpload() {
+            const uploadZone = document.getElementById('uploadZone');
+            const fileInput = document.getElementById('fileInput');
             
-            const now = new Date();
-            const timeStr = now.toLocaleTimeString();
+            uploadZone.addEventListener('click', () => fileInput.click());
             
-            logItem.innerHTML = `
-                <div class="log-status ${status}"></div>
-                <div class="log-content">
-                    <div class="log-email">${email}</div>
-                    <div class="log-time">${timeStr}</div>
-                    ${status === 'error' ? `<div class="log-message">${message}</div>` : ''}
+            uploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadZone.classList.add('dragover');
+            });
+            
+            uploadZone.addEventListener('dragleave', () => {
+                uploadZone.classList.remove('dragover');
+            });
+            
+            uploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadZone.classList.remove('dragover');
+                
+                if (e.dataTransfer.files.length) {
+                    handleFileSelect(e.dataTransfer.files[0]);
+                }
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) {
+                    handleFileSelect(e.target.files[0]);
+                }
+            });
+        }
+        
+        // Handle file selection
+        async function handleFileSelect(file) {
+            if (!file.name.endsWith('.csv')) {
+                showAlert('error', 'Please select a CSV file');
+                return;
+            }
+            
+            currentFile = file;
+            
+            const resultDiv = document.getElementById('uploadResult');
+            resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div>Analyzing CSV file...</div>';
+            
+            const formData = new FormData();
+            formData.append('csv_file', file);
+            
+            try {
+                const response = await fetch('bulk_mail_backend.php?action=analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    csvData = data;
+                    columnMapping = data.suggested_mapping || {};
+                    
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            <span>✅</span>
+                            <div>
+                                <strong>CSV Analyzed Successfully!</strong>
+                                <p style="margin-top: 8px;">
+                                    File: <strong>${file.name}</strong><br>
+                                    Rows: <strong>${data.total_rows}</strong> | 
+                                    Columns: <strong>${data.csv_columns.length}</strong> | 
+                                    Auto-mapped: <strong>${Object.keys(columnMapping).length}</strong>
+                                </p>
+                                <button class="btn" onclick="openMappingModal()" style="margin-top: 12px;">
+                                    Next: Map Columns →
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Failed to analyze CSV');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="alert alert-error">
+                        <span>❌</span>
+                        <div>
+                            <strong>Error:</strong>
+                            <p style="margin-top: 4px;">${error.message}</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        // Open mapping modal
+        function openMappingModal() {
+            document.getElementById('mappingModal').classList.add('active');
+            renderMappingInterface();
+        }
+        
+        // Close mapping modal
+        function closeMappingModal() {
+            document.getElementById('mappingModal').classList.remove('active');
+        }
+        
+        // Render mapping interface
+        function renderMappingInterface() {
+            // CSV Info
+            document.getElementById('csvInfo').innerHTML = `
+                <div style="display: flex; gap: 20px; padding: 16px; background: #f8f9fa; border-radius: 8px;">
+                    <div><strong>File:</strong> ${currentFile.name}</div>
+                    <div><strong>Rows:</strong> ${csvData.total_rows}</div>
+                    <div><strong>Columns:</strong> ${csvData.csv_columns.length}</div>
+                    <div><strong>Auto-mapped:</strong> ${Object.keys(columnMapping).length}/${Object.keys(expectedFields).length}</div>
                 </div>
             `;
             
-            emailLog.insertBefore(logItem, emailLog.firstChild);
-        }
-
-        function finishSending() {
-            isSending = false;
-            document.getElementById('currentEmailInfo').classList.remove('show');
-            alert('All emails have been processed!');
+            // CSV Columns
+            const csvColumnsContainer = document.getElementById('csvColumns');
+            csvColumnsContainer.innerHTML = '';
             
-            // Reload counts
-            location.reload();
-        }
-
-        async function clearQueue() {
-            if (!confirm('Clear all pending emails from the queue?')) {
-                return;
-            }
-
-            try {
-                const response = await fetch('process_bulk_mail.php?action=clear', {
-                    method: 'POST'
-                });
-
-                const result = await response.json();
+            csvData.csv_columns.forEach(column => {
+                const isMapped = Object.values(columnMapping).includes(column);
                 
-                if (result.success) {
-                    location.reload();
+                if (!isMapped) {
+                    const analysis = csvData.column_analysis[column] || {};
+                    const div = document.createElement('div');
+                    div.className = 'column-item';
+                    div.draggable = true;
+                    div.dataset.column = column;
+                    
+                    const samples = analysis.sample_values || [];
+                    
+                    div.innerHTML = `
+                        <div>
+                            <div class="column-name">${column}</div>
+                            ${samples.length > 0 ? `
+                                <div class="column-samples">
+                                    Sample: ${samples.slice(0, 2).join(', ')}
+                                </div>
+                            ` : ''}
+                        </div>
+                        ${analysis.likely_email ? '<span class="badge email">📧 Email</span>' : ''}
+                    `;
+                    
+                    div.addEventListener('dragstart', handleDragStart);
+                    div.addEventListener('dragend', handleDragEnd);
+                    
+                    csvColumnsContainer.appendChild(div);
+                }
+            });
+            
+            if (csvColumnsContainer.children.length === 0) {
+                csvColumnsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">All columns mapped!</div>';
+            }
+            
+            // Expected Fields
+            const expectedFieldsContainer = document.getElementById('expectedFields');
+            expectedFieldsContainer.innerHTML = '';
+            
+            Object.entries(expectedFields).forEach(([fieldKey, fieldConfig]) => {
+                const div = document.createElement('div');
+                div.className = 'expected-field' + (fieldConfig.required ? ' required' : '');
+                div.dataset.field = fieldKey;
+                
+                const mappedColumn = columnMapping[fieldKey];
+                const autoMapped = csvData.suggested_mapping && csvData.suggested_mapping[fieldKey] === mappedColumn;
+                
+                if (mappedColumn && autoMapped) {
+                    div.classList.add('mapped');
+                }
+                
+                div.innerHTML = `
+                    <div class="field-label">
+                        <span>${fieldConfig.label}</span>
+                        <span class="badge ${fieldConfig.required ? 'required' : 'optional'}">
+                            ${fieldConfig.required ? 'Required' : 'Optional'}
+                        </span>
+                    </div>
+                    <div class="field-description">${fieldConfig.description}</div>
+                    ${mappedColumn ? `
+                        <div class="mapped-column">
+                            <span>📌 ${mappedColumn}</span>
+                            <button class="remove-mapping" onclick="removeMapping('${fieldKey}')">×</button>
+                        </div>
+                    ` : '<div style="color: #999; font-size: 13px; font-style: italic;">Drop a column here</div>'}
+                `;
+                
+                div.addEventListener('dragover', handleDragOver);
+                div.addEventListener('dragleave', handleDragLeave);
+                div.addEventListener('drop', handleDrop);
+                
+                expectedFieldsContainer.appendChild(div);
+            });
+            
+            updateProcessButton();
+        }
+        
+        // Drag and drop handlers
+        function handleDragStart(e) {
+            draggedElement = e.target.closest('.column-item');
+            draggedElement.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+        
+        function handleDragEnd(e) {
+            if (draggedElement) {
+                draggedElement.classList.remove('dragging');
+            }
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.target.closest('.expected-field').classList.add('dragover');
+            e.dataTransfer.dropEffect = 'move';
+        }
+        
+        function handleDragLeave(e) {
+            e.target.closest('.expected-field').classList.remove('dragover');
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            
+            const fieldDiv = e.target.closest('.expected-field');
+            fieldDiv.classList.remove('dragover');
+            
+            if (!draggedElement) return;
+            
+            const column = draggedElement.dataset.column;
+            const field = fieldDiv.dataset.field;
+            
+            columnMapping[field] = column;
+            renderMappingInterface();
+        }
+        
+        function removeMapping(fieldKey) {
+            delete columnMapping[fieldKey];
+            renderMappingInterface();
+        }
+        
+        function updateProcessButton() {
+            const btn = document.getElementById('processMappingBtn');
+            
+            let allRequiredMapped = true;
+            Object.entries(expectedFields).forEach(([fieldKey, fieldConfig]) => {
+                if (fieldConfig.required && !columnMapping[fieldKey]) {
+                    allRequiredMapped = false;
+                }
+            });
+            
+            btn.disabled = !allRequiredMapped;
+        }
+        
+        // Process CSV with mapping
+        async function processWithMapping() {
+            const btn = document.getElementById('processMappingBtn');
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Processing...';
+            
+            const formData = new FormData();
+            formData.append('csv_file', currentFile);
+            formData.append('mapping', JSON.stringify({ column_mapping: columnMapping }));
+            
+            try {
+                const response = await fetch('bulk_mail_backend.php?action=process_with_mapping', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    closeMappingModal();
+                    
+                    document.getElementById('uploadResult').innerHTML = `
+                        <div class="alert alert-success">
+                            <span>✅</span>
+                            <div>
+                                <strong>CSV Processed Successfully!</strong>
+                                <p style="margin-top: 8px;">
+                                    ${data.processed_count} emails added to queue<br>
+                                    ${data.error_count > 0 ? `${data.error_count} rows had errors` : ''}
+                                </p>
+                                <button class="btn" onclick="switchTab('queue')" style="margin-top: 12px;">
+                                    View Queue →
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Clear file input
+                    document.getElementById('fileInput').value = '';
+                    
+                    // Refresh queue
+                    loadQueue();
                 } else {
-                    alert('Error clearing queue');
+                    throw new Error(data.error || 'Processing failed');
                 }
             } catch (error) {
-                console.error('Error:', error);
-                alert('Failed to clear queue');
+                alert('Error: ' + error.message);
+                btn.disabled = false;
+                btn.innerHTML = '✓ Process CSV';
             }
         }
-
-        // Load queue list
-        async function loadQueueList() {
+        
+        // Load queue data
+        async function loadQueue() {
             try {
-                const response = await fetch('process_bulk_mail.php?action=queue_list');
-                const result = await response.json();
+                const response = await fetch('process_bulk_mail.php?action=status');
+                const data = await response.json();
                 
-                if (result.success) {
-                    const tbody = document.getElementById('queueTableBody');
+                if (data.success) {
+                    document.getElementById('stat-pending').textContent = data.pending || 0;
+                    document.getElementById('stat-processing').textContent = data.processing || 0;
+                    document.getElementById('stat-completed').textContent = data.completed || 0;
+                    document.getElementById('stat-failed').textContent = data.failed || 0;
                     
-                    if (result.queue.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--apple-gray);">No emails in queue</td></tr>';
-                        return;
-                    }
-                    
-                    tbody.innerHTML = '';
-                    result.queue.forEach(item => {
-                        const tr = document.createElement('tr');
-                        const createdDate = new Date(item.created_at).toLocaleString();
-                        
-                        tr.innerHTML = `
-                            <td>${item.recipient_email}</td>
-                            <td>${item.recipient_name || '-'}</td>
-                            <td>${item.subject}</td>
-                            <td><span class="status-badge ${item.status}">${item.status}</span></td>
-                            <td>${createdDate}</td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
+                    await loadQueueList();
                 }
             } catch (error) {
                 console.error('Error loading queue:', error);
             }
         }
-
-        // Get status
-        async function getStatus() {
+        
+        // Load queue list
+        async function loadQueueList() {
+            const container = document.getElementById('queueTableContainer');
+            
             try {
-                const response = await fetch('process_bulk_mail.php?action=status');
-                const result = await response.json();
-                return result;
+                const response = await fetch('process_bulk_mail.php?action=queue_list');
+                const data = await response.json();
+                
+                if (data.success && data.queue.length > 0) {
+                    container.innerHTML = `
+                        <table class="queue-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Recipient</th>
+                                    <th>Subject</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Completed</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.queue.map(item => `
+                                    <tr>
+                                        <td>#${item.id}</td>
+                                        <td>
+                                            <strong>${item.recipient_name || 'N/A'}</strong><br>
+                                            <span style="font-size: 12px; color: #666;">${item.recipient_email}</span>
+                                        </td>
+                                        <td>${item.subject}</td>
+                                        <td>
+                                            <span class="status-badge status-${item.status}">
+                                                ${item.status.toUpperCase()}
+                                            </span>
+                                            ${item.error_message ? `<br><span style="font-size: 11px; color: #f44336;">${item.error_message}</span>` : ''}
+                                        </td>
+                                        <td style="font-size: 12px;">${formatDate(item.created_at)}</td>
+                                        <td style="font-size: 12px;">${item.completed_at ? formatDate(item.completed_at) : '-'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <h3>No emails in queue</h3>
+                            <p>Upload a CSV file to add emails to the queue</p>
+                        </div>
+                    `;
+                }
             } catch (error) {
-                console.error('Error getting status:', error);
-                return { pending: 0, processing: 0, completed: 0, failed: 0, total: 0 };
+                console.error('Error loading queue list:', error);
             }
         }
-
-        // Refresh status
-        async function refreshStatus() {
-            const status = await getStatus();
-            if (status.success) {
-                document.getElementById('pendingCount').textContent = status.pending || 0;
-                document.getElementById('processingCount').textContent = status.processing || 0;
-                document.getElementById('completedCount').textContent = status.completed || 0;
-                document.getElementById('failedCount').textContent = status.failed || 0;
+        
+        // Process queue
+        async function processQueue() {
+            const btn = document.getElementById('processQueueBtn');
+            const progressContainer = document.getElementById('processingProgress');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            
+            btn.disabled = true;
+            progressContainer.classList.add('active');
+            
+            let processed = 0;
+            const total = parseInt(document.getElementById('stat-pending').textContent);
+            
+            if (total === 0) {
+                alert('No pending emails to process');
+                btn.disabled = false;
+                progressContainer.classList.remove('active');
+                return;
+            }
+            
+            // Process emails one by one
+            for (let i = 0; i < total; i++) {
+                try {
+                    const response = await fetch('process_bulk_mail.php?action=process', {
+                        method: 'POST'
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        processed++;
+                        const percent = (processed / total) * 100;
+                        progressFill.style.width = percent + '%';
+                        progressText.textContent = `Processing ${processed}/${total} emails...`;
+                        
+                        await loadQueue();
+                        
+                        // Small delay between emails
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    } else {
+                        console.error('Error processing email:', data.error);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }
+            
+            progressText.textContent = `Completed! Processed ${processed} emails.`;
+            btn.disabled = false;
+            
+            setTimeout(() => {
+                progressContainer.classList.remove('active');
+                progressFill.style.width = '0%';
+            }, 3000);
+        }
+        
+        // Clear queue
+        async function clearQueue() {
+            if (!confirm('Are you sure you want to clear all pending emails from the queue?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('process_bulk_mail.php?action=clear', {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert('success', data.message);
+                    loadQueue();
+                } else {
+                    showAlert('error', data.error);
+                }
+            } catch (error) {
+                showAlert('error', 'Failed to clear queue');
             }
         }
-
-        // Load queue list on page load
-        loadQueueList();
-
-        // Auto-refresh status and queue every 5 seconds if not sending
-        setInterval(() => {
-            if (!isSending) {
-                refreshStatus();
-                loadQueueList();
+        
+        // Refresh queue
+        function refreshQueue() {
+            loadQueue();
+            showAlert('success', 'Queue refreshed');
+        }
+        
+        // Switch tabs
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // Load data if needed
+            if (tabName === 'queue') {
+                loadQueue();
             }
-        }, 5000);
+        }
+        
+        // Helper functions
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleString();
+        }
+        
+        function showAlert(type, message) {
+            // Simple toast notification
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type}`;
+            toast.style.position = 'fixed';
+            toast.style.top = '20px';
+            toast.style.right = '20px';
+            toast.style.zIndex = '10000';
+            toast.style.minWidth = '300px';
+            toast.innerHTML = `
+                <span>${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</span>
+                <div>${message}</div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
     </script>
 </body>
 </html>
