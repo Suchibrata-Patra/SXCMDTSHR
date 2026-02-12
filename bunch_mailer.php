@@ -12,7 +12,6 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 <html lang="en">
 
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php
         define('PAGE_TITLE', 'SXC MDTS | Mailmerge');
         include 'header.php';
@@ -208,6 +207,11 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             grid-template-columns: 1fr 420px;
             gap: 24px;
             margin-bottom: 24px;
+        }
+
+        .compose-layout > div {
+            min-width: 0; /* Prevent grid blowout */
+            overflow: hidden; /* Contain children */
         }
 
         /* ========== CARDS ========== */
@@ -570,6 +574,8 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             box-shadow: var(--card-shadow);
             display: none;
             overflow: hidden;
+            max-width: 100%; /* Respect parent container */
+            width: 100%;
         }
 
         .analysis-results.active {
@@ -688,7 +694,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 
         .mapping-row {
             display: grid;
-            grid-template-columns: minmax(150px, 200px) 1fr;
+            grid-template-columns: minmax(120px, 180px) 1fr;
             gap: 12px;
             align-items: center;
             padding: 12px;
@@ -708,6 +714,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             display: flex;
             align-items: center;
             gap: 6px;
+            word-break: break-word; /* Allow label to wrap if too long */
         }
 
         .mapping-label::before {
@@ -792,6 +799,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             border-collapse: separate;
             border-spacing: 0;
             background: white;
+            table-layout: auto; /* Allow table to adjust column widths */
         }
 
         .preview-table th {
@@ -808,6 +816,8 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             top: 0;
             z-index: 10;
             border-bottom: 2px solid var(--border);
+            min-width: 100px; /* Minimum column width */
+            max-width: 250px; /* Maximum column width */
         }
 
         .preview-table td {
@@ -815,10 +825,11 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             font-size: 13px;
             color: #1c1c1e;
             border-bottom: 1px solid var(--border);
-            max-width: 300px;
+            max-width: 250px; /* Constrain cell width */
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            min-width: 100px;
         }
 
         .preview-table tbody tr:hover {
@@ -907,6 +918,26 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             .btn {
                 width: 100%;
                 justify-content: center;
+            }
+        }
+
+        /* Compact mode for medium screens */
+        @media (max-width: 1400px) {
+            .analysis-header {
+                padding: 24px;
+            }
+
+            .column-mapping,
+            .preview-section {
+                padding: 24px;
+            }
+
+            .analysis-actions {
+                padding: 20px 24px;
+            }
+
+            .mapping-row {
+                grid-template-columns: minmax(100px, 150px) 1fr;
             }
         }
         }
