@@ -7,6 +7,7 @@ require_once 'db_config.php';
 $sidebarLabels = getLabelCounts($userEmail);
 $unlabeledCount = getUnlabeledEmailCount($userEmail);
 ?>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 <style>
     :root {
         --apple-blue: #007AFF;
