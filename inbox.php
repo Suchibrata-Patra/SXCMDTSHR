@@ -1146,7 +1146,7 @@ $lastSync = getLastSyncDate($userEmail);
                             </div>
                             <div class="message-subject-line">
                                 <span class="message-subject" title="${escapeHtml(subjectDisplay)}">
-                                    <strong>Subject:</strong> ${escapeHtml(subjectDisplay)}
+                                    ${escapeHtml(subjectDisplay)}
                                 </span>
                                 ${msg.has_attachments == 1 ? '<span class="inline-attachment-icon material-icons" title="Has attachments">attach_file</span>' : ''}
                             </div>
