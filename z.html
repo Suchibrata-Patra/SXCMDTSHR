@@ -4,1068 +4,346 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CSV Upload with Column Mapping</title>
+    <title>Bulk Mailer System Test</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            font-family: monospace;
             padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
         }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-
-        .header h1 {
-            font-size: 28px;
-            margin-bottom: 8px;
-        }
-
-        .header p {
-            opacity: 0.9;
-            font-size: 14px;
-        }
-
-        .content {
-            padding: 30px;
-        }
-
-        .step {
-            display: none;
-            animation: fadeIn 0.3s ease-in;
-        }
-
-        .step.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .step-indicator {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 40px;
-            gap: 20px;
-        }
-
-        .step-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .step-number {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: #e0e0e0;
-            color: #666;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-
-        .step-item.active .step-number {
-            background: #667eea;
-            color: white;
-            transform: scale(1.1);
-        }
-
-        .step-item.completed .step-number {
-            background: #4caf50;
-            color: white;
-        }
-
-        .step-label {
-            font-size: 14px;
-            color: #666;
-            font-weight: 500;
-        }
-
-        .step-item.active .step-label {
-            color: #667eea;
-            font-weight: 600;
-        }
-
-        .upload-zone {
-            border: 3px dashed #ccc;
-            border-radius: 12px;
-            padding: 60px 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            background: #fafafa;
-        }
-
-        .upload-zone:hover {
-            border-color: #667eea;
-            background: #f0f4ff;
-        }
-
-        .upload-zone.dragover {
-            border-color: #667eea;
-            background: #e3e9ff;
-            transform: scale(1.02);
-        }
-
-        .upload-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-            color: #667eea;
-        }
-
-        .upload-zone h3 {
-            font-size: 18px;
-            margin-bottom: 8px;
-            color: #333;
-        }
-
-        .upload-zone p {
-            color: #666;
-            font-size: 14px;
-        }
-
-        .file-input {
-            display: none;
-        }
-
-        .mapping-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 40px;
-            margin-top: 30px;
-        }
-
-        .column-list {
-            background: #f8f9fa;
-            border-radius: 12px;
+        .test-section {
+            background: #252526;
+            border: 1px solid #3e3e42;
+            border-radius: 8px;
             padding: 20px;
-        }
-
-        .column-list h3 {
-            font-size: 16px;
-            margin-bottom: 16px;
-            color: #333;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .column-item {
-            background: white;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin-bottom: 10px;
-            cursor: move;
-            transition: all 0.2s;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .column-item:hover {
-            border-color: #667eea;
-            transform: translateX(4px);
-        }
-
-        .column-item.dragging {
-            opacity: 0.5;
-            transform: rotate(2deg);
-        }
-
-        .column-name {
-            font-weight: 500;
-            color: #333;
-        }
-
-        .column-samples {
-            font-size: 12px;
-            color: #666;
-            margin-top: 4px;
-        }
-
-        .expected-field {
-            background: white;
-            border: 2px dashed #e0e0e0;
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin-bottom: 12px;
-            min-height: 60px;
-            transition: all 0.2s;
-        }
-
-        .expected-field.required::after {
-            content: '*';
-            color: #f44336;
-            margin-left: 4px;
-        }
-
-        .expected-field.dragover {
-            border-color: #667eea;
-            background: #f0f4ff;
-        }
-
-        .expected-field.mapped {
-            border-style: solid;
-            border-color: #4caf50;
-            background: #f1f8f4;
-        }
-
-        .field-label {
-            font-weight: 600;
-            color: #333;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 4px;
-        }
-
-        .field-description {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 8px;
-        }
-
-        .mapped-column {
-            background: #667eea;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 8px;
-        }
-
-        .remove-mapping {
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: white;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-
-        .remove-mapping:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(1.1);
-        }
-
-        .badge {
-            background: #ff9800;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .badge.required {
-            background: #f44336;
-        }
-
-        .badge.optional {
-            background: #9e9e9e;
-        }
-
-        .preview-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            font-size: 14px;
-        }
-
-        .preview-table th {
-            background: #667eea;
-            color: white;
-            padding: 12px;
-            text-align: left;
-            font-weight: 600;
-        }
-
-        .preview-table td {
-            padding: 10px 12px;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        .preview-table tr:nth-child(even) {
-            background: #f8f9fa;
-        }
-
-        .btn {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn:hover:not(:disabled) {
-            background: #5568d3;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-
-        .btn-secondary {
-            background: #6c757d;
-        }
-
-        .btn-secondary:hover:not(:disabled) {
-            background: #5a6268;
-        }
-
-        .btn-success {
-            background: #4caf50;
-        }
-
-        .btn-success:hover:not(:disabled) {
-            background: #43a047;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 12px;
-            margin-top: 30px;
-            justify-content: flex-end;
-        }
-
-        .alert {
-            padding: 16px 20px;
-            border-radius: 8px;
             margin-bottom: 20px;
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
         }
 
-        .alert-info {
-            background: #e3f2fd;
-            border-left: 4px solid #2196f3;
-            color: #0d47a1;
+        h2 {
+            color: #4ec9b0;
+            margin-top: 0;
         }
 
-        .alert-warning {
-            background: #fff3e0;
-            border-left: 4px solid #ff9800;
-            color: #e65100;
+        button {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
         }
 
-        .alert-success {
-            background: #e8f5e9;
-            border-left: 4px solid #4caf50;
-            color: #1b5e20;
+        button:hover {
+            background: #1177bb;
         }
 
-        .alert-error {
-            background: #ffebee;
-            border-left: 4px solid #f44336;
-            color: #c62828;
-        }
-
-        .error-list {
-            max-height: 200px;
+        .result {
+            background: #1e1e1e;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 400px;
             overflow-y: auto;
-            margin-top: 10px;
         }
 
-        .error-item {
-            padding: 8px;
-            background: white;
-            border-radius: 4px;
-            margin-bottom: 6px;
-            font-size: 13px;
+        .success {
+            color: #4ec9b0;
         }
 
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: #e0e0e0;
-            border-radius: 4px;
-            overflow: hidden;
-            margin-top: 10px;
+        .error {
+            color: #f48771;
         }
 
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            transition: width 0.3s;
+        .warning {
+            color: #dcdcaa;
         }
 
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 16px;
-            margin-top: 20px;
-        }
-
-        .stat-card {
-            background: #f8f9fa;
-            padding: 16px;
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 24px;
-            font-weight: 700;
-            color: #667eea;
-        }
-
-        .stat-label {
-            font-size: 12px;
-            color: #666;
-            margin-top: 4px;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px;
-        }
-
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 16px;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        .confidence-indicator {
-            display: inline-block;
-            width: 60px;
-            height: 4px;
-            background: #e0e0e0;
-            border-radius: 2px;
-            overflow: hidden;
-        }
-
-        .confidence-fill {
-            height: 100%;
-            background: #4caf50;
-            transition: width 0.3s;
-        }
-
-        .auto-mapped {
-            border-color: #4caf50 !important;
-            border-style: solid !important;
-        }
-
-        .helper-text {
-            font-size: 12px;
-            color: #666;
-            font-style: italic;
-            margin-top: 8px;
+        .info {
+            color: #9cdcfe;
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🚀 CSV Upload with Smart Column Mapping</h1>
-            <p>Upload any CSV format - we'll help you map the columns correctly</p>
-        </div>
+    <h1>🧪 Bulk Mailer System Test & Debug</h1>
 
-        <div class="content">
-            <!-- Step Indicator -->
-            <div class="step-indicator">
-                <div class="step-item active" data-step="1">
-                    <div class="step-number">1</div>
-                    <div class="step-label">Upload CSV</div>
-                </div>
-                <div class="step-item" data-step="2">
-                    <div class="step-number">2</div>
-                    <div class="step-label">Map Columns</div>
-                </div>
-                <div class="step-item" data-step="3">
-                    <div class="step-number">3</div>
-                    <div class="step-label">Review & Process</div>
-                </div>
-            </div>
+    <div class="test-section">
+        <h2>1. Session Check</h2>
+        <button onclick="testSession()">Test Session</button>
+        <div id="session-result" class="result"></div>
+    </div>
 
-            <!-- Step 1: Upload -->
-            <div class="step active" id="step1">
-                <div class="upload-zone" id="uploadZone">
-                    <div class="upload-icon">📁</div>
-                    <h3>Drop your CSV file here</h3>
-                    <p>or click to browse</p>
-                    <p class="helper-text">Any CSV structure is supported - we'll detect and map columns</p>
-                    <input type="file" id="fileInput" class="file-input" accept=".csv">
-                </div>
+    <div class="test-section">
+        <h2>2. Database Connection</h2>
+        <button onclick="testDatabase()">Test Database</button>
+        <div id="database-result" class="result"></div>
+    </div>
 
-                <div id="uploadInfo" style="display: none; margin-top: 20px;">
-                    <div class="alert alert-info">
-                        <span>📄</span>
-                        <div>
-                            <strong id="fileName"></strong>
-                            <div id="fileStats" style="margin-top: 8px;"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <div class="test-section">
+        <h2>3. Queue Status</h2>
+        <button onclick="testQueueStatus()">Get Queue Status</button>
+        <div id="queue-status-result" class="result"></div>
+    </div>
 
-            <!-- Step 2: Column Mapping -->
-            <div class="step" id="step2">
-                <div class="alert alert-info">
-                    <span>💡</span>
-                    <div>
-                        <strong>How to map columns:</strong>
-                        <p style="margin-top: 4px;">Drag columns from your CSV (left) to the expected fields (right).
-                            We've auto-detected some mappings for you!</p>
-                    </div>
-                </div>
+    <div class="test-section">
+        <h2>4. Queue List</h2>
+        <button onclick="testQueueList()">Get Queue List</button>
+        <div id="queue-list-result" class="result"></div>
+    </div>
 
-                <div class="mapping-container">
-                    <div class="column-list">
-                        <h3>
-                            <span>📋</span> Your CSV Columns
-                        </h3>
-                        <div id="csvColumns"></div>
-                    </div>
+    <div class="test-section">
+        <h2>5. Backend API</h2>
+        <button onclick="testBackendFields()">Test Expected Fields</button>
+        <div id="backend-result" class="result"></div>
+    </div>
 
-                    <div class="column-list">
-                        <h3>
-                            <span>🎯</span> Expected Fields
-                        </h3>
-                        <div id="expectedFields"></div>
-                    </div>
-                </div>
+    <div class="test-section">
+        <h2>6. File Upload Test</h2>
+        <input type="file" id="testFile" accept=".csv">
+        <button onclick="testFileUpload()">Upload & Analyze</button>
+        <div id="upload-result" class="result"></div>
+    </div>
 
-                <div class="button-group">
-                    <button class="btn btn-secondary" onclick="goToStep(1)">
-                        ← Back
-                    </button>
-                    <button class="btn" onclick="saveMappingAndContinue()" id="continueBtn">
-                        Continue to Review →
-                    </button>
-                </div>
-            </div>
-
-            <!-- Step 3: Review & Process -->
-            <div class="step" id="step3">
-                <div class="alert alert-success">
-                    <span>✅</span>
-                    <div>
-                        <strong>Mapping Complete!</strong>
-                        <p style="margin-top: 4px;">Review the preview below and click "Process CSV" to add emails to
-                            the queue.</p>
-                    </div>
-                </div>
-
-                <div class="stats" id="reviewStats"></div>
-
-                <div style="margin-top: 30px;">
-                    <h3 style="margin-bottom: 16px;">Preview (First 5 Rows)</h3>
-                    <div style="overflow-x: auto;">
-                        <table class="preview-table" id="previewTable"></table>
-                    </div>
-                </div>
-
-                <div id="processingResult" style="display: none; margin-top: 20px;"></div>
-
-                <div class="button-group">
-                    <button class="btn btn-secondary" onclick="goToStep(2)">
-                        ← Back to Mapping
-                    </button>
-                    <button class="btn btn-success" onclick="processCSV()" id="processBtn">
-                        🚀 Process CSV
-                    </button>
-                </div>
-            </div>
-        </div>
+    <div class="test-section">
+        <h2>7. System Info</h2>
+        <button onclick="getSystemInfo()">Get Info</button>
+        <div id="system-info" class="result"></div>
     </div>
 
     <script>
-        let csvFile = null;
-        let csvData = null;
-        let columnMapping = {};
-        let expectedFields = {};
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeUpload();
-            fetchExpectedFields();
-        });
-
-        function initializeUpload() {
-            const uploadZone = document.getElementById('uploadZone');
-            const fileInput = document.getElementById('fileInput');
-
-            uploadZone.addEventListener('click', () => fileInput.click());
-
-            uploadZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadZone.classList.add('dragover');
-            });
-
-            uploadZone.addEventListener('dragleave', () => {
-                uploadZone.classList.remove('dragover');
-            });
-
-            uploadZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadZone.classList.remove('dragover');
-
-                if (e.dataTransfer.files.length) {
-                    handleFileSelect(e.dataTransfer.files[0]);
-                }
-            });
-
-            fileInput.addEventListener('change', (e) => {
-                if (e.target.files.length) {
-                    handleFileSelect(e.target.files[0]);
-                }
-            });
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            element.innerHTML = `<span class="${className}">[${timestamp}] ${message}</span>`;
         }
 
-        async function fetchExpectedFields() {
-            try {
-                const response = await fetch('csv_upload_mapper.php?action=get_expected_fields');
-                const data = await response.json();
+        function logJson(elementId, data, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            element.innerHTML = `<span class="${className}">[${timestamp}] ${JSON.stringify(data, null, 2)}</span>`;
+        }
 
-                if (data.success) {
-                    expectedFields = data.expected_fields;
+        async function testSession() {
+            log('session-result', 'Testing session...', 'info');
+
+            try {
+                const response = await fetch('process_bulk_mail.php?action=test');
+                const text = await response.text();
+
+                console.log('Session response text:', text);
+
+                try {
+                    const data = JSON.parse(text);
+
+                    if (data.success) {
+                        logJson('session-result', {
+                            status: 'SUCCESS ✓',
+                            user_email: data.user_email,
+                            user_id: data.user_id,
+                            php_version: data.php_version,
+                            session_active: data.session_active
+                        }, 'success');
+                    } else {
+                        logJson('session-result', {
+                            status: 'FAILED ✗',
+                            error: data.error
+                        }, 'error');
+                    }
+                } catch (e) {
+                    log('session-result', `Parse Error: ${e.message}\n\nRaw Response:\n${text}`, 'error');
                 }
             } catch (error) {
-                console.error('Error fetching expected fields:', error);
+                log('session-result', `Request Failed: ${error.message}`, 'error');
             }
         }
 
-        async function handleFileSelect(file) {
-            if (!file.name.endsWith('.csv')) {
-                showAlert('error', 'Please select a CSV file');
+        async function testDatabase() {
+            log('database-result', 'Testing database connection...', 'info');
+
+            try {
+                const response = await fetch('process_bulk_mail.php?action=test');
+                const data = await response.json();
+
+                if (data.success) {
+                    logJson('database-result', {
+                        status: 'DATABASE CONNECTED ✓',
+                        user_id: data.user_id,
+                        message: 'Database connection working'
+                    }, 'success');
+                } else {
+                    log('database-result', `Database Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                log('database-result', `Connection Failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testQueueStatus() {
+            log('queue-status-result', 'Fetching queue status...', 'info');
+
+            try {
+                const response = await fetch('process_bulk_mail.php?action=status');
+                const text = await response.text();
+
+                console.log('Queue status response:', text);
+
+                try {
+                    const data = JSON.parse(text);
+
+                    if (data.success) {
+                        logJson('queue-status-result', {
+                            status: 'SUCCESS ✓',
+                            pending: data.pending || 0,
+                            processing: data.processing || 0,
+                            completed: data.completed || 0,
+                            failed: data.failed || 0,
+                            total: data.total || 0
+                        }, 'success');
+                    } else {
+                        log('queue-status-result', `Error: ${data.error}`, 'error');
+                    }
+                } catch (e) {
+                    log('queue-status-result', `Parse Error: ${e.message}\n\nRaw:\n${text}`, 'error');
+                }
+            } catch (error) {
+                log('queue-status-result', `Request Failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testQueueList() {
+            log('queue-list-result', 'Fetching queue list...', 'info');
+
+            try {
+                const response = await fetch('process_bulk_mail.php?action=queue_list');
+                const text = await response.text();
+
+                console.log('Queue list response:', text);
+
+                try {
+                    const data = JSON.parse(text);
+
+                    if (data.success) {
+                        if (data.queue && data.queue.length > 0) {
+                            logJson('queue-list-result', {
+                                status: 'SUCCESS ✓',
+                                count: data.queue.length,
+                                first_3_items: data.queue.slice(0, 3)
+                            }, 'success');
+                        } else {
+                            log('queue-list-result', 'Queue is empty (this is normal if no emails added yet)', 'warning');
+                        }
+                    } else {
+                        log('queue-list-result', `Error: ${data.error}`, 'error');
+                    }
+                } catch (e) {
+                    log('queue-list-result', `Parse Error: ${e.message}\n\nRaw:\n${text.substring(0, 500)}`, 'error');
+                }
+            } catch (error) {
+                log('queue-list-result', `Request Failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testBackendFields() {
+            log('backend-result', 'Testing backend API...', 'info');
+
+            try {
+                const response = await fetch('bulk_mail_backend.php?action=get_expected_fields');
+                const text = await response.text();
+
+                console.log('Backend response:', text);
+
+                try {
+                    const data = JSON.parse(text);
+
+                    if (data.success) {
+                        const fieldCount = Object.keys(data.expected_fields).length;
+                        logJson('backend-result', {
+                            status: 'BACKEND API WORKING ✓',
+                            field_count: fieldCount,
+                            fields: Object.keys(data.expected_fields)
+                        }, 'success');
+                    } else {
+                        log('backend-result', `Error: ${data.error}`, 'error');
+                    }
+                } catch (e) {
+                    log('backend-result', `Parse Error: ${e.message}\n\nRaw:\n${text}`, 'error');
+                }
+            } catch (error) {
+                log('backend-result', `Request Failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testFileUpload() {
+            const fileInput = document.getElementById('testFile');
+
+            if (!fileInput.files.length) {
+                log('upload-result', 'Please select a CSV file first', 'warning');
                 return;
             }
 
-            csvFile = file;
+            log('upload-result', 'Uploading and analyzing file...', 'info');
 
-            // Show loading
-            const uploadInfo = document.getElementById('uploadInfo');
-            uploadInfo.style.display = 'block';
-            document.getElementById('fileName').textContent = file.name;
-            document.getElementById('fileStats').innerHTML = '<div class="loading"><div class="spinner"></div>Analyzing CSV...</div>';
-
-            // Analyze CSV
             const formData = new FormData();
-            formData.append('csv_file', file);
+            formData.append('csv_file', fileInput.files[0]);
 
             try {
-                const response = await fetch('csv_upload_mapper.php?action=analyze', {
+                const response = await fetch('bulk_mail_backend.php?action=analyze', {
                     method: 'POST',
                     body: formData
                 });
 
-                const data = await response.json();
+                const text = await response.text();
+                console.log('Upload response:', text);
 
-                if (data.success) {
-                    csvData = data;
-                    columnMapping = data.suggested_mapping || {};
+                try {
+                    const data = JSON.parse(text);
 
-                    // Show file stats
-                    document.getElementById('fileStats').innerHTML = `
-                        <div class="stats">
-                            <div class="stat-card">
-                                <div class="stat-value">${data.total_rows}</div>
-                                <div class="stat-label">Total Rows</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value">${data.csv_columns.length}</div>
-                                <div class="stat-label">Columns</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value">${Object.keys(columnMapping).length}</div>
-                                <div class="stat-label">Auto-Mapped</div>
-                            </div>
-                        </div>
-                        <button class="btn" onclick="goToStep(2)" style="margin-top: 16px;">
-                            Next: Map Columns →
-                        </button>
-                    `;
-                } else {
-                    showAlert('error', data.error || 'Failed to analyze CSV');
+                    if (data.success) {
+                        logJson('upload-result', {
+                            status: 'FILE ANALYZED ✓',
+                            filename: data.filename,
+                            total_rows: data.total_rows,
+                            columns: data.csv_columns,
+                            auto_mapped: Object.keys(data.suggested_mapping || {}).length,
+                            preview: data.preview_rows.slice(0, 2)
+                        }, 'success');
+                    } else {
+                        log('upload-result', `Error: ${data.error}`, 'error');
+                    }
+                } catch (e) {
+                    log('upload-result', `Parse Error: ${e.message}\n\nRaw:\n${text}`, 'error');
                 }
             } catch (error) {
-                console.error('Error:', error);
-                showAlert('error', 'Failed to upload and analyze CSV');
+                log('upload-result', `Upload Failed: ${error.message}`, 'error');
             }
         }
 
-        function goToStep(stepNumber) {
-            // Update step indicator
-            document.querySelectorAll('.step-item').forEach((item, index) => {
-                item.classList.remove('active', 'completed');
-                if (index + 1 < stepNumber) {
-                    item.classList.add('completed');
-                } else if (index + 1 === stepNumber) {
-                    item.classList.add('active');
-                }
-            });
+        function getSystemInfo() {
+            const info = {
+                'Browser': navigator.userAgent,
+                'Screen': `${screen.width}x${screen.height}`,
+                'Location': window.location.href,
+                'Protocol': window.location.protocol,
+                'Host': window.location.host,
+                'Current Time': new Date().toISOString()
+            };
 
-            // Show step
-            document.querySelectorAll('.step').forEach((step, index) => {
-                step.classList.remove('active');
-                if (index + 1 === stepNumber) {
-                    step.classList.add('active');
-                }
-            });
-
-            // Initialize step
-            if (stepNumber === 2) {
-                renderMappingInterface();
-            } else if (stepNumber === 3) {
-                renderReviewInterface();
-            }
+            logJson('system-info', info, 'info');
         }
 
-        function renderMappingInterface() {
-            const csvColumnsContainer = document.getElementById('csvColumns');
-            const expectedFieldsContainer = document.getElementById('expectedFields');
-
-            // Render CSV columns
-            csvColumnsContainer.innerHTML = '';
-            csvData.csv_columns.forEach(column => {
-                // Check if already mapped
-                const isMapped = Object.values(columnMapping).includes(column);
-
-                if (!isMapped) {
-                    const columnDiv = document.createElement('div');
-                    columnDiv.className = 'column-item';
-                    columnDiv.draggable = true;
-                    columnDiv.dataset.column = column;
-
-                    const analysis = csvData.column_analysis[column] || {};
-                    const samples = analysis.sample_values || [];
-
-                    columnDiv.innerHTML = `
-                        <div>
-                            <div class="column-name">${column}</div>
-                            ${samples.length > 0 ? `
-                                <div class="column-samples">
-                                    Example: ${samples.slice(0, 2).join(', ')}
-                                </div>
-                            ` : ''}
-                        </div>
-                        <div>
-                            ${analysis.likely_email ? '<span class="badge">📧 Email</span>' : ''}
-                        </div>
-                    `;
-
-                    columnDiv.addEventListener('dragstart', handleDragStart);
-                    columnDiv.addEventListener('dragend', handleDragEnd);
-
-                    csvColumnsContainer.appendChild(columnDiv);
-                }
-            });
-
-            // Render expected fields
-            expectedFieldsContainer.innerHTML = '';
-            Object.entries(expectedFields).forEach(([fieldKey, fieldConfig]) => {
-                const fieldDiv = document.createElement('div');
-                fieldDiv.className = 'expected-field' + (fieldConfig.required ? ' required' : '');
-                fieldDiv.dataset.field = fieldKey;
-
-                const mappedColumn = columnMapping[fieldKey];
-                const autoMapped = csvData.suggested_mapping && csvData.suggested_mapping[fieldKey] === mappedColumn;
-
-                fieldDiv.innerHTML = `
-                    <div class="field-label">
-                        <span>${fieldConfig.label}</span>
-                        <span class="badge ${fieldConfig.required ? 'required' : 'optional'}">
-                            ${fieldConfig.required ? 'Required' : 'Optional'}
-                        </span>
-                    </div>
-                    <div class="field-description">${fieldConfig.description}</div>
-                    ${mappedColumn ? `
-                        <div class="mapped-column">
-                            <span>📌 ${mappedColumn}</span>
-                            <button class="remove-mapping" onclick="removeMapping('${fieldKey}')">×</button>
-                        </div>
-                    ` : '<div style="color: #999; font-size: 13px; font-style: italic;">Drop a column here</div>'}
-                `;
-
-                if (mappedColumn && autoMapped) {
-                    fieldDiv.classList.add('auto-mapped');
-                }
-
-                fieldDiv.addEventListener('dragover', handleDragOver);
-                fieldDiv.addEventListener('dragleave', handleDragLeave);
-                fieldDiv.addEventListener('drop', handleDrop);
-
-                expectedFieldsContainer.appendChild(fieldDiv);
-            });
-
-            updateContinueButton();
-        }
-
-        let draggedElement = null;
-
-        function handleDragStart(e) {
-            draggedElement = e.target.closest('.column-item');
-            draggedElement.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-        }
-
-        function handleDragEnd(e) {
-            if (draggedElement) {
-                draggedElement.classList.remove('dragging');
-            }
-        }
-
-        function handleDragOver(e) {
-            e.preventDefault();
-            e.target.closest('.expected-field').classList.add('dragover');
-            e.dataTransfer.dropEffect = 'move';
-        }
-
-        function handleDragLeave(e) {
-            e.target.closest('.expected-field').classList.remove('dragover');
-        }
-
-        function handleDrop(e) {
-            e.preventDefault();
-
-            const fieldDiv = e.target.closest('.expected-field');
-            fieldDiv.classList.remove('dragover');
-
-            if (!draggedElement) return;
-
-            const column = draggedElement.dataset.column;
-            const field = fieldDiv.dataset.field;
-
-            // Update mapping
-            columnMapping[field] = column;
-
-            // Re-render
-            renderMappingInterface();
-        }
-
-        function removeMapping(fieldKey) {
-            delete columnMapping[fieldKey];
-            renderMappingInterface();
-        }
-
-        function updateContinueButton() {
-            const continueBtn = document.getElementById('continueBtn');
-
-            // Check if all required fields are mapped
-            let allRequiredMapped = true;
-            Object.entries(expectedFields).forEach(([fieldKey, fieldConfig]) => {
-                if (fieldConfig.required && !columnMapping[fieldKey]) {
-                    allRequiredMapped = false;
-                }
-            });
-
-            continueBtn.disabled = !allRequiredMapped;
-
-            if (!allRequiredMapped) {
-                continueBtn.title = 'Please map all required fields';
-            } else {
-                continueBtn.title = '';
-            }
-        }
-
-        async function saveMappingAndContinue() {
-            // Save mapping preference
-            try {
-                await fetch('csv_upload_mapper.php?action=save_mapping', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        mapping: columnMapping,
-                        mapping_name: 'Default Mapping'
-                    })
-                });
-            } catch (error) {
-                console.error('Error saving mapping:', error);
-            }
-
-            goToStep(3);
-        }
-
-        function renderReviewInterface() {
-            // Stats
-            const statsDiv = document.getElementById('reviewStats');
-            const mappedCount = Object.keys(columnMapping).length;
-            const totalFields = Object.keys(expectedFields).length;
-
-            statsDiv.innerHTML = `
-                <div class="stat-card">
-                    <div class="stat-value">${csvData.total_rows}</div>
-                    <div class="stat-label">Emails to Send</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">${mappedCount}/${totalFields}</div>
-                    <div class="stat-label">Fields Mapped</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">${csvData.csv_columns.length}</div>
-                    <div class="stat-label">CSV Columns</div>
-                </div>
-            `;
-
-            // Preview table
-            const previewTable = document.getElementById('previewTable');
-
-            // Build header
-            let headerHTML = '<tr>';
-            Object.entries(columnMapping).forEach(([field, column]) => {
-                headerHTML += `<th>${expectedFields[field].label}</th>`;
-            });
-            headerHTML += '</tr>';
-
-            // Build rows
-            let rowsHTML = '';
-            csvData.preview_rows.slice(0, 5).forEach((row, index) => {
-                rowsHTML += '<tr>';
-                Object.entries(columnMapping).forEach(([field, column]) => {
-                    const columnIndex = csvData.csv_columns.indexOf(column);
-                    const value = row[columnIndex] || '';
-                    rowsHTML += `<td>${value.substring(0, 50)}${value.length > 50 ? '...' : ''}</td>`;
-                });
-                rowsHTML += '</tr>';
-            });
-
-            previewTable.innerHTML = headerHTML + rowsHTML;
-        }
-
-        async function processCSV() {
-            const processBtn = document.getElementById('processBtn');
-            const resultDiv = document.getElementById('processingResult');
-
-            processBtn.disabled = true;
-            processBtn.innerHTML = '⏳ Processing...';
-
-            resultDiv.style.display = 'block';
-            resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div>Processing your CSV file...</div>';
-
-            try {
-                const formData = new FormData();
-                formData.append('csv_file', csvFile);
-                formData.append('mapping', JSON.stringify({
-                    column_mapping: columnMapping
-                }));
-
-                const response = await fetch('csv_upload_mapper.php?action=process_with_mapping', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    resultDiv.innerHTML = `
-                        <div class="alert alert-success">
-                            <span>✅</span>
-                            <div>
-                                <strong>Success!</strong>
-                                <p style="margin-top: 8px;">
-                                    ${data.processed_count} emails added to queue successfully!
-                                    ${data.error_count > 0 ? `<br>${data.error_count} rows had errors.` : ''}
-                                </p>
-                                ${data.errors && data.errors.length > 0 ? `
-                                    <div class="error-list">
-                                        ${data.errors.map(err => `
-                                            <div class="error-item">
-                                                Row ${err.row}: ${err.error}
-                                            </div>
-                                        `).join('')}
-                                    </div>
-                                ` : ''}
-                            </div>
-                        </div>
-                    `;
-
-                    processBtn.innerHTML = '✓ Processed Successfully';
-                    processBtn.classList.remove('btn-success');
-                    processBtn.classList.add('btn-secondary');
-                } else {
-                    throw new Error(data.error || 'Processing failed');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                resultDiv.innerHTML = `
-                    <div class="alert alert-error">
-                        <span>❌</span>
-                        <div>
-                            <strong>Error!</strong>
-                            <p style="margin-top: 8px;">${error.message}</p>
-                        </div>
-                    </div>
-                `;
-
-                processBtn.disabled = false;
-                processBtn.innerHTML = '🚀 Process CSV';
-            }
-        }
-
-        function showAlert(type, message) {
-            // You can implement a toast notification here
-            alert(message);
-        }
+        // Auto-run session test on load
+        window.addEventListener('load', () => {
+            testSession();
+            testQueueStatus();
+        });
     </script>
 </body>
 

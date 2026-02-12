@@ -770,18 +770,37 @@
         // Check if user is logged in
         async function checkSession() {
             try {
+                console.log('Checking session...');
                 const response = await fetch('process_bulk_mail.php?action=test');
-                const data = await response.json();
+                console.log('Session response:', response.status);
+                
+                const text = await response.text();
+                console.log('Session response text:', text);
+                
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    console.error('Failed to parse JSON:', text);
+                    throw new Error('Invalid server response');
+                }
                 
                 if (data.success) {
                     document.getElementById('userEmail').textContent = data.user_email || 'User';
+                    console.log('Session valid:', data.user_email);
                 } else {
-                    showAlert('error', 'Session expired. Please login again.');
-                    // Redirect to login page
-                    setTimeout(() => window.location.href = 'index.html', 2000);
+                    console.error('Session invalid:', data.error);
+                    document.getElementById('userEmail').innerHTML = `
+                        <span style="color: #ffeb3b;">⚠️ Session Error</span>
+                    `;
+                    showAlert('warning', 'Session issue: ' + (data.error || 'Please refresh or login again'));
                 }
             } catch (error) {
                 console.error('Session check failed:', error);
+                document.getElementById('userEmail').innerHTML = `
+                    <span style="color: #ffeb3b;">⚠️ Connection Error</span>
+                `;
+                showAlert('error', 'Failed to connect to server: ' + error.message);
             }
         }
         
@@ -1106,8 +1125,20 @@
         // Load queue data
         async function loadQueue() {
             try {
+                console.log('Loading queue status...');
                 const response = await fetch('process_bulk_mail.php?action=status');
-                const data = await response.json();
+                console.log('Queue status response:', response.status);
+                
+                const text = await response.text();
+                console.log('Queue response text:', text.substring(0, 200));
+                
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    console.error('Failed to parse queue JSON:', text);
+                    throw new Error('Invalid queue response');
+                }
                 
                 if (data.success) {
                     document.getElementById('stat-pending').textContent = data.pending || 0;
@@ -1115,10 +1146,25 @@
                     document.getElementById('stat-completed').textContent = data.completed || 0;
                     document.getElementById('stat-failed').textContent = data.failed || 0;
                     
+                    console.log('Queue stats updated:', data);
                     await loadQueueList();
+                } else {
+                    throw new Error(data.error || 'Failed to load queue');
                 }
             } catch (error) {
                 console.error('Error loading queue:', error);
+                document.getElementById('queueTableContainer').innerHTML = `
+                    <div class="alert alert-error">
+                        <span>❌</span>
+                        <div>
+                            <strong>Failed to load queue</strong>
+                            <p style="margin-top: 4px;">${error.message}</p>
+                            <button class="btn btn-small" onclick="loadQueue()" style="margin-top: 8px;">
+                                🔄 Retry
+                            </button>
+                        </div>
+                    </div>
+                `;
             }
         }
         
@@ -1127,55 +1173,82 @@
             const container = document.getElementById('queueTableContainer');
             
             try {
+                console.log('Loading queue list...');
                 const response = await fetch('process_bulk_mail.php?action=queue_list');
-                const data = await response.json();
+                console.log('Queue list response:', response.status);
                 
-                if (data.success && data.queue.length > 0) {
-                    container.innerHTML = `
-                        <table class="queue-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Recipient</th>
-                                    <th>Subject</th>
-                                    <th>Status</th>
-                                    <th>Created</th>
-                                    <th>Completed</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${data.queue.map(item => `
+                const text = await response.text();
+                console.log('Queue list text:', text.substring(0, 200));
+                
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    console.error('Failed to parse queue list JSON:', text);
+                    throw new Error('Invalid queue list response');
+                }
+                
+                if (data.success) {
+                    if (data.queue && data.queue.length > 0) {
+                        console.log('Queue items found:', data.queue.length);
+                        container.innerHTML = `
+                            <table class="queue-table">
+                                <thead>
                                     <tr>
-                                        <td>#${item.id}</td>
-                                        <td>
-                                            <strong>${item.recipient_name || 'N/A'}</strong><br>
-                                            <span style="font-size: 12px; color: #666;">${item.recipient_email}</span>
-                                        </td>
-                                        <td>${item.subject}</td>
-                                        <td>
-                                            <span class="status-badge status-${item.status}">
-                                                ${item.status.toUpperCase()}
-                                            </span>
-                                            ${item.error_message ? `<br><span style="font-size: 11px; color: #f44336;">${item.error_message}</span>` : ''}
-                                        </td>
-                                        <td style="font-size: 12px;">${formatDate(item.created_at)}</td>
-                                        <td style="font-size: 12px;">${item.completed_at ? formatDate(item.completed_at) : '-'}</td>
+                                        <th>ID</th>
+                                        <th>Recipient</th>
+                                        <th>Subject</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Completed</th>
                                     </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    `;
+                                </thead>
+                                <tbody>
+                                    ${data.queue.map(item => `
+                                        <tr>
+                                            <td>#${item.id}</td>
+                                            <td>
+                                                <strong>${item.recipient_name || 'N/A'}</strong><br>
+                                                <span style="font-size: 12px; color: #666;">${item.recipient_email}</span>
+                                            </td>
+                                            <td>${item.subject}</td>
+                                            <td>
+                                                <span class="status-badge status-${item.status}">
+                                                    ${item.status.toUpperCase()}
+                                                </span>
+                                                ${item.error_message ? `<br><span style="font-size: 11px; color: #f44336;">${item.error_message}</span>` : ''}
+                                            </td>
+                                            <td style="font-size: 12px;">${formatDate(item.created_at)}</td>
+                                            <td style="font-size: 12px;">${item.completed_at ? formatDate(item.completed_at) : '-'}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        `;
+                    } else {
+                        console.log('No queue items found');
+                        container.innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📭</div>
+                                <h3>No emails in queue</h3>
+                                <p>Upload a CSV file to add emails to the queue</p>
+                            </div>
+                        `;
+                    }
                 } else {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-state-icon">📭</div>
-                            <h3>No emails in queue</h3>
-                            <p>Upload a CSV file to add emails to the queue</p>
-                        </div>
-                    `;
+                    throw new Error(data.error || 'Failed to load queue list');
                 }
             } catch (error) {
                 console.error('Error loading queue list:', error);
+                container.innerHTML = `
+                    <div class="alert alert-error">
+                        <span>❌</span>
+                        <div>
+                            <strong>Error loading queue list</strong>
+                            <p style="margin-top: 4px;">${error.message}</p>
+                        </div>
+                    </div>
+                `;
             }
         }
         
