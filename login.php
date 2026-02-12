@@ -265,7 +265,7 @@ function authenticateWithSMTP($email, $password) {
     <div class="bg-gradient"></div>
 
     <div class="login-container">
-        <img src="/SXCMDTSHR/Assets/image/sxc_logo.png" alt="SXC Logo" class="brand-logo">
+        <img src="/Assets/image/sxc_logo.png" alt="SXC Logo" class="brand-logo">
         <h1>Verify Identity</h1>
         <p class="subtitle">Use your institutional app password.</p>
 
