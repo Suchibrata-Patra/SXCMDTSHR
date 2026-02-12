@@ -38,8 +38,11 @@ try {
         case 'list_drive_files':
             // List files from /SXCMDTSHR/File_Drive directory
             if (!is_dir(DRIVE_DIR)) {
-                throw new Exception('Drive directory not found: ' . DRIVE_DIR);
-            }
+    // Log the actual path for debugging
+    error_log("Drive directory not found: " . DRIVE_DIR);
+    error_log("Current file location: " . __FILE__);
+    throw new Exception('Drive directory not found: ' . DRIVE_DIR . ' (Script at: ' . __FILE__ . ')');
+}
             
             $files = [];
             $items = scandir(DRIVE_DIR);
