@@ -12,6 +12,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 <html lang="en">
 
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php
         define('PAGE_TITLE', 'SXC MDTS | Mailmerge');
         include 'header.php';
