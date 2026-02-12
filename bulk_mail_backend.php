@@ -14,7 +14,8 @@ header('Content-Type: application/json');
 
 // Drive directory configuration
 define('DRIVE_DIR', '/files/public_html/SXC_MDTS/File_Drive');
-
+error_log("DRIVE_DIR resolved to: " . DRIVE_DIR);
+error_log("Directory exists: " . (is_dir(DRIVE_DIR) ? 'yes' : 'no'));
 // Get action from request
 $action = $_GET['action'] ?? '';
 
