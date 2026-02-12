@@ -1222,6 +1222,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 </head>
 
 <body>
+    <!-- <?php include 'sidebar.php'; ?> -->
 
     <div class="main-content">
 
@@ -1483,7 +1484,6 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     <div class="action-bar" id="actionBar">
         <div class="action-bar-inner">
             <div class="action-bar-info">
-                Ready to queue <strong id="actionBarCount">0</strong> emails
                 <span id="actionBarAttach" style="margin-left:8px;display:none">
                     · 📎 <span id="actionBarAttachName" style="font-size:12px;color:var(--ink-3)"></span>
                 </span>
