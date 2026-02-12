@@ -735,9 +735,9 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
 
         .message-subject {
             font-size: 12px;
-            color: #8e8e8f;
+            color: #717171;
             margin-bottom: 4px;
-            font-weight: 600;
+            font-weight: 500;
             display: -webkit-box;
             -webkit-line-clamp: 1;
             -webkit-box-orient: vertical;
