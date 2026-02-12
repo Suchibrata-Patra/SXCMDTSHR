@@ -1227,7 +1227,7 @@ $lastSync = getLastSyncDate($userEmail);
                             <div class="message-view-meta">
                                 <div class="message-view-meta-item">
                                     <span class="material-icons">person</span>
-                                    <span class="message-view-meta-label">From:</span> ${escapeHtml(msg.sender)}
+                                    <span class="message-view-meta-label"></span> ${escapeHtml(msg.sender)}
                                 </div>
                                 <div class="message-view-meta-item">
                                     <span class="material-icons">schedule</span>
