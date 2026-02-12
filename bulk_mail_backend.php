@@ -113,6 +113,12 @@ try {
             
             fclose($handle);
             
+            // Save temporary file path to session for later parsing
+            $tempDir = sys_get_temp_dir();
+            $tempFile = tempnam($tempDir, 'csv_');
+            copy($file['tmp_name'], $tempFile);
+            $_SESSION['temp_csv_file'] = $tempFile;
+            
             // Auto-suggest mapping based on column names
             $suggestedMapping = [];
             foreach ($headers as $column) {
@@ -144,6 +150,51 @@ try {
                 'csv_columns' => $headers,
                 'preview_rows' => $previewRows,
                 'suggested_mapping' => $suggestedMapping
+            ]);
+            break;
+            
+        case 'parse_full_csv':
+            // Parse full CSV file for processing
+            if (!isset($_SESSION['temp_csv_file'])) {
+                throw new Exception('No CSV file in session');
+            }
+            
+            $csvFile = $_SESSION['temp_csv_file'];
+            
+            if (!file_exists($csvFile)) {
+                throw new Exception('CSV file not found');
+            }
+            
+            // Parse all rows
+            $handle = fopen($csvFile, 'r');
+            if ($handle === false) {
+                throw new Exception('Failed to read CSV file');
+            }
+            
+            // Get headers
+            $headers = fgetcsv($handle);
+            if (!$headers) {
+                fclose($handle);
+                throw new Exception('CSV file is empty or invalid');
+            }
+            
+            $headers = array_map('trim', $headers);
+            
+            // Read all data rows
+            $rows = [];
+            while (($row = fgetcsv($handle)) !== false) {
+                if (count($row) === count($headers)) {
+                    $rowData = array_combine($headers, $row);
+                    $rows[] = $rowData;
+                }
+            }
+            
+            fclose($handle);
+            
+            echo json_encode([
+                'success' => true,
+                'rows' => $rows,
+                'total' => count($rows)
             ]);
             break;
             
