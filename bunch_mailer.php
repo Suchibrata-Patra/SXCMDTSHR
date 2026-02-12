@@ -378,7 +378,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             justify-content: space-between;
             margin-bottom: 12px;
             gap: 12px;
-            position: sticky;
+            /* position: sticky; */
             top: 116px;
             z-index: 100;
         }
