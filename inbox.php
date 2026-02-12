@@ -505,7 +505,6 @@ $lastSync = getLastSyncDate($userEmail);
 
         .message-header {
             display: flex;
-            justify-content: space-between;
             align-items: baseline;
             margin-bottom: 3px;
             gap: 12px;
@@ -515,11 +514,9 @@ $lastSync = getLastSyncDate($userEmail);
             font-weight: 500;
             color: #1c1c1e;
             font-size: 13px;
-            white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            flex: 1;
-            min-width: 0;
+            white-space: nowrap;
         }
 
         .message-sender strong,
@@ -694,9 +691,26 @@ $lastSync = getLastSyncDate($userEmail);
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             padding-top: 2px;
             flex-shrink: 0;
+            min-width: 80px;
+        }
+
+        /* When there's no unread dot, move ID up to take its place */
+        .message-right-meta:not(.has-unread-dot) {
+            gap: 8px;
+        }
+
+        .message-right-meta:not(.has-unread-dot) .message-id-badge {
+            margin-top: 2px;
+        }
+
+        .message-right-meta .message-date {
+            font-size: 11px;
+            color: var(--apple-gray);
+            white-space: nowrap;
+            font-weight: 500;
         }
 
         .unread-dot {
@@ -1098,8 +1112,16 @@ $lastSync = getLastSyncDate($userEmail);
                 // Extract first 150 characters for preview
                 const preview = msg.body ? msg.body.substring(0, 150) : 'No preview available';
                 
-                // Format sender - extract just name or email
-                const senderDisplay = msg.sender || 'Unknown Sender';
+                // Extract email address from sender field
+                // Try to extract email from "Name <email@domain.com>" format
+                let senderEmail = msg.sender || 'Unknown Sender';
+                const emailMatch = msg.sender ? msg.sender.match(/<([^>]+)>/) : null;
+                if (emailMatch && emailMatch[1]) {
+                    senderEmail = emailMatch[1];
+                } else if (msg.sender && msg.sender.includes('@')) {
+                    // If it's just an email without angle brackets
+                    senderEmail = msg.sender;
+                }
                 
                 // Get subject or use default
                 const subjectDisplay = msg.subject || '(No Subject)';
@@ -1115,11 +1137,8 @@ $lastSync = getLastSyncDate($userEmail);
 
                         <div class="message-content">
                             <div class="message-header">
-                                <span class="message-sender" title="${escapeHtml(senderDisplay)}">
-                                    <strong>From:</strong> ${escapeHtml(senderDisplay)}
-                                </span>
-                                <span class="message-date" title="${formatDateLong(msg.received_date)}">
-                                    ${formatDate(msg.received_date)}
+                                <span class="message-sender" title="${escapeHtml(senderEmail)}">
+                                    <strong>From:</strong> ${escapeHtml(senderEmail)}
                                 </span>
                             </div>
                             <div class="message-subject-line">
@@ -1136,7 +1155,10 @@ $lastSync = getLastSyncDate($userEmail);
                             </div>
                         </div>
                         
-                        <div class="message-right-meta">
+                        <div class="message-right-meta ${msg.is_read == 0 ? 'has-unread-dot' : ''}">
+                            <span class="message-date" title="${formatDateLong(msg.received_date)}">
+                                ${formatDate(msg.received_date)}
+                            </span>
                             ${msg.is_read == 0 ? '<span class="unread-dot"></span>' : ''}
                             <span class="message-id-badge" title="Message ID: ${msg.id}">ID: ${msg.id}</span>
                         </div>
