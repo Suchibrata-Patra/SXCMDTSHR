@@ -737,7 +737,7 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
             font-size: 12px;
             color: #8e8e8f;
             margin-bottom: 4px;
-            font-weight: 400;
+            font-weight: 600;
             display: -webkit-box;
             -webkit-line-clamp: 1;
             -webkit-box-orient: vertical;
