@@ -1291,7 +1291,6 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 
                                     <!-- file loaded row (shown after upload) -->
                                     <div class="file-loaded-row" id="fileLoadedRow">
-                                        <span class="file-icon">📊</span>
                                         <div class="file-loaded-meta">
                                             <div class="file-loaded-name" id="fileLoadedName">—</div>
                                             <div class="file-loaded-size" id="fileLoadedSize">—</div>
