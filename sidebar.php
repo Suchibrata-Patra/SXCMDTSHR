@@ -412,7 +412,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             <span>Inbox</span>
         </a>
          <a href="drive.php" class="nav-item <?= ($current_page == 'inbox') ? 'active' : ''; ?>">
-            <span class="material-icons">drive_export</span>
+            <span class="material-icons">add_to_drive</span>
             <span>Drive</span>
         </a>
         <a href="#" class="nav-item <?= ($current_page == 'send') ? 'active' : ''; ?>">
