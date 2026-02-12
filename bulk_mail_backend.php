@@ -2,7 +2,7 @@
 /**
  * Bulk Mail Backend
  * 
- * Handles CSV file uploads, analysis, and email queue population
+ * Handles CSV file uploads, analysis, email queue population, and drive file management
  * Uses bulk_mail_queue table from u955994755_SXC_MDTS database
  */
 
@@ -11,6 +11,9 @@ require_once 'db_config.php';
 
 // Set JSON header
 header('Content-Type: application/json');
+
+// Drive directory configuration
+define('DRIVE_DIR', '/SXCMDTSHR/File_Drive');
 
 // Get action from request
 $action = $_GET['action'] ?? '';
@@ -32,21 +35,45 @@ try {
     }
     
     switch ($action) {
-        case 'get_expected_fields':
-            // Return expected email fields for mapping
+        case 'list_drive_files':
+            // List files from /SXCMDTSHR/File_Drive directory
+            if (!is_dir(DRIVE_DIR)) {
+                throw new Exception('Drive directory not found: ' . DRIVE_DIR);
+            }
+            
+            $files = [];
+            $items = scandir(DRIVE_DIR);
+            
+            foreach ($items as $item) {
+                if ($item === '.' || $item === '..') {
+                    continue;
+                }
+                
+                $fullPath = DRIVE_DIR . '/' . $item;
+                
+                // Only include files, not directories
+                if (is_file($fullPath)) {
+                    $size = filesize($fullPath);
+                    $files[] = [
+                        'name' => $item,
+                        'path' => $fullPath,
+                        'size' => $size,
+                        'formatted_size' => formatBytes($size),
+                        'extension' => strtolower(pathinfo($item, PATHINFO_EXTENSION))
+                    ];
+                }
+            }
+            
+            // Sort files by name
+            usort($files, function($a, $b) {
+                return strcmp($a['name'], $b['name']);
+            });
+            
             echo json_encode([
                 'success' => true,
-                'expected_fields' => [
-                    'recipient_email' => 'Recipient Email Address (required)',
-                    'recipient_name' => 'Recipient Name (optional)',
-                    'subject' => 'Email Subject (optional)',
-                    'article_title' => 'Article Title (optional)',
-                    'message_content' => 'Message Content (optional)',
-                    'closing_wish' => 'Closing Wish (optional)',
-                    'sender_name' => 'Sender Name (optional)',
-                    'sender_designation' => 'Sender Designation (optional)',
-                    'additional_info' => 'Additional Info (optional)'
-                ]
+                'files' => $files,
+                'directory' => DRIVE_DIR,
+                'count' => count($files)
             ]);
             break;
             
@@ -138,7 +165,7 @@ try {
                     $suggestedMapping[$column] = 'closing_wish';
                 } elseif (strpos($columnLower, 'sender') !== false && strpos($columnLower, 'name') !== false) {
                     $suggestedMapping[$column] = 'sender_name';
-                } elseif (strpos($columnLower, 'designation') !== false || strpos($columnLower, 'title') !== false) {
+                } elseif (strpos($columnLower, 'designation') !== false) {
                     $suggestedMapping[$column] = 'sender_designation';
                 }
             }
@@ -211,14 +238,13 @@ try {
             }
             
             $emails = $postData['emails'];
-            $defaultSubject = $postData['subject'] ?? 'Bulk Email';
-            $defaultArticleTitle = $postData['article_title'] ?? '';
-            $defaultMessageContent = $postData['message_content'] ?? '';
-            $defaultClosingWish = $postData['closing_wish'] ?? '';
-            $defaultSenderName = $postData['sender_name'] ?? '';
-            $defaultSenderDesignation = $postData['sender_designation'] ?? '';
-            $defaultAdditionalInfo = $postData['additional_info'] ?? '';
-            $attachmentId = $postData['attachment_id'] ?? null;
+            $driveFilePath = $postData['drive_file_path'] ?? null;
+            
+            // Register drive file as attachment if provided
+            $attachmentId = null;
+            if ($driveFilePath && file_exists($driveFilePath)) {
+                $attachmentId = registerDriveFileAsAttachment($pdo, $user_id, $driveFilePath);
+            }
             
             // Generate a batch UUID for this bulk upload
             $batchUuid = generateUuidV4();
@@ -236,7 +262,7 @@ try {
                         continue;
                     }
                     
-                    // Prepare data with fallback to defaults
+                    // Prepare data
                     $stmt = $pdo->prepare("
                         INSERT INTO bulk_mail_queue (
                             user_id,
@@ -251,10 +277,11 @@ try {
                             sender_designation,
                             additional_info,
                             attachment_id,
+                            drive_file_path,
                             status,
                             created_at
                         ) VALUES (
-                            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW()
+                            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW()
                         )
                     ");
                     
@@ -262,15 +289,16 @@ try {
                         $user_id,
                         $batchUuid,
                         $recipientEmail,
-                        $email['recipient_name'] ?? $email['name'] ?? '',
-                        $email['subject'] ?? $defaultSubject,
-                        $email['article_title'] ?? $defaultArticleTitle,
-                        $email['message_content'] ?? $defaultMessageContent,
-                        $email['closing_wish'] ?? $defaultClosingWish,
-                        $email['sender_name'] ?? $defaultSenderName,
-                        $email['sender_designation'] ?? $defaultSenderDesignation,
-                        $email['additional_info'] ?? $defaultAdditionalInfo,
-                        $attachmentId
+                        $email['recipient_name'] ?? '',
+                        $email['subject'] ?? 'Bulk Email',
+                        $email['article_title'] ?? '',
+                        $email['message_content'] ?? '',
+                        $email['closing_wish'] ?? '',
+                        $email['sender_name'] ?? '',
+                        $email['sender_designation'] ?? '',
+                        $email['additional_info'] ?? '',
+                        $attachmentId,
+                        $driveFilePath
                     ]);
                     
                     $added++;
@@ -285,18 +313,8 @@ try {
                 'batch_uuid' => $batchUuid,
                 'added' => $added,
                 'total' => count($emails),
+                'attachment_id' => $attachmentId,
                 'errors' => $errors
-            ]);
-            break;
-            
-        case 'test_connection':
-            // Test database connection
-            echo json_encode([
-                'success' => true,
-                'message' => 'Database connection successful',
-                'database' => 'u955994755_SXC_MDTS',
-                'user_id' => $user_id,
-                'user_email' => $user_email
             ]);
             break;
             
@@ -310,5 +328,104 @@ try {
         'success' => false,
         'error' => $e->getMessage()
     ]);
+}
+
+/**
+ * Register a drive file as an attachment in the database
+ */
+function registerDriveFileAsAttachment($pdo, $userId, $filePath) {
+    try {
+        if (!file_exists($filePath)) {
+            throw new Exception('Drive file not found: ' . $filePath);
+        }
+        
+        $fileName = basename($filePath);
+        $fileSize = filesize($filePath);
+        $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+        $fileHash = hash_file('sha256', $filePath);
+        
+        // Check if this file is already registered
+        $stmt = $pdo->prepare("SELECT id FROM attachments WHERE file_hash = ? LIMIT 1");
+        $stmt->execute([$fileHash]);
+        $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($existing) {
+            return $existing['id'];
+        }
+        
+        // Register new attachment
+        $fileUuid = generateUuidV4();
+        
+        $stmt = $pdo->prepare("
+            INSERT INTO attachments (
+                file_uuid, file_hash, original_filename, 
+                file_extension, mime_type, file_size, 
+                storage_path, storage_type, reference_count, uploaded_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'drive', 1, NOW())
+        ");
+        
+        $mimeType = getMimeType($extension);
+        
+        $stmt->execute([
+            $fileUuid,
+            $fileHash,
+            $fileName,
+            $extension,
+            $mimeType,
+            $fileSize,
+            $filePath  // Store full path for drive files
+        ]);
+        
+        $attachmentId = $pdo->lastInsertId();
+        
+        // Create access record
+        $stmt = $pdo->prepare("
+            INSERT INTO user_attachment_access (user_id, attachment_id, created_at)
+            VALUES (?, ?, NOW())
+            ON DUPLICATE KEY UPDATE created_at = NOW()
+        ");
+        $stmt->execute([$userId, $attachmentId]);
+        
+        return $attachmentId;
+        
+    } catch (Exception $e) {
+        error_log("Error registering drive file: " . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Get MIME type based on file extension
+ */
+function getMimeType($extension) {
+    $mimeTypes = [
+        'pdf' => 'application/pdf',
+        'doc' => 'application/msword',
+        'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'xls' => 'application/vnd.ms-excel',
+        'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'ppt' => 'application/vnd.ms-powerpoint',
+        'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        'gif' => 'image/gif',
+        'zip' => 'application/zip',
+        'txt' => 'text/plain',
+        'csv' => 'text/csv'
+    ];
+    
+    return $mimeTypes[$extension] ?? 'application/octet-stream';
+}
+
+/**
+ * Format bytes to human readable
+ */
+function formatBytes($bytes) {
+    if ($bytes === 0) return '0 Bytes';
+    $k = 1024;
+    $sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    $i = floor(log($bytes) / log($k));
+    return round($bytes / pow($k, $i), 2) . ' ' . $sizes[$i];
 }
 ?>

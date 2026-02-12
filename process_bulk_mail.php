@@ -3,7 +3,7 @@
  * process_bulk_mail.php
  * 
  * Processes emails from bulk_mail_queue table and sends them using PHPMailer
- * Uses the same sending logic as send.php
+ * Handles drive file attachments and provides detailed SMTP error logging
  */
 
 session_start();
@@ -81,7 +81,7 @@ try {
                         WHEN 'completed' THEN 4
                     END,
                     created_at DESC
-                LIMIT 100
+                LIMIT 200
             ");
             $stmt->execute([$user_id]);
             $queue = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -205,7 +205,7 @@ function processNextEmail($pdo, $user_id) {
 }
 
 /**
- * Send email using PHPMailer (same logic as send.php)
+ * Send email using PHPMailer with improved SMTP error handling
  */
 function sendBulkEmail($pdo, $queueItem) {
     $mail = new PHPMailer(true);
@@ -213,7 +213,7 @@ function sendBulkEmail($pdo, $queueItem) {
     try {
         // ==================== SMTP Configuration ====================
         $mail->isSMTP();
-        $mail->SMTPDebug = 0;
+        $mail->SMTPDebug = 0; // Set to 2 for debugging
         
         $settings = $_SESSION['user_settings'] ?? [];
         
@@ -223,6 +223,15 @@ function sendBulkEmail($pdo, $queueItem) {
         $mail->Password = $_SESSION['smtp_pass'];
         $mail->Port = 465;
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+        
+        // SMTP options to improve delivery
+        $mail->SMTPOptions = array(
+            'ssl' => array(
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+                'allow_self_signed' => true
+            )
+        );
         
         $displayName = !empty($settings['display_name']) ? $settings['display_name'] : "St. Xavier's College";
         $mail->setFrom($_SESSION['smtp_user'], $displayName);
@@ -234,21 +243,42 @@ function sendBulkEmail($pdo, $queueItem) {
             throw new Exception("Invalid recipient email address: " . $queueItem['recipient_email']);
         }
         
+        // Validate recipient email format more strictly
+        if (!preg_match('/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $recipient)) {
+            throw new Exception("Invalid email format: " . $recipient);
+        }
+        
         $mail->addAddress($recipient);
         
         // ==================== Attachment Handling ====================
-        if (!empty($queueItem['attachment_id'])) {
-            $attachmentId = $queueItem['attachment_id'];
+        // Handle both drive files and uploaded attachments
+        if (!empty($queueItem['drive_file_path'])) {
+            // Drive file attachment
+            $filePath = $queueItem['drive_file_path'];
             
-            // Get attachment from attachments table
+            if (file_exists($filePath)) {
+                $fileName = basename($filePath);
+                $mail->addAttachment($filePath, $fileName);
+                error_log("Added drive file attachment: $filePath");
+            } else {
+                error_log("WARNING: Drive file not found: $filePath");
+            }
+        } elseif (!empty($queueItem['attachment_id'])) {
+            // Regular uploaded attachment
             $stmt = $pdo->prepare("SELECT * FROM attachments WHERE id = ?");
-            $stmt->execute([$attachmentId]);
+            $stmt->execute([$queueItem['attachment_id']]);
             $attachment = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if ($attachment) {
-                $filePath = 'uploads/attachments/' . $attachment['storage_path'];
+                $filePath = $attachment['storage_type'] === 'drive' 
+                    ? $attachment['storage_path']  // Drive file uses full path
+                    : 'uploads/attachments/' . $attachment['storage_path'];  // Uploaded file
+                
                 if (file_exists($filePath)) {
                     $mail->addAttachment($filePath, $attachment['original_filename']);
+                    error_log("Added attachment: $filePath");
+                } else {
+                    error_log("WARNING: Attachment file not found: $filePath");
                 }
             }
         }
@@ -293,8 +323,13 @@ function sendBulkEmail($pdo, $queueItem) {
         $mail->Subject = $subject;
         $mail->Body = $emailBody;
         
+        // Alternative plain text body
+        $mail->AltBody = strip_tags(str_replace('<br>', "\n", $emailBody));
+        
         // Send email
-        $mail->send();
+        if (!$mail->send()) {
+            throw new Exception("SMTP Error: " . $mail->ErrorInfo);
+        }
         
         // ==================== Save to Database ====================
         $emailUuid = generateUuidV4();
@@ -311,10 +346,12 @@ function sendBulkEmail($pdo, $queueItem) {
                 ?, ?, ?, ?, ?,
                 ?, ?, ?,
                 ?, ?, ?, ?,
-                '', '', 0,
+                '', '', ?, 
                 NOW(), NOW()
             )
         ");
+        
+        $attachmentCount = (!empty($queueItem['drive_file_path']) || !empty($queueItem['attachment_id'])) ? 1 : 0;
         
         $stmt->execute([
             $emailUuid,
@@ -328,20 +365,40 @@ function sendBulkEmail($pdo, $queueItem) {
             $closingWish,
             $senderName,
             $senderDesignation,
-            $additionalInfo
+            $additionalInfo,
+            $attachmentCount
         ]);
         
         $sentEmailId = $pdo->lastInsertId();
         
         // Link attachment if exists
-        if (!empty($queueItem['attachment_id'])) {
-            $stmt = $pdo->prepare("
-                SELECT * FROM attachments WHERE id = ?
-            ");
-            $stmt->execute([$queueItem['attachment_id']]);
-            $attachment = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!empty($queueItem['drive_file_path']) || !empty($queueItem['attachment_id'])) {
+            $filePath = '';
+            $fileName = '';
+            $fileSize = 0;
+            $mimeType = 'application/octet-stream';
+            $extension = '';
             
-            if ($attachment) {
+            if (!empty($queueItem['drive_file_path'])) {
+                $filePath = $queueItem['drive_file_path'];
+                $fileName = basename($filePath);
+                $fileSize = file_exists($filePath) ? filesize($filePath) : 0;
+                $extension = pathinfo($fileName, PATHINFO_EXTENSION);
+            } elseif (!empty($queueItem['attachment_id'])) {
+                $stmt = $pdo->prepare("SELECT * FROM attachments WHERE id = ?");
+                $stmt->execute([$queueItem['attachment_id']]);
+                $attachment = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($attachment) {
+                    $fileName = $attachment['original_filename'];
+                    $filePath = $attachment['storage_path'];
+                    $fileSize = $attachment['file_size'];
+                    $mimeType = $attachment['mime_type'];
+                    $extension = $attachment['file_extension'];
+                }
+            }
+            
+            if ($fileName) {
                 $stmt = $pdo->prepare("
                     INSERT INTO sent_email_attachments_new (
                         sent_email_id, email_uuid, original_filename, 
@@ -353,12 +410,12 @@ function sendBulkEmail($pdo, $queueItem) {
                 $stmt->execute([
                     $sentEmailId,
                     $emailUuid,
-                    $attachment['original_filename'],
-                    $attachment['storage_path'],
-                    'uploads/attachments/' . $attachment['storage_path'],
-                    $attachment['file_size'],
-                    $attachment['mime_type'],
-                    pathinfo($attachment['original_filename'], PATHINFO_EXTENSION)
+                    $fileName,
+                    basename($filePath),
+                    $filePath,
+                    $fileSize,
+                    $mimeType,
+                    $extension
                 ]);
             }
         }
@@ -369,10 +426,27 @@ function sendBulkEmail($pdo, $queueItem) {
         ];
         
     } catch (Exception $e) {
-        error_log("Bulk email error: " . $e->getMessage());
+        $errorMessage = $e->getMessage();
+        
+        // Parse SMTP errors for common issues
+        if (strpos($errorMessage, 'SMTP Error') !== false) {
+            // SMTP Error: data not accepted - usually means:
+            // 1. Recipient email is invalid or blocked
+            // 2. Email content triggered spam filters
+            // 3. Attachment is too large or has blocked extension
+            // 4. Daily sending limit reached
+            // 5. Sender reputation issue
+            
+            if (strpos($errorMessage, 'data not accepted') !== false) {
+                $errorMessage .= " | Possible causes: Invalid recipient, spam filters, blocked attachment, or daily limit reached.";
+            }
+        }
+        
+        error_log("Bulk email error for {$queueItem['recipient_email']}: " . $errorMessage);
+        
         return [
             'success' => false,
-            'error' => $e->getMessage()
+            'error' => $errorMessage
         ];
     }
 }
