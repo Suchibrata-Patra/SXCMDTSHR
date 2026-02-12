@@ -197,247 +197,353 @@ function authenticateWithSMTP($email, $password) {
     }
 }
 
-?><!DOCTYPE html>
+?>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <?php
-        define('PAGE_TITLE', 'SXC MDTS | Authentication');
-        // include 'header.php'; // Keep your meta tags and title
+        <?php
+        define('PAGE_TITLE', 'SXC MDTS | Dashboard');
+        include 'header.php';
     ?>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --apple-blue: #0071e3;
-            --apple-gray: #86868b;
-            --apple-bg: #f5f5f7;
-            --glass-bg: rgba(255, 255, 255, 0.7);
-            --error-red: #ff3b30;
+            --primary-accent: #000000;
+            --nature-green: #2d5a27;
+            --soft-white: #f8f9fa;
+            --error-red: #dc3545;
+            --warning-orange: #ff9800;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-font-smoothing: antialiased;
         }
 
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: var(--apple-bg);
-            color: #1d1d1f;
-            height: 100vh;
+        body, html {
+            height: 100%;
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f5f7;
+            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        .page-wrapper {
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
-        }
-
-        /* Subtle background gradient for depth */
-        .bg-gradient {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at 20% 30%, #ffffff 0%, #f5f5f7 100%);
-            z-index: -1;
-        }
-
-        .login-container {
-            width: 100%;
-            max-width: 400px;
+            min-height: 100vh;
             padding: 20px;
-            text-align: center;
-            animation: appleReveal 1s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        @keyframes appleReveal {
-            from { opacity: 0; transform: translateY(30px); }
+        .login-card {
+            width: 100%;
+            max-width: 420px;
+            padding: 40px;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(20, 40, 80, 0.35);
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .brand-logo {
-            width: 72px;
-            height: auto;
-            margin-bottom: 24px;
-            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.1));
+        .brand-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #f0f0f0;
         }
 
-        h1 {
-            font-size: 32px;
-            font-weight: 600;
-            letter-spacing: -0.5px;
-            margin-bottom: 8px;
+        .brand-logo {
+            width: 60px;
+            height: auto;
+            flex-shrink: 0;
+        }
+
+        .brand-details {
+            font-size: 0.6rem;
+            line-height: 1.3;
+            color: #666;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+        }
+
+        h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            color: var(--primary-accent);
+            margin: 0 0 5px 0;
         }
 
         .subtitle {
-            font-size: 17px;
-            color: var(--apple-gray);
-            margin-bottom: 40px;
-            font-weight: 400;
+            color: #777;
+            font-size: 0.9rem;
+            margin-bottom: 30px;
         }
 
-        /* The Card */
-        .glass-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 22px;
-            padding: 32px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+        /* Error/Warning Messages */
+        .error-toast {
+            background: #fff5f5;
+            color: #c53030;
+            padding: 14px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            border-left: 4px solid #c53030;
+            animation: slideIn 0.3s ease-out;
         }
 
-        .input-wrapper {
-            position: relative;
-            margin-bottom: 16px;
+        .warning-toast {
+            background: #fff9e6;
+            color: #ff9800;
+            padding: 14px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            border-left: 4px solid #ff9800;
         }
 
-        input {
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Form Elements */
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #999;
+            margin-bottom: 8px;
+        }
+
+        input[type="email"],
+        input[type="password"] {
             width: 100%;
-            padding: 18px 16px;
-            border-radius: 12px;
-            border: 1px solid #d2d2d7;
-            background: #ffffff;
-            font-size: 17px;
-            transition: all 0.2s ease;
+            padding: 12px 5px;
+            border: none;
+            border-bottom: 2px solid #e0e0e0;
+            background: transparent;
+            font-size: 1rem;
+            transition: border-color 0.3s;
             outline: none;
         }
 
         input:focus {
-            border-color: var(--apple-blue);
-            box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1);
+            border-bottom-color: var(--nature-green);
         }
 
-        /* Error States */
-        .error-message {
-            background: rgba(255, 59, 48, 0.1);
-            color: var(--error-red);
-            font-size: 14px;
-            padding: 12px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        /* Button Styling */
-        button {
-            width: 100%;
-            padding: 16px;
-            border-radius: 12px;
-            border: none;
-            background: #1d1d1f;
-            color: white;
-            font-size: 17px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
-            margin-top: 10px;
-        }
-
-        button:hover {
-            opacity: 0.9;
-            transform: scale(1.01);
-        }
-
-        button:active {
-            transform: scale(0.98);
-        }
-
-        button:disabled {
-            background: #d2d2d7;
+        input:disabled {
+            opacity: 0.6;
             cursor: not-allowed;
         }
 
-        .footer-text {
-            margin-top: 40px;
-            font-size: 12px;
-            color: var(--apple-gray);
-            line-height: 1.5;
-        }
-
-        .toggle-pass {
-            position: absolute;
-            right: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--apple-blue);
-            font-size: 13px;
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            font-size: 0.85rem;
+            color: #666;
             cursor: pointer;
-            font-weight: 500;
-            background: none;
-            border: none;
-            padding: 0;
-            width: auto;
-            margin: 0;
+            user-select: none;
         }
 
-        .toggle-pass:hover {
-            text-decoration: underline;
-            transform: translateY(-50%);
+        .checkbox-container input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
+        }
+
+        /* Button */
+        button {
+            width: 100%;
+            padding: 16px;
+            background: var(--primary-accent);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            margin-top: 25px;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        button:hover:not(:disabled) {
+            background: #222;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Security Info */
+        .security-info {
+            margin-top: 20px;
+            padding: 12px;
+            background: #f0f7ff;
+            border-left: 3px solid #2196f3;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: #555;
+        }
+
+        .security-info strong {
+            color: #2196f3;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #f0f0f0;
+            font-size: 0.7rem;
+            color: #bbb;
+            text-align: center;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 30px 20px;
+            }
+            
+            h2 {
+                font-size: 1.5rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="bg-gradient"></div>
+    <div class="page-wrapper">
+        <div class="login-card">
+            <div class="brand-header">
+                <img src="Assets/image/sxc_logo.png" alt="SXC Logo" class="brand-logo">
+                <div class="brand-details">
+                    Autonomous College (2006) | CPE (2006) |
+                    CE (2014), NAAC A++ | 4th Cycle (2024) |
+                    ISO 9001:2015 | NIRF 2025: 8th Position
+                </div>
+            </div>
 
-    <div class="login-container">
-        <img src="Assets/image/sxc_logo.png" alt="SXC Logo" class="brand-logo">
-        <h1>SXC MDTS</h1>
-        <p class="subtitle">Sign in with your institutional ID.</p>
+            <h2>Authentication</h2>
+            <p class="subtitle">Enter institutional credentials to continue.</p>
 
-        <div class="glass-card">
             <?php if ($error): ?>
-                <div class="error-message">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                    <?php echo htmlspecialchars($error); ?>
+                <div class="error-toast">
+                    🔒 <?php echo htmlspecialchars($error); ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if (isset($_GET['error']) && $_GET['error'] === 'session_expired'): ?>
+                <div class="warning-toast">
+                    ⏱️ Your session has expired. Please login again.
+                </div>
+            <?php endif; ?>
+
+            <?php if ($loginAttempts > 0 && $loginAttempts < MAX_LOGIN_ATTEMPTS): ?>
+                <div class="warning-toast">
+                    ⚠️ Failed attempts: <?php echo $loginAttempts; ?>/<?php echo MAX_LOGIN_ATTEMPTS; ?>
                 </div>
             <?php endif; ?>
 
             <form method="POST" id="loginForm">
-                <div class="input-wrapper">
-                    <input type="email" name="email" placeholder="Email" required autofocus 
-                    <?php echo ($blockUntil ? 'disabled' : ''); ?>>
+                <div class="input-group">
+                    <label for="email">User ID / Email</label>
+                    <input 
+                        type="email" 
+                        name="email" 
+                        id="email" 
+                        placeholder="user@sxccal.edu" 
+                        required
+                        <?php echo ($blockUntil ? 'disabled' : ''); ?>
+                        autocomplete="email"
+                        autofocus
+                    >
                 </div>
 
-                <div class="input-wrapper">
-                    <input type="password" name="app_password" id="app_password" placeholder="App Password" required
-                    <?php echo ($blockUntil ? 'disabled' : ''); ?>>
-                    <button type="button" class="toggle-pass" onclick="togglePassword()">Show</button>
+                <div class="input-group">
+                    <label for="app_password">App Password</label>
+                    <input 
+                        type="password" 
+                        name="app_password" 
+                        id="app_password" 
+                        placeholder="••••••••••••" 
+                        required
+                        <?php echo ($blockUntil ? 'disabled' : ''); ?>
+                        autocomplete="current-password"
+                    >
+                    
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="toggleCheck" onclick="togglePassword()">
+                        <span>Show Password</span>
+                    </label>
                 </div>
 
-                <button type="submit" id="submitBtn" <?php echo ($blockUntil ? 'disabled' : ''); ?>>
-                    <?php echo ($blockUntil ? 'Locked' : 'Continue'); ?>
+                <button 
+                    type="submit" 
+                    id="submitBtn"
+                    <?php echo ($blockUntil ? 'disabled' : ''); ?>
+                >
+                    <?php echo ($blockUntil ? 'Account Locked' : 'Verify & Proceed'); ?>
                 </button>
             </form>
-        </div>
-
-        <div class="footer-text">
-            St. Xavier's College (Autonomous), Kolkata <br>
-            Protected by Secure SMTP Authentication.
+            <footer>
+                St. Xavier's College (Autonomous), Kolkata<br>
+                Mail Delivery & Tracking System v2.0
+            </footer>
         </div>
     </div>
 
     <script>
         function togglePassword() {
             const passInput = document.getElementById("app_password");
-            const btn = document.querySelector(".toggle-pass");
-            if (passInput.type === "password") {
-                passInput.type = "text";
-                btn.textContent = "Hide";
-            } else {
-                passInput.type = "password";
-                btn.textContent = "Show";
-            }
+            passInput.type = passInput.type === "password" ? "text" : "password";
         }
 
-        // Apple-style button state on submit
-        document.getElementById('loginForm').addEventListener('submit', function() {
+        // Auto-unlock countdown if blocked
+        <?php if ($blockUntil): ?>
+        const blockUntil = new Date("<?php echo $blockUntil; ?>").getTime();
+        
+        const countdown = setInterval(function() {
+            const now = new Date().getTime();
+            const distance = blockUntil - now;
+            
+            if (distance < 0) {
+                clearInterval(countdown);
+                location.reload();
+            } else {
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                document.getElementById('submitBtn').textContent = `Locked (${minutes}m ${seconds}s)`;
+            }
+        }, 1000);
+        <?php endif; ?>
+
+        // Form validation
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
             const btn = document.getElementById('submitBtn');
-            btn.style.opacity = "0.7";
-            btn.textContent = 'Verifying...';
+            btn.disabled = true;
+            btn.textContent = 'Authenticating...';
         });
     </script>
 </body>
