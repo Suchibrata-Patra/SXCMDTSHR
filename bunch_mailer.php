@@ -13,7 +13,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 
 <head>
     <?php
-        define('PAGE_TITLE', 'SXC MDTS | Bulk Mailer');
+        define('PAGE_TITLE', 'SXC MDTS | Mailmerge');
         include 'header.php';
     ?>
     <style>
@@ -204,7 +204,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         /* ========== TWO COLUMN LAYOUT ========== */
         .compose-layout {
             display: grid;
-            grid-template-columns: 1fr 400px;
+            grid-template-columns: 1fr 420px;
             gap: 24px;
             margin-bottom: 24px;
         }
@@ -242,31 +242,29 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         /* ========== UPLOAD ZONE ========== */
         .upload-zone {
             border: 3px dashed var(--border);
-            border-radius: 16px;
-            padding: 60px 40px;
+            border-radius: 12px;
+            padding: 48px 32px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s;
             background: var(--apple-bg);
-            position: relative;
-            overflow: hidden;
         }
 
         .upload-zone:hover {
             border-color: var(--apple-blue);
-            background: #F5F9FF;
-            transform: translateY(-2px);
+            background: #F0F7FF;
         }
 
         .upload-zone.dragover {
             border-color: var(--apple-blue);
-            background: linear-gradient(135deg, #F5F9FF 0%, #E8F4FF 100%);
+            background: #E5F2FF;
+            transform: scale(1.02);
         }
 
         .upload-icon {
             font-size: 64px;
             color: var(--apple-blue);
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
 
         .upload-title {
@@ -279,320 +277,394 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         .upload-subtitle {
             font-size: 14px;
             color: var(--apple-gray);
-            margin-bottom: 20px;
         }
 
-        .upload-formats {
-            font-size: 12px;
-            color: var(--apple-gray);
-            margin-top: 10px;
-        }
-
-        .btn-upload {
-            background: var(--apple-blue);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 10px;
-            border: none;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-upload:hover {
-            background: #0056b3;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 122, 255, 0.3);
-        }
-
-        /* ========== FIELD MANAGEMENT (RIGHT SIDEBAR) ========== */
-        .field-manager {
+        /* ========== FILE ATTACHMENT PANEL ========== */
+        .attachment-panel {
             background: white;
             border-radius: 16px;
-            padding: 24px;
+            padding: 32px;
             border: 1px solid var(--border);
             box-shadow: var(--card-shadow);
+            height: fit-content;
             position: sticky;
-            top: 180px;
-            max-height: calc(100vh - 200px);
-            overflow-y: auto;
+            top: 220px;
         }
 
-        .field-manager-header {
+        .attachment-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .attachment-header .material-icons {
+            font-size: 28px;
+            color: var(--apple-blue);
+        }
+
+        .attachment-header-text h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1c1c1e;
+            margin-bottom: 4px;
+        }
+
+        .attachment-header-text p {
+            font-size: 13px;
+            color: var(--apple-gray);
+        }
+
+        .attachment-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            background: var(--apple-bg);
+            padding: 4px;
+            border-radius: 10px;
+        }
+
+        .attachment-tab {
+            flex: 1;
+            padding: 10px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--apple-gray);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .attachment-tab:hover {
+            color: #1c1c1e;
+        }
+
+        .attachment-tab.active {
+            background: white;
+            color: var(--apple-blue);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+        }
+
+        .attachment-tab .material-icons {
+            font-size: 18px;
+        }
+
+        .attachment-content {
+            display: none;
+        }
+
+        .attachment-content.active {
+            display: block;
+        }
+
+        /* Drive Files List */
+        .drive-files-list {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 16px;
+        }
+
+        .drive-file-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .drive-file-item:hover {
+            border-color: var(--apple-blue);
+            background: #F0F7FF;
+        }
+
+        .drive-file-item.selected {
+            border-color: var(--apple-blue);
+            background: #E5F2FF;
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+        }
+
+        .drive-file-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--apple-bg);
+            border-radius: 8px;
+            margin-right: 12px;
+            font-size: 20px;
+        }
+
+        .drive-file-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .drive-file-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #1c1c1e;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .drive-file-size {
+            font-size: 12px;
+            color: var(--apple-gray);
+            margin-top: 2px;
+        }
+
+        .drive-file-check {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .drive-file-item.selected .drive-file-check {
+            background: var(--apple-blue);
+            border-color: var(--apple-blue);
+        }
+
+        .drive-file-item.selected .drive-file-check .material-icons {
+            color: white;
+            font-size: 16px;
+        }
+
+        /* Upload Zone Small */
+        .upload-zone-small {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 32px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: var(--apple-bg);
+        }
+
+        .upload-zone-small:hover {
+            border-color: var(--apple-blue);
+            background: #F0F7FF;
+        }
+
+        .upload-zone-small .material-icons {
+            font-size: 48px;
+            color: var(--apple-blue);
+            margin-bottom: 12px;
+        }
+
+        .upload-zone-small p {
+            font-size: 14px;
+            color: var(--apple-gray);
+            margin-bottom: 4px;
+        }
+
+        .upload-zone-small small {
+            font-size: 12px;
+            color: var(--apple-gray);
+        }
+
+        /* Selected Attachment Display */
+        .selected-attachment {
+            background: #E5F2FF;
+            border: 2px solid var(--apple-blue);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+            display: none;
+        }
+
+        .selected-attachment.active {
+            display: block;
+        }
+
+        .selected-attachment-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .selected-attachment-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--apple-blue);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .clear-attachment {
+            background: transparent;
+            border: none;
+            color: var(--apple-red);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .clear-attachment:hover {
+            background: rgba(255, 59, 48, 0.1);
+        }
+
+        .selected-attachment-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .selected-attachment-icon {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border-radius: 10px;
+            font-size: 24px;
+        }
+
+        .selected-attachment-details {
+            flex: 1;
+        }
+
+        .selected-attachment-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1c1c1e;
+            margin-bottom: 4px;
+        }
+
+        .selected-attachment-size {
+            font-size: 12px;
+            color: var(--apple-gray);
+        }
+
+        /* ========== ANALYSIS RESULTS ========== */
+        .analysis-results {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            margin-top: 24px;
+            border: 1px solid var(--border);
+            box-shadow: var(--card-shadow);
+            display: none;
+        }
+
+        .analysis-results.active {
+            display: block;
+        }
+
+        .analysis-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .analysis-info h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1c1c1e;
+            margin-bottom: 6px;
+        }
+
+        .analysis-info p {
+            font-size: 14px;
+            color: var(--apple-gray);
+        }
+
+        .analysis-stats {
+            display: flex;
+            gap: 16px;
+        }
+
+        .analysis-stat {
+            text-align: center;
+            padding: 12px 16px;
+            background: var(--apple-bg);
+            border-radius: 10px;
+        }
+
+        .analysis-stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--apple-blue);
+            margin-bottom: 4px;
+        }
+
+        .analysis-stat-label {
+            font-size: 11px;
+            color: var(--apple-gray);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Column Mapping */
+        .column-mapping {
+            margin-bottom: 32px;
+        }
+
+        .mapping-header {
             font-size: 16px;
             font-weight: 600;
             color: #1c1c1e;
             margin-bottom: 16px;
-            display: flex;
+        }
+
+        .mapping-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .mapping-row {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 12px;
             align-items: center;
-            gap: 8px;
         }
 
-        .field-group {
-            margin-bottom: 20px;
-        }
-
-        .field-group-title {
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--apple-gray);
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-            margin-bottom: 12px;
-        }
-
-        .field-item {
-            background: var(--apple-bg);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 12px 16px;
-            margin-bottom: 8px;
-            cursor: grab;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .field-item:hover {
-            background: #E8F4FF;
-            border-color: var(--apple-blue);
-            transform: translateX(4px);
-        }
-
-        .field-item.dragging {
-            opacity: 0.5;
-            cursor: grabbing;
-        }
-
-        .field-item .material-icons {
-            font-size: 18px;
-            color: var(--apple-gray);
-        }
-
-        .field-item-text {
-            flex: 1;
-        }
-
-        .field-item-name {
+        .mapping-label {
             font-size: 13px;
             font-weight: 500;
             color: #1c1c1e;
         }
 
-        .field-item-desc {
-            font-size: 11px;
-            color: var(--apple-gray);
-            margin-top: 2px;
-        }
-
-        .field-required-badge {
-            background: var(--apple-red);
-            color: white;
-            font-size: 9px;
-            font-weight: 700;
-            padding: 2px 6px;
-            border-radius: 4px;
-            text-transform: uppercase;
-        }
-
-        /* ========== DROP ZONE (LEFT SIDE FORM) ========== */
-        .drop-zone {
-            border: 2px dashed var(--border);
-            border-radius: 12px;
-            padding: 24px;
-            min-height: 400px;
-            background: #FAFAFA;
-        }
-
-        .drop-zone.drag-over {
-            background: #E8F4FF;
-            border-color: var(--apple-blue);
-        }
-
-        .drop-placeholder {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--apple-gray);
-        }
-
-        .drop-placeholder .material-icons {
-            font-size: 64px;
-            color: var(--border);
-            margin-bottom: 16px;
-        }
-
-        .drop-placeholder h3 {
-            font-size: 18px;
-            font-weight: 600;
-            color: #1c1c1e;
-            margin-bottom: 8px;
-        }
-
-        .drop-placeholder p {
-            font-size: 14px;
-        }
-
-        .dropped-field {
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 16px;
-            margin-bottom: 12px;
-            position: relative;
-        }
-
-        .dropped-field-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 12px;
-        }
-
-        .dropped-field-label {
-            font-size: 13px;
-            font-weight: 600;
-            color: #1c1c1e;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .remove-field-btn {
-            background: var(--apple-red);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            padding: 4px 8px;
-            font-size: 11px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .remove-field-btn:hover {
-            background: #cc0000;
-        }
-
-        .dropped-field input,
-        .dropped-field select,
-        .dropped-field textarea {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 14px;
-            font-family: inherit;
-            transition: all 0.2s;
-        }
-
-        .dropped-field input:focus,
-        .dropped-field select:focus,
-        .dropped-field textarea:focus {
-            outline: none;
-            border-color: var(--apple-blue);
-            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
-        }
-
-        .dropped-field textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        /* ========== MAPPING MODAL ========== */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(10px);
-            z-index: 10000;
-            align-items: center;
-            justify-content: center;
-            padding: 40px;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 900px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-
-        .modal-title {
-            font-size: 24px;
-            font-weight: 700;
-            color: #1c1c1e;
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 28px;
-            cursor: pointer;
-            color: var(--apple-gray);
-            padding: 0;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
-            transition: all 0.2s;
-        }
-
-        .modal-close:hover {
-            background: var(--apple-bg);
-            color: #1c1c1e;
-        }
-
-        .mapping-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .mapping-item {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .mapping-label {
-            font-size: 13px;
-            font-weight: 600;
-            color: #1c1c1e;
-        }
-
         .mapping-select {
-            padding: 12px;
+            width: 100%;
+            padding: 10px 12px;
             border: 1px solid var(--border);
             border-radius: 8px;
             font-size: 14px;
+            color: #1c1c1e;
+            background: white;
             cursor: pointer;
             transition: all 0.2s;
+        }
+
+        .mapping-select:hover {
+            border-color: var(--apple-blue);
         }
 
         .mapping-select:focus {
@@ -601,52 +673,67 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
         }
 
-        .preview-table-container {
-            margin: 24px 0;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            overflow: hidden;
+        /* Preview Table */
+        .preview-section {
+            margin-top: 32px;
+        }
+
+        .preview-header {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1c1c1e;
+            margin-bottom: 16px;
         }
 
         .preview-table {
             width: 100%;
-            font-size: 13px;
-        }
-
-        .preview-table thead {
-            background: var(--apple-bg);
-        }
-
-        .preview-table th,
-        .preview-table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid var(--border);
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border);
         }
 
         .preview-table th {
+            background: var(--apple-bg);
+            padding: 12px;
+            text-align: left;
+            font-size: 12px;
             font-weight: 600;
-            color: #1c1c1e;
+            color: var(--apple-gray);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .preview-table td {
-            color: #666;
+            padding: 12px;
+            font-size: 13px;
+            color: #1c1c1e;
+            border-top: 1px solid var(--border);
         }
 
-        .modal-actions {
+        .preview-table tr:hover {
+            background: var(--apple-bg);
+        }
+
+        /* Action Buttons */
+        .analysis-actions {
             display: flex;
             gap: 12px;
             justify-content: flex-end;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
         }
 
         .btn {
-            padding: 14px 28px;
+            padding: 12px 24px;
             border-radius: 10px;
             font-size: 14px;
             font-weight: 600;
+            border: none;
             cursor: pointer;
             transition: all 0.2s;
-            border: none;
             display: inline-flex;
             align-items: center;
             gap: 8px;
@@ -658,174 +745,141 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         }
 
         .btn-primary:hover {
-            background: #0056b3;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 122, 255, 0.3);
+            background: #0051D5;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
         }
 
         .btn-secondary {
-            background: var(--apple-bg);
+            background: white;
             color: #1c1c1e;
+            border: 1px solid var(--border);
         }
 
         .btn-secondary:hover {
-            background: #E5E5EA;
-        }
-
-        .btn-success {
-            background: var(--apple-green);
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #28a745;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(52, 199, 89, 0.3);
-        }
-
-        /* ========== ALERTS ========== */
-        .alert {
-            padding: 16px 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            animation: slideIn 0.3s ease-out;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .alert-success {
-            background: #D1FAE5;
-            border: 1px solid var(--apple-green);
-            color: #065F46;
-        }
-
-        .alert-error {
-            background: #FEE2E2;
-            border: 1px solid var(--apple-red);
-            color: #991B1B;
-        }
-
-        .alert-info {
-            background: #DBEAFE;
-            border: 1px solid var(--apple-blue);
-            color: #1E40AF;
-        }
-
-        .alert .material-icons {
-            font-size: 24px;
-        }
-
-        /* ========== PROGRESS BAR ========== */
-        .progress-container {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 24px;
-            border: 1px solid var(--border);
-            display: none;
-        }
-
-        .progress-container.active {
-            display: block;
-        }
-
-        .progress-text {
-            font-size: 14px;
-            font-weight: 600;
-            color: #1c1c1e;
-            margin-bottom: 12px;
-        }
-
-        .progress-bar {
-            height: 12px;
             background: var(--apple-bg);
-            border-radius: 10px;
-            overflow: hidden;
         }
 
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--apple-blue) 0%, var(--apple-green) 100%);
-            transition: width 0.3s ease-out;
-            width: 0%;
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn .material-icons {
+            font-size: 18px;
         }
 
         /* ========== QUEUE TABLE ========== */
         .queue-table {
             width: 100%;
-            font-size: 13px;
-        }
-
-        .queue-table thead {
-            background: var(--apple-bg);
-        }
-
-        .queue-table th,
-        .queue-table td {
-            padding: 16px;
-            text-align: left;
-            border-bottom: 1px solid var(--border);
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
         }
 
         .queue-table th {
+            background: var(--apple-bg);
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 12px;
             font-weight: 600;
-            color: #1c1c1e;
+            color: var(--apple-gray);
             text-transform: uppercase;
-            font-size: 11px;
             letter-spacing: 0.5px;
         }
 
+        .queue-table td {
+            padding: 16px;
+            font-size: 13px;
+            color: #1c1c1e;
+            border-top: 1px solid var(--border);
+        }
+
+        .queue-table tr:hover {
+            background: var(--apple-bg);
+        }
+
         .status-badge {
+            display: inline-block;
             padding: 4px 12px;
-            border-radius: 20px;
+            border-radius: 12px;
             font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.5px;
         }
 
         .status-pending {
-            background: #FEF3C7;
-            color: #92400E;
-        }
-
-        .status-processing {
-            background: #DBEAFE;
-            color: #1E40AF;
+            background: #FFF4E5;
+            color: var(--apple-orange);
         }
 
         .status-completed {
-            background: #D1FAE5;
-            color: #065F46;
+            background: #E5F8ED;
+            color: var(--apple-green);
         }
 
         .status-failed {
-            background: #FEE2E2;
-            color: #991B1B;
+            background: #FFE5E5;
+            color: var(--apple-red);
+        }
+
+        /* ========== QUEUE CONTROLS ========== */
+        .queue-controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .queue-controls .btn {
+            flex: 1;
+        }
+
+        /* ========== PROGRESS BAR ========== */
+        .processing-progress {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
+            display: none;
+        }
+
+        .processing-progress.active {
+            display: block;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--apple-bg);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--apple-blue);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            font-size: 14px;
+            color: var(--apple-gray);
+            text-align: center;
         }
 
         /* ========== EMPTY STATE ========== */
         .empty-state {
             text-align: center;
-            padding: 80px 20px;
+            padding: 80px 40px;
         }
 
         .empty-state-icon {
             font-size: 64px;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
 
         .empty-state h3 {
@@ -840,37 +894,77 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             color: var(--apple-gray);
         }
 
-        /* ========== ATTACHMENT DISPLAY ========== */
-        .attachment-preview {
-            background: var(--apple-bg);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 12px;
-            margin-top: 12px;
+        /* ========== ALERTS ========== */
+        .alert {
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
             display: flex;
             align-items: center;
             gap: 12px;
+            animation: slideIn 0.3s ease-out;
         }
 
-        .attachment-preview .material-icons {
-            font-size: 32px;
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert-success {
+            background: #E5F8ED;
+            color: var(--apple-green);
+        }
+
+        .alert-error {
+            background: #FFE5E5;
+            color: var(--apple-red);
+        }
+
+        .alert-info {
+            background: #E5F2FF;
             color: var(--apple-blue);
         }
 
-        .attachment-info {
-            flex: 1;
+        .alert .material-icons {
+            font-size: 24px;
         }
 
-        .attachment-name {
-            font-size: 13px;
-            font-weight: 600;
-            color: #1c1c1e;
+        /* ========== LOADING SPINNER ========== */
+        .loading {
+            text-align: center;
+            padding: 40px;
         }
 
-        .attachment-size {
-            font-size: 11px;
-            color: var(--apple-gray);
-            margin-top: 2px;
+        .spinner {
+            border: 3px solid var(--border);
+            border-top: 3px solid var(--apple-blue);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 1200px) {
+            .compose-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .attachment-panel {
+                position: static;
+            }
         }
     </style>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -880,12 +974,12 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     <?php include 'sidebar.php'; ?>
 
     <div class="main-content">
-        <!-- ========== HEADER ========== -->
+        <!-- ========== PAGE HEADER ========== -->
         <div class="page-header">
             <div class="header-container">
                 <div class="header-left">
-                    <h1>Bulk Email Manager</h1>
-                    <p>Upload CSV files and send emails in bulk</p>
+                    <h1>📧 Mailmerge</h1>
+                    <p>Upload CSV and send personalized emails to multiple recipients</p>
                 </div>
                 <div class="header-stats">
                     <div class="stat-item pending">
@@ -907,17 +1001,13 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         <!-- ========== TABS ========== -->
         <div class="tabs-container">
             <div class="tabs">
-                <button class="tab active" onclick="switchTab('compose')">
-                    <span class="material-icons" style="font-size: 16px; margin-right: 6px;">create</span>
-                    Compose Bulk Email
-                </button>
-                <button class="tab" onclick="switchTab('upload')">
-                    <span class="material-icons" style="font-size: 16px; margin-right: 6px;">upload_file</span>
+                <button class="tab active" onclick="switchTab('upload')">
+                    <span class="material-icons">upload_file</span>
                     Upload CSV
                 </button>
                 <button class="tab" onclick="switchTab('queue')">
-                    <span class="material-icons" style="font-size: 16px; margin-right: 6px;">list</span>
-                    Email Queue
+                    <span class="material-icons">list</span>
+                    Queue Management
                 </button>
             </div>
         </div>
@@ -925,509 +1015,343 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         <!-- ========== CONTENT AREA ========== -->
         <div class="content-area">
             <div class="container">
-                <!-- ========== COMPOSE TAB ========== -->
-                <div class="tab-content active" id="compose-tab">
+                
+                <!-- ========== UPLOAD TAB ========== -->
+                <div id="uploadTab" class="tab-content active">
                     <div class="compose-layout">
-                        <!-- LEFT SIDE: DROP ZONE -->
+                        <!-- LEFT: CSV Upload -->
                         <div>
                             <div class="card">
                                 <div class="card-header">
                                     <div>
-                                        <h2 class="card-title">Email Template Builder</h2>
-                                        <p class="card-subtitle">Drag fields from the right sidebar to build your email template</p>
+                                        <h2 class="card-title">Upload CSV File</h2>
+                                        <p class="card-subtitle">Select a CSV file containing recipient details</p>
                                     </div>
                                 </div>
-                                <div class="drop-zone" id="dropZone">
-                                    <div class="drop-placeholder" id="dropPlaceholder">
-                                        <span class="material-icons">touch_app</span>
-                                        <h3>Drag & Drop Fields Here</h3>
-                                        <p>Build your email template by dragging fields from the right sidebar</p>
-                                    </div>
+
+                                <div class="upload-zone" id="uploadZone" onclick="document.getElementById('csvFileInput').click()">
+                                    <div class="material-icons upload-icon">cloud_upload</div>
+                                    <h3 class="upload-title">Drop CSV file here or click to browse</h3>
+                                    <p class="upload-subtitle">Maximum file size: 10MB</p>
+                                    <input type="file" id="csvFileInput" accept=".csv" style="display: none;" onchange="handleCSVUpload(event)">
                                 </div>
                             </div>
 
-                            <button class="btn btn-success" id="saveTemplateBtn" onclick="saveTemplate()" style="width: 100%; display: none;">
-                                <span class="material-icons">save</span>
-                                Save Template & Proceed to Upload
-                            </button>
+                            <!-- Analysis Results -->
+                            <div id="analysisResults" class="analysis-results">
+                                <!-- Will be populated dynamically -->
+                            </div>
                         </div>
 
-                        <!-- RIGHT SIDE: FIELD MANAGER -->
-                        <div class="field-manager">
-                            <div class="field-manager-header">
-                                <span class="material-icons">widgets</span>
-                                Available Fields
-                            </div>
-
-                            <div class="field-group">
-                                <div class="field-group-title">Required Fields</div>
-                                <div class="field-item" draggable="true" data-field="recipient_email" data-type="email" data-required="true">
-                                    <span class="material-icons">email</span>
-                                    <div class="field-item-text">
-                                        <div class="field-item-name">Recipient Email</div>
-                                        <div class="field-item-desc">Recipient's email address</div>
-                                    </div>
-                                    <span class="field-required-badge">Required</span>
+                        <!-- RIGHT: File Attachment Panel -->
+                        <div class="attachment-panel">
+                            <div class="attachment-header">
+                                <span class="material-icons">attach_file</span>
+                                <div class="attachment-header-text">
+                                    <h3>Attach File</h3>
+                                    <p>Optional: Add attachment to all emails</p>
                                 </div>
                             </div>
 
-                            <div class="field-group">
-                                <div class="field-group-title">Email Content</div>
-                                <div class="field-item" draggable="true" data-field="subject" data-type="text">
-                                    <span class="material-icons">subject</span>
-                                    <div class="field-item-text">
-                                        <div class="field-item-name">Subject</div>
-                                        <div class="field-item-desc">Email subject line</div>
-                                    </div>
+                            <!-- Attachment Tabs -->
+                            <div class="attachment-tabs">
+                                <button class="attachment-tab active" onclick="switchAttachmentTab('drive')">
+                                    <span class="material-icons">folder</span>
+                                    From Drive
+                                </button>
+                                <button class="attachment-tab" onclick="switchAttachmentTab('upload')">
+                                    <span class="material-icons">upload</span>
+                                    Upload New
+                                </button>
+                            </div>
+
+                            <!-- Drive Tab Content -->
+                            <div id="driveAttachmentTab" class="attachment-content active">
+                                <div class="loading">
+                                    <div class="spinner"></div>
+                                    <p style="color: var(--apple-gray); font-size: 14px;">Loading drive files...</p>
                                 </div>
-                                <div class="field-item" draggable="true" data-field="article_title" data-type="text">
-                                    <span class="material-icons">title</span>
-                                    <div class="field-item-text">
-                                        <div class="field-item-name">Article Title</div>
-                                        <div class="field-item-desc">Main heading in email body</div>
-                                    </div>
-                                </div>
-                                <div class="field-item" draggable="true" data-field="message_content" data-type="textarea">
-                                    <span class="material-icons">description</span>
-                                    <div class="field-item-text">
-                                        <div class="field-item-name">Message Content</div>
-                                        <div class="field-item-desc">Main email body text</div>
-                                    </div>
+                                <div id="driveFilesList" class="drive-files-list" style="display: none;">
+                                    <!-- Drive files will be loaded here -->
                                 </div>
                             </div>
 
-                            <div class="field-group">
-                                <div class="field-group-title">Recipient Details</div>
-                                <div class="field-item" draggable="true" data-field="recipient_name" data-type="text">
-                                    <span class="material-icons">person</span>
-                                    <div class="field-item-text">
-                                        <div class="field-item-name">Recipient Name</div>
-                                        <div class="field-item-desc">Full name of recipient</div>
-                                    </div>
+                            <!-- Upload Tab Content -->
+                            <div id="uploadAttachmentTab" class="attachment-content">
+                                <div class="upload-zone-small" onclick="document.getElementById('attachmentFileInput').click()">
+                                    <div class="material-icons">cloud_upload</div>
+                                    <p><strong>Click to upload file</strong></p>
+                                    <small>Max size: 25MB</small>
+                                    <input type="file" id="attachmentFileInput" style="display: none;" onchange="handleAttachmentUpload(event)">
                                 </div>
                             </div>
 
-                            <div class="field-group">
-                                <div class="field-group-title">Signature Fields</div>
-                                <div class="field-item" draggable="true" data-field="closing_wish" data-type="text">
-                                    <span class="material-icons">waving_hand</span>
-                                    <div class="field-item-text">
-                                        <div class="field-item-name">Closing Wish</div>
-                                        <div class="field-item-desc">e.g., "Best Regards"</div>
-                                    </div>
+                            <!-- Selected Attachment Display -->
+                            <div id="selectedAttachment" class="selected-attachment">
+                                <div class="selected-attachment-header">
+                                    <span class="selected-attachment-title">Selected File</span>
+                                    <button class="clear-attachment" onclick="clearSelectedAttachment()">
+                                        <span class="material-icons">close</span>
+                                    </button>
                                 </div>
-                                <div class="field-item" draggable="true" data-field="sender_name" data-type="text">
-                                    <span class="material-icons">account_circle</span>
-                                    <div class="field-item-text">
-                                        <div class="field-item-name">Sender Name</div>
-                                        <div class="field-item-desc">Name of sender</div>
+                                <div class="selected-attachment-info">
+                                    <div class="selected-attachment-icon" id="selectedAttachmentIcon">
+                                        📎
                                     </div>
-                                </div>
-                                <div class="field-item" draggable="true" data-field="sender_designation" data-type="text">
-                                    <span class="material-icons">work</span>
-                                    <div class="field-item-text">
-                                        <div class="field-item-name">Sender Designation</div>
-                                        <div class="field-item-desc">Job title or role</div>
-                                    </div>
-                                </div>
-                                <div class="field-item" draggable="true" data-field="additional_info" data-type="text">
-                                    <span class="material-icons">info</span>
-                                    <div class="field-item-text">
-                                        <div class="field-item-name">Additional Info</div>
-                                        <div class="field-item-desc">Extra signature line</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="field-group">
-                                <div class="field-group-title">Attachments</div>
-                                <div class="field-item" draggable="true" data-field="attachment" data-type="file">
-                                    <span class="material-icons">attach_file</span>
-                                    <div class="field-item-text">
-                                        <div class="field-item-name">Attachment</div>
-                                        <div class="field-item-desc">Upload a file to attach</div>
+                                    <div class="selected-attachment-details">
+                                        <div class="selected-attachment-name" id="selectedAttachmentName">
+                                            File name
+                                        </div>
+                                        <div class="selected-attachment-size" id="selectedAttachmentSize">
+                                            0 KB
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- ========== UPLOAD CSV TAB ========== -->
-                <div class="tab-content" id="upload-tab">
-                    <div class="card">
-                        <div class="card-header">
-                            <div>
-                                <h2 class="card-title">Upload CSV File</h2>
-                                <p class="card-subtitle">Upload a CSV file containing recipient data</p>
-                            </div>
-                        </div>
-
-                        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('csvFileInput').click()">
-                            <div class="upload-icon">
-                                <span class="material-icons" style="font-size: inherit; color: inherit;">cloud_upload</span>
-                            </div>
-                            <h3 class="upload-title">Drop your CSV file here</h3>
-                            <p class="upload-subtitle">or click to browse</p>
-                            <button class="btn-upload" type="button">
-                                <span class="material-icons">upload_file</span>
-                                Select CSV File
-                            </button>
-                            <p class="upload-formats">Supported format: .csv (Max 10MB)</p>
-                        </div>
-
-                        <input type="file" id="csvFileInput" accept=".csv" style="display: none;" onchange="handleFileSelect(event)">
                     </div>
                 </div>
 
                 <!-- ========== QUEUE TAB ========== -->
-                <div class="tab-content" id="queue-tab">
-                    <div class="progress-container" id="processingProgress">
-                        <div class="progress-text" id="progressText">Processing emails...</div>
+                <div id="queueTab" class="tab-content">
+                    <!-- Queue Controls -->
+                    <div class="queue-controls">
+                        <button class="btn btn-primary" id="processQueueBtn" onclick="processQueue()">
+                            <span class="material-icons">send</span>
+                            Process Queue
+                        </button>
+                        <button class="btn btn-secondary" onclick="loadQueue()">
+                            <span class="material-icons">refresh</span>
+                            Refresh
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearQueue()">
+                            <span class="material-icons">delete_sweep</span>
+                            Clear Pending
+                        </button>
+                    </div>
+
+                    <!-- Processing Progress -->
+                    <div id="processingProgress" class="processing-progress">
                         <div class="progress-bar">
                             <div class="progress-fill" id="progressFill"></div>
                         </div>
+                        <p class="progress-text" id="progressText">Processing emails...</p>
                     </div>
 
+                    <!-- Queue Table -->
                     <div class="card">
                         <div class="card-header">
-                            <div>
-                                <h2 class="card-title">Email Queue</h2>
-                                <p class="card-subtitle">Manage and process pending emails</p>
-                            </div>
-                            <div style="display: flex; gap: 12px;">
-                                <button class="btn btn-primary" id="processQueueBtn" onclick="processQueue()">
-                                    <span class="material-icons">send</span>
-                                    Process Queue
-                                </button>
-                                <button class="btn btn-secondary" onclick="clearQueue()">
-                                    <span class="material-icons">delete_sweep</span>
-                                    Clear Queue
-                                </button>
-                            </div>
+                            <h2 class="card-title">Email Queue</h2>
                         </div>
-
                         <div id="queueTableContainer">
-                            <div class="empty-state">
-                                <div class="empty-state-icon">📭</div>
-                                <h3>No emails in queue</h3>
-                                <p>Upload a CSV file to get started</p>
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p style="color: var(--apple-gray);">Loading queue...</p>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- ========== MAPPING MODAL ========== -->
-    <div class="modal" id="mappingModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 class="modal-title">Map CSV Columns</h2>
-                <button class="modal-close" onclick="closeMappingModal()">×</button>
-            </div>
-
-            <p style="margin-bottom: 24px; color: var(--apple-gray);">
-                Map your CSV columns to email fields. The system has auto-detected some mappings for you.
-            </p>
-
-            <div class="mapping-grid" id="mappingGrid">
-                <!-- Mapping fields will be dynamically inserted here -->
-            </div>
-
-            <div class="preview-table-container">
-                <table class="preview-table" id="previewTable">
-                    <thead>
-                        <tr>
-                            <th colspan="100%">Preview (First 5 rows)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Preview data will be inserted here -->
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="closeMappingModal()">Cancel</button>
-                <button class="btn btn-primary" id="confirmMappingBtn" onclick="confirmMapping()">
-                    <span class="material-icons">check_circle</span>
-                    Add to Queue
-                </button>
             </div>
         </div>
     </div>
 
     <script>
-        // ========== GLOBAL STATE ==========
+        // Global variables
         let currentCSVData = null;
-        let fieldMapping = {};
-        let droppedFields = [];
-        let templateDefaults = {};
+        let currentMapping = {};
+        let selectedAttachmentPath = null;
 
         // ========== TAB SWITCHING ==========
         function switchTab(tabName) {
-            // Hide all tab contents
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.closest('.tab').classList.add('active');
+
+            // Update tab content
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
             });
 
-            // Remove active class from all tabs
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-
-            // Show selected tab content
-            document.getElementById(`${tabName}-tab`).classList.add('active');
-
-            // Add active class to selected tab
-            event.target.closest('.tab').classList.add('active');
-
-            // Load queue if queue tab is selected
-            if (tabName === 'queue') {
+            if (tabName === 'upload') {
+                document.getElementById('uploadTab').classList.add('active');
+            } else if (tabName === 'queue') {
+                document.getElementById('queueTab').classList.add('active');
                 loadQueue();
             }
         }
 
-        // ========== DRAG AND DROP FUNCTIONALITY ==========
-        const dropZone = document.getElementById('dropZone');
-        const dropPlaceholder = document.getElementById('dropPlaceholder');
-        const saveBtn = document.getElementById('saveTemplateBtn');
+        function switchAttachmentTab(tabName) {
+            // Update attachment tab buttons
+            document.querySelectorAll('.attachment-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.closest('.attachment-tab').classList.add('active');
 
-        // Setup drag events for field items
-        document.querySelectorAll('.field-item').forEach(item => {
-            item.addEventListener('dragstart', handleDragStart);
-            item.addEventListener('dragend', handleDragEnd);
-        });
+            // Update attachment tab content
+            document.querySelectorAll('.attachment-content').forEach(content => {
+                content.classList.remove('active');
+            });
 
-        // Setup drop zone
-        dropZone.addEventListener('dragover', handleDragOver);
-        dropZone.addEventListener('dragleave', handleDragLeave);
-        dropZone.addEventListener('drop', handleDrop);
-
-        let draggedItem = null;
-
-        function handleDragStart(e) {
-            draggedItem = this;
-            this.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'copy';
-        }
-
-        function handleDragEnd(e) {
-            this.classList.remove('dragging');
-        }
-
-        function handleDragOver(e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'copy';
-            dropZone.classList.add('drag-over');
-            return false;
-        }
-
-        function handleDragLeave(e) {
-            dropZone.classList.remove('drag-over');
-        }
-
-        function handleDrop(e) {
-            e.preventDefault();
-            dropZone.classList.remove('drag-over');
-
-            if (!draggedItem) return;
-
-            const fieldName = draggedItem.dataset.field;
-            const fieldType = draggedItem.dataset.type;
-            const fieldRequired = draggedItem.dataset.required === 'true';
-            const fieldLabel = draggedItem.querySelector('.field-item-name').textContent;
-
-            // Check if field already exists
-            if (droppedFields.includes(fieldName)) {
-                showAlert('info', `${fieldLabel} is already in the template`);
-                return;
+            if (tabName === 'drive') {
+                document.getElementById('driveAttachmentTab').classList.add('active');
+            } else if (tabName === 'upload') {
+                document.getElementById('uploadAttachmentTab').classList.add('active');
             }
-
-            // Hide placeholder
-            dropPlaceholder.style.display = 'none';
-
-            // Add field to dropped list
-            droppedFields.push(fieldName);
-
-            // Create dropped field element
-            const droppedField = createDroppedField(fieldName, fieldLabel, fieldType, fieldRequired);
-            dropZone.appendChild(droppedField);
-
-            // Show save button
-            saveBtn.style.display = 'flex';
-
-            draggedItem = null;
         }
 
-        function createDroppedField(fieldName, fieldLabel, fieldType, fieldRequired) {
-            const div = document.createElement('div');
-            div.className = 'dropped-field';
-            div.dataset.field = fieldName;
+        // ========== DRIVE FILES ==========
+        async function loadDriveFiles() {
+            try {
+                const response = await fetch('bulk_mail_backend.php?action=list_drive_files');
+                const data = await response.json();
 
-            let inputHTML = '';
-            switch (fieldType) {
-                case 'email':
-                    inputHTML = `<input type="email" id="template_${fieldName}" placeholder="Will be filled from CSV">`;
-                    break;
-                case 'textarea':
-                    inputHTML = `<textarea id="template_${fieldName}" placeholder="Will be filled from CSV or use default below"></textarea>`;
-                    break;
-                case 'file':
-                    inputHTML = `
-                        <input type="file" id="template_${fieldName}" style="display: none;" onchange="handleTemplateFileUpload(event, '${fieldName}')">
-                        <button class="btn btn-secondary" onclick="document.getElementById('template_${fieldName}').click()" style="width: 100%;">
-                            <span class="material-icons">upload_file</span>
-                            Upload Attachment
-                        </button>
-                        <div id="template_${fieldName}_preview"></div>
+                const container = document.getElementById('driveFilesList');
+                const loading = document.querySelector('#driveAttachmentTab .loading');
+
+                if (data.success && data.files && data.files.length > 0) {
+                    loading.style.display = 'none';
+                    container.style.display = 'block';
+                    
+                    container.innerHTML = data.files.map(file => `
+                        <div class="drive-file-item" onclick="selectDriveFile('${file.path}', '${file.name}', '${file.formatted_size}', '${file.extension}')">
+                            <div class="drive-file-icon">${getFileIcon(file.extension)}</div>
+                            <div class="drive-file-info">
+                                <div class="drive-file-name">${file.name}</div>
+                                <div class="drive-file-size">${file.formatted_size}</div>
+                            </div>
+                            <div class="drive-file-check">
+                                <span class="material-icons" style="display: none;">check</span>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    loading.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📁</div>
+                            <h3>No files in drive</h3>
+                            <p>Upload files to /SXCMDTSHR/File_Drive</p>
+                        </div>
                     `;
-                    break;
-                default:
-                    inputHTML = `<input type="text" id="template_${fieldName}" placeholder="Will be filled from CSV or use default below">`;
-            }
-
-            div.innerHTML = `
-                <div class="dropped-field-header">
-                    <div class="dropped-field-label">
-                        <span class="material-icons">drag_indicator</span>
-                        ${fieldLabel}
-                        ${fieldRequired ? '<span class="field-required-badge">Required</span>' : ''}
-                    </div>
-                    ${!fieldRequired ? `<button class="remove-field-btn" onclick="removeField('${fieldName}')">Remove</button>` : ''}
-                </div>
-                ${inputHTML}
-                ${fieldType !== 'file' && fieldType !== 'email' ? `<input type="text" id="default_${fieldName}" placeholder="Enter default value (optional)" style="margin-top: 8px; font-size: 12px; font-style: italic;">` : ''}
-            `;
-
-            return div;
-        }
-
-        function removeField(fieldName) {
-            const index = droppedFields.indexOf(fieldName);
-            if (index > -1) {
-                droppedFields.splice(index, 1);
-            }
-
-            const fieldElement = dropZone.querySelector(`[data-field="${fieldName}"]`);
-            if (fieldElement) {
-                fieldElement.remove();
-            }
-
-            // Show placeholder if no fields left
-            if (droppedFields.length === 0) {
-                dropPlaceholder.style.display = 'block';
-                saveBtn.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error loading drive files:', error);
+                showAlert('error', 'Failed to load drive files');
             }
         }
 
-        function handleTemplateFileUpload(event, fieldName) {
+        function selectDriveFile(path, name, size, extension) {
+            // Remove selected class from all items
+            document.querySelectorAll('.drive-file-item').forEach(item => {
+                item.classList.remove('selected');
+                item.querySelector('.material-icons').style.display = 'none';
+            });
+
+            // Add selected class to clicked item
+            event.currentTarget.classList.add('selected');
+            event.currentTarget.querySelector('.material-icons').style.display = 'block';
+
+            // Update selected attachment display
+            selectedAttachmentPath = path;
+            document.getElementById('selectedAttachmentIcon').textContent = getFileIcon(extension);
+            document.getElementById('selectedAttachmentName').textContent = name;
+            document.getElementById('selectedAttachmentSize').textContent = size;
+            document.getElementById('selectedAttachment').classList.add('active');
+        }
+
+        function clearSelectedAttachment() {
+            selectedAttachmentPath = null;
+            document.getElementById('selectedAttachment').classList.remove('active');
+            
+            // Clear selection in drive files
+            document.querySelectorAll('.drive-file-item').forEach(item => {
+                item.classList.remove('selected');
+                item.querySelector('.material-icons').style.display = 'none';
+            });
+        }
+
+        function getFileIcon(extension) {
+            const icons = {
+                'pdf': '📄',
+                'doc': '📝',
+                'docx': '📝',
+                'txt': '📝',
+                'xls': '📊',
+                'xlsx': '📊',
+                'csv': '📊',
+                'ppt': '📽️',
+                'pptx': '📽️',
+                'jpg': '🖼️',
+                'jpeg': '🖼️',
+                'png': '🖼️',
+                'gif': '🖼️',
+                'zip': '🗜️',
+                'rar': '🗜️',
+                '7z': '🗜️',
+                'mp4': '🎥',
+                'avi': '🎥',
+                'mp3': '🎵',
+                'wav': '🎵'
+            };
+            return icons[extension] || '📎';
+        }
+
+        // ========== ATTACHMENT UPLOAD ==========
+        async function handleAttachmentUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
 
-            // Create FormData and upload file
-            const formData = new FormData();
-            formData.append('file', file);
-
-            fetch('upload_handler.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Store attachment ID in template defaults
-                    templateDefaults.attachment_id = data.attachmentId;
-
-                    // Show preview
-                    const preview = document.getElementById(`template_${fieldName}_preview`);
-                    preview.innerHTML = `
-                        <div class="attachment-preview">
-                            <span class="material-icons">attach_file</span>
-                            <div class="attachment-info">
-                                <div class="attachment-name">${file.name}</div>
-                                <div class="attachment-size">${formatFileSize(file.size)}</div>
-                            </div>
-                        </div>
-                    `;
-
-                    showAlert('success', 'Attachment uploaded successfully');
-                } else {
-                    showAlert('error', data.error || 'Failed to upload attachment');
-                }
-            })
-            .catch(error => {
-                console.error('Upload error:', error);
-                showAlert('error', 'Failed to upload attachment');
-            });
-        }
-
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-        }
-
-        function saveTemplate() {
-            // Collect default values
-            templateDefaults = {};
-
-            droppedFields.forEach(fieldName => {
-                const defaultInput = document.getElementById(`default_${fieldName}`);
-                if (defaultInput && defaultInput.value.trim()) {
-                    templateDefaults[fieldName] = defaultInput.value.trim();
-                }
-            });
-
-            showAlert('success', 'Template saved! Now upload a CSV file to continue.');
-            switchTab('upload');
-        }
-
-        // ========== FILE UPLOAD ==========
-        const uploadZone = document.getElementById('uploadZone');
-        const csvFileInput = document.getElementById('csvFileInput');
-
-        uploadZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadZone.classList.add('dragover');
-        });
-
-        uploadZone.addEventListener('dragleave', () => {
-            uploadZone.classList.remove('dragover');
-        });
-
-        uploadZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadZone.classList.remove('dragover');
-
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                handleFile(files[0]);
-            }
-        });
-
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (file) {
-                handleFile(file);
-            }
-        }
-
-        async function handleFile(file) {
-            // Validate file
-            if (!file.name.endsWith('.csv')) {
-                showAlert('error', 'Please upload a CSV file');
+            // Check file size (25MB limit)
+            if (file.size > 25 * 1024 * 1024) {
+                showAlert('error', 'File size exceeds 25MB limit');
                 return;
             }
 
-            const formData = new FormData();
-            formData.append('csv_file', file);
+            try {
+                const formData = new FormData();
+                formData.append('files[]', file);
+
+                const response = await fetch('upload_handler.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.files && data.files.length > 0) {
+                    const uploadedFile = data.files[0];
+                    selectedAttachmentPath = uploadedFile.path;
+                    
+                    const extension = file.name.split('.').pop().toLowerCase();
+                    document.getElementById('selectedAttachmentIcon').textContent = getFileIcon(extension);
+                    document.getElementById('selectedAttachmentName').textContent = file.name;
+                    document.getElementById('selectedAttachmentSize').textContent = formatBytes(file.size);
+                    document.getElementById('selectedAttachment').classList.add('active');
+                    
+                    showAlert('success', 'File uploaded successfully');
+                } else {
+                    showAlert('error', data.error || 'Upload failed');
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                showAlert('error', 'Failed to upload file');
+            }
+
+            // Reset input
+            event.target.value = '';
+        }
+
+        // ========== CSV UPLOAD AND ANALYSIS ==========
+        async function handleCSVUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
 
             try {
+                const formData = new FormData();
+                formData.append('csv_file', file);
+
                 const response = await fetch('bulk_mail_backend.php?action=analyze', {
                     method: 'POST',
                     body: formData
@@ -1436,150 +1360,143 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
                 const data = await response.json();
 
                 if (data.success) {
-                    currentCSVData = data;
-                    showMappingModal(data);
+                    displayAnalysisResults(data);
                 } else {
-                    showAlert('error', data.error || 'Failed to analyze CSV file');
+                    showAlert('error', data.error || 'Failed to analyze CSV');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showAlert('error', 'Failed to upload file');
+                showAlert('error', 'Failed to upload CSV: ' + error.message);
             }
+
+            // Reset input
+            event.target.value = '';
         }
 
-        // ========== MAPPING MODAL ==========
-        function showMappingModal(csvData) {
-            const modal = document.getElementById('mappingModal');
-            const mappingGrid = document.getElementById('mappingGrid');
+        function displayAnalysisResults(data) {
+            const container = document.getElementById('analysisResults');
+            
+            // Initialize mapping with suggestions
+            currentMapping = data.suggested_mapping || {};
+            
+            const mappingOptions = `
+                <option value="">-- Skip this field --</option>
+                <option value="recipient_email">Recipient Email</option>
+                <option value="recipient_name">Recipient Name</option>
+                <option value="subject">Email Subject</option>
+                <option value="article_title">Article Title</option>
+                <option value="message_content">Message Content</option>
+                <option value="closing_wish">Closing Wish</option>
+                <option value="sender_name">Sender Name</option>
+                <option value="sender_designation">Sender Designation</option>
+            `;
 
-            // Reset mapping
-            fieldMapping = { ...csvData.suggested_mapping };
-
-            // Create mapping fields
-            const expectedFields = {
-                'recipient_email': 'Recipient Email (required)',
-                'recipient_name': 'Recipient Name',
-                'subject': 'Subject',
-                'article_title': 'Article Title',
-                'message_content': 'Message Content',
-                'closing_wish': 'Closing Wish',
-                'sender_name': 'Sender Name',
-                'sender_designation': 'Sender Designation',
-                'additional_info': 'Additional Info'
-            };
-
-            let html = '';
-
-            Object.entries(expectedFields).forEach(([field, label]) => {
-                const required = field === 'recipient_email';
-                const selectedColumn = fieldMapping[field] || '';
-
-                html += `
-                    <div class="mapping-item">
-                        <label class="mapping-label">
-                            ${label}
-                            ${required ? '<span style="color: var(--apple-red);">*</span>' : ''}
-                        </label>
-                        <select class="mapping-select" onchange="updateMapping('${field}', this.value)">
-                            <option value="">-- Not Mapped --</option>
-                            ${csvData.csv_columns.map(col => `
-                                <option value="${col}" ${col === selectedColumn ? 'selected' : ''}>
-                                    ${col}
-                                </option>
-                            `).join('')}
-                        </select>
+            container.innerHTML = `
+                <div class="analysis-header">
+                    <div class="analysis-info">
+                        <h3>CSV Analysis Complete</h3>
+                        <p>${data.filename}</p>
                     </div>
-                `;
-            });
+                    <div class="analysis-stats">
+                        <div class="analysis-stat">
+                            <div class="analysis-stat-value">${data.total_rows}</div>
+                            <div class="analysis-stat-label">Total Rows</div>
+                        </div>
+                        <div class="analysis-stat">
+                            <div class="analysis-stat-value">${data.csv_columns.length}</div>
+                            <div class="analysis-stat-label">Columns</div>
+                        </div>
+                    </div>
+                </div>
 
-            mappingGrid.innerHTML = html;
+                <div class="column-mapping">
+                    <h4 class="mapping-header">Map CSV Columns to Email Fields</h4>
+                    <div class="mapping-grid">
+                        ${data.csv_columns.map(column => `
+                            <div class="mapping-row">
+                                <label class="mapping-label">${column}</label>
+                                <select class="mapping-select" data-column="${column}" onchange="updateMapping('${column}', this.value)">
+                                    ${mappingOptions.split('\n').map(opt => {
+                                        const value = opt.match(/value="([^"]*)"/)?.[1] || '';
+                                        const isSelected = currentMapping[column] === value;
+                                        return opt.replace('<option', `<option ${isSelected ? 'selected' : ''}`);
+                                    }).join('')}
+                                </select>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
 
-            // Update preview table
-            updatePreviewTable(csvData);
+                <div class="preview-section">
+                    <h4 class="preview-header">Preview (First 5 rows)</h4>
+                    <table class="preview-table">
+                        <thead>
+                            <tr>
+                                ${data.csv_columns.map(col => `<th>${col}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.preview_rows.map(row => `
+                                <tr>
+                                    ${data.csv_columns.map(col => `<td>${row[col] || ''}</td>`).join('')}
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
 
-            // Show modal
-            modal.classList.add('active');
+                <div class="analysis-actions">
+                    <button class="btn btn-secondary" onclick="cancelAnalysis()">
+                        <span class="material-icons">close</span>
+                        Cancel
+                    </button>
+                    <button class="btn btn-primary" onclick="addToQueue()">
+                        <span class="material-icons">add_circle</span>
+                        Add to Queue
+                    </button>
+                </div>
+            `;
+
+            container.classList.add('active');
         }
 
-        function updateMapping(field, column) {
-            if (column) {
-                fieldMapping[field] = column;
+        function updateMapping(column, value) {
+            if (value) {
+                currentMapping[column] = value;
             } else {
-                delete fieldMapping[field];
+                delete currentMapping[column];
             }
-            updatePreviewTable(currentCSVData);
         }
 
-        function closeMappingModal() {
-            document.getElementById('mappingModal').classList.remove('active');
+        function cancelAnalysis() {
+            document.getElementById('analysisResults').classList.remove('active');
+            currentMapping = {};
         }
 
-        function updatePreviewTable(csvData) {
-            const table = document.getElementById('previewTable');
-            let html = '<thead><tr>';
-
-            // Add headers based on mapping
-            Object.keys(fieldMapping).forEach(field => {
-                const column = fieldMapping[field];
-                html += `<th>${field}<br><small style="font-weight: normal; color: var(--apple-gray);">(${column})</small></th>`;
-            });
-
-            html += '</tr></thead><tbody>';
-
-            // Add preview rows
-            csvData.preview_rows.forEach((row, index) => {
-                html += '<tr>';
-                Object.entries(fieldMapping).forEach(([field, column]) => {
-                    html += `<td>${row[column] || '-'}</td>`;
-                });
-                html += '</tr>';
-            });
-
-            html += '</tbody>';
-            table.innerHTML = html;
-        }
-
-        // ========== CONFIRM MAPPING ==========
-        async function confirmMapping() {
-            // Validate required fields
-            if (!fieldMapping['recipient_email']) {
-                showAlert('error', 'Recipient Email field is required');
-                return;
-            }
-
-            const btn = document.getElementById('confirmMappingBtn');
+        async function addToQueue() {
+            const btn = event.target;
             btn.disabled = true;
-            btn.innerHTML = '<span class="material-icons">hourglass_empty</span> Adding to queue...';
+            btn.innerHTML = '<span class="material-icons">hourglass_empty</span> Processing...';
 
             try {
-                // Read the entire CSV file
-                const response = await fetch('bulk_mail_backend.php?action=parse_full_csv', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        filename: currentCSVData.filename,
-                        mapping: fieldMapping
-                    })
-                });
-
-                const parseData = await response.json();
+                // Get full CSV data
+                const parseResponse = await fetch('bulk_mail_backend.php?action=parse_full_csv');
+                const parseData = await parseResponse.json();
 
                 if (!parseData.success) {
                     throw new Error(parseData.error || 'Failed to parse CSV');
                 }
 
-                // Transform CSV data based on mapping
+                // Map CSV rows to email format
                 const emails = parseData.rows.map(row => {
-                    const mapped = {};
-                    Object.entries(fieldMapping).forEach(([field, column]) => {
-                        mapped[field] = row[column] || '';
-                    });
-                    return mapped;
+                    const email = {};
+                    for (const [csvColumn, emailField] of Object.entries(currentMapping)) {
+                        email[emailField] = row[csvColumn] || '';
+                    }
+                    return email;
                 });
 
-                // Add to queue with template defaults
+                // Add to queue with attachment path
                 const addResponse = await fetch('bulk_mail_backend.php?action=add_to_queue', {
                     method: 'POST',
                     headers: {
@@ -1587,14 +1504,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
                     },
                     body: JSON.stringify({
                         emails: emails,
-                        subject: templateDefaults.subject || 'Bulk Email',
-                        article_title: templateDefaults.article_title || '',
-                        message_content: templateDefaults.message_content || '',
-                        closing_wish: templateDefaults.closing_wish || '',
-                        sender_name: templateDefaults.sender_name || '',
-                        sender_designation: templateDefaults.sender_designation || '',
-                        additional_info: templateDefaults.additional_info || '',
-                        attachment_id: templateDefaults.attachment_id || null
+                        drive_file_path: selectedAttachmentPath
                     })
                 });
 
@@ -1602,7 +1512,8 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 
                 if (data.success) {
                     showAlert('success', `Successfully added ${data.added} emails to queue`);
-                    closeMappingModal();
+                    cancelAnalysis();
+                    clearSelectedAttachment();
                     switchTab('queue');
                     loadQueue();
                 } else {
@@ -1613,7 +1524,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
                 showAlert('error', 'Failed to add emails to queue: ' + error.message);
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<span class="material-icons">check_circle</span> Add to Queue';
+                btn.innerHTML = '<span class="material-icons">add_circle</span> Add to Queue';
             }
         }
 
@@ -1664,7 +1575,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
                                                 <strong>${item.recipient_name || 'N/A'}</strong><br>
                                                 <span style="font-size: 12px; color: #666;">${item.recipient_email}</span>
                                             </td>
-                                            <td>${item.subject}</td>
+                                            <td>${item.subject || 'No Subject'}</td>
                                             <td>
                                                 <span class="status-badge status-${item.status}">
                                                     ${item.status}
@@ -1792,6 +1703,14 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             return date.toLocaleString();
         }
 
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
         function showAlert(type, message) {
             const container = document.querySelector('.container');
             const alert = document.createElement('div');
@@ -1815,9 +1734,33 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             }, 5000);
         }
 
+        // Drag and drop for CSV upload
+        const uploadZone = document.getElementById('uploadZone');
+        
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('csvFileInput').files = files;
+                handleCSVUpload({ target: { files: files } });
+            }
+        });
+
         // ========== INITIALIZATION ==========
         document.addEventListener('DOMContentLoaded', function() {
             loadQueue();
+            loadDriveFiles();
         });
     </script>
 </body>
