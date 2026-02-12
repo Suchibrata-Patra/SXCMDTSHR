@@ -1484,7 +1484,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     <div class="action-bar" id="actionBar">
         <div class="action-bar-inner">
             <div class="action-bar-info">
-                Ready to queue <strong id="actionBarCount">0</strong> emails
+                <span style="display:none;">Ready to queue <strong id="actionBarCount">0</strong> emails</span>
                 <span id="actionBarAttach" style="margin-left:8px;display:none">
                     · 📎 <span id="actionBarAttachName" style="font-size:12px;color:var(--ink-3)"></span>
                 </span>
