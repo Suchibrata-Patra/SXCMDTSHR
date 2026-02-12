@@ -13,8 +13,7 @@ require_once 'db_config.php';
 header('Content-Type: application/json');
 
 // Drive directory configuration
-define('DRIVE_DIR', '/SXCMDTSHR/File_Drive');
-
+define('DRIVE_DIR', '/home/u955994755/public_html/SXC_MDTS/File_Drive');
 // Get action from request
 $action = $_GET['action'] ?? '';
 
