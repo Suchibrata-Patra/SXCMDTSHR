@@ -1141,7 +1141,7 @@ $lastSync = getLastSyncDate($userEmail);
                         <div class="message-content">
                             <div class="message-header">
                                 <span class="message-sender" title="${escapeHtml(senderEmail)}">
-                                     ${escapeHtml(senderName)} ${senderName !== senderEmail ? '<br><span class="sender-email-hint">&lt;' + escapeHtml(senderEmail) + '&gt;</span>' : ''}
+                                    <strong>From:</strong> ${escapeHtml(senderName)} ${senderName !== senderEmail ? '<span class="sender-email-hint">&lt;' + escapeHtml(senderEmail) + '&gt;</span>' : ''}
                                 </span>
                             </div>
                             <div class="message-subject-line">
@@ -1227,7 +1227,7 @@ $lastSync = getLastSyncDate($userEmail);
                             <div class="message-view-meta">
                                 <div class="message-view-meta-item">
                                     <span class="material-icons">person</span>
-                                    <span class="message-view-meta-label"></span> ${escapeHtml(msg.sender)}
+                                    <span class="message-view-meta-label">From:</span> ${escapeHtml(msg.sender)}
                                 </div>
                                 <div class="message-view-meta-item">
                                     <span class="material-icons">schedule</span>
