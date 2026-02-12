@@ -1888,7 +1888,12 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             const hasAttach  = !!selectedAttachmentPath;
 
             document.getElementById('actionBarCount').textContent  = rowCount;
-            document.getElementById('queueBtnCount').textContent   = rowCount;
+            
+            // Safely update queue button count (element may be temporarily removed during processing)
+            const queueBtnCount = document.getElementById('queueBtnCount');
+            if (queueBtnCount) {
+                queueBtnCount.textContent = rowCount;
+            }
 
             const attachWrap = document.getElementById('actionBarAttach');
             attachWrap.style.display = hasAttach ? 'inline' : 'none';
