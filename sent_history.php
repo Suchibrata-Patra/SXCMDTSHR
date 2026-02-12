@@ -682,7 +682,7 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
         }
 
         .message-item {
-            padding: 5px 10px;
+            padding: 5px 20px;
             border-bottom: 1px solid var(--border);
             cursor: pointer;
             transition: all 0.2s;
