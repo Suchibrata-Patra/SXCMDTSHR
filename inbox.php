@@ -1,16 +1,24 @@
 <?php
 /**
  * ============================================================
- * SECURE LOGIN PAGE - OPTIMIZED & FAST
- * ============================================================
- * Features:
- * - Rate limiting & brute force protection
- * - NO email sending (activity logged directly to DB)
- * - Fast SMTP-only validation
- * - Secure session management
- * - Login activity tracking (separate from inbox)
+ * SXC MDTS - PREMIUM AUTHENTICATION INTERFACE
  * ============================================================
  */
+
+// 1. DEBUGGING (Turn off in production)
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
+// 2. DEPENDENCY CHECK
+$required_files = ['vendor/autoload.php', 'config.php', 'db_config.php', 'login_auth_helper.php'];
+foreach ($required_files as $file) {
+    if (!file_exists($file)) {
+        die("<div style='font-family:sans-serif; padding:20px; background:#fff5f5; color:#c53030; border-radius:8px;'>
+                <strong>System Error:</strong> Missing critical file: <code>$file</code>. 
+                <br>Please ensure all backend files are uploaded to the server.
+             </div>");
+    }
+}
 
 require_once 'vendor/autoload.php';
 require_once 'config.php';
@@ -43,49 +51,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $userEmail = filter_var($_POST['email'] ?? '', FILTER_SANITIZE_EMAIL);
     $userPass = $_POST['app_password'] ?? '';
     
-    // Validate input
     if (empty($userEmail) || empty($userPass)) {
         $error = "Email and password are required.";
     } else {
-        // Get client IP
         $ipAddress = getClientIP();
-        
-        // Check rate limiting
         $rateLimit = checkRateLimit($userEmail, $ipAddress);
         
         if (!$rateLimit['allowed']) {
             $blockUntilTime = strtotime($rateLimit['block_until']);
             $remainingMinutes = ceil(($blockUntilTime - time()) / 60);
-            
-            $error = "Too many failed attempts. Account temporarily locked. Please try again in $remainingMinutes minutes.";
-            $loginAttempts = $rateLimit['attempts'];
+            $error = "Too many failed attempts. Try again in $remainingMinutes minutes.";
             $blockUntil = $rateLimit['block_until'];
-            
-            error_log("SECURITY: Login blocked for $userEmail from IP $ipAddress");
         } else {
-            // Attempt SMTP authentication (FAST - no email sending)
             $authResult = authenticateWithSMTP($userEmail, $userPass);
             
             if ($authResult['success']) {
-                // ============================================================
-                // SUCCESSFUL LOGIN
-                // ============================================================
-                
-                // Clear failed attempts
                 clearFailedAttempts($userEmail, $ipAddress);
-                
-                // Create/get user in database
                 $pdo = getDatabaseConnection();
                 $userId = createUserIfNotExists($pdo, $userEmail, null);
                 
                 if (!$userId) {
-                    $error = "System error. Please contact administrator.";
-                    error_log("CRITICAL: Failed to create user for $userEmail");
+                    $error = "Database sync failed. Contact Admin.";
                 } else {
-                    // Record login activity (NO EMAIL SENT)
                     $loginActivityId = recordLoginActivity($userEmail, $userId, 'success');
-                    
-                    // Set session variables
                     $_SESSION['smtp_user'] = $userEmail;
                     $_SESSION['smtp_pass'] = $userPass;
                     $_SESSION['authenticated'] = true;
@@ -93,69 +81,40 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $_SESSION['login_time'] = time();
                     $_SESSION['ip_address'] = $ipAddress;
                     
-                    // Regenerate session ID for security
                     session_regenerate_id(true);
-                    
-                    // Create session record
                     createUserSession($userId, $loginActivityId);
-                    
-                    // Load IMAP config
                     loadImapConfigToSession($userEmail, $userPass);
                     
-                    // Check user role
                     $superAdmins = ['admin@sxccal.edu', 'hod@sxccal.edu'];
                     $_SESSION['user_role'] = in_array($userEmail, $superAdmins) ? 'super_admin' : 'user';
                     
-                    // Load user settings
-                    if (file_exists('settings_helper.php')) {
-                        require_once 'settings_helper.php';
-                    }
-                    
-                    // Success - redirect
                     header("Location: index.php");
                     exit();
                 }
             } else {
-                // ============================================================
-                // FAILED LOGIN
-                // ============================================================
-                
-                // Record failed attempt
                 recordFailedAttempt($userEmail, $ipAddress, $authResult['error']);
-                
-                // Record in login activity
                 $pdo = getDatabaseConnection();
                 $userId = getUserId($pdo, $userEmail);
                 recordLoginActivity($userEmail, $userId, 'failed', $authResult['error']);
                 
-                // Check if now blocked
                 $rateLimit = checkRateLimit($userEmail, $ipAddress);
                 $loginAttempts = $rateLimit['attempts'];
                 
                 if (!$rateLimit['allowed']) {
-                    $blockUntilTime = strtotime($rateLimit['block_until']);
-                    $remainingMinutes = ceil(($blockUntilTime - time()) / 60);
-                    $error = "Too many failed attempts. Account locked for $remainingMinutes minutes.";
+                    $blockUntil = $rateLimit['block_until'];
+                    $error = "Account locked due to multiple failures.";
                 } else {
                     $remaining = MAX_LOGIN_ATTEMPTS - $loginAttempts;
-                    $error = "Authentication failed. Please verify your credentials. ($remaining attempts remaining)";
+                    $error = "Invalid credentials. $remaining attempts left.";
                 }
-                
-                error_log("LOGIN FAILED: $userEmail from IP $ipAddress - {$authResult['error']}");
             }
         }
     }
 }
 
-/**
- * Fast SMTP authentication (NO EMAIL SENDING)
- * Only validates credentials - 10x faster than sending email
- */
 function authenticateWithSMTP($email, $password) {
     $mail = new PHPMailer(true);
-    
     try {
-        // Configure SMTP
         $mail->isSMTP();
         $mail->Host = env("SMTP_HOST");
         $mail->SMTPAuth = true;
@@ -163,65 +122,34 @@ function authenticateWithSMTP($email, $password) {
         $mail->Password = $password;
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         $mail->Port = env("SMTP_PORT");
-        $mail->Timeout = 10; // Fast timeout
-        $mail->SMTPDebug = 0; // No debug output
+        $mail->Timeout = 10;
+        $mail->SMTPDebug = 0;
         
-        // Test connection (doesn't send email)
         $mail->smtpConnect();
         $mail->smtpClose();
-        
-        return [
-            'success' => true,
-            'error' => null
-        ];
-        
+        return ['success' => true, 'error' => null];
     } catch (Exception $e) {
-        $errorMsg = $mail->ErrorInfo;
-        
-        // Categorize error
-        if (strpos($errorMsg, 'authenticate') !== false || 
-            strpos($errorMsg, 'credentials') !== false ||
-            strpos($errorMsg, 'password') !== false) {
-            $category = 'Invalid credentials';
-        } elseif (strpos($errorMsg, 'connect') !== false || 
-                  strpos($errorMsg, 'timeout') !== false) {
-            $category = 'Connection failed';
-        } else {
-            $category = 'SMTP error';
-        }
-        
-        return [
-            'success' => false,
-            'error' => $category
-        ];
+        return ['success' => false, 'error' => 'SMTP Authentication Failed'];
     }
 }
-
-?><!DOCTYPE html>
+?>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <?php
-        define('PAGE_TITLE', 'SXC MDTS | Authentication');
-        // include 'header.php'; // Keep your meta tags and title
-    ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SXC MDTS | Authentication</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
             --apple-blue: #0071e3;
             --apple-gray: #86868b;
             --apple-bg: #f5f5f7;
-            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-bg: rgba(255, 255, 255, 0.8);
             --error-red: #ff3b30;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-font-smoothing: antialiased;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -234,7 +162,6 @@ function authenticateWithSMTP($email, $password) {
             overflow: hidden;
         }
 
-        /* Subtle background gradient for depth */
         .bg-gradient {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -247,57 +174,38 @@ function authenticateWithSMTP($email, $password) {
             max-width: 400px;
             padding: 20px;
             text-align: center;
-            animation: appleReveal 1s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: appleReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         @keyframes appleReveal {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: scale(0.95) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
         }
 
-        .brand-logo {
-            width: 72px;
-            height: auto;
-            margin-bottom: 24px;
-            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.1));
-        }
+        .brand-logo { width: 80px; height: auto; margin-bottom: 20px; }
 
-        h1 {
-            font-size: 32px;
-            font-weight: 600;
-            letter-spacing: -0.5px;
-            margin-bottom: 8px;
-        }
+        h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 8px; }
 
-        .subtitle {
-            font-size: 17px;
-            color: var(--apple-gray);
-            margin-bottom: 40px;
-            font-weight: 400;
-        }
+        .subtitle { font-size: 16px; color: var(--apple-gray); margin-bottom: 32px; }
 
-        /* The Card */
         .glass-card {
             background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 22px;
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-radius: 24px;
             padding: 32px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.06);
         }
 
-        .input-wrapper {
-            position: relative;
-            margin-bottom: 16px;
-        }
+        .input-wrapper { position: relative; margin-bottom: 12px; }
 
         input {
             width: 100%;
-            padding: 18px 16px;
+            padding: 16px;
             border-radius: 12px;
             border: 1px solid #d2d2d7;
-            background: #ffffff;
+            background: rgba(255, 255, 255, 0.5);
             font-size: 17px;
             transition: all 0.2s ease;
             outline: none;
@@ -305,25 +213,21 @@ function authenticateWithSMTP($email, $password) {
 
         input:focus {
             border-color: var(--apple-blue);
+            background: #fff;
             box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1);
         }
 
-        /* Error States */
         .error-message {
-            background: rgba(255, 59, 48, 0.1);
+            background: rgba(255, 59, 48, 0.08);
             color: var(--error-red);
-            font-size: 14px;
+            font-size: 13px;
             padding: 12px;
             border-radius: 10px;
             margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            font-weight: 500;
         }
 
-        /* Button Styling */
-        button {
+        button#submitBtn {
             width: 100%;
             padding: 16px;
             border-radius: 12px;
@@ -333,30 +237,13 @@ function authenticateWithSMTP($email, $password) {
             font-size: 17px;
             font-weight: 500;
             cursor: pointer;
-            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
+            transition: all 0.2s ease;
             margin-top: 10px;
         }
 
-        button:hover {
-            opacity: 0.9;
-            transform: scale(1.01);
-        }
-
-        button:active {
-            transform: scale(0.98);
-        }
-
-        button:disabled {
-            background: #d2d2d7;
-            cursor: not-allowed;
-        }
-
-        .footer-text {
-            margin-top: 40px;
-            font-size: 12px;
-            color: var(--apple-gray);
-            line-height: 1.5;
-        }
+        button#submitBtn:hover { opacity: 0.9; transform: translateY(-1px); }
+        button#submitBtn:active { transform: scale(0.98); }
+        button#submitBtn:disabled { background: #d2d2d7; cursor: not-allowed; }
 
         .toggle-pass {
             position: absolute;
@@ -366,18 +253,12 @@ function authenticateWithSMTP($email, $password) {
             color: var(--apple-blue);
             font-size: 13px;
             cursor: pointer;
-            font-weight: 500;
-            background: none;
             border: none;
-            padding: 0;
-            width: auto;
-            margin: 0;
+            background: none;
+            font-weight: 500;
         }
 
-        .toggle-pass:hover {
-            text-decoration: underline;
-            transform: translateY(-50%);
-        }
+        .footer-text { margin-top: 32px; font-size: 12px; color: var(--apple-gray); line-height: 1.6; }
     </style>
 </head>
 <body>
@@ -385,38 +266,37 @@ function authenticateWithSMTP($email, $password) {
 
     <div class="login-container">
         <img src="Assets/image/sxc_logo.png" alt="SXC Logo" class="brand-logo">
-        <h1>SXC MDTS</h1>
-        <p class="subtitle">Sign in with your institutional ID.</p>
+        <h1>Verify Identity</h1>
+        <p class="subtitle">Use your institutional app password.</p>
 
         <div class="glass-card">
             <?php if ($error): ?>
                 <div class="error-message">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                    <?php echo htmlspecialchars($error); ?>
+                    ✕ <?php echo htmlspecialchars($error); ?>
                 </div>
             <?php endif; ?>
 
             <form method="POST" id="loginForm">
                 <div class="input-wrapper">
-                    <input type="email" name="email" placeholder="Email" required autofocus 
+                    <input type="email" name="email" placeholder="Email address" required autofocus
                     <?php echo ($blockUntil ? 'disabled' : ''); ?>>
                 </div>
 
                 <div class="input-wrapper">
-                    <input type="password" name="app_password" id="app_password" placeholder="App Password" required
+                    <input type="password" name="app_password" id="app_password" placeholder="Password" required
                     <?php echo ($blockUntil ? 'disabled' : ''); ?>>
                     <button type="button" class="toggle-pass" onclick="togglePassword()">Show</button>
                 </div>
 
                 <button type="submit" id="submitBtn" <?php echo ($blockUntil ? 'disabled' : ''); ?>>
-                    <?php echo ($blockUntil ? 'Locked' : 'Continue'); ?>
+                    <?php echo ($blockUntil ? 'Account Locked' : 'Continue'); ?>
                 </button>
             </form>
         </div>
 
         <div class="footer-text">
             St. Xavier's College (Autonomous), Kolkata <br>
-            Protected by Secure SMTP Authentication.
+            Autonomous College | NIRF 2025: 8th Position
         </div>
     </div>
 
@@ -424,20 +304,15 @@ function authenticateWithSMTP($email, $password) {
         function togglePassword() {
             const passInput = document.getElementById("app_password");
             const btn = document.querySelector(".toggle-pass");
-            if (passInput.type === "password") {
-                passInput.type = "text";
-                btn.textContent = "Hide";
-            } else {
-                passInput.type = "password";
-                btn.textContent = "Show";
-            }
+            const isPass = passInput.type === "password";
+            passInput.type = isPass ? "text" : "password";
+            btn.textContent = isPass ? "Hide" : "Show";
         }
 
-        // Apple-style button state on submit
         document.getElementById('loginForm').addEventListener('submit', function() {
             const btn = document.getElementById('submitBtn');
-            btn.style.opacity = "0.7";
-            btn.textContent = 'Verifying...';
+            btn.disabled = true;
+            btn.innerHTML = '<span style="opacity:0.6">Verifying...</span>';
         });
     </script>
 </body>
