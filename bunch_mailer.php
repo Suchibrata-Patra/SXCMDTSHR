@@ -1222,7 +1222,6 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 </head>
 
 <body>
-    <?php include 'sidebar.php'; ?>
 
     <div class="main-content">
 
