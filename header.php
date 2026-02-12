@@ -19,7 +19,7 @@ $titles = [
     // Mail Operations
     'send.php' => 'SXC MDTS | Compose Mail',
     'bulk_mail_backend.php' => 'SXC MDTS | Bulk Mail Backend',
-    'bunch_mailer.php' => 'SXC MDTS | Bunch Mailer',
+    'bunch_mailer.php' => 'Group Mail',
     'process_bulk_mail.php' => 'SXC MDTS | Processing Bulk Mail',
     'process_deletion_queue.php' => 'SXC MDTS | Processing Deletion',
     'fetch_inbox_messages.php' => 'SXC MDTS | Fetch Inbox',
