@@ -1392,7 +1392,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
                                 <!-- Segmented control -->
                                 <div class="segmented">
                                     <button class="segmented-btn active" id="segDrive" onclick="switchAttachmentTab('drive')">
-                                        <span class="material-icons-round">folder_open</span>
+                                        <span class="material-icons-round">add_to_drive</span>
                                         Drive
                                     </button>
                                     <button class="segmented-btn" id="segUpload" onclick="switchAttachmentTab('upload')">
