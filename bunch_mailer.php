@@ -1197,43 +1197,59 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 
         // ========== DRIVE FILES ==========
         async function loadDriveFiles() {
-            try {
-                const response = await fetch('bulk_mail_backend.php?action=list_drive_files');
-                const data = await response.json();
+    const container = document.getElementById('driveFilesList');
+    const loading = document.querySelector('#driveAttachmentTab .loading');
+    
+    try {
+        const response = await fetch('bulk_mail_backend.php?action=list_drive_files');
+        const data = await response.json();
 
-                const container = document.getElementById('driveFilesList');
-                const loading = document.querySelector('#driveAttachmentTab .loading');
-
-                if (data.success && data.files && data.files.length > 0) {
-                    loading.style.display = 'none';
-                    container.style.display = 'block';
-                    
-                    container.innerHTML = data.files.map(file => `
-                        <div class="drive-file-item" onclick="selectDriveFile('${file.path}', '${file.name}', '${file.formatted_size}', '${file.extension}')">
-                            <div class="drive-file-icon">${getFileIcon(file.extension)}</div>
-                            <div class="drive-file-info">
-                                <div class="drive-file-name">${file.name}</div>
-                                <div class="drive-file-size">${file.formatted_size}</div>
-                            </div>
-                            <div class="drive-file-check">
-                                <span class="material-icons" style="display: none;">check</span>
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    loading.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-state-icon">📁</div>
-                            <h3>No files in drive</h3>
-                            <p>Upload files to /SXCMDTSHR/File_Drive</p>
-                        </div>
-                    `;
-                }
-            } catch (error) {
-                console.error('Error loading drive files:', error);
-                showAlert('error', 'Failed to load drive files');
-            }
+        if (data.success && data.files && data.files.length > 0) {
+            loading.style.display = 'none';
+            container.style.display = 'block';
+            
+            container.innerHTML = data.files.map(file => `
+                <div class="drive-file-item" onclick="selectDriveFile('${file.path}', '${file.name}', '${file.formatted_size}', '${file.extension}')">
+                    <div class="drive-file-icon">${getFileIcon(file.extension)}</div>
+                    <div class="drive-file-info">
+                        <div class="drive-file-name">${file.name}</div>
+                        <div class="drive-file-size">${file.formatted_size}</div>
+                    </div>
+                    <div class="drive-file-check">
+                        <span class="material-icons" style="display: none;">check</span>
+                    </div>
+                </div>
+            `).join('');
+        } else if (data.success && (!data.files || data.files.length === 0)) {
+            // Empty folder
+            loading.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📁</div>
+                    <h3>No files in drive</h3>
+                    <p>Upload files to File_Drive folder</p>
+                </div>
+            `;
+        } else {
+            // Error from backend
+            loading.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">⚠️</div>
+                    <h3>Error loading files</h3>
+                    <p>${data.error || 'Unknown error'}</p>
+                </div>
+            `;
         }
+    } catch (error) {
+        console.error('Error loading drive files:', error);
+        loading.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">❌</div>
+                <h3>Failed to load drive files</h3>
+                <p>Check console for details</p>
+            </div>
+        `;
+    }
+}
 
         function selectDriveFile(path, name, size, extension) {
             // Remove selected class from all items
