@@ -10,7 +10,10 @@ header('Content-Type: text/html; charset=utf-8');
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Bulk Mailer System Diagnostics</title>
+    <?php
+        define('PAGE_TITLE', 'SXC MDTS | Dashboard');
+        include 'header.php';
+    ?>
     <style>
         body {
             font-family: Arial, sans-serif;

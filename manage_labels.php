@@ -53,13 +53,10 @@ $labels = getLabelCounts($userEmail);
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SXC MDTS</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    
+        <?php
+        define('PAGE_TITLE', 'SXC MDTS | Dashboard');
+        include 'header.php';
+    ?>
     <style>
         :root {
             --primary-white: #ffffff;

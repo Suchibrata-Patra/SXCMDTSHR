@@ -35,7 +35,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SXC MDTS</title>
+    <?php
+        define('PAGE_TITLE', 'SXC MDTS | Dashboard');
+        include 'header.php';
+    ?>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #eaeff2; margin: 0; padding: 20px; }
         .container { max-width: 800px; margin: 0 auto; }
