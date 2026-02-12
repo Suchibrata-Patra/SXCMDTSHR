@@ -153,7 +153,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
 
     /* ========== SECTION DIVIDER ========== */
     .nav-section-divider {
-        height: 5px;
+        height: 1rem;
     }
 
     /* ========== LABELS SECTION ========== */
