@@ -1320,7 +1320,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         <div class="page-header">
             <div class="header-container">
                 <div class="header-left">
-                    <h1>📧 Mailmerge</h1>
+                    <h1>Mailmerge</h1>
                     <p>Upload CSV and send personalized emails to multiple recipients</p>
                 </div>
                 <div class="header-stats">
