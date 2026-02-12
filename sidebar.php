@@ -411,6 +411,10 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
             <span class="material-icons">mail</span>
             <span>Inbox</span>
         </a>
+        <a href="drive.php" class="nav-item <?= ($current_page == 'drive') ? 'active' : ''; ?>">
+            <span class="material-icons">drive_export</span>
+            <span>Drive</span>
+        </a>
         <a href="#" class="nav-item <?= ($current_page == 'send') ? 'active' : ''; ?>">
             <span class="material-icons">info</span>
             <span>Delivery Status</span>
