@@ -2030,42 +2030,112 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             const progressText     = document.getElementById('progressText');
             const pending          = parseInt(document.getElementById('stat-pending').textContent);
 
-            if (pending === 0) { showAlert('error', 'No pending emails'); return; }
+            if (pending === 0) { showAlert('error', 'No pending emails in queue'); return; }
 
+            // Disable button and show progress card
             btn.disabled = true;
+            btn.innerHTML = '<span class="material-icons-round">pause_circle</span> Processing...';
             progressCard.classList.add('active');
 
             let processed = 0, success = 0, failed = 0;
+            let failedRecipients = [];
+            let continueProcessing = true;
 
-            for (let i = 0; i < pending; i++) {
+            // Process emails one by one with real-time progress
+            while (continueProcessing) {
                 try {
                     const resp = await fetch('process_bulk_mail.php?action=process', { method: 'POST' });
                     const data = await resp.json();
 
                     if (data.success) {
-                        data.email_sent ? success++ : failed++;
-                    } else {
-                        failed++;
-                    }
-                } catch { failed++; }
+                        if (data.no_more) {
+                            // No more emails to process
+                            continueProcessing = false;
+                            break;
+                        }
 
-                processed++;
-                progressFill.style.width = (processed / pending * 100) + '%';
-                progressText.textContent = `Processing ${processed}/${pending} · ${success} sent, ${failed} failed`;
-                await loadQueue();
-                await new Promise(r => setTimeout(r, 500));
+                        processed++;
+
+                        if (data.email_sent) {
+                            success++;
+                            console.log(`✓ Email sent to: ${data.recipient}`);
+                        } else {
+                            failed++;
+                            failedRecipients.push({
+                                email: data.recipient,
+                                error: data.error || 'Unknown error'
+                            });
+                            console.error(`✗ Failed to send to: ${data.recipient} - ${data.error}`);
+                        }
+
+                        // Update progress bar IMMEDIATELY after each email
+                        const percentage = Math.round((processed / pending) * 100);
+                        progressFill.style.width = percentage + '%';
+                        progressText.textContent = `Processing ${processed}/${pending} (${percentage}%) · ${success} sent, ${failed} failed`;
+
+                        // Update stats in real-time
+                        await loadQueue();
+
+                    } else {
+                        // Error in processing
+                        console.error('Processing error:', data.error);
+                        showAlert('error', 'Error: ' + data.error);
+                        continueProcessing = false;
+                        break;
+                    }
+
+                    // Small delay to prevent overwhelming the server (250ms between sends)
+                    await new Promise(r => setTimeout(r, 250));
+
+                } catch (error) {
+                    console.error('Network error:', error);
+                    failed++;
+                    processed++;
+                    
+                    // Update progress even on error
+                    const percentage = Math.round((processed / pending) * 100);
+                    progressFill.style.width = percentage + '%';
+                    progressText.textContent = `Processing ${processed}/${pending} (${percentage}%) · ${success} sent, ${failed} failed`;
+                    
+                    // Continue to next email after network error
+                    await new Promise(r => setTimeout(r, 250));
+                }
             }
 
-            progressText.textContent = `Done — ${success} sent, ${failed} failed`;
+            // COMPLETION - Show final status
+            progressFill.style.width = '100%';
+            progressText.textContent = `Completed — ${success} sent successfully, ${failed} failed`;
+            
+            // Re-enable button
             btn.disabled = false;
+            btn.innerHTML = '<span class="material-icons-round">send</span> Process Queue';
 
+            // Hide progress card after 5 seconds
             setTimeout(() => {
                 progressCard.classList.remove('active');
                 progressFill.style.width = '0%';
-            }, 3000);
+            }, 5000);
 
-            showAlert(failed > 0 ? 'info' : 'success',
-                failed > 0
+            // Show completion alert
+            if (failed === 0) {
+                showAlert('success', `All ${success} emails sent successfully! 🎉`);
+            } else if (success === 0) {
+                showAlert('error', `All ${failed} emails failed to send. Check error messages in the queue.`);
+            } else {
+                showAlert('info', `Sent ${success} emails. ${failed} failed. Check queue for details.`);
+            }
+
+            // Log failed emails to console for debugging
+            if (failedRecipients.length > 0) {
+                console.group('Failed Recipients');
+                failedRecipients.forEach(({email, error}) => {
+                    console.error(`${email}: ${error}`);
+                });
+                console.groupEnd();
+            }
+
+            // Final queue reload
+            await loadQueue();
                     ? `Sent ${success}, failed ${failed}`
                     : `All ${success} emails sent successfully`
             );

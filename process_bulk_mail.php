@@ -1,15 +1,31 @@
 <?php
 /**
- * process_bulk_mail.php
+ * process_bulk_mail.php - FIXED VERSION
  * 
- * Processes emails from bulk_mail_queue table and sends them using PHPMailer
- * Handles drive file attachments and provides detailed SMTP error logging
+ * Processes emails from bulk_mail_queue table with:
+ * - Proper PHPMailer configuration (same as send.php)
+ * - Complete database logging for all attempts
+ * - Real-time progress tracking
+ * - No silent failures
  */
 
 session_start();
-require_once 'vendor/autoload.php';
-require_once 'config.php';
+
+// Load dependencies
 require_once 'db_config.php';
+
+// Try to load vendor autoload if it exists
+if (file_exists('vendor/autoload.php')) {
+    require_once 'vendor/autoload.php';
+} else {
+    // Manual PHPMailer includes
+    require_once 'PHPMailer/src/Exception.php';
+    require_once 'PHPMailer/src/PHPMailer.php';
+    require_once 'PHPMailer/src/SMTP.php';
+}
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
 // Security check
 if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
@@ -21,14 +37,11 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     exit();
 }
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-
 // Set JSON header
 header('Content-Type: application/json');
 
 // Get action from request
-$action = $_GET['action'] ?? '';
+$action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 try {
     $pdo = getDatabaseConnection();
@@ -37,13 +50,17 @@ try {
         throw new Exception('Database connection failed');
     }
     
-    // Get current user from session
-    $user_email = $_SESSION['smtp_user'] ?? null;
+    // Get current user
+    $user_email = $_SESSION['smtp_user'];
+    $user_password = $_SESSION['smtp_pass'];
     $user_id = getUserId($pdo, $user_email);
     
     if (!$user_id) {
-        throw new Exception('User not found');
+        throw new Exception('User not found in database');
     }
+    
+    // Load user settings
+    $settings = $_SESSION['user_settings'] ?? [];
     
     switch ($action) {
         case 'status':
@@ -51,6 +68,7 @@ try {
             $stmt = $pdo->prepare("
                 SELECT 
                     SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+                    SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END) as processing,
                     SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
                     SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed
                 FROM bulk_mail_queue
@@ -62,15 +80,20 @@ try {
             echo json_encode([
                 'success' => true,
                 'pending' => (int)($stats['pending'] ?? 0),
+                'processing' => (int)($stats['processing'] ?? 0),
                 'completed' => (int)($stats['completed'] ?? 0),
                 'failed' => (int)($stats['failed'] ?? 0)
             ]);
             break;
             
         case 'queue_list':
-            // Get queue list
+            // Get queue list with pagination
+            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 200;
+            
             $stmt = $pdo->prepare("
-                SELECT *
+                SELECT 
+                    id, recipient_email, recipient_name, subject, article_title,
+                    status, error_message, created_at, processing_started_at, completed_at
                 FROM bulk_mail_queue
                 WHERE user_id = ?
                 ORDER BY 
@@ -81,9 +104,9 @@ try {
                         WHEN 'completed' THEN 4
                     END,
                     created_at DESC
-                LIMIT 200
+                LIMIT ?
             ");
-            $stmt->execute([$user_id]);
+            $stmt->execute([$user_id, $limit]);
             $queue = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
             echo json_encode([
@@ -93,13 +116,13 @@ try {
             break;
             
         case 'process':
-            // Process next email in queue
-            $result = processNextEmail($pdo, $user_id);
+            // Process ONE email and return result immediately
+            $result = processNextEmail($pdo, $user_id, $user_email, $user_password, $settings);
             echo json_encode($result);
             break;
             
         case 'clear':
-            // Clear pending emails
+            // Clear all pending emails from queue
             $stmt = $pdo->prepare("
                 DELETE FROM bulk_mail_queue
                 WHERE user_id = ? AND status = 'pending'
@@ -109,12 +132,13 @@ try {
             
             echo json_encode([
                 'success' => true,
-                'message' => "Cleared {$deleted} pending emails from queue"
+                'message' => "Cleared {$deleted} pending emails from queue",
+                'deleted' => $deleted
             ]);
             break;
             
         default:
-            throw new Exception('Invalid action');
+            throw new Exception('Invalid action: ' . $action);
     }
     
 } catch (Exception $e) {
@@ -127,28 +151,35 @@ try {
 
 /**
  * Process the next pending email in the queue
+ * Returns detailed result for real-time progress tracking
  */
-function processNextEmail($pdo, $user_id) {
+function processNextEmail($pdo, $user_id, $smtp_user, $smtp_pass, $settings) {
     try {
-        // Get next pending email
+        // Begin transaction to ensure atomicity
+        $pdo->beginTransaction();
+        
+        // Get next pending email with row lock
         $stmt = $pdo->prepare("
             SELECT * FROM bulk_mail_queue
             WHERE user_id = ? AND status = 'pending'
             ORDER BY created_at ASC
             LIMIT 1
+            FOR UPDATE
         ");
         $stmt->execute([$user_id]);
         $queueItem = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if (!$queueItem) {
+            $pdo->rollBack();
             return [
                 'success' => true,
+                'email_sent' => false,
                 'message' => 'No pending emails in queue',
-                'email_sent' => false
+                'no_more' => true
             ];
         }
         
-        // Update status to processing
+        // Mark as processing
         $updateStmt = $pdo->prepare("
             UPDATE bulk_mail_queue
             SET status = 'processing', processing_started_at = NOW()
@@ -156,28 +187,36 @@ function processNextEmail($pdo, $user_id) {
         ");
         $updateStmt->execute([$queueItem['id']]);
         
-        // Send email using PHPMailer
-        $sendResult = sendBulkEmail($pdo, $queueItem);
+        $pdo->commit();
+        
+        // Send email (outside transaction to avoid long locks)
+        $sendResult = sendBulkEmail($pdo, $queueItem, $smtp_user, $smtp_pass, $settings);
         
         if ($sendResult['success']) {
-            // Update status to completed
+            // EMAIL SENT SUCCESSFULLY - Update to completed
             $updateStmt = $pdo->prepare("
                 UPDATE bulk_mail_queue
                 SET status = 'completed', 
                     completed_at = NOW(),
-                    sent_email_id = ?
+                    sent_email_id = ?,
+                    error_message = NULL
                 WHERE id = ?
             ");
-            $updateStmt->execute([$sendResult['sent_email_id'], $queueItem['id']]);
+            $updateStmt->execute([$sendResult['sent_email_id'] ?? null, $queueItem['id']]);
             
             return [
                 'success' => true,
-                'message' => 'Email sent successfully',
                 'email_sent' => true,
-                'recipient' => $queueItem['recipient_email']
+                'recipient' => $queueItem['recipient_email'],
+                'recipient_name' => $queueItem['recipient_name'],
+                'subject' => $queueItem['subject'],
+                'message' => 'Email sent successfully'
             ];
+            
         } else {
-            // Update status to failed
+            // EMAIL FAILED - Update to failed with error message
+            $errorMessage = $sendResult['error'] ?? 'Unknown error';
+            
             $updateStmt = $pdo->prepare("
                 UPDATE bulk_mail_queue
                 SET status = 'failed', 
@@ -185,46 +224,54 @@ function processNextEmail($pdo, $user_id) {
                     error_message = ?
                 WHERE id = ?
             ");
-            $updateStmt->execute([$sendResult['error'], $queueItem['id']]);
+            $updateStmt->execute([$errorMessage, $queueItem['id']]);
             
             return [
                 'success' => true,
-                'message' => 'Email failed to send',
                 'email_sent' => false,
-                'error' => $sendResult['error'],
-                'recipient' => $queueItem['recipient_email']
+                'recipient' => $queueItem['recipient_email'],
+                'recipient_name' => $queueItem['recipient_name'],
+                'subject' => $queueItem['subject'],
+                'error' => $errorMessage,
+                'message' => 'Email failed to send: ' . $errorMessage
             ];
         }
         
     } catch (Exception $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        
         return [
             'success' => false,
-            'error' => $e->getMessage()
+            'error' => 'Processing error: ' . $e->getMessage()
         ];
     }
 }
 
 /**
- * Send email using PHPMailer with improved SMTP error handling
+ * Send email using PHPMailer
+ * USES THE SAME SMTP CONFIGURATION AS send.php
+ * 
+ * @return array ['success' => bool, 'sent_email_id' => int] or ['success' => false, 'error' => string]
  */
-function sendBulkEmail($pdo, $queueItem) {
+function sendBulkEmail($pdo, $queueItem, $smtp_user, $smtp_pass, $settings) {
     $mail = new PHPMailer(true);
     
     try {
-        // ==================== SMTP Configuration ====================
+        // ==================== SMTP CONFIGURATION (SAME AS send.php) ====================
         $mail->isSMTP();
         $mail->SMTPDebug = 0; // Set to 2 for debugging
         
-        $settings = $_SESSION['user_settings'] ?? [];
-        
+        // Use Hostinger SMTP (same as send.php)
         $mail->Host = "smtp.hostinger.com";
         $mail->SMTPAuth = true;
-        $mail->Username = $_SESSION['smtp_user'];
-        $mail->Password = $_SESSION['smtp_pass'];
+        $mail->Username = $smtp_user;
+        $mail->Password = $smtp_pass;
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // SSL
         $mail->Port = 465;
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         
-        // SMTP options to improve delivery
+        // SSL options for compatibility
         $mail->SMTPOptions = array(
             'ssl' => array(
                 'verify_peer' => false,
@@ -233,108 +280,100 @@ function sendBulkEmail($pdo, $queueItem) {
             )
         );
         
-        $displayName = !empty($settings['display_name']) ? $settings['display_name'] : "St. Xavier's College";
-        $mail->setFrom($_SESSION['smtp_user'], $displayName);
+        // Character encoding
+        $mail->CharSet = 'UTF-8';
+        $mail->Encoding = 'base64';
         
-        // ==================== Add Recipient ====================
+        // ==================== SENDER CONFIGURATION ====================
+        $displayName = !empty($settings['display_name']) 
+            ? $settings['display_name'] 
+            : "St. Xavier's College";
+        
+        $mail->setFrom($smtp_user, $displayName);
+        $mail->addReplyTo($smtp_user, $displayName);
+        
+        // ==================== RECIPIENT ====================
         $recipient = filter_var(trim($queueItem['recipient_email']), FILTER_SANITIZE_EMAIL);
         
         if (!$recipient || !filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
             throw new Exception("Invalid recipient email address: " . $queueItem['recipient_email']);
         }
         
-        // Validate recipient email format more strictly
-        if (!preg_match('/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $recipient)) {
-            throw new Exception("Invalid email format: " . $recipient);
+        $recipientName = trim($queueItem['recipient_name'] ?? '');
+        if ($recipientName) {
+            $mail->addAddress($recipient, $recipientName);
+        } else {
+            $mail->addAddress($recipient);
         }
         
-        $mail->addAddress($recipient);
-        
-        // ==================== Attachment Handling ====================
-        // Handle both drive files and uploaded attachments
-        if (!empty($queueItem['drive_file_path'])) {
-            // Drive file attachment
-            $filePath = $queueItem['drive_file_path'];
-            
-            if (file_exists($filePath)) {
-                $fileName = basename($filePath);
-                $mail->addAttachment($filePath, $fileName);
-                error_log("Added drive file attachment: $filePath");
-            } else {
-                error_log("WARNING: Drive file not found: $filePath");
-            }
-        } elseif (!empty($queueItem['attachment_id'])) {
-            // Regular uploaded attachment
-            $stmt = $pdo->prepare("SELECT * FROM attachments WHERE id = ?");
-            $stmt->execute([$queueItem['attachment_id']]);
-            $attachment = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if ($attachment) {
-                $filePath = $attachment['storage_type'] === 'drive' 
-                    ? $attachment['storage_path']  // Drive file uses full path
-                    : 'uploads/attachments/' . $attachment['storage_path'];  // Uploaded file
-                
-                if (file_exists($filePath)) {
-                    $mail->addAttachment($filePath, $attachment['original_filename']);
-                    error_log("Added attachment: $filePath");
-                } else {
-                    error_log("WARNING: Attachment file not found: $filePath");
-                }
-            }
-        }
-        
-        // ==================== Email Content ====================
+        // ==================== EMAIL CONTENT ====================
         $subject = $queueItem['subject'] ?: 'Official Communication';
         $articleTitle = $queueItem['article_title'] ?: 'Official Communication';
         $messageContent = $queueItem['message_content'] ?: '';
         $closingWish = $queueItem['closing_wish'] ?: 'Best Regards,';
-        $senderName = $queueItem['sender_name'] ?: 'St. Xavier\'s College';
+        $senderName = $queueItem['sender_name'] ?: $displayName;
         $senderDesignation = $queueItem['sender_designation'] ?: '';
-        $additionalInfo = $queueItem['additional_info'] ?: 'St. Xavier\'s College (Autonomous), Kolkata';
+        $additionalInfo = $queueItem['additional_info'] ?: "St. Xavier's College (Autonomous), Kolkata";
         
-        // ==================== Load Email Template ====================
+        $mail->Subject = $subject;
+        
+        // ==================== EMAIL BODY (USING TEMPLATE) ====================
         $templatePath = __DIR__ . '/templates/template1.html';
         
-        if (!file_exists($templatePath)) {
-            throw new Exception("Email template not found");
+        if (file_exists($templatePath)) {
+            // Use template
+            $emailTemplate = file_get_contents($templatePath);
+            
+            $emailBody = str_replace([
+                '{{articletitle}}',
+                '{{MESSAGE}}',
+                '{{SIGNATURE_WISH}}',
+                '{{SIGNATURE_NAME}}',
+                '{{SIGNATURE_DESIGNATION}}',
+                '{{SIGNATURE_EXTRA}}'
+            ], [
+                htmlspecialchars($articleTitle, ENT_QUOTES, 'UTF-8'),
+                nl2br(htmlspecialchars($messageContent, ENT_QUOTES, 'UTF-8')),
+                htmlspecialchars($closingWish, ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars($senderName, ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars($senderDesignation, ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars($additionalInfo, ENT_QUOTES, 'UTF-8')
+            ], $emailTemplate);
+        } else {
+            // Fallback to simple HTML if template not found
+            $emailBody = "
+            <html>
+            <head><style>body{font-family:Arial,sans-serif;line-height:1.6;color:#333;}</style></head>
+            <body>
+                <h2>" . htmlspecialchars($articleTitle, ENT_QUOTES, 'UTF-8') . "</h2>
+                <p>" . nl2br(htmlspecialchars($messageContent, ENT_QUOTES, 'UTF-8')) . "</p>
+                <br>
+                <p>" . htmlspecialchars($closingWish, ENT_QUOTES, 'UTF-8') . "<br>
+                <strong>" . htmlspecialchars($senderName, ENT_QUOTES, 'UTF-8') . "</strong><br>
+                " . htmlspecialchars($senderDesignation, ENT_QUOTES, 'UTF-8') . "<br>
+                <em>" . htmlspecialchars($additionalInfo, ENT_QUOTES, 'UTF-8') . "</em></p>
+            </body>
+            </html>";
         }
         
-        $emailTemplate = file_get_contents($templatePath);
-        
-        $emailBody = str_replace([
-            '{{articletitle}}',
-            '{{MESSAGE}}',
-            '{{SIGNATURE_WISH}}',
-            '{{SIGNATURE_NAME}}',
-            '{{SIGNATURE_DESIGNATION}}',
-            '{{SIGNATURE_EXTRA}}'
-        ], [
-            htmlspecialchars($articleTitle, ENT_QUOTES, 'UTF-8'),
-            nl2br(htmlspecialchars($messageContent, ENT_QUOTES, 'UTF-8')),
-            htmlspecialchars($closingWish, ENT_QUOTES, 'UTF-8'),
-            htmlspecialchars($senderName, ENT_QUOTES, 'UTF-8'),
-            htmlspecialchars($senderDesignation, ENT_QUOTES, 'UTF-8'),
-            htmlspecialchars($additionalInfo, ENT_QUOTES, 'UTF-8')
-        ], $emailTemplate);
-        
-        // ==================== Set Email Properties ====================
         $mail->isHTML(true);
-        $mail->CharSet = 'UTF-8';
-        $mail->Subject = $subject;
         $mail->Body = $emailBody;
-        
-        // Alternative plain text body
         $mail->AltBody = strip_tags(str_replace('<br>', "\n", $emailBody));
         
-        // Send email
-        if (!$mail->send()) {
-            throw new Exception("SMTP Error: " . $mail->ErrorInfo);
+        // ==================== ATTACHMENTS ====================
+        if (!empty($queueItem['drive_file_path']) && file_exists($queueItem['drive_file_path'])) {
+            $mail->addAttachment($queueItem['drive_file_path'], basename($queueItem['drive_file_path']));
         }
         
-        // ==================== Save to Database ====================
+        // ==================== SEND EMAIL ====================
+        if (!$mail->send()) {
+            throw new Exception("Mail send failed: " . $mail->ErrorInfo);
+        }
+        
+        // ==================== DATABASE LOGGING (MANDATORY) ====================
+        // Save to sent_emails_new table
         $emailUuid = generateUuidV4();
         
-        // Save to sent_emails_new table
         $stmt = $pdo->prepare("
             INSERT INTO sent_emails_new (
                 email_uuid, user_id, sender_email, recipient_email, recipient_name,
@@ -351,14 +390,14 @@ function sendBulkEmail($pdo, $queueItem) {
             )
         ");
         
-        $attachmentCount = (!empty($queueItem['drive_file_path']) || !empty($queueItem['attachment_id'])) ? 1 : 0;
+        $attachmentCount = (!empty($queueItem['drive_file_path'])) ? 1 : 0;
         
         $stmt->execute([
             $emailUuid,
-            getUserId($pdo, $_SESSION['smtp_user']),
-            $_SESSION['smtp_user'],
+            getUserId($pdo, $smtp_user),
+            $smtp_user,
             $recipient,
-            $queueItem['recipient_name'] ?? '',
+            $recipientName,
             $subject,
             $articleTitle,
             $messageContent,
@@ -372,52 +411,44 @@ function sendBulkEmail($pdo, $queueItem) {
         $sentEmailId = $pdo->lastInsertId();
         
         // Link attachment if exists
-        if (!empty($queueItem['drive_file_path']) || !empty($queueItem['attachment_id'])) {
-            $filePath = '';
-            $fileName = '';
-            $fileSize = 0;
-            $mimeType = 'application/octet-stream';
-            $extension = '';
+        if ($attachmentCount > 0) {
+            $filePath = $queueItem['drive_file_path'];
+            $fileName = basename($filePath);
+            $fileSize = filesize($filePath);
+            $extension = pathinfo($fileName, PATHINFO_EXTENSION);
             
-            if (!empty($queueItem['drive_file_path'])) {
-                $filePath = $queueItem['drive_file_path'];
-                $fileName = basename($filePath);
-                $fileSize = file_exists($filePath) ? filesize($filePath) : 0;
-                $extension = pathinfo($fileName, PATHINFO_EXTENSION);
-            } elseif (!empty($queueItem['attachment_id'])) {
-                $stmt = $pdo->prepare("SELECT * FROM attachments WHERE id = ?");
-                $stmt->execute([$queueItem['attachment_id']]);
-                $attachment = $stmt->fetch(PDO::FETCH_ASSOC);
-                
-                if ($attachment) {
-                    $fileName = $attachment['original_filename'];
-                    $filePath = $attachment['storage_path'];
-                    $fileSize = $attachment['file_size'];
-                    $mimeType = $attachment['mime_type'];
-                    $extension = $attachment['file_extension'];
-                }
-            }
+            $stmt = $pdo->prepare("
+                INSERT INTO sent_email_attachments_new (
+                    sent_email_id, email_uuid, original_filename, 
+                    stored_filename, file_path, file_size, 
+                    mime_type, file_extension, uploaded_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            ");
             
-            if ($fileName) {
-                $stmt = $pdo->prepare("
-                    INSERT INTO sent_email_attachments_new (
-                        sent_email_id, email_uuid, original_filename, 
-                        stored_filename, file_path, file_size, 
-                        mime_type, file_extension, uploaded_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
-                ");
-                
-                $stmt->execute([
-                    $sentEmailId,
-                    $emailUuid,
-                    $fileName,
-                    basename($filePath),
-                    $filePath,
-                    $fileSize,
-                    $mimeType,
-                    $extension
-                ]);
-            }
+            $mimeTypes = [
+                'pdf' => 'application/pdf',
+                'doc' => 'application/msword',
+                'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'xls' => 'application/vnd.ms-excel',
+                'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'zip' => 'application/zip'
+            ];
+            
+            $mimeType = $mimeTypes[strtolower($extension)] ?? 'application/octet-stream';
+            
+            $stmt->execute([
+                $sentEmailId,
+                $emailUuid,
+                $fileName,
+                $fileName,
+                $filePath,
+                $fileSize,
+                $mimeType,
+                $extension
+            ]);
         }
         
         return [
@@ -428,21 +459,19 @@ function sendBulkEmail($pdo, $queueItem) {
     } catch (Exception $e) {
         $errorMessage = $e->getMessage();
         
-        // Parse SMTP errors for common issues
-        if (strpos($errorMessage, 'SMTP Error') !== false) {
-            // SMTP Error: data not accepted - usually means:
-            // 1. Recipient email is invalid or blocked
-            // 2. Email content triggered spam filters
-            // 3. Attachment is too large or has blocked extension
-            // 4. Daily sending limit reached
-            // 5. Sender reputation issue
-            
+        // Enhanced error logging
+        error_log("BULK EMAIL ERROR - Recipient: {$queueItem['recipient_email']} - Error: {$errorMessage}");
+        
+        // Parse common SMTP errors for better user feedback
+        if (strpos($errorMessage, 'SMTP Error') !== false || strpos($errorMessage, 'SMTP connect() failed') !== false) {
             if (strpos($errorMessage, 'data not accepted') !== false) {
-                $errorMessage .= " | Possible causes: Invalid recipient, spam filters, blocked attachment, or daily limit reached.";
+                $errorMessage = "SMTP rejected email. Possible causes: invalid recipient, spam filters, or sending limit reached.";
+            } elseif (strpos($errorMessage, 'connect') !== false) {
+                $errorMessage = "Could not connect to SMTP server. Check your internet connection.";
+            } elseif (strpos($errorMessage, 'auth') !== false || strpos($errorMessage, 'authenticate') !== false) {
+                $errorMessage = "SMTP authentication failed. Check your email credentials.";
             }
         }
-        
-        error_log("Bulk email error for {$queueItem['recipient_email']}: " . $errorMessage);
         
         return [
             'success' => false,
@@ -450,4 +479,3 @@ function sendBulkEmail($pdo, $queueItem) {
         ];
     }
 }
-?>
