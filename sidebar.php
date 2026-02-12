@@ -374,7 +374,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
     <!-- ========== HEADER / LOGO ========== -->
     <div class="sidebar-header">
         <a href="index.php" class="logo">
-            <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg"
+            <img src="#"
                 alt="SXC Logo"
                 class="logo-image">
             <div class="logo-text">
