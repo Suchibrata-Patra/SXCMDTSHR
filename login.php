@@ -511,7 +511,7 @@ function authenticateWithSMTP($email, $password) {
                 <!-- St. Xavier's College (Autonomous), Kolkata<br>
                 Mail Delivery & Tracking System v2.0 -->
                 <br>
-                <span>Made with ♥︎ by SXC MDTS Students</span>
+                <span>Made with ❤️ by SXC MDTS Students</span>
             </footer>
         </div>
     </div>
