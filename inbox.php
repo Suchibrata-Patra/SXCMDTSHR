@@ -512,14 +512,22 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .message-sender {
-            font-weight: 600;
+            font-weight: 500;
             color: #1c1c1e;
-            font-size: 14px;
+            font-size: 13px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             flex: 1;
             min-width: 0;
+        }
+
+        .message-sender strong,
+        .message-subject strong,
+        .message-preview strong {
+            font-weight: 600;
+            color: var(--apple-gray);
+            margin-right: 4px;
         }
 
         .message-date {
@@ -562,6 +570,22 @@ $lastSync = getLastSyncDate($userEmail);
             overflow: hidden;
             line-height: 1.5;
             margin-bottom: 4px;
+        }
+
+        .message-footer {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        .message-id-badge {
+            font-size: 10px;
+            color: var(--apple-gray);
+            background: var(--apple-bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 500;
         }
 
         .message-badges {
@@ -1060,7 +1084,14 @@ $lastSync = getLastSyncDate($userEmail);
                 if (msg.is_new == 1) classes.push('new');
                 if (msg.id == currentMessageId) classes.push('selected');
 
-                const preview = msg.body ? msg.body.substring(0, 120) : '';
+                // Extract first 150 characters for preview
+                const preview = msg.body ? msg.body.substring(0, 150) : 'No preview available';
+                
+                // Format sender - extract just name or email
+                const senderDisplay = msg.sender || 'Unknown Sender';
+                
+                // Get subject or use default
+                const subjectDisplay = msg.subject || '(No Subject)';
 
                 return `
                     <div class="${classes.join(' ')}" onclick="viewMessage(${msg.id}, event)" data-message-id="${msg.id}">
@@ -1074,15 +1105,26 @@ $lastSync = getLastSyncDate($userEmail);
 
                         <div class="message-content">
                             <div class="message-header">
-                                <span class="message-sender">${escapeHtml(msg.sender)}</span>
-                                <span class="message-date">${formatDate(msg.received_date)}</span>
+                                <span class="message-sender" title="${escapeHtml(senderDisplay)}">
+                                    <strong>From:</strong> ${escapeHtml(senderDisplay)}
+                                </span>
+                                <span class="message-date" title="${formatDateLong(msg.received_date)}">
+                                    ${formatDate(msg.received_date)}
+                                </span>
                             </div>
                             <div class="message-subject-line">
-                                <span class="message-subject">${escapeHtml(msg.subject)}</span>
-                                ${msg.has_attachments == 1 ? '<span class="inline-attachment-icon material-icons">attach_file</span>' : ''}
+                                <span class="message-subject" title="${escapeHtml(subjectDisplay)}">
+                                    <strong>Subject:</strong> ${escapeHtml(subjectDisplay)}
+                                </span>
+                                ${msg.has_attachments == 1 ? '<span class="inline-attachment-icon material-icons" title="Has attachments">attach_file</span>' : ''}
                             </div>
-                            <div class="message-preview">${escapeHtml(preview)}</div>
-                            ${msg.is_new == 1 ? '<span class="badge badge-new-inline">NEW</span>' : ''}
+                            <div class="message-preview" title="${escapeHtml(preview)}">
+                                <strong>Preview:</strong> ${escapeHtml(preview)}${msg.body && msg.body.length > 150 ? '...' : ''}
+                            </div>
+                            <div class="message-footer">
+                                ${msg.is_new == 1 ? '<span class="badge badge-new-inline">NEW</span>' : ''}
+                                <span class="message-id-badge" title="Message ID: ${msg.id}">ID: ${msg.id}</span>
+                            </div>
                         </div>
                     </div>
                 `;
