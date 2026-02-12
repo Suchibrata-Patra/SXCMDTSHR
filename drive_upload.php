@@ -52,7 +52,7 @@ header('Expires: 0');
 </head>
 <body>
     <div class="box">
-        <h1>🚧 Under Development</h1>
+        <h1>Under Development</h1>
         <p>We’ll be back soon.</p>
     </div>
 </body>
