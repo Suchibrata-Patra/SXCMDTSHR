@@ -413,7 +413,7 @@ function authenticateWithSMTP($email, $password) {
 
         /* Footer */
         footer {
-            margin-top: 30px;
+            margin-top: 10px;
             padding-top: 20px;
             border-top: 1px solid #f0f0f0;
             font-size: 0.7rem;
