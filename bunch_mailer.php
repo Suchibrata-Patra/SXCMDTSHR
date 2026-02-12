@@ -101,7 +101,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 
         .stat-item {
             text-align: center;
-            padding: 8px 16px;
+            padding: 4px 10px;
             background: var(--apple-bg);
             border-radius: 8px;
         }
