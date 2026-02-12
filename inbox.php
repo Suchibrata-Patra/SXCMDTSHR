@@ -683,9 +683,20 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .message-meta {
-            display: inline-flex;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
             align-items: center;
-            gap: 6px;
+            padding-top: 2px;
+        }
+
+        .message-right-meta {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding-top: 2px;
+            flex-shrink: 0;
         }
 
         .unread-dot {
@@ -1100,7 +1111,6 @@ $lastSync = getLastSyncDate($userEmail);
                                   onclick="toggleStar(${msg.id}, event)">
                                 ${msg.is_starred == 1 ? 'star' : 'star_border'}
                             </span>
-                            ${msg.is_read == 0 ? '<span class="unread-dot"></span>' : ''}
                         </span>
 
                         <div class="message-content">
@@ -1123,8 +1133,12 @@ $lastSync = getLastSyncDate($userEmail);
                             </div>
                             <div class="message-footer">
                                 ${msg.is_new == 1 ? '<span class="badge badge-new-inline">NEW</span>' : ''}
-                                <span class="message-id-badge" title="Message ID: ${msg.id}">ID: ${msg.id}</span>
                             </div>
+                        </div>
+                        
+                        <div class="message-right-meta">
+                            ${msg.is_read == 0 ? '<span class="unread-dot"></span>' : ''}
+                            <span class="message-id-badge" title="Message ID: ${msg.id}">ID: ${msg.id}</span>
                         </div>
                     </div>
                 `;
