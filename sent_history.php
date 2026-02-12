@@ -788,7 +788,7 @@ $labels = getLabelCountsForSent($userEmail) ?? [];
 
         /* ========== SEARCH HIGHLIGHT ========== */
         .search-highlight {
-            background-color: #ffeb3b;
+            background-color: #f4cccc;
             color: #000;
             padding: 2px 0;
             border-radius: 2px;
