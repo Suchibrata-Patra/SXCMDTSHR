@@ -563,11 +563,12 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         .analysis-results {
             background: white;
             border-radius: 16px;
-            padding: 32px;
+            padding: 0;
             margin-top: 24px;
             border: 1px solid var(--border);
             box-shadow: var(--card-shadow);
             display: none;
+            overflow: hidden;
         }
 
         .analysis-results.active {
@@ -578,9 +579,9 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 24px;
-            padding-bottom: 16px;
+            padding: 32px;
             border-bottom: 1px solid var(--border);
+            background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
         }
 
         .analysis-info h3 {
@@ -588,16 +589,325 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             font-weight: 600;
             color: #1c1c1e;
             margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .analysis-info h3::before {
+            content: "✓";
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background: var(--success-green);
+            color: white;
+            border-radius: 50%;
+            font-size: 16px;
+            font-weight: 700;
         }
 
         .analysis-info p {
             font-size: 14px;
             color: var(--apple-gray);
+            padding-left: 36px;
         }
 
         .analysis-stats {
             display: flex;
             gap: 16px;
+        }
+
+        .analysis-stat {
+            text-align: center;
+            padding: 16px 20px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            min-width: 100px;
+        }
+
+        .analysis-stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--apple-blue);
+            margin-bottom: 4px;
+        }
+
+        .analysis-stat-label {
+            font-size: 11px;
+            color: var(--apple-gray);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Column Mapping */
+        .column-mapping {
+            padding: 32px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .mapping-header {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1c1c1e;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mapping-header::before {
+            content: "⚙";
+            font-size: 20px;
+        }
+
+        .mapping-grid {
+            display: grid;
+            gap: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        .mapping-grid::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .mapping-grid::-webkit-scrollbar-track {
+            background: var(--apple-bg);
+            border-radius: 10px;
+        }
+
+        .mapping-grid::-webkit-scrollbar-thumb {
+            background: var(--apple-gray);
+            border-radius: 10px;
+        }
+
+        .mapping-row {
+            display: grid;
+            grid-template-columns: minmax(150px, 200px) 1fr;
+            gap: 12px;
+            align-items: center;
+            padding: 12px;
+            background: var(--apple-bg);
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+
+        .mapping-row:hover {
+            background: #e8f0ff;
+        }
+
+        .mapping-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1c1c1e;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .mapping-label::before {
+            content: "→";
+            color: var(--apple-blue);
+            font-weight: 700;
+        }
+
+        .mapping-select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            color: #1c1c1e;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .mapping-select:hover {
+            border-color: var(--apple-blue);
+            background: #f8f9ff;
+        }
+
+        .mapping-select:focus {
+            outline: none;
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+
+        .mapping-select option {
+            padding: 8px;
+        }
+
+        /* Preview Table */
+        .preview-section {
+            padding: 32px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .preview-header {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1c1c1e;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .preview-header::before {
+            content: "👁";
+            font-size: 20px;
+        }
+
+        .preview-table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .preview-table-container::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .preview-table-container::-webkit-scrollbar-track {
+            background: var(--apple-bg);
+        }
+
+        .preview-table-container::-webkit-scrollbar-thumb {
+            background: var(--apple-gray);
+            border-radius: 10px;
+        }
+
+        .preview-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: white;
+        }
+
+        .preview-table th {
+            background: linear-gradient(180deg, #f8f9ff 0%, #f0f2f7 100%);
+            padding: 14px 16px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            color: #1c1c1e;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .preview-table td {
+            padding: 14px 16px;
+            font-size: 13px;
+            color: #1c1c1e;
+            border-bottom: 1px solid var(--border);
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .preview-table tbody tr:hover {
+            background: #f8f9ff;
+        }
+
+        .preview-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Action Buttons */
+        .analysis-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            padding: 24px 32px;
+            background: var(--apple-bg);
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--apple-blue);
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 122, 255, 0.2);
+        }
+
+        .btn-primary:hover {
+            background: #0051D5;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 122, 255, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #1c1c1e;
+            border: 1.5px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--apple-bg);
+            border-color: var(--apple-gray);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn .material-icons {
+            font-size: 18px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .analysis-header {
+                flex-direction: column;
+                gap: 20px;
+                align-items: flex-start;
+            }
+
+            .mapping-row {
+                grid-template-columns: 1fr;
+            }
+
+            .analysis-actions {
+                flex-direction: column-reverse;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
         }
 
         .analysis-stat {
@@ -1472,20 +1782,22 @@ function switchAttachmentTab(tabName) {
 
                 <div class="preview-section">
                     <h4 class="preview-header">Preview (First 5 rows)</h4>
-                    <table class="preview-table">
-                        <thead>
-                            <tr>
-                                ${data.csv_columns.map(col => `<th>${col}</th>`).join('')}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${data.preview_rows.map(row => `
+                    <div class="preview-table-container">
+                        <table class="preview-table">
+                            <thead>
                                 <tr>
-                                    ${data.csv_columns.map(col => `<td>${row[col] || ''}</td>`).join('')}
+                                    ${data.csv_columns.map(col => `<th>${col}</th>`).join('')}
                                 </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                ${data.preview_rows.map(row => `
+                                    <tr>
+                                        ${data.csv_columns.map(col => `<td title="${(row[col] || '').replace(/"/g, '&quot;')}">${row[col] || ''}</td>`).join('')}
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div class="analysis-actions">
@@ -1495,12 +1807,17 @@ function switchAttachmentTab(tabName) {
                     </button>
                     <button class="btn btn-primary" onclick="addToQueue()">
                         <span class="material-icons">add_circle</span>
-                        Add to Queue
+                        Add ${data.total_rows} Email${data.total_rows !== 1 ? 's' : ''} to Queue
                     </button>
                 </div>
             `;
 
             container.classList.add('active');
+            
+            // Scroll to analysis results smoothly
+            setTimeout(() => {
+                container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
         }
 
         function updateMapping(column, value) {
