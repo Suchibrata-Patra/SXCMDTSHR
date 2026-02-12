@@ -446,7 +446,7 @@ function authenticateWithSMTP($email, $password) {
             </div>
 
             <h2>Authentication</h2>
-            <p class="subtitle">Enter institutional credentials to continue.</p>
+            <!-- <p class="subtitle">Enter institutional credentials to continue.</p> -->
 
             <?php if ($error): ?>
                 <div class="error-toast">
