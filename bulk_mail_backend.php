@@ -12,34 +12,33 @@ require_once 'db_config.php';
 // Set JSON header
 header('Content-Type: application/json');
 
-// Drive directory configuration - try multiple possible locations
-$possiblePaths = [
-    __DIR__ . '/File_Drive',
-    $_SERVER['DOCUMENT_ROOT'] . '/SXC_MDTS/File_Drive',
-    dirname(__FILE__) . '/File_Drive',
-    '/home/u955994755/public_html/SXC_MDTS/File_Drive', // Common cPanel path
-];
+// Drive directory configuration
+define('DRIVE_DIR', '/home/u955994755/domains/holidayseva.com/public_html/SXC_MDTS/File_Drive');
 
-$driveDir = null;
-foreach ($possiblePaths as $path) {
-    if (is_dir($path)) {
-        $driveDir = $path;
-        break;
+// Get action from request - support both GET, POST FormData, and POST JSON
+$action = '';
+
+// Try POST FormData first
+if (isset($_POST['action'])) {
+    $action = $_POST['action'];
+}
+// Then try GET
+elseif (isset($_GET['action'])) {
+    $action = $_GET['action'];
+}
+// Finally try JSON POST
+else {
+    $jsonInput = file_get_contents('php://input');
+    if ($jsonInput) {
+        $jsonData = json_decode($jsonInput, true);
+        if (isset($jsonData['action'])) {
+            $action = $jsonData['action'];
+        }
     }
 }
 
-if (!$driveDir) {
-    error_log("File_Drive not found. Tried: " . implode(', ', $possiblePaths));
-    $driveDir = __DIR__ . '/File_Drive'; // Fallback
-}
-
-define('DRIVE_DIR', $driveDir);
-
-// Get action from request
-$action = $_GET['action'] ?? '';
-
 // Debug logging (remove after fixing)
-error_log("Backend called - Action: '$action', GET params: " . print_r($_GET, true));
+error_log("Backend called - Action: '$action', Method: " . $_SERVER['REQUEST_METHOD']);
 
 try {
     $pdo = getDatabaseConnection();

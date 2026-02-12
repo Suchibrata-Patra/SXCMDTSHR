@@ -1213,21 +1213,24 @@ function switchAttachmentTab(tabName) {
     console.log('Loading drive files...'); // Debug
     
     try {
-        // Get current page directory and construct absolute URL
+        // Use POST to avoid query string stripping issues
+        const formData = new FormData();
+        formData.append('action', 'list_drive_files');
+        
         const currentPath = window.location.pathname;
         const directory = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
-        const url = directory + 'bulk_mail_backend.php?action=list_drive_files';
+        const url = directory + 'bulk_mail_backend.php';
         
         console.log('Current path:', currentPath); // Debug
         console.log('Directory:', directory); // Debug
         console.log('Fetching:', url); // Debug
+        console.log('Action:', 'list_drive_files'); // Debug
         
         const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json'
-            }
+            method: 'POST',
+            body: formData
         });
+        
         console.log('Response status:', response.status); // Debug
         console.log('Response URL:', response.url); // Debug
         
@@ -1390,8 +1393,9 @@ function switchAttachmentTab(tabName) {
             try {
                 const formData = new FormData();
                 formData.append('csv_file', file);
+                formData.append('action', 'analyze');
 
-                const response = await fetch('bulk_mail_backend.php?action=analyze', {
+                const response = await fetch('bulk_mail_backend.php', {
                     method: 'POST',
                     body: formData
                 });
@@ -1519,7 +1523,13 @@ function switchAttachmentTab(tabName) {
 
             try {
                 // Get full CSV data
-                const parseResponse = await fetch('bulk_mail_backend.php?action=parse_full_csv');
+                const formData = new FormData();
+                formData.append('action', 'parse_full_csv');
+                
+                const parseResponse = await fetch('bulk_mail_backend.php', {
+                    method: 'POST',
+                    body: formData
+                });
                 const parseData = await parseResponse.json();
 
                 if (!parseData.success) {
@@ -1536,12 +1546,13 @@ function switchAttachmentTab(tabName) {
                 });
 
                 // Add to queue with attachment path
-                const addResponse = await fetch('bulk_mail_backend.php?action=add_to_queue', {
+                const addResponse = await fetch('bulk_mail_backend.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
+                        action: 'add_to_queue',
                         emails: emails,
                         drive_file_path: selectedAttachmentPath
                     })
