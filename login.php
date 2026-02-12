@@ -1,25 +1,8 @@
 <?php
 /**
- * ============================================================
- * SXC MDTS - PREMIUM AUTHENTICATION INTERFACE
- * ============================================================
+ * SXC MDTS - PRO VERSION (Apple Design Language)
  */
-
-// 1. DEBUGGING (Turn off in production)
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
-// 2. DEPENDENCY CHECK
-$required_files = ['vendor/autoload.php', 'config.php', 'db_config.php', 'login_auth_helper.php'];
-foreach ($required_files as $file) {
-    if (!file_exists($file)) {
-        die("<div style='font-family:sans-serif; padding:20px; background:#fff5f5; color:#c53030; border-radius:8px;'>
-                <strong>System Error:</strong> Missing critical file: <code>$file</code>. 
-                <br>Please ensure all backend files are uploaded to the server.
-             </div>");
-    }
-}
-
+ini_set('display_errors', 0); // Hide raw errors for pro look
 require_once 'vendor/autoload.php';
 require_once 'config.php';
 require_once 'db_config.php';
@@ -34,7 +17,6 @@ if (file_exists(__DIR__ . '/.env')) {
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-// Initialize secure session
 initializeSecureSession();
 
 // Redirect if already logged in
@@ -44,7 +26,6 @@ if (isset($_SESSION['authenticated']) && $_SESSION['authenticated'] === true) {
 }
 
 $error = "";
-$loginAttempts = 0;
 $blockUntil = null;
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -52,61 +33,35 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $userPass = $_POST['app_password'] ?? '';
     
     if (empty($userEmail) || empty($userPass)) {
-        $error = "Email and password are required.";
+        $error = "Credentials required.";
     } else {
         $ipAddress = getClientIP();
         $rateLimit = checkRateLimit($userEmail, $ipAddress);
         
         if (!$rateLimit['allowed']) {
-            $blockUntilTime = strtotime($rateLimit['block_until']);
-            $remainingMinutes = ceil(($blockUntilTime - time()) / 60);
-            $error = "Too many failed attempts. Try again in $remainingMinutes minutes.";
             $blockUntil = $rateLimit['block_until'];
+            $error = "Security Lock: Try later.";
         } else {
             $authResult = authenticateWithSMTP($userEmail, $userPass);
-            
             if ($authResult['success']) {
                 clearFailedAttempts($userEmail, $ipAddress);
                 $pdo = getDatabaseConnection();
                 $userId = createUserIfNotExists($pdo, $userEmail, null);
                 
-                if (!$userId) {
-                    $error = "Database sync failed. Contact Admin.";
-                } else {
-                    $loginActivityId = recordLoginActivity($userEmail, $userId, 'success');
+                if ($userId) {
+                    recordLoginActivity($userEmail, $userId, 'success');
                     $_SESSION['smtp_user'] = $userEmail;
                     $_SESSION['smtp_pass'] = $userPass;
                     $_SESSION['authenticated'] = true;
                     $_SESSION['user_id'] = $userId;
-                    $_SESSION['login_time'] = time();
-                    $_SESSION['ip_address'] = $ipAddress;
-                    
                     session_regenerate_id(true);
-                    createUserSession($userId, $loginActivityId);
                     loadImapConfigToSession($userEmail, $userPass);
-                    
-                    $superAdmins = ['admin@sxccal.edu', 'hod@sxccal.edu'];
-                    $_SESSION['user_role'] = in_array($userEmail, $superAdmins) ? 'super_admin' : 'user';
-                    
                     header("Location: index.php");
                     exit();
                 }
             } else {
                 recordFailedAttempt($userEmail, $ipAddress, $authResult['error']);
-                $pdo = getDatabaseConnection();
-                $userId = getUserId($pdo, $userEmail);
-                recordLoginActivity($userEmail, $userId, 'failed', $authResult['error']);
-                
-                $rateLimit = checkRateLimit($userEmail, $ipAddress);
-                $loginAttempts = $rateLimit['attempts'];
-                
-                if (!$rateLimit['allowed']) {
-                    $blockUntil = $rateLimit['block_until'];
-                    $error = "Account locked due to multiple failures.";
-                } else {
-                    $remaining = MAX_LOGIN_ATTEMPTS - $loginAttempts;
-                    $error = "Invalid credentials. $remaining attempts left.";
-                }
+                $error = "Incorrect Apple ID or Password."; // Styled like Apple error
             }
         }
     }
@@ -122,14 +77,12 @@ function authenticateWithSMTP($email, $password) {
         $mail->Password = $password;
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         $mail->Port = env("SMTP_PORT");
-        $mail->Timeout = 10;
-        $mail->SMTPDebug = 0;
-        
+        $mail->Timeout = 8;
         $mail->smtpConnect();
         $mail->smtpClose();
-        return ['success' => true, 'error' => null];
+        return ['success' => true];
     } catch (Exception $e) {
-        return ['success' => false, 'error' => 'SMTP Authentication Failed'];
+        return ['success' => false, 'error' => 'Auth Fail'];
     }
 }
 ?>
@@ -137,183 +90,197 @@ function authenticateWithSMTP($email, $password) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SXC MDTS | Authentication</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sign In - SXC MDTS</title>
     <style>
         :root {
-            --apple-blue: #0071e3;
-            --apple-gray: #86868b;
-            --apple-bg: #f5f5f7;
-            --glass-bg: rgba(255, 255, 255, 0.8);
-            --error-red: #ff3b30;
+            --sf-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+            --blue: #007AFF;
+            --gray: #8e8e93;
+            --input-bg: rgba(255, 255, 255, 0.8);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: var(--apple-bg);
-            color: #1d1d1f;
-            height: 100vh;
+            font-family: var(--sf-font);
+            background: #ffffff;
+            height: 100dvh;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            overflow: hidden;
+            justify-content: center;
+            color: #1d1d1f;
         }
 
-        .bg-gradient {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at 20% 30%, #ffffff 0%, #f5f5f7 100%);
-            z-index: -1;
-        }
-
-        .login-container {
+        /* Pro Entrance Animation */
+        .stage {
             width: 100%;
-            max-width: 400px;
-            padding: 20px;
+            max-width: 380px;
+            padding: 40px 20px;
             text-align: center;
-            animation: appleReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: fadeIn 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
-        @keyframes appleReveal {
-            from { opacity: 0; transform: scale(0.95) translateY(20px); }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98) translateY(10px); }
             to { opacity: 1; transform: scale(1) translateY(0); }
         }
 
-        .brand-logo { width: 80px; height: auto; margin-bottom: 20px; }
-
-        h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 8px; }
-
-        .subtitle { font-size: 16px; color: var(--apple-gray); margin-bottom: 32px; }
-
-        .glass-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            border-radius: 24px;
-            padding: 32px;
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.06);
+        .logo {
+            width: 88px;
+            height: 88px;
+            margin-bottom: 24px;
+            border-radius: 20px;
+            /* Apple App Icon style */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
 
-        .input-wrapper { position: relative; margin-bottom: 12px; }
+        h1 {
+            font-size: 32px;
+            font-weight: 600;
+            letter-spacing: -0.022em;
+            margin-bottom: 30px;
+        }
+
+        /* Pro Floating Input System */
+        .field {
+            position: relative;
+            margin-bottom: 1px;
+            width: 100%;
+        }
 
         input {
             width: 100%;
-            padding: 16px;
-            border-radius: 12px;
-            border: 1px solid #d2d2d7;
-            background: rgba(255, 255, 255, 0.5);
+            height: 52px;
+            padding: 12px 16px;
             font-size: 17px;
-            transition: all 0.2s ease;
+            font-family: var(--sf-font);
+            border: 1px solid #d2d2d7;
+            background: var(--input-bg);
             outline: none;
+            transition: all 0.2s ease;
         }
+
+        .top-field { border-radius: 12px 12px 0 0; border-bottom: none; }
+        .bottom-field { border-radius: 0 0 12px 12px; }
 
         input:focus {
-            border-color: var(--apple-blue);
-            background: #fff;
-            box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1);
+            z-index: 2;
+            border-color: var(--blue);
+            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.15);
         }
 
-        .error-message {
-            background: rgba(255, 59, 48, 0.08);
-            color: var(--error-red);
+        /* Shake Animation for Errors */
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        .error-hint {
+            color: #ff3b30;
             font-size: 13px;
-            padding: 12px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            font-weight: 500;
+            margin-top: 15px;
+            font-weight: 400;
+            display: <?php echo $error ? 'block' : 'none'; ?>;
         }
 
+        /* Pro Button: The "Blue Orb" */
         button#submitBtn {
-            width: 100%;
-            padding: 16px;
-            border-radius: 12px;
+            margin-top: 40px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
             border: none;
+            background: #e8e8ed;
+            color: #86868b;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Activates button look when input is filled */
+        input:valid ~ button#submitBtn, .ready button#submitBtn {
             background: #1d1d1f;
             color: white;
-            font-size: 17px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin-top: 10px;
+            transform: scale(1.1);
         }
 
-        button#submitBtn:hover { opacity: 0.9; transform: translateY(-1px); }
-        button#submitBtn:active { transform: scale(0.98); }
-        button#submitBtn:disabled { background: #d2d2d7; cursor: not-allowed; }
+        button#submitBtn:active { transform: scale(0.9); }
 
-        .toggle-pass {
-            position: absolute;
-            right: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--apple-blue);
-            font-size: 13px;
-            cursor: pointer;
-            border: none;
-            background: none;
-            font-weight: 500;
+        .footer {
+            position: fixed;
+            bottom: 40px;
+            font-size: 12px;
+            color: var(--gray);
+            text-align: center;
+            width: 100%;
         }
 
-        .footer-text { margin-top: 32px; font-size: 12px; color: var(--apple-gray); line-height: 1.6; }
+        .arrow-icon {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
     </style>
 </head>
-<body>
-    <div class="bg-gradient"></div>
+<body class="<?php echo $error ? 'shake' : ''; ?>">
 
-    <div class="login-container">
-        <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg" alt="SXC Logo" class="brand-logo">
-        <h1>Verify Identity</h1>
-        <p class="subtitle">Use your institutional app password.</p>
+    <div class="stage">
+        <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg" class="logo" alt="SXC">
+        <h1>Sign In</h1>
 
-        <div class="glass-card">
+        <form method="POST" id="loginForm">
+            <div class="field">
+                <input type="email" name="email" class="top-field" placeholder="Email" required autofocus value="<?php echo htmlspecialchars($userEmail ?? ''); ?>">
+            </div>
+            <div class="field">
+                <input type="password" name="app_password" id="pw" class="bottom-field" placeholder="Password" required>
+            </div>
+
             <?php if ($error): ?>
-                <div class="error-message">
-                    ✕ <?php echo htmlspecialchars($error); ?>
-                </div>
+                <p class="error-hint"><?php echo $error; ?></p>
             <?php endif; ?>
 
-            <form method="POST" id="loginForm">
-                <div class="input-wrapper">
-                    <input type="email" name="email" placeholder="Email address" required autofocus
-                    <?php echo ($blockUntil ? 'disabled' : ''); ?>>
-                </div>
+            <button type="submit" id="submitBtn">
+                <svg class="arrow-icon" viewBox="0 0 24 24">
+                    <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+                </svg>
+            </button>
+        </form>
+    </div>
 
-                <div class="input-wrapper">
-                    <input type="password" name="app_password" id="app_password" placeholder="Password" required
-                    <?php echo ($blockUntil ? 'disabled' : ''); ?>>
-                    <button type="button" class="toggle-pass" onclick="togglePassword()">Show</button>
-                </div>
-
-                <button type="submit" id="submitBtn" <?php echo ($blockUntil ? 'disabled' : ''); ?>>
-                    <?php echo ($blockUntil ? 'Account Locked' : 'Continue'); ?>
-                </button>
-            </form>
-        </div>
-
-        <div class="footer-text">
-            St. Xavier's College (Autonomous), Kolkata <br>
-            Autonomous College | NIRF 2025: 8th Position
-        </div>
+    <div class="footer">
+        St. Xavier's College (Autonomous)<br>
+        <span style="color: #c1c1c6; margin-top: 8px; display: block;">NIRF 2025: 8th Position</span>
     </div>
 
     <script>
-        function togglePassword() {
-            const passInput = document.getElementById("app_password");
-            const btn = document.querySelector(".toggle-pass");
-            const isPass = passInput.type === "password";
-            passInput.type = isPass ? "text" : "password";
-            btn.textContent = isPass ? "Hide" : "Show";
-        }
+        // High-end interaction: Button glows when both fields have content
+        const form = document.getElementById('loginForm');
+        const inputs = form.querySelectorAll('input');
+        const btn = document.getElementById('submitBtn');
 
-        document.getElementById('loginForm').addEventListener('submit', function() {
-            const btn = document.getElementById('submitBtn');
-            btn.disabled = true;
-            btn.innerHTML = '<span style="opacity:0.6">Verifying...</span>';
-        });
+        const checkInputs = () => {
+            let allFilled = true;
+            inputs.forEach(i => { if(!i.value) allFilled = false; });
+            btn.style.background = allFilled ? "#1d1d1f" : "#e8e8ed";
+            btn.style.color = allFilled ? "#ffffff" : "#86868b";
+        };
+
+        inputs.forEach(i => i.addEventListener('input', checkInputs));
+
+        form.onsubmit = () => {
+            btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 38 38" stroke="#fff"><g fill="none" fill-rule="evenodd"><g transform="translate(1 1)" stroke-width="2"><circle stroke-opacity=".5" cx="18" cy="18" r="18"/><path d="M36 18c0-9.94-8.06-18-18-18"><animateTransform attributeName="transform" type="rotate" from="0 18 18" to="360 18 18" dur="1s" repeatCount="indefinite"/></path></g></g></svg>`;
+            btn.style.transform = "scale(0.9)";
+        };
     </script>
 </body>
 </html>
