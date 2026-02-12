@@ -13,7 +13,7 @@ require_once 'db_config.php';
 header('Content-Type: application/json');
 
 // Drive directory configuration
-define('DRIVE_DIR', dirname(__FILE__) . '/File_Drive');
+define('DRIVE_DIR', dirname(__FILE__) . '/File_Drives');
 
 // Get action from request
 $action = $_GET['action'] ?? '';
@@ -38,11 +38,8 @@ try {
         case 'list_drive_files':
             // List files from /SXCMDTSHR/File_Drive directory
             if (!is_dir(DRIVE_DIR)) {
-    // Log the actual path for debugging
-    error_log("Drive directory not found: " . DRIVE_DIR);
-    error_log("Current file location: " . __FILE__);
-    throw new Exception('Drive directory not found: ' . DRIVE_DIR . ' (Script at: ' . __FILE__ . ')');
-}
+                throw new Exception('Drive directory not found: ' . DRIVE_DIR);
+            }
             
             $files = [];
             $items = scandir(DRIVE_DIR);
