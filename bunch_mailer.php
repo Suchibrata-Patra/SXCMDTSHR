@@ -18,52 +18,45 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     ?>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;450;500;600;700&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;450;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 
     <style>
         /* ─── TOKENS ─────────────────────────────────────────────────── */
         :root {
-            --blue: #0071E3;
-            --blue-mid: #005BBF;
-            --blue-glow: rgba(0, 113, 227, .14);
-            --green: #1DB954;
-            --green-bg: rgba(29, 185, 84, .09);
-            --amber: #F5A623;
-            --amber-bg: rgba(245, 166, 35, .10);
-            --red: #FF3B30;
+            --blue:      #0071E3;
+            --blue-mid:  #005BBF;
+            --blue-glow: rgba(0,113,227,.14);
+            --green:     #1DB954;
+            --green-bg:  rgba(29,185,84,.09);
+            --amber:     #F5A623;
+            --amber-bg:  rgba(245,166,35,.10);
+            --red:       #FF3B30;
 
-            --ink: #1D1D1F;
-            --ink-2: #3D3D3F;
-            --ink-3: #6E6E73;
-            --ink-4: #AEAEB2;
+            --ink:       #1D1D1F;
+            --ink-2:     #3D3D3F;
+            --ink-3:     #6E6E73;
+            --ink-4:     #AEAEB2;
 
-            --bg: #F5F5F7;
-            --surface: #FFFFFF;
-            --divider: rgba(0, 0, 0, .08);
-            --divider-heavy: rgba(0, 0, 0, .12);
+            --bg:        #F5F5F7;
+            --surface:   #FFFFFF;
+            --divider:   rgba(0,0,0,.08);
+            --divider-heavy: rgba(0,0,0,.12);
 
             --radius-sm: 6px;
-            --radius: 10px;
+            --radius:    10px;
             --radius-lg: 14px;
 
-            --shadow-xs: 0 1px 3px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .04);
-            --shadow-sm: 0 2px 8px rgba(0, 0, 0, .07), 0 1px 3px rgba(0, 0, 0, .04);
-            --shadow-md: 0 4px 16px rgba(0, 0, 0, .09), 0 2px 6px rgba(0, 0, 0, .05);
+            --shadow-xs: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+            --shadow-sm: 0 2px 8px rgba(0,0,0,.07), 0 1px 3px rgba(0,0,0,.04);
+            --shadow-md: 0 4px 16px rgba(0,0,0,.09), 0 2px 6px rgba(0,0,0,.05);
 
-            --ease: cubic-bezier(.4, 0, .2, 1);
-            --ease-out: cubic-bezier(0, 0, .2, 1);
+            --ease:      cubic-bezier(.4,0,.2,1);
+            --ease-out:  cubic-bezier(0,0,.2,1);
         }
 
         /* ─── RESET ──────────────────────────────────────────────────── */
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -100,7 +93,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 
         /* ─── PAGE HEADER ────────────────────────────────────────────── */
         .page-header {
-            background: rgba(255, 255, 255, .88);
+            background: rgba(255,255,255,.88);
             backdrop-filter: blur(24px) saturate(180%);
             -webkit-backdrop-filter: blur(24px) saturate(180%);
             border-bottom: 1px solid var(--divider);
@@ -139,8 +132,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         }
 
         .separator-dot {
-            width: 4px;
-            height: 4px;
+            width: 4px; height: 4px;
             border-radius: 50%;
             background: var(--ink-4);
         }
@@ -163,26 +155,17 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         }
 
         .stat-pill .dot {
-            width: 6px;
-            height: 6px;
+            width: 6px; height: 6px;
             border-radius: 50%;
         }
 
-        .stat-pill.pending .dot {
-            background: var(--amber);
-        }
-
-        .stat-pill.sent .dot {
-            background: var(--green);
-        }
-
-        .stat-pill.failed .dot {
-            background: var(--red);
-        }
+        .stat-pill.pending   .dot { background: var(--amber); }
+        .stat-pill.sent      .dot { background: var(--green); }
+        .stat-pill.failed    .dot { background: var(--red); }
 
         /* ─── TABS ───────────────────────────────────────────────────── */
         .tabs-bar {
-            background: rgba(255, 255, 255, .88);
+            background: rgba(255,255,255,.88);
             backdrop-filter: blur(24px);
             -webkit-backdrop-filter: blur(24px);
             border-bottom: 1px solid var(--divider);
@@ -215,13 +198,9 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             white-space: nowrap;
         }
 
-        .tab .material-icons-round {
-            font-size: 16px;
-        }
+        .tab .material-icons-round { font-size: 16px; }
 
-        .tab:hover {
-            color: var(--ink-2);
-        }
+        .tab:hover { color: var(--ink-2); }
 
         .tab.active {
             color: var(--blue);
@@ -230,25 +209,15 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         }
 
         /* ─── TAB CONTENT ────────────────────────────────────────────── */
-        .tab-content {
-            display: none;
-        }
-
+        .tab-content { display: none; }
         .tab-content.active {
             display: block;
             animation: fadeUp .22s var(--ease-out) both;
         }
 
         @keyframes fadeUp {
-            from {
-                opacity: 0;
-                transform: translateY(6px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
         /* ─── COMPOSE LAYOUT ─────────────────────────────────────────── */
@@ -259,9 +228,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             align-items: start;
         }
 
-        .compose-layout>* {
-            min-width: 0;
-        }
+        .compose-layout > * { min-width: 0; }
 
         /* ─── CARD ───────────────────────────────────────────────────── */
         .card {
@@ -273,9 +240,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             margin-bottom: 16px;
         }
 
-        .card-body {
-            padding: 20px 24px;
-        }
+        .card-body { padding: 20px 24px; }
 
         .section-label {
             font-size: 11px;
@@ -300,32 +265,27 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 
         .upload-zone:hover {
             border-color: var(--blue);
-            background: rgba(0, 113, 227, .03);
+            background: rgba(0,113,227,.03);
             box-shadow: 0 0 0 4px var(--blue-glow);
         }
 
         .upload-zone.dragover {
             border-color: var(--blue);
-            background: rgba(0, 113, 227, .05);
+            background: rgba(0,113,227,.05);
             box-shadow: 0 0 0 5px var(--blue-glow);
             transform: scale(1.005);
         }
 
         .upload-zone input[type="file"] {
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            cursor: pointer;
+            position: absolute; inset: 0;
+            opacity: 0; cursor: pointer;
         }
 
         .upload-icon-wrap {
-            width: 40px;
-            height: 40px;
+            width: 40px; height: 40px;
             border-radius: 10px;
-            background: rgba(0, 113, 227, .1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background: rgba(0,113,227,.1);
+            display: flex; align-items: center; justify-content: center;
             margin: 0 auto 12px;
         }
 
@@ -358,9 +318,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             border: 1px solid var(--divider);
         }
 
-        .file-loaded-row.visible {
-            display: flex;
-        }
+        .file-loaded-row.visible { display: flex; }
 
         .file-loaded-row .file-icon {
             font-size: 20px;
@@ -368,8 +326,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         }
 
         .file-loaded-meta {
-            flex: 1;
-            min-width: 0;
+            flex: 1; min-width: 0;
         }
 
         .file-loaded-name {
@@ -388,25 +345,17 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         }
 
         .file-remove-btn {
-            background: none;
-            border: none;
+            background: none; border: none;
             cursor: pointer;
             color: var(--ink-4);
-            display: flex;
-            align-items: center;
+            display: flex; align-items: center;
             border-radius: 4px;
             padding: 3px;
             transition: color .15s, background .15s;
         }
 
-        .file-remove-btn:hover {
-            color: var(--red);
-            background: rgba(255, 59, 48, .08);
-        }
-
-        .file-remove-btn .material-icons-round {
-            font-size: 16px;
-        }
+        .file-remove-btn:hover { color: var(--red); background: rgba(255,59,48,.08); }
+        .file-remove-btn .material-icons-round { font-size: 16px; }
 
         /* ─── ANALYSIS RESULTS ───────────────────────────────────────── */
         .analysis-results {
@@ -414,13 +363,11 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             animation: fadeUp .25s var(--ease-out) both;
         }
 
-        .analysis-results.active {
-            display: block;
-        }
+        .analysis-results.active { display: block; }
 
         /* sticky mapping header */
         .mapping-sticky-header {
-            background: rgba(255, 255, 255, .92);
+            background: rgba(255,255,255,.92);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--divider);
@@ -452,32 +399,19 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             font-weight: 500;
         }
 
-        .mapping-meta-item .material-icons-round {
-            font-size: 14px;
-        }
+        .mapping-meta-item .material-icons-round { font-size: 14px; }
 
-        .mapping-meta-item.highlight {
-            color: var(--blue);
-        }
-
-        .mapping-meta-item.success {
-            color: var(--green);
-        }
-
-        .mapping-meta-item.warn {
-            color: var(--amber);
-        }
+        .mapping-meta-item.highlight { color: var(--blue); }
+        .mapping-meta-item.success   { color: var(--green); }
+        .mapping-meta-item.warn      { color: var(--amber); }
 
         .btn-ghost-sm {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
+            display: inline-flex; align-items: center; gap: 5px;
             padding: 5px 12px;
-            font-size: 12px;
-            font-weight: 600;
+            font-size: 12px; font-weight: 600;
             color: var(--blue);
             background: none;
-            border: 1px solid rgba(0, 113, 227, .25);
+            border: 1px solid rgba(0,113,227,.25);
             border-radius: var(--radius-sm);
             cursor: pointer;
             transition: background .15s, border-color .15s;
@@ -486,12 +420,10 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 
         .btn-ghost-sm:hover {
             background: var(--blue-glow);
-            border-color: rgba(0, 113, 227, .45);
+            border-color: rgba(0,113,227,.45);
         }
 
-        .btn-ghost-sm .material-icons-round {
-            font-size: 14px;
-        }
+        .btn-ghost-sm .material-icons-round { font-size: 14px; }
 
         /* 3-col mapping grid */
         .mapping-grid-header {
@@ -526,29 +458,14 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             transition: background .12s var(--ease);
         }
 
-        .mapping-row:last-child {
-            border-bottom: none;
-        }
+        .mapping-row:last-child { border-bottom: none; }
+        .mapping-row:hover { background: rgba(0,0,0,.018); }
 
-        .mapping-row:hover {
-            background: rgba(0, 0, 0, .018);
-        }
+        .mapping-row.is-matched { background: var(--green-bg); }
+        .mapping-row.is-matched:hover { background: rgba(29,185,84,.13); }
 
-        .mapping-row.is-matched {
-            background: var(--green-bg);
-        }
-
-        .mapping-row.is-matched:hover {
-            background: rgba(29, 185, 84, .13);
-        }
-
-        .mapping-row.is-required {
-            background: var(--amber-bg);
-        }
-
-        .mapping-row.is-required:hover {
-            background: rgba(245, 166, 35, .15);
-        }
+        .mapping-row.is-required { background: var(--amber-bg); }
+        .mapping-row.is-required:hover { background: rgba(245,166,35,.15); }
 
         .csv-field-label {
             display: flex;
@@ -577,7 +494,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         }
 
         .badge-required {
-            background: rgba(245, 166, 35, .15);
+            background: rgba(245,166,35,.15);
             color: #A0720A;
         }
 
@@ -587,18 +504,12 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         }
 
         .arrow-col {
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             color: var(--ink-4);
             font-size: 14px;
         }
 
-        .arrow-col svg {
-            width: 14px;
-            height: 14px;
-            flex-shrink: 0;
-        }
+        .arrow-col svg { width: 14px; height: 14px; flex-shrink: 0; }
 
         .mapping-select {
             width: 100%;
@@ -620,10 +531,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             font-family: inherit;
         }
 
-        .mapping-select:hover {
-            border-color: rgba(0, 113, 227, .4);
-        }
-
+        .mapping-select:hover { border-color: rgba(0,113,227,.4); }
         .mapping-select:focus {
             outline: none;
             border-color: var(--blue);
@@ -631,7 +539,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         }
 
         .mapping-select.mapped {
-            border-color: rgba(29, 185, 84, .4);
+            border-color: rgba(29,185,84,.4);
             color: #1A8C43;
         }
 
@@ -738,19 +646,9 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             overflow-y: auto;
         }
 
-        .preview-scroll::-webkit-scrollbar {
-            width: 5px;
-            height: 5px;
-        }
-
-        .preview-scroll::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .preview-scroll::-webkit-scrollbar-thumb {
-            background: var(--divider-heavy);
-            border-radius: 10px;
-        }
+        .preview-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+        .preview-scroll::-webkit-scrollbar-track { background: transparent; }
+        .preview-scroll::-webkit-scrollbar-thumb { background: var(--divider-heavy); border-radius: 10px; }
 
         .preview-table {
             width: 100%;
@@ -778,9 +676,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             transition: background .1s;
         }
 
-        .preview-table tbody tr:hover {
-            background: rgba(0, 0, 0, .024);
-        }
+        .preview-table tbody tr:hover { background: rgba(0,0,0,.024); }
 
         .preview-table tbody td {
             padding: 8px 14px;
@@ -792,9 +688,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             text-overflow: ellipsis;
         }
 
-        .preview-table tbody tr:last-child td {
-            border-bottom: none;
-        }
+        .preview-table tbody tr:last-child td { border-bottom: none; }
 
         /* ─── ATTACHMENT PANEL ───────────────────────────────────────── */
         .attachment-panel {
@@ -824,19 +718,13 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         }
 
         .attach-icon-wrap {
-            width: 28px;
-            height: 28px;
+            width: 28px; height: 28px;
             border-radius: 7px;
-            background: rgba(0, 113, 227, .1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background: rgba(0,113,227,.1);
+            display: flex; align-items: center; justify-content: center;
         }
 
-        .attach-icon-wrap .material-icons-round {
-            font-size: 15px;
-            color: var(--blue);
-        }
+        .attach-icon-wrap .material-icons-round { font-size: 15px; color: var(--blue); }
 
         .attach-panel-title {
             font-size: 13px;
@@ -851,22 +739,15 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         }
 
         .attach-collapse-btn {
-            background: none;
-            border: none;
+            background: none; border: none;
             cursor: pointer;
             color: var(--ink-4);
-            display: flex;
-            align-items: center;
+            display: flex; align-items: center;
             transition: color .15s, transform .2s var(--ease);
         }
 
-        .attach-collapse-btn .material-icons-round {
-            font-size: 18px;
-        }
-
-        .attach-collapse-btn.collapsed {
-            transform: rotate(-90deg);
-        }
+        .attach-collapse-btn .material-icons-round { font-size: 18px; }
+        .attach-collapse-btn.collapsed { transform: rotate(-90deg); }
 
         .attach-panel-body {
             padding: 14px 18px;
@@ -901,15 +782,11 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             background: none;
             cursor: pointer;
             transition: all .15s var(--ease);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             gap: 5px;
         }
 
-        .segmented-btn .material-icons-round {
-            font-size: 14px;
-        }
+        .segmented-btn .material-icons-round { font-size: 14px; }
 
         .segmented-btn.active {
             background: var(--surface);
@@ -927,14 +804,8 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             gap: 4px;
         }
 
-        .drive-list::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .drive-list::-webkit-scrollbar-thumb {
-            background: var(--divider-heavy);
-            border-radius: 10px;
-        }
+        .drive-list::-webkit-scrollbar { width: 4px; }
+        .drive-list::-webkit-scrollbar-thumb { background: var(--divider-heavy); border-radius: 10px; }
 
         .drive-item {
             display: flex;
@@ -947,25 +818,16 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             border: 1.5px solid transparent;
         }
 
-        .drive-item:hover {
-            background: var(--bg);
-        }
+        .drive-item:hover { background: var(--bg); }
 
         .drive-item.selected {
-            background: rgba(0, 113, 227, .07);
-            border-color: rgba(0, 113, 227, .25);
+            background: rgba(0,113,227,.07);
+            border-color: rgba(0,113,227,.25);
         }
 
-        .drive-item-icon {
-            font-size: 18px;
-            line-height: 1;
-            flex-shrink: 0;
-        }
+        .drive-item-icon { font-size: 18px; line-height: 1; flex-shrink: 0; }
 
-        .drive-item-info {
-            flex: 1;
-            min-width: 0;
-        }
+        .drive-item-info { flex: 1; min-width: 0; }
 
         .drive-item-name {
             font-size: 12.5px;
@@ -983,13 +845,10 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         }
 
         .drive-item-check {
-            width: 18px;
-            height: 18px;
+            width: 18px; height: 18px;
             border-radius: 50%;
             border: 1.5px solid var(--divider-heavy);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             transition: all .15s;
             flex-shrink: 0;
         }
@@ -1005,9 +864,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             display: block;
         }
 
-        .drive-item-check .material-icons-round {
-            display: none;
-        }
+        .drive-item-check .material-icons-round { display: none; }
 
         /* small upload zone */
         .upload-zone-mini {
@@ -1022,14 +879,12 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 
         .upload-zone-mini:hover {
             border-color: var(--blue);
-            background: rgba(0, 113, 227, .03);
+            background: rgba(0,113,227,.03);
         }
 
         .upload-zone-mini input[type="file"] {
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            cursor: pointer;
+            position: absolute; inset: 0;
+            opacity: 0; cursor: pointer;
         }
 
         .upload-zone-mini .material-icons-round {
@@ -1038,16 +893,8 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             margin-bottom: 6px;
         }
 
-        .upload-zone-mini p {
-            font-size: 12.5px;
-            font-weight: 600;
-            color: var(--ink-2);
-        }
-
-        .upload-zone-mini small {
-            font-size: 11px;
-            color: var(--ink-4);
-        }
+        .upload-zone-mini p { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+        .upload-zone-mini small { font-size: 11px; color: var(--ink-4); }
 
         /* selected attachment chip */
         .attachment-chip {
@@ -1055,24 +902,17 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             align-items: center;
             gap: 8px;
             padding: 8px 12px;
-            background: rgba(0, 113, 227, .07);
-            border: 1px solid rgba(0, 113, 227, .2);
+            background: rgba(0,113,227,.07);
+            border: 1px solid rgba(0,113,227,.2);
             border-radius: var(--radius-sm);
             margin-top: 12px;
         }
 
-        .attachment-chip.visible {
-            display: flex;
-        }
+        .attachment-chip.visible { display: flex; }
 
-        .attachment-chip-icon {
-            font-size: 16px;
-        }
+        .attachment-chip-icon { font-size: 16px; }
 
-        .attachment-chip-info {
-            flex: 1;
-            min-width: 0;
-        }
+        .attachment-chip-info { flex: 1; min-width: 0; }
 
         .attachment-chip-name {
             font-size: 12.5px;
@@ -1089,25 +929,15 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         }
 
         .attachment-chip-clear {
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: var(--ink-4);
-            display: flex;
-            align-items: center;
-            border-radius: 4px;
-            padding: 2px;
+            background: none; border: none;
+            cursor: pointer; color: var(--ink-4);
+            display: flex; align-items: center;
+            border-radius: 4px; padding: 2px;
             transition: color .15s, background .15s;
         }
 
-        .attachment-chip-clear:hover {
-            color: var(--red);
-            background: rgba(255, 59, 48, .08);
-        }
-
-        .attachment-chip-clear .material-icons-round {
-            font-size: 15px;
-        }
+        .attachment-chip-clear:hover { color: var(--red); background: rgba(255,59,48,.08); }
+        .attachment-chip-clear .material-icons-round { font-size: 15px; }
 
         /* ─── LOADING SPINNER ────────────────────────────────────────── */
         .loading-wrap {
@@ -1116,8 +946,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         }
 
         .spinner-sm {
-            width: 20px;
-            height: 20px;
+            width: 20px; height: 20px;
             border: 2px solid var(--divider-heavy);
             border-top-color: var(--blue);
             border-radius: 50%;
@@ -1125,25 +954,17 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             margin: 0 auto 10px;
         }
 
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        .loading-wrap p {
-            font-size: 12px;
-            color: var(--ink-4);
-        }
+        .loading-wrap p { font-size: 12px; color: var(--ink-4); }
 
         /* ─── BOTTOM ACTION BAR ──────────────────────────────────────── */
         .action-bar {
             position: fixed;
             bottom: 0;
-            left: 0;
-            right: 0;
+            left: 0; right: 0;
             z-index: 300;
-            background: rgba(255, 255, 255, .85);
+            background: rgba(255,255,255,.85);
             backdrop-filter: blur(20px) saturate(180%);
             -webkit-backdrop-filter: blur(20px) saturate(180%);
             border-top: 1px solid var(--divider);
@@ -1151,9 +972,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             transition: transform .25s var(--ease);
         }
 
-        .action-bar.visible {
-            transform: translateY(0);
-        }
+        .action-bar.visible { transform: translateY(0); }
 
         .action-bar-inner {
             max-width: 1180px;
@@ -1170,9 +989,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             color: var(--ink-3);
         }
 
-        .action-bar-info strong {
-            color: var(--ink);
-        }
+        .action-bar-info strong { color: var(--ink); }
 
         .action-btns {
             display: flex;
@@ -1196,25 +1013,21 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             white-space: nowrap;
         }
 
-        .btn .material-icons-round {
-            font-size: 16px;
-        }
+        .btn .material-icons-round { font-size: 16px; }
 
         .btn-primary {
             background: var(--blue);
             color: white;
-            box-shadow: 0 1px 4px rgba(0, 113, 227, .3);
+            box-shadow: 0 1px 4px rgba(0,113,227,.3);
         }
 
         .btn-primary:hover {
             background: var(--blue-mid);
-            box-shadow: 0 4px 12px rgba(0, 113, 227, .35);
+            box-shadow: 0 4px 12px rgba(0,113,227,.35);
             transform: translateY(-1px);
         }
 
-        .btn-primary:active {
-            transform: translateY(0);
-        }
+        .btn-primary:active { transform: translateY(0); }
 
         .btn-secondary {
             background: transparent;
@@ -1224,18 +1037,16 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 
         .btn-secondary:hover {
             background: var(--bg);
-            border-color: rgba(0, 0, 0, .18);
+            border-color: rgba(0,0,0,.18);
         }
 
         .btn-danger {
             background: transparent;
             color: var(--red);
-            border: 1px solid rgba(255, 59, 48, .2);
+            border: 1px solid rgba(255,59,48,.2);
         }
 
-        .btn-danger:hover {
-            background: rgba(255, 59, 48, .06);
-        }
+        .btn-danger:hover { background: rgba(255,59,48,.06); }
 
         .btn:disabled {
             opacity: .45;
@@ -1292,13 +1103,8 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             vertical-align: middle;
         }
 
-        .queue-table tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        .queue-table tbody tr:hover {
-            background: rgba(0, 0, 0, .018);
-        }
+        .queue-table tbody tr:last-child td { border-bottom: none; }
+        .queue-table tbody tr:hover { background: rgba(0,0,0,.018); }
 
         .status-chip {
             display: inline-flex;
@@ -1310,38 +1116,14 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             font-weight: 600;
         }
 
-        .status-chip .dot {
-            width: 5px;
-            height: 5px;
-            border-radius: 50%;
-        }
+        .status-chip .dot { width: 5px; height: 5px; border-radius: 50%; }
 
-        .status-pending {
-            background: rgba(245, 166, 35, .12);
-            color: #A0720A;
-        }
-
-        .status-pending .dot {
-            background: var(--amber);
-        }
-
-        .status-completed {
-            background: var(--green-bg);
-            color: #1A8C43;
-        }
-
-        .status-completed .dot {
-            background: var(--green);
-        }
-
-        .status-failed {
-            background: rgba(255, 59, 48, .1);
-            color: #C22B22;
-        }
-
-        .status-failed .dot {
-            background: var(--red);
-        }
+        .status-pending  { background: rgba(245,166,35,.12); color: #A0720A; }
+        .status-pending .dot  { background: var(--amber); }
+        .status-completed { background: var(--green-bg); color: #1A8C43; }
+        .status-completed .dot { background: var(--green); }
+        .status-failed   { background: rgba(255,59,48,.1); color: #C22B22; }
+        .status-failed .dot   { background: var(--red); }
 
         /* ─── PROGRESS ───────────────────────────────────────────────── */
         .progress-card {
@@ -1353,9 +1135,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             display: none;
         }
 
-        .progress-card.active {
-            display: block;
-        }
+        .progress-card.active { display: block; }
 
         .progress-bar-track {
             height: 5px;
@@ -1373,10 +1153,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             border-radius: 10px;
         }
 
-        .progress-label {
-            font-size: 12px;
-            color: var(--ink-3);
-        }
+        .progress-label { font-size: 12px; color: var(--ink-3); }
 
         /* ─── EMPTY STATE ────────────────────────────────────────────── */
         .empty-state {
@@ -1384,10 +1161,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             padding: 48px 24px;
         }
 
-        .empty-state-icon {
-            font-size: 40px;
-            margin-bottom: 12px;
-        }
+        .empty-state-icon { font-size: 40px; margin-bottom: 12px; }
 
         .empty-state h3 {
             font-size: 15px;
@@ -1396,10 +1170,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             margin-bottom: 6px;
         }
 
-        .empty-state p {
-            font-size: 13px;
-            color: var(--ink-4);
-        }
+        .empty-state p { font-size: 13px; color: var(--ink-4); }
 
         /* ─── ALERTS ─────────────────────────────────────────────────── */
         .alert {
@@ -1415,48 +1186,19 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         }
 
         @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-8px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
-        .alert .material-icons-round {
-            font-size: 17px;
-            flex-shrink: 0;
-        }
+        .alert .material-icons-round { font-size: 17px; flex-shrink: 0; }
 
-        .alert-success {
-            background: var(--green-bg);
-            color: #1A8C43;
-            border: 1px solid rgba(29, 185, 84, .2);
-        }
-
-        .alert-error {
-            background: rgba(255, 59, 48, .08);
-            color: #C22B22;
-            border: 1px solid rgba(255, 59, 48, .2);
-        }
-
-        .alert-info {
-            background: rgba(0, 113, 227, .08);
-            color: var(--blue);
-            border: 1px solid rgba(0, 113, 227, .2);
-        }
+        .alert-success { background: var(--green-bg); color: #1A8C43; border: 1px solid rgba(29,185,84,.2); }
+        .alert-error   { background: rgba(255,59,48,.08); color: #C22B22; border: 1px solid rgba(255,59,48,.2); }
+        .alert-info    { background: rgba(0,113,227,.08); color: var(--blue); border: 1px solid rgba(0,113,227,.2); }
 
         /* ─── ATTACHMENT CONTENT VISIBILITY ─────────────────────────── */
-        .attach-content {
-            display: none;
-        }
-
-        .attach-content.active {
-            display: block;
-        }
+        .attach-content { display: none; }
+        .attach-content.active { display: block; }
 
         /* ─── RESPONSIVE ─────────────────────────────────────────────── */
         @media (max-width: 1100px) {
@@ -1470,25 +1212,11 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         }
 
         @media (max-width: 720px) {
-            .container {
-                padding: 16px 16px 120px;
-            }
-
-            .header-inner {
-                padding: 0 16px;
-            }
-
-            .tabs-inner {
-                padding: 0 16px;
-            }
-
-            .mapping-meta {
-                display: none;
-            }
-
-            .summary-grid {
-                grid-template-columns: 1fr;
-            }
+            .container { padding: 16px 16px 120px; }
+            .header-inner { padding: 0 16px; }
+            .tabs-inner { padding: 0 16px; }
+            .mapping-meta { display: none; }
+            .summary-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -1553,8 +1281,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
                                     <p class="section-label">CSV Source</p>
 
                                     <div class="upload-zone" id="uploadZone">
-                                        <input type="file" id="csvFileInput" accept=".csv"
-                                            onchange="handleCSVUpload(event)">
+                                        <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSVUpload(event)">
                                         <div class="upload-icon-wrap">
                                             <span class="material-icons-round">upload_file</span>
                                         </div>
@@ -1664,13 +1391,11 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 
                                 <!-- Segmented control -->
                                 <div class="segmented">
-                                    <button class="segmented-btn active" id="segDrive"
-                                        onclick="switchAttachmentTab('drive')">
+                                    <button class="segmented-btn active" id="segDrive" onclick="switchAttachmentTab('drive')">
                                         <span class="material-icons-round">add_to_drive</span>
                                         Drive
                                     </button>
-                                    <button class="segmented-btn" id="segUpload"
-                                        onclick="switchAttachmentTab('upload')">
+                                    <button class="segmented-btn" id="segUpload" onclick="switchAttachmentTab('upload')">
                                         <span class="material-icons-round">upload</span>
                                         Upload
                                     </button>
@@ -1688,8 +1413,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
                                 <!-- Upload content -->
                                 <div id="uploadAttachContent" class="attach-content">
                                     <div class="upload-zone-mini">
-                                        <input type="file" id="attachmentFileInput"
-                                            onchange="handleAttachmentUpload(event)">
+                                        <input type="file" id="attachmentFileInput" onchange="handleAttachmentUpload(event)">
                                         <span class="material-icons-round">cloud_upload</span>
                                         <p>Click to upload</p>
                                         <small>Max 25 MB</small>
@@ -1703,8 +1427,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
                                         <div class="attachment-chip-name" id="selectedAttachmentName">—</div>
                                         <div class="attachment-chip-size" id="selectedAttachmentSize">—</div>
                                     </div>
-                                    <button class="attachment-chip-clear" onclick="clearSelectedAttachment()"
-                                        title="Remove">
+                                    <button class="attachment-chip-clear" onclick="clearSelectedAttachment()" title="Remove">
                                         <span class="material-icons-round">close</span>
                                     </button>
                                 </div>
@@ -1779,18 +1502,18 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     <!-- ═══ JAVASCRIPT ═══════════════════════════════════════════════════ -->
     <script>
         /* ═══ GLOBALS ═══════════════════════════════════════════════════ */
-        let currentCSVData = null;
-        let currentMapping = {};
+        let currentCSVData   = null;
+        let currentMapping   = {};
         let selectedAttachmentPath = null;
 
         const EMAIL_FIELDS = [
-            { value: 'recipient_email', label: 'Email Address' },
-            { value: 'recipient_name', label: 'Recipient Name' },
-            { value: 'subject', label: 'Subject' },
-            { value: 'article_title', label: 'Article Title' },
-            { value: 'message_content', label: 'Message Body' },
-            { value: 'closing_wish', label: 'Closing Wish' },
-            { value: 'sender_name', label: 'Sender Name' },
+            { value: 'recipient_email',    label: 'Email Address' },
+            { value: 'recipient_name',     label: 'Recipient Name' },
+            { value: 'subject',            label: 'Subject' },
+            { value: 'article_title',      label: 'Article Title' },
+            { value: 'message_content',    label: 'Message Body' },
+            { value: 'closing_wish',       label: 'Closing Wish' },
+            { value: 'sender_name',        label: 'Sender Name' },
             { value: 'sender_designation', label: 'Sender Designation' },
         ];
 
@@ -1798,13 +1521,13 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 
         // Auto-match keywords map
         const AUTOMATCH = {
-            recipient_email: ['mail', 'email', 'mail_id', 'mailid', 'e-mail'],
-            recipient_name: ['name', 'recipient', 'receiver'],
-            subject: ['subject', 'mail_subject', 'sub'],
-            article_title: ['article', 'title', 'article_title'],
-            message_content: ['message', 'body', 'content', 'personalised', 'personalized'],
-            closing_wish: ['closing', 'wish', 'footer'],
-            sender_name: ['sender', 'from_name', 'from'],
+            recipient_email:    ['mail', 'email', 'mail_id', 'mailid', 'e-mail'],
+            recipient_name:     ['name', 'recipient', 'receiver'],
+            subject:            ['subject', 'mail_subject', 'sub'],
+            article_title:      ['article', 'title', 'article_title'],
+            message_content:    ['message', 'body', 'content', 'personalised', 'personalized'],
+            closing_wish:       ['closing', 'wish', 'footer'],
+            sender_name:        ['sender', 'from_name', 'from'],
             sender_designation: ['designation', 'title', 'role', 'position'],
         };
 
@@ -1823,7 +1546,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         function toggleAttachPanel() {
             attachExpanded = !attachExpanded;
             const body = document.getElementById('attachPanelBody');
-            const btn = document.getElementById('attachCollapseBtn');
+            const btn  = document.getElementById('attachCollapseBtn');
             if (attachExpanded) {
                 body.style.height = body.scrollHeight + 'px';
                 body.classList.remove('collapsed');
@@ -1849,18 +1572,18 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         /* ═══ DRIVE FILES ════════════════════════════════════════════════ */
         async function loadDriveFiles() {
             const container = document.getElementById('driveFilesList');
-            const loading = document.getElementById('driveLoading');
+            const loading   = document.getElementById('driveLoading');
 
             try {
                 const formData = new FormData();
                 formData.append('action', 'list_drive_files');
 
                 const currentPath = window.location.pathname;
-                const directory = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
-                const url = directory + 'bulk_mail_backend.php';
+                const directory   = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
+                const url         = directory + 'bulk_mail_backend.php';
 
                 const response = await fetch(url, { method: 'POST', body: formData });
-                const data = await response.json();
+                const data     = await response.json();
 
                 if (data.success && data.files && data.files.length > 0) {
                     loading.style.display = 'none';
@@ -1908,11 +1631,9 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         }
 
         function getFileIcon(ext) {
-            const map = {
-                pdf: '📄', doc: '📝', docx: '📝', txt: '📝', xls: '📊', xlsx: '📊', csv: '📊',
-                ppt: '📽️', pptx: '📽️', jpg: '🖼️', jpeg: '🖼️', png: '🖼️', gif: '🖼️',
-                zip: '🗜️', rar: '🗜️', '7z': '🗜️', mp4: '🎥', avi: '🎥', mp3: '🎵', wav: '🎵'
-            };
+            const map = { pdf:'📄', doc:'📝', docx:'📝', txt:'📝', xls:'📊', xlsx:'📊', csv:'📊',
+                          ppt:'📽️', pptx:'📽️', jpg:'🖼️', jpeg:'🖼️', png:'🖼️', gif:'🖼️',
+                          zip:'🗜️', rar:'🗜️', '7z':'🗜️', mp4:'🎥', avi:'🎥', mp3:'🎵', wav:'🎵' };
             return map[ext] || '📎';
         }
 
@@ -1928,10 +1649,10 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
                 formData.append('files[]', file);
 
                 const response = await fetch('upload_handler.php', { method: 'POST', body: formData });
-                const data = await response.json();
+                const data     = await response.json();
 
                 if (data.success && data.files && data.files.length > 0) {
-                    const f = data.files[0];
+                    const f   = data.files[0];
                     const ext = file.name.split('.').pop().toLowerCase();
                     selectedAttachmentPath = f.path;
                     document.getElementById('selectedAttachmentIcon').textContent = getFileIcon(ext);
@@ -1952,34 +1673,34 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 
         /* ═══ CSV UPLOAD & ANALYSIS ══════════════════════════════════════ */
         async function handleCSVUpload(event) {
-            const zone = document.getElementById('uploadZone');
-            const files = event.target.files || event.dataTransfer?.files;
+    const zone = document.getElementById('uploadZone');
+    const files = event.target.files || event.dataTransfer?.files;
 
-            if (!files || files.length === 0) {
-                console.log('No files selected');
-                return;
-            }
+    if (!files || files.length === 0) {
+        console.log('No files selected');
+        return;
+    }
 
-            const file = files[0];
-            console.log('File selected:', file.name, 'Size:', file.size);
+    const file = files[0];
+    console.log('File selected:', file.name, 'Size:', file.size);
 
-            // Validate file type
-            if (!file.name.toLowerCase().endsWith('.csv')) {
-                showAlert('error', 'Please upload a CSV file');
-                event.target.value = '';
-                return;
-            }
+    // Validate file type
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+        showAlert('error', 'Please upload a CSV file');
+        event.target.value = '';
+        return;
+    }
 
-            // Validate file size (10MB)
-            if (file.size > 10 * 1024 * 1024) {
-                showAlert('error', 'File size exceeds 10MB limit');
-                event.target.value = '';
-                return;
-            }
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+        showAlert('error', 'File size exceeds 10MB limit');
+        event.target.value = '';
+        return;
+    }
 
-            // Show uploading state
-            zone.style.pointerEvents = 'none';
-            zone.innerHTML = `
+    // Show uploading state
+    zone.style.pointerEvents = 'none';
+    zone.innerHTML = `
         <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
             <div class="upload-icon-wrap">
                 <span class="material-icons-round" style="animation:spin 1s linear infinite">sync</span>
@@ -1987,69 +1708,69 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             <p class="upload-title">Analysing ${file.name}...</p>
         </div>`;
 
-            try {
-                // Upload to backend
-                const formData = new FormData();
-                formData.append('csv_file', file);
-                formData.append('action', 'analyze');
+    try {
+        // Upload to backend
+        const formData = new FormData();
+        formData.append('csv_file', file);
+        formData.append('action', 'analyze');
 
-                console.log('Uploading CSV to backend...');
-                const response = await fetch('bulk_mail_backend.php', {
-                    method: 'POST',
-                    body: formData
-                });
+        console.log('Uploading CSV to backend...');
+        const response = await fetch('bulk_mail_backend.php', {
+            method: 'POST',
+            body: formData
+        });
 
-                console.log('Response status:', response.status);
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+        const data = await response.json();
+        console.log('Backend response:', data);
 
-                const data = await response.json();
-                console.log('Backend response:', data);
-
-                if (data.success) {
-                    console.log('CSV analysis successful');
-                    currentCSVData = data;
-
-                    // Show file loaded row
-                    document.getElementById('fileLoadedName').textContent = data.filename;
-                    document.getElementById('fileLoadedSize').textContent = data.csv_columns.length + ' columns · ' + data.total_rows + ' rows';
-                    document.getElementById('fileLoadedRow').classList.add('visible');
-
-                    // Display analysis results
-                    console.log('Displaying analysis results...');
-                    displayAnalysisResults(data);
-
-                    // Verify the section is visible
-                    const analysisSection = document.getElementById('analysisResults');
-                    if (analysisSection.classList.contains('active')) {
-                        console.log('✓ Analysis results section is now visible');
-                    } else {
-                        console.error('✗ Failed to make analysis results visible');
-                    }
-
-                    showAlert('success', `CSV loaded: ${data.total_rows} rows, ${data.csv_columns.length} columns`);
-                } else {
-                    console.error('Backend returned error:', data.error);
-                    throw new Error(data.error || 'Failed to analyze CSV');
-                }
-            } catch (err) {
-                console.error('Upload error:', err);
-
-                // Restore upload zone on error
-                zone.style.pointerEvents = '';
-                zone.innerHTML = `
+        if (data.success) {
+            console.log('CSV analysis successful');
+            currentCSVData = data;
+            
+            // Show file loaded row
+            document.getElementById('fileLoadedName').textContent = data.filename;
+            document.getElementById('fileLoadedSize').textContent = data.csv_columns.length + ' columns · ' + data.total_rows + ' rows';
+            document.getElementById('fileLoadedRow').classList.add('visible');
+            
+            // Display analysis results
+            console.log('Displaying analysis results...');
+            displayAnalysisResults(data);
+            
+            // Verify the section is visible
+            const analysisSection = document.getElementById('analysisResults');
+            if (analysisSection.classList.contains('active')) {
+                console.log('✓ Analysis results section is now visible');
+            } else {
+                console.error('✗ Failed to make analysis results visible');
+            }
+            
+            showAlert('success', `CSV loaded: ${data.total_rows} rows, ${data.csv_columns.length} columns`);
+        } else {
+            console.error('Backend returned error:', data.error);
+            throw new Error(data.error || 'Failed to analyze CSV');
+        }
+    } catch (err) {
+        console.error('Upload error:', err);
+        
+        // Restore upload zone on error
+        zone.style.pointerEvents = '';
+        zone.innerHTML = `
             <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSVUpload(event)">
             <div class="upload-icon-wrap"><span class="material-icons-round">upload_file</span></div>
             <p class="upload-title">Drop a CSV file, or click to browse</p>
             <p class="upload-hint">Supports .csv up to 10 MB</p>`;
+        
+        showAlert('error', 'Failed to upload CSV: ' + err.message);
+    }
 
-                showAlert('error', 'Failed to upload CSV: ' + err.message);
-            }
-
-            event.target.value = '';
-        }
+    event.target.value = '';
+}
 
         function displayAnalysisResults(data) {
             currentMapping = data.suggested_mapping || {};
@@ -2074,16 +1795,16 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             grid.innerHTML = '';
 
             columns.forEach(col => {
-                const mapped = currentMapping[col] || '';
+                const mapped    = currentMapping[col] || '';
                 const isMatched = !!mapped;
-                const isReq = REQUIRED_FIELDS.includes(mapped);
+                const isReq     = REQUIRED_FIELDS.includes(mapped);
 
                 const row = document.createElement('div');
                 row.className = 'mapping-row' + (isMatched ? ' is-matched' : '');
                 row.dataset.csvCol = col;
 
                 // Determine if this column is required
-                const reqBadge = isReq
+                const reqBadge  = isReq
                     ? `<span class="field-badge badge-required">Required</span>` : '';
                 const autoBadge = isMatched
                     ? `<span class="field-badge badge-auto">Auto</span>` : '';
@@ -2158,12 +1879,12 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 
         function updateMappingMeta(rows, cols) {
             if (rows) document.getElementById('metaRows').textContent = rows;
-            if (cols) document.getElementById('metaCols').textContent = cols;
+            if (cols)  document.getElementById('metaCols').textContent = cols;
 
-            const mapped = Object.keys(currentMapping).length;
+            const mapped   = Object.keys(currentMapping).length;
             const required = REQUIRED_FIELDS.filter(f => !Object.values(currentMapping).includes(f)).length;
 
-            document.getElementById('metaMapped').textContent = mapped;
+            document.getElementById('metaMapped').textContent   = mapped;
             document.getElementById('metaRequired').textContent = required;
 
             const reqWrap = document.getElementById('metaRequiredWrap');
@@ -2193,7 +1914,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         /* ═══ PREVIEW TABLE ══════════════════════════════════════════════ */
         function buildPreviewTable(columns, rows) {
             const table = document.getElementById('previewTable');
-            const meta = document.getElementById('previewMeta');
+            const meta  = document.getElementById('previewMeta');
 
             meta.textContent = `First ${rows.length} of ${currentCSVData?.total_rows || '?'} rows`;
 
@@ -2203,22 +1924,22 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
                 </thead>
                 <tbody>
                     ${rows.map(row =>
-                `<tr>${columns.map(c =>
-                    `<td title="${(row[c] || '').replace(/"/g, '&quot;')}">${row[c] || ''}</td>`
-                ).join('')}</tr>`
-            ).join('')}
+                        `<tr>${columns.map(c =>
+                            `<td title="${(row[c]||'').replace(/"/g,'&quot;')}">${row[c] || ''}</td>`
+                        ).join('')}</tr>`
+                    ).join('')}
                 </tbody>`;
         }
 
         /* ═══ ACTION BAR ═════════════════════════════════════════════════ */
         function updateActionBar(count) {
-            const bar = document.getElementById('actionBar');
-            const rowCount = count ?? currentCSVData?.total_rows ?? 0;
+            const bar        = document.getElementById('actionBar');
+            const rowCount   = count ?? currentCSVData?.total_rows ?? 0;
             const attachName = document.getElementById('selectedAttachmentName').textContent;
-            const hasAttach = !!selectedAttachmentPath;
+            const hasAttach  = !!selectedAttachmentPath;
 
-            document.getElementById('actionBarCount').textContent = rowCount;
-
+            document.getElementById('actionBarCount').textContent  = rowCount;
+            
             // Safely update queue button count (element may be temporarily removed during processing)
             const queueBtnCount = document.getElementById('queueBtnCount');
             if (queueBtnCount) {
@@ -2283,7 +2004,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
                 showAlert('error', 'Failed: ' + err.message);
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = `<span class="material-icons-round">add_circle_outline</span> Queue <span id="queueBtnCount">${currentCSVData?.total_rows || 0}</span> Emails`;
+                btn.innerHTML = `<span class="material-icons-round">add_circle_outline</span> Queue <span id="queueBtnCount">${currentCSVData?.total_rows||0}</span> Emails`;
             }
         }
 
@@ -2293,9 +2014,9 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
                 const resp = await fetch('process_bulk_mail.php?action=status');
                 const data = await resp.json();
                 if (data.success) {
-                    document.getElementById('stat-pending').textContent = data.pending || 0;
+                    document.getElementById('stat-pending').textContent   = data.pending   || 0;
                     document.getElementById('stat-completed').textContent = data.completed || 0;
-                    document.getElementById('stat-failed').textContent = data.failed || 0;
+                    document.getElementById('stat-failed').textContent    = data.failed    || 0;
                     await loadQueueList();
                 }
             } catch (err) { console.error('Queue load error:', err); }
@@ -2354,11 +2075,11 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         }
 
         async function processQueue() {
-            const btn = document.getElementById('processQueueBtn');
-            const progressCard = document.getElementById('processingProgress');
-            const progressFill = document.getElementById('progressFill');
-            const progressText = document.getElementById('progressText');
-            const pending = parseInt(document.getElementById('stat-pending').textContent);
+            const btn              = document.getElementById('processQueueBtn');
+            const progressCard     = document.getElementById('processingProgress');
+            const progressFill     = document.getElementById('progressFill');
+            const progressText     = document.getElementById('progressText');
+            const pending          = parseInt(document.getElementById('stat-pending').textContent);
 
             if (pending === 0) { showAlert('error', 'No pending emails in queue'); return; }
 
@@ -2421,12 +2142,12 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
                     console.error('Network error:', error);
                     failed++;
                     processed++;
-
+                    
                     // Update progress even on error
                     const percentage = Math.round((processed / pending) * 100);
                     progressFill.style.width = percentage + '%';
                     progressText.textContent = `Processing ${processed}/${pending} (${percentage}%) · ${success} sent, ${failed} failed`;
-
+                    
                     // Continue to next email after network error
                     await new Promise(r => setTimeout(r, 250));
                 }
@@ -2435,7 +2156,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             // COMPLETION - Show final status
             progressFill.style.width = '100%';
             progressText.textContent = `Completed — ${success} sent successfully, ${failed} failed`;
-
+            
             // Re-enable button
             btn.disabled = false;
             btn.innerHTML = '<span class="material-icons-round">send</span> Process Queue';
@@ -2458,7 +2179,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             // Log failed emails to console for debugging
             if (failedRecipients.length > 0) {
                 console.group('Failed Recipients');
-                failedRecipients.forEach(({ email, error }) => {
+                failedRecipients.forEach(({email, error}) => {
                     console.error(`${email}: ${error}`);
                 });
                 console.groupEnd();
@@ -2466,7 +2187,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 
             // Final queue reload
             await loadQueue();
-                    ?`Sent ${success}, failed ${failed}`
+                    ? `Sent ${success}, failed ${failed}`
                     : `All ${success} emails sent successfully`
             );
         }
@@ -2489,7 +2210,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 
         function formatBytes(bytes) {
             if (!bytes) return '0 B';
-            const k = 1024, s = ['B', 'KB', 'MB', 'GB'];
+            const k = 1024, s = ['B','KB','MB','GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return (bytes / Math.pow(k, i)).toFixed(1) + ' ' + s[i];
         }
@@ -2507,8 +2228,8 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         /* ═══ DRAG & DROP ════════════════════════════════════════════════ */
         const uploadZone = document.getElementById('uploadZone');
 
-        uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
-        uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+        uploadZone.addEventListener('dragover',  e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+        uploadZone.addEventListener('dragleave', ()  => uploadZone.classList.remove('dragover'));
         uploadZone.addEventListener('drop', e => {
             e.preventDefault();
             uploadZone.classList.remove('dragover');
@@ -2523,5 +2244,4 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         });
     </script>
 </body>
-
 </html>
