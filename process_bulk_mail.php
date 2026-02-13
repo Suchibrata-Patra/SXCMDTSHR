@@ -1,37 +1,4 @@
 <?php
-/**
- * ═══════════════════════════════════════════════════════════════════════════
- * OPTIMIZED process_bulk_mail.php - Production Ready Bulk Email Processor
- * ═══════════════════════════════════════════════════════════════════════════
- * 
- * VERSION: 2.0 - Optimized for Reliability and Performance
- * 
- * KEY IMPROVEMENTS FROM PREVIOUS VERSION:
- * ✅ Enhanced error logging with detailed context
- * ✅ Better SMTP connection handling
- * ✅ Improved retry logic with exponential backoff
- * ✅ Real-time progress tracking
- * ✅ Automatic stale lock recovery
- * ✅ Path traversal protection for attachments
- * ✅ Comprehensive debugging tools
- * ✅ Production-ready error handling
- * 
- * CONFIRMED WORKING:
- * - SMTP authentication: ✅ SUCCESS
- * - Email sending: ✅ SUCCESS  
- * - Queue processing: ✅ SUCCESS
- * - Database logging: ✅ SUCCESS
- * 
- * INSTALLATION:
- * 1. Backup your existing process_bulk_mail.php
- * 2. Replace with this file
- * 3. Ensure /logs/ directory exists with write permissions:
- *    mkdir -p logs && chmod 755 logs
- * 4. Test with: ?action=test_smtp
- * 
- * ═══════════════════════════════════════════════════════════════════════════
- */
-
 declare(strict_types=1);
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -87,9 +54,6 @@ logEvent('INFO', 'Bulk mail processor started', [
     'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
 ]);
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  BOOTSTRAP
-// ═══════════════════════════════════════════════════════════════════════════
 
 session_start();
 
