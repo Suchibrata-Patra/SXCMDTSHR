@@ -295,7 +295,7 @@ function authenticateWithSMTP($email, $password) {
         .brand-details {
             font-size: 0.68rem;
             line-height: 1.55;
-            color: #666;
+            color: #8c97b5;
             opacity: 0.65;
             letter-spacing: 0.2px;
         }
