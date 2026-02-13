@@ -29,15 +29,8 @@ use PHPMailer\PHPMailer\Exception;
 // Initialize secure session
 initializeSecureSession();
 
-// Check if we should show success animation
-$showSuccessAnimation = false;
-if (isset($_SESSION['show_success_animation']) && $_SESSION['show_success_animation'] === true) {
-    $showSuccessAnimation = true;
-    unset($_SESSION['show_success_animation']); // Clear the flag
-}
-
-// Redirect if already logged in (unless showing animation)
-if (isset($_SESSION['authenticated']) && $_SESSION['authenticated'] === true && !$showSuccessAnimation) {
+// Redirect if already logged in
+if (isset($_SESSION['authenticated']) && $_SESSION['authenticated'] === true) {
     header("Location: index.php");
     exit();
 }
@@ -99,7 +92,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $_SESSION['user_id'] = $userId;
                     $_SESSION['login_time'] = time();
                     $_SESSION['ip_address'] = $ipAddress;
-                    $_SESSION['show_success_animation'] = true; // Flag for animation
                     
                     // Regenerate session ID for security
                     session_regenerate_id(true);
@@ -119,8 +111,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         require_once 'settings_helper.php';
                     }
                     
-                    // Reload page to show animation, then redirect
-                    header("Location: " . $_SERVER['PHP_SELF']);
+                    // Success - redirect
+                    header("Location: index.php");
                     exit();
                 }
             } else {
@@ -214,26 +206,12 @@ function authenticateWithSMTP($email, $password) {
         include 'header.php';
     ?>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
-
         :root {
-            --academic-navy: #1e3a5f;
-            --academic-navy-dark: #152a45;
-            --academic-gold: #b8935e;
-            --text-primary: #1a1d29;
-            --text-secondary: #6b7280;
-            --text-tertiary: #9ca3af;
-            --pearl-white: #fdfcfa;
-            --soft-white: #ffffff;
-            --glass-bg: rgba(255, 255, 255, 0.65);
-            --input-inset: rgba(0, 0, 0, 0.03);
-            --focus-glow: rgba(30, 58, 95, 0.15);
-            --error-red: #c5374d;
-            --warning-amber: #d97706;
-            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.02);
-            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.04);
-            --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.06);
-            --shadow-xl: 0 20px 48px rgba(0, 0, 0, 0.08);
+            --primary-accent: #000000;
+            --nature-green: #2d5a27;
+            --soft-white: #f8f9fa;
+            --error-red: #dc3545;
+            --warning-orange: #ff9800;
         }
 
         * {
@@ -244,46 +222,10 @@ function authenticateWithSMTP($email, $password) {
 
         body, html {
             height: 100%;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
-            background: linear-gradient(135deg, #fdfcfa 0%, #f7f5f2 50%, #faf8f5 100%);
-            color: var(--text-primary);
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            text-rendering: optimizeLegibility;
-            overflow-x: hidden;
-        }
-
-        /* Subtle grain texture */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23noise)" opacity="0.015"/></svg>');
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        /* Ambient gradient */
-        body::after {
-            content: '';
-            position: fixed;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(ellipse at 30% 40%, rgba(30, 58, 95, 0.04) 0%, transparent 50%),
-                        radial-gradient(ellipse at 70% 60%, rgba(184, 147, 94, 0.03) 0%, transparent 50%);
-            pointer-events: none;
-            z-index: 0;
-            animation: ambientShift 20s ease-in-out infinite;
-        }
-
-        @keyframes ambientShift {
-            0%, 100% { transform: translate(0, 0); }
-            50% { transform: translate(-5%, -5%); }
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f5f7;
+            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+            background-size: 40px 40px;
         }
 
         .page-wrapper {
@@ -291,549 +233,220 @@ function authenticateWithSMTP($email, $password) {
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 40px 20px;
-            position: relative;
-            z-index: 1;
-            animation: pageEntry 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            padding: 20px;
         }
 
-        @keyframes pageEntry {
-            from {
-                opacity: 0;
-                transform: scale(0.98);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-
-        /* Frosted Glass Card */
         .login-card {
             width: 100%;
-            max-width: 440px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(25px) saturate(180%);
-            -webkit-backdrop-filter: blur(25px) saturate(180%);
-            border-radius: 20px;
-            padding: 56px 48px 48px;
-            box-shadow: var(--shadow-xl),
-                        0 0 0 1px rgba(255, 255, 255, 0.5) inset;
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            position: relative;
-            overflow: visible;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            max-width: 420px;
+            padding: 40px;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(20, 40, 80, 0.35);
+            animation: fadeIn 0.6s ease-out;
         }
 
-        .login-card:hover {
-            box-shadow: 0 24px 56px rgba(0, 0, 0, 0.1),
-                        0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Brand Header */
         .brand-header {
-            text-align: center;
-            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #f0f0f0;
         }
 
         .brand-logo {
-            width: 72px;
-            height: 72px;
-            margin-bottom: 20px;
-            opacity: 0.96;
-            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.06));
-            transition: all 0.3s ease;
-        }
-
-        .brand-logo:hover {
-            opacity: 1;
-            transform: scale(1.02);
+            width: 60px;
+            height: auto;
+            flex-shrink: 0;
         }
 
         .brand-details {
-            font-size: 10px;
-            font-weight: 400;
-            color: var(--text-tertiary);
-            line-height: 1.6;
-            letter-spacing: 0.4px;
-            opacity: 0.7;
+            font-size: 0.6rem;
+            line-height: 1.3;
+            color: #666;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
         }
 
-        /* Typography */
         h2 {
-            font-size: 28px;
-            font-weight: 500;
-            letter-spacing: -0.02em;
-            color: var(--text-primary);
-            text-align: center;
-            margin-bottom: 12px;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            color: var(--primary-accent);
+            margin: 0 0 5px 0;
         }
 
         .subtitle {
-            font-size: 15px;
-            font-weight: 400;
-            color: var(--text-secondary);
-            text-align: center;
-            margin-bottom: 36px;
-            letter-spacing: 0.01em;
+            color: #777;
+            font-size: 0.9rem;
+            margin-bottom: 30px;
         }
 
-        /* Alert Messages */
-        .error-toast, .warning-toast {
-            padding: 14px 18px;
-            border-radius: 12px;
-            margin-bottom: 24px;
-            font-size: 14px;
-            font-weight: 400;
-            letter-spacing: 0.01em;
-            line-height: 1.5;
-            backdrop-filter: blur(10px);
-            animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
+        /* Error/Warning Messages */
         .error-toast {
-            background: rgba(197, 55, 77, 0.08);
-            color: var(--error-red);
-            border: 1px solid rgba(197, 55, 77, 0.15);
+            background: #fff5f5;
+            color: #c53030;
+            padding: 14px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            border-left: 4px solid #c53030;
+            animation: slideIn 0.3s ease-out;
         }
 
         .warning-toast {
-            background: rgba(217, 119, 6, 0.08);
-            color: var(--warning-amber);
-            border: 1px solid rgba(217, 119, 6, 0.15);
+            background: #fff9e6;
+            color: #ff9800;
+            padding: 14px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            border-left: 4px solid #ff9800;
         }
 
-        @keyframes toastSlideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-8px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
         }
 
-        /* Form Elements with Floating Labels */
+        /* Form Elements */
         .input-group {
-            margin-bottom: 24px;
-            position: relative;
+            margin-bottom: 20px;
         }
 
         label {
-            position: absolute;
-            left: 16px;
-            top: 15px;
-            font-size: 15px;
-            font-weight: 400;
-            color: var(--text-tertiary);
-            pointer-events: none;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-            letter-spacing: 0.01em;
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #999;
+            margin-bottom: 8px;
         }
 
         input[type="email"],
         input[type="password"] {
             width: 100%;
-            padding: 18px 16px 8px;
+            padding: 12px 5px;
             border: none;
-            background: var(--soft-white);
-            box-shadow: inset 0 1px 3px var(--input-inset);
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 400;
-            color: var(--text-primary);
-            letter-spacing: 0.01em;
-            transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            border-bottom: 2px solid #e0e0e0;
+            background: transparent;
+            font-size: 1rem;
+            transition: border-color 0.3s;
             outline: none;
-            font-family: 'Inter', sans-serif;
-            -webkit-appearance: none;
-        }
-
-        input[type="email"]::placeholder,
-        input[type="password"]::placeholder {
-            opacity: 0;
-        }
-
-        /* Floating label on focus or when filled */
-        input:focus + label,
-        input:not(:placeholder-shown) + label {
-            top: 6px;
-            font-size: 11px;
-            font-weight: 500;
-            color: var(--academic-navy);
-            letter-spacing: 0.03em;
         }
 
         input:focus {
-            background: var(--soft-white);
-            box-shadow: inset 0 1px 3px var(--input-inset),
-                        0 0 0 3px var(--focus-glow);
+            border-bottom-color: var(--nature-green);
         }
 
         input:disabled {
-            opacity: 0.5;
+            opacity: 0.6;
             cursor: not-allowed;
-            background: rgba(255, 255, 255, 0.5);
         }
 
         .checkbox-container {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-top: 14px;
-            font-size: 14px;
-            font-weight: 400;
-            color: var(--text-secondary);
+            gap: 8px;
+            margin-top: 12px;
+            font-size: 0.85rem;
+            color: #666;
             cursor: pointer;
             user-select: none;
-            letter-spacing: 0.01em;
-            transition: color 0.15s ease;
-        }
-
-        .checkbox-container:hover {
-            color: var(--text-primary);
         }
 
         .checkbox-container input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
+            width: auto;
             cursor: pointer;
-            accent-color: var(--academic-navy);
         }
 
-        /* Premium Button */
+        /* Button */
         button {
             width: 100%;
             padding: 16px;
-            background: linear-gradient(135deg, var(--academic-navy) 0%, var(--academic-navy-dark) 100%);
-            color: var(--soft-white);
+            background: var(--primary-accent);
+            color: white;
             border: none;
-            border-radius: 14px;
-            font-size: 16px;
-            font-weight: 500;
-            letter-spacing: 0.02em;
+            border-radius: 6px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
             cursor: pointer;
-            margin-top: 32px;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-            font-family: 'Inter', sans-serif;
-            box-shadow: var(--shadow-md);
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Glass highlight on button */
-        button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 50%;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, transparent 100%);
-            border-radius: 14px 14px 0 0;
-            pointer-events: none;
+            margin-top: 25px;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
         }
 
         button:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 8px 24px rgba(30, 58, 95, 0.2);
-            background: linear-gradient(135deg, #244466 0%, #1a3352 100%);
-        }
-
-        button:active:not(:disabled) {
-            transform: translateY(0);
-            box-shadow: var(--shadow-md);
+            background: #222;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
         button:disabled {
-            background: #d1d5db;
-            color: #9ca3af;
+            background: #ccc;
             cursor: not-allowed;
             transform: none;
-            box-shadow: none;
-        }
-
-        button:disabled::before {
-            display: none;
         }
 
         /* Security Info */
         .security-info {
-            margin-top: 28px;
-            padding: 16px 18px;
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(10px);
-            border-radius: 10px;
-            font-size: 12px;
-            font-weight: 400;
-            color: var(--text-secondary);
-            line-height: 1.6;
-            letter-spacing: 0.02em;
-            border: 1px solid rgba(0, 0, 0, 0.04);
+            margin-top: 20px;
+            padding: 12px;
+            background: #f0f7ff;
+            border-left: 3px solid #2196f3;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: #555;
         }
 
         .security-info strong {
-            color: var(--academic-navy);
-            font-weight: 500;
+            color: #2196f3;
         }
 
-        /* Footer - Minimalist */
+        /* Footer */
         footer {
-            margin-top: 36px;
-            padding-top: 24px;
-            border-top: 1px solid rgba(0, 0, 0, 0.06);
-            font-size: 11px;
-            font-weight: 400;
-            color: var(--text-tertiary);
+            margin-top: 10px;
+            padding-top: 20px;
+            border-top: 1px solid #f0f0f0;
+            font-size: 0.7rem;
+            color: #bbb;
             text-align: center;
-            line-height: 1.6;
-            letter-spacing: 0.02em;
-            opacity: 0.7;
-        }
-
-        footer span {
-            font-size: 13px;
-            color: var(--text-secondary);
-            display: block;
-            margin-top: 8px;
-            opacity: 0.8;
-        }
-
-        /* Success Animation - Refined */
-        .success-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(253, 252, 250, 0.85);
-            backdrop-filter: blur(30px) saturate(120%);
-            -webkit-backdrop-filter: blur(30px) saturate(120%);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            opacity: 0;
-            transition: opacity 0.4s ease;
-        }
-
-        .success-overlay.active {
-            display: flex;
-            animation: overlayFadeIn 0.4s ease forwards;
-        }
-
-        @keyframes overlayFadeIn {
-            to { opacity: 1; }
-        }
-
-        .success-content {
-            text-align: center;
-            padding: 56px 48px;
-            background: rgba(255, 255, 255, 0.75);
-            backdrop-filter: blur(30px) saturate(150%);
-            -webkit-backdrop-filter: blur(30px) saturate(150%);
-            border-radius: 24px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12),
-                        0 0 0 1px rgba(255, 255, 255, 0.8) inset;
-            border: 1px solid rgba(255, 255, 255, 0.9);
-            animation: successContentEntry 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
-            max-width: 360px;
-        }
-
-        @keyframes successContentEntry {
-            from {
-                opacity: 0;
-                transform: scale(0.92);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-
-        .success-checkmark {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 28px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--academic-navy) 0%, var(--academic-navy-dark) 100%);
-            box-shadow: 0 8px 24px rgba(30, 58, 95, 0.25);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            animation: checkmarkScale 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
-        }
-
-        /* Subtle glow ring */
-        .success-checkmark::before {
-            content: '';
-            position: absolute;
-            inset: -8px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(30, 58, 95, 0.15) 0%, transparent 70%);
-            animation: glowPulse 2s ease-in-out infinite;
-        }
-
-        @keyframes glowPulse {
-            0%, 100% { opacity: 0.5; transform: scale(1); }
-            50% { opacity: 0.8; transform: scale(1.05); }
-        }
-
-        @keyframes checkmarkScale {
-            from {
-                transform: scale(0);
-                opacity: 0;
-            }
-            to {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
-
-        .success-checkmark svg {
-            width: 44px;
-            height: 44px;
-            stroke: var(--soft-white);
-            stroke-width: 3;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            fill: none;
-            position: relative;
-            z-index: 1;
-            animation: checkmarkDraw 0.4s ease 0.5s both;
-        }
-
-        @keyframes checkmarkDraw {
-            from {
-                stroke-dasharray: 100;
-                stroke-dashoffset: 100;
-            }
-            to {
-                stroke-dasharray: 100;
-                stroke-dashoffset: 0;
-            }
-        }
-
-        .success-text {
-            font-size: 26px;
-            font-weight: 500;
-            letter-spacing: -0.02em;
-            color: var(--text-primary);
-            margin-bottom: 10px;
-        }
-
-        .success-subtext {
-            font-size: 15px;
-            font-weight: 400;
-            color: var(--text-secondary);
-            letter-spacing: 0.01em;
-        }
-
-        .loading-dots {
-            display: inline-flex;
-            gap: 4px;
-            margin-left: 4px;
-        }
-
-        .loading-dots span {
-            width: 4px;
-            height: 4px;
-            background: var(--text-secondary);
-            border-radius: 50%;
-            animation: dotPulse 1.4s ease-in-out infinite;
-        }
-
-        .loading-dots span:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-
-        .loading-dots span:nth-child(3) {
-            animation-delay: 0.4s;
-        }
-
-        @keyframes dotPulse {
-            0%, 80%, 100% {
-                opacity: 0.3;
-                transform: scale(0.8);
-            }
-            40% {
-                opacity: 1;
-                transform: scale(1);
-            }
         }
 
         /* Responsive */
-        @media (max-width: 520px) {
+        @media (max-width: 480px) {
             .login-card {
-                padding: 48px 36px 40px;
-                border-radius: 18px;
-                max-width: 100%;
+                padding: 30px 20px;
             }
-
+            
             h2 {
-                font-size: 25px;
+                font-size: 1.5rem;
             }
-
-            .brand-logo {
-                width: 64px;
-                height: 64px;
-            }
-
-            .success-content {
-                padding: 48px 36px;
-                max-width: calc(100% - 40px);
-                border-radius: 20px;
-            }
-        }
-
-        /* Remove all default appearances */
-        input, button {
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-        }
-
-        /* Smooth focus behavior */
-        *:focus {
-            outline: none;
-        }
-
-        /* Prevent text selection on UI elements */
-        button, label {
-            -webkit-user-select: none;
-            user-select: none;
         }
     </style>
 </head>
 <body>
-    <!-- Success Animation Overlay -->
-    <div class="success-overlay" id="successOverlay">
-        <div class="success-content">
-            <div class="success-checkmark">
-                <svg viewBox="0 0 52 52">
-                    <path d="M14 27l9 9 19-19" />
-                </svg>
-            </div>
-            <div class="success-text">Authentication Successful</div>
-            <div class="success-subtext">
-                Redirecting to dashboard<span class="loading-dots"><span></span><span></span><span></span></span>
-            </div>
-        </div>
-    </div>
-
     <div class="page-wrapper">
         <div class="login-card">
             <div class="brand-header">
                 <img src="Assets/image/sxc_logo.png" alt="SXC Logo" class="brand-logo">
                 <div class="brand-details">
-                    St. Xavier's College (Autonomous) · Kolkata
+                    Autonomous College (2006) | CPE (2006) |
+                    CE (2014), NAAC A++ | 4th Cycle (2024) |
+                    ISO 9001:2015 | NIRF 2025: 8th Position
                 </div>
             </div>
 
-            <h2>Secure Sign In</h2>
-            <p class="subtitle">Access your institutional account</p>
+            <h2>Authentication</h2>
+            <!-- <p class="subtitle">Enter institutional credentials to continue.</p> -->
 
             <?php if ($error): ?>
                 <div class="error-toast">
@@ -855,34 +468,34 @@ function authenticateWithSMTP($email, $password) {
 
             <form method="POST" id="loginForm">
                 <div class="input-group">
+                    <label for="email">User ID / Email</label>
                     <input 
                         type="email" 
                         name="email" 
                         id="email" 
-                        placeholder=" " 
+                        placeholder="user@sxccal.edu" 
                         required
                         <?php echo ($blockUntil ? 'disabled' : ''); ?>
                         autocomplete="email"
                         autofocus
                     >
-                    <label for="email">Institutional Email</label>
                 </div>
 
                 <div class="input-group">
+                    <label for="app_password">App Password</label>
                     <input 
                         type="password" 
                         name="app_password" 
                         id="app_password" 
-                        placeholder=" " 
+                        placeholder="••••••••••••" 
                         required
                         <?php echo ($blockUntil ? 'disabled' : ''); ?>
                         autocomplete="current-password"
                     >
-                    <label for="app_password">Application Password</label>
                     
                     <label class="checkbox-container">
                         <input type="checkbox" id="toggleCheck" onclick="togglePassword()">
-                        <span>Show password</span>
+                        <span>Show Password</span>
                     </label>
                 </div>
 
@@ -891,12 +504,14 @@ function authenticateWithSMTP($email, $password) {
                     id="submitBtn"
                     <?php echo ($blockUntil ? 'disabled' : ''); ?>
                 >
-                    <?php echo ($blockUntil ? 'Account Locked' : 'Sign In'); ?>
+                    <?php echo ($blockUntil ? 'Account Locked' : 'Verify & Proceed'); ?>
                 </button>
             </form>
             <footer>
-                NAAC A++ Accredited · ISO 9001:2015 · NIRF Rank 8 (2025)
-                <span>Mail Delivery & Tracking System</span>
+                <!-- St. Xavier's College (Autonomous), Kolkata<br>
+                Mail Delivery & Tracking System v2.0 -->
+                <br>
+                <span style="font-size:18px;">Made with ♥︎ by MDTS Students</span>
             </footer>
         </div>
     </div>
@@ -932,19 +547,6 @@ function authenticateWithSMTP($email, $password) {
             btn.disabled = true;
             btn.textContent = 'Authenticating...';
         });
-
-        // Show success animation if login was successful
-        <?php if ($showSuccessAnimation): ?>
-        window.addEventListener('DOMContentLoaded', function() {
-            const overlay = document.getElementById('successOverlay');
-            overlay.classList.add('active');
-            
-            // Redirect after animation (2 seconds)
-            setTimeout(function() {
-                window.location.href = 'index.php';
-            }, 2000);
-        });
-        <?php endif; ?>
     </script>
 </body>
 </html>
