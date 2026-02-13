@@ -111,12 +111,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         require_once 'settings_helper.php';
                     }
                     
-                    // Set success flag for animation
-                    $_SESSION['login_success_animation'] = true;
-                    
-                    // Success - don't redirect immediately, let JS handle it
-                    // header("Location: index.php");
-                    // exit();
+                    // Success - redirect
+                    header("Location: index.php");
+                    exit();
                 }
             } else {
                 // ============================================================
@@ -469,89 +466,6 @@ function authenticateWithSMTP($email, $password) {
             font-size: 0.95rem;
         }
 
-        /* Success Animation */
-        .success-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.95);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 300ms ease;
-        }
-
-        .success-overlay.active {
-            opacity: 1;
-            pointer-events: all;
-        }
-
-        .success-checkmark {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #2d5a27 0%, #3d7a37 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 10px 40px rgba(45, 90, 39, 0.3);
-            transform: scale(0);
-            animation: checkmarkPop 500ms cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
-
-        .success-checkmark svg {
-            width: 40px;
-            height: 40px;
-            stroke: white;
-            stroke-width: 3;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            fill: none;
-            stroke-dasharray: 50;
-            stroke-dashoffset: 50;
-            animation: checkmarkDraw 400ms ease-out 200ms forwards;
-        }
-
-        @keyframes checkmarkPop {
-            0% {
-                transform: scale(0);
-                opacity: 0;
-            }
-            50% {
-                transform: scale(1.1);
-            }
-            100% {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
-
-        @keyframes checkmarkDraw {
-            to {
-                stroke-dashoffset: 0;
-            }
-        }
-
-        .login-card.success-exit {
-            animation: cardExitSuccess 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
-        }
-
-        @keyframes cardExitSuccess {
-            0% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-            100% {
-                opacity: 0;
-                transform: translateY(-20px) scale(0.95);
-            }
-        }
-
         /* Responsive */
         @media (max-width: 480px) {
             .login-card {
@@ -560,16 +474,6 @@ function authenticateWithSMTP($email, $password) {
             
             h2 {
                 font-size: 1.5rem;
-            }
-
-            .success-checkmark {
-                width: 70px;
-                height: 70px;
-            }
-
-            .success-checkmark svg {
-                width: 35px;
-                height: 35px;
             }
         }
     </style>
@@ -657,15 +561,6 @@ function authenticateWithSMTP($email, $password) {
         </div>
     </div>
 
-    <!-- Success Animation Overlay -->
-    <div class="success-overlay" id="successOverlay">
-        <div class="success-checkmark">
-            <svg viewBox="0 0 52 52">
-                <polyline points="14 27 22 35 38 19"/>
-            </svg>
-        </div>
-    </div>
-
     <script>
         function togglePassword() {
             const passInput = document.getElementById("app_password");
@@ -691,47 +586,12 @@ function authenticateWithSMTP($email, $password) {
         }, 1000);
         <?php endif; ?>
 
-        // Form validation and success animation
+        // Form validation
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             const btn = document.getElementById('submitBtn');
             btn.disabled = true;
             btn.textContent = 'Authenticating...';
         });
-
-        // Trigger success animation if login was successful
-        <?php 
-        $showSuccessAnimation = false;
-        if (isset($_SESSION['login_success_animation']) && $_SESSION['login_success_animation'] === true) {
-            $showSuccessAnimation = true;
-            unset($_SESSION['login_success_animation']); // Clear the flag
-        }
-        ?>
-        
-        <?php if ($showSuccessAnimation): ?>
-        window.addEventListener('DOMContentLoaded', function() {
-            showSuccessAnimation();
-        });
-        
-        function showSuccessAnimation() {
-            const overlay = document.getElementById('successOverlay');
-            const card = document.querySelector('.login-card');
-            
-            // Show overlay with checkmark
-            setTimeout(() => {
-                overlay.classList.add('active');
-            }, 100);
-            
-            // Animate card exit
-            setTimeout(() => {
-                card.classList.add('success-exit');
-            }, 200);
-            
-            // Redirect after animation completes
-            setTimeout(() => {
-                window.location.href = 'index.php';
-            }, 1400);
-        }
-        <?php endif; ?>
     </script>
 </body>
 </html>
