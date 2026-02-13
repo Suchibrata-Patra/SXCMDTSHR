@@ -306,7 +306,7 @@ function authenticateWithSMTP($email, $password) {
             font-size: 1.73rem;
             font-weight: 500;
             margin-bottom: 28px;
-            color: #1a1a1a;
+            color: #727fa4;
             letter-spacing: 0.3px;
         }
 
