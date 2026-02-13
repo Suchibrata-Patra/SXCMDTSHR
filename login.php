@@ -265,7 +265,7 @@ function authenticateWithSMTP($email, $password) {
             transform: translateY(8px);
             animation: cardFadeIn 350ms ease-out forwards;
             animation-delay: 100ms;
-            border:0.1px solid rgb(167, 181, 204);
+            border:0.1px solid rgb(202, 210, 223);
         }
 
         @keyframes cardFadeIn {
