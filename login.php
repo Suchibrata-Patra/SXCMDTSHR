@@ -371,7 +371,7 @@ function authenticateWithSMTP($email, $password) {
             width: 100%;
             padding: 12px 5px;
             border: none;
-            border-bottom: 2px solid #dadada;
+            border-bottom: 2px solid #a0a8b6;
             background: transparent;
             font-size: 1rem;
             transition: border-color 180ms ease, transform 150ms ease;
@@ -379,7 +379,7 @@ function authenticateWithSMTP($email, $password) {
         }
 
         input:focus {
-            border-bottom-color: #1f2a44;
+            border-bottom-color: #4f5d73;
             transform: scaleY(1.02);
             transform-origin: bottom;
         }
