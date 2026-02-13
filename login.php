@@ -111,9 +111,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         require_once 'settings_helper.php';
                     }
                     
-                    // Success - redirect
-                    header("Location: index.php");
-                    exit();
+                    // Set success flag for animation
+                    $_SESSION['login_success_animation'] = true;
+                    
+                    // Success - don't redirect immediately, let JS handle it
+                    // header("Location: index.php");
+                    // exit();
                 }
             } else {
                 // ============================================================
@@ -224,9 +227,71 @@ function authenticateWithSMTP($email, $password) {
             height: 100%;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background-color: #f5f5f7;
-            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
-            background-size: 40px 40px;
             position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated Background Canvas */
+        #techBackground {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.4;
+        }
+
+        /* Floating Code Snippets */
+        .code-float {
+            position: fixed;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 0;
+            animation: floatCode linear infinite;
+            text-shadow: 0 0 10px currentColor;
+        }
+
+        @keyframes floatCode {
+            from {
+                transform: translateY(100vh) translateX(var(--start-x));
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.6;
+            }
+            90% {
+                opacity: 0.6;
+            }
+            to {
+                transform: translateY(-100px) translateX(var(--end-x));
+                opacity: 0;
+            }
+        }
+
+        /* Neural Network Pulses */
+        .neural-pulse {
+            position: fixed;
+            width: 4px;
+            height: 4px;
+            background: radial-gradient(circle, rgba(45, 90, 39, 0.8), transparent);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 0.4;
+            }
+            50% {
+                transform: scale(1.5);
+                opacity: 0.8;
+            }
         }
 
         /* Subtle radial gradient overlay */
@@ -466,6 +531,89 @@ function authenticateWithSMTP($email, $password) {
             font-size: 0.95rem;
         }
 
+        /* Success Animation */
+        .success-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 300ms ease;
+        }
+
+        .success-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .success-checkmark {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2d5a27 0%, #3d7a37 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 40px rgba(45, 90, 39, 0.3);
+            transform: scale(0);
+            animation: checkmarkPop 500ms cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .success-checkmark svg {
+            width: 40px;
+            height: 40px;
+            stroke: white;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            stroke-dasharray: 50;
+            stroke-dashoffset: 50;
+            animation: checkmarkDraw 400ms ease-out 200ms forwards;
+        }
+
+        @keyframes checkmarkPop {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes checkmarkDraw {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        .login-card.success-exit {
+            animation: cardExitSuccess 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes cardExitSuccess {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+        }
+
         /* Responsive */
         @media (max-width: 480px) {
             .login-card {
@@ -475,10 +623,23 @@ function authenticateWithSMTP($email, $password) {
             h2 {
                 font-size: 1.5rem;
             }
+
+            .success-checkmark {
+                width: 70px;
+                height: 70px;
+            }
+
+            .success-checkmark svg {
+                width: 35px;
+                height: 35px;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Animated Tech Background -->
+    <canvas id="techBackground"></canvas>
+    
     <div class="page-wrapper">
         <div class="login-card">
             <div class="brand-header">
@@ -561,7 +722,494 @@ function authenticateWithSMTP($email, $password) {
         </div>
     </div>
 
+    <!-- Success Animation Overlay -->
+    <div class="success-overlay" id="successOverlay">
+        <div class="success-checkmark">
+            <svg viewBox="0 0 52 52">
+                <polyline points="14 27 22 35 38 19"/>
+            </svg>
+        </div>
+    </div>
+
     <script>
+        // ============================================================
+        // ANIMATED TECH BACKGROUND - AI/ML INSPIRED
+        // ============================================================
+        
+        const canvas = document.getElementById('techBackground');
+        const ctx = canvas.getContext('2d');
+        
+        // Academic color palette
+        const colors = {
+            primary: { r: 45, g: 90, b: 39 },      // Nature green
+            secondary: { r: 41, g: 98, b: 255 },   // Academic blue
+            accent: { r: 156, g: 39, b: 176 },     // Purple
+            warm: { r: 255, g: 152, b: 0 },        // Amber
+            teal: { r: 0, g: 150, b: 136 }         // Teal
+        };
+        
+        // Mouse position tracking
+        let mouse = {
+            x: null,
+            y: null,
+            radius: 180
+        };
+        
+        window.addEventListener('mousemove', function(event) {
+            mouse.x = event.x;
+            mouse.y = event.y;
+        });
+        
+        window.addEventListener('mouseout', function() {
+            mouse.x = null;
+            mouse.y = null;
+        });
+        
+        // Set canvas size
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Particle system for neural network effect
+        class Particle {
+            constructor() {
+                this.reset();
+                this.baseX = this.x;
+                this.baseY = this.y;
+                this.colorIndex = Math.floor(Math.random() * 5);
+                this.pulsePhase = Math.random() * Math.PI * 2;
+            }
+            
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 0.6;
+                this.vy = (Math.random() - 0.5) * 0.6;
+                this.radius = Math.random() * 2.5 + 1;
+                this.baseX = this.x;
+                this.baseY = this.y;
+            }
+            
+            getColor() {
+                const colorArray = [colors.primary, colors.secondary, colors.accent, colors.warm, colors.teal];
+                return colorArray[this.colorIndex];
+            }
+            
+            update() {
+                // Sine wave movement for organic flow
+                this.pulsePhase += 0.02;
+                const wave = Math.sin(this.pulsePhase) * 0.3;
+                
+                // Base movement with wave
+                this.baseX += this.vx + wave;
+                this.baseY += this.vy + Math.cos(this.pulsePhase) * 0.2;
+                
+                // Wrap around edges
+                if (this.baseX < 0) this.baseX = canvas.width;
+                if (this.baseX > canvas.width) this.baseX = 0;
+                if (this.baseY < 0) this.baseY = canvas.height;
+                if (this.baseY > canvas.height) this.baseY = 0;
+                
+                // Mouse interaction - particles move away from cursor with elastic effect
+                if (mouse.x != null && mouse.y != null) {
+                    let dx = this.baseX - mouse.x;
+                    let dy = this.baseY - mouse.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < mouse.radius) {
+                        let force = (mouse.radius - distance) / mouse.radius;
+                        let angle = Math.atan2(dy, dx);
+                        // Stronger repulsion with elastic bounce
+                        this.x = this.baseX + Math.cos(angle) * force * 60 * (1 + Math.sin(this.pulsePhase) * 0.3);
+                        this.y = this.baseY + Math.sin(angle) * force * 60 * (1 + Math.cos(this.pulsePhase) * 0.3);
+                    } else {
+                        // Smoothly return to base position with spring effect
+                        this.x += (this.baseX - this.x) * 0.08;
+                        this.y += (this.baseY - this.y) * 0.08;
+                    }
+                } else {
+                    this.x = this.baseX;
+                    this.y = this.baseY;
+                }
+            }
+            
+            draw() {
+                const color = this.getColor();
+                const pulse = Math.abs(Math.sin(this.pulsePhase));
+                
+                // Outer glow
+                ctx.shadowBlur = 12 + pulse * 8;
+                ctx.shadowColor = `rgba(${color.r}, ${color.g}, ${color.b}, 0.6)`;
+                
+                // Gradient fill
+                const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius * 2);
+                gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${0.8 + pulse * 0.2})`);
+                gradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0.3)`);
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius * (1 + pulse * 0.3), 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+        
+        // Create MORE particles for denser effect
+        const particles = [];
+        const particleCount = Math.min(Math.floor(canvas.width * canvas.height / 7000), 180);
+        
+        for (let i = 0; i < particleCount; i++) {
+            particles.push(new Particle());
+        }
+        
+        // Draw curved connections between nearby particles (Bezier curves)
+        function drawConnections() {
+            const maxDistance = 140;
+            
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < maxDistance) {
+                        const opacity = (1 - distance / maxDistance) * 0.35;
+                        
+                        // Mix colors from both particles
+                        const color1 = particles[i].getColor();
+                        const color2 = particles[j].getColor();
+                        const mixedR = (color1.r + color2.r) / 2;
+                        const mixedG = (color1.g + color2.g) / 2;
+                        const mixedB = (color1.b + color2.b) / 2;
+                        
+                        // Create curved path using quadratic curve
+                        const cpX = (particles[i].x + particles[j].x) / 2 + (Math.random() - 0.5) * 40;
+                        const cpY = (particles[i].y + particles[j].y) / 2 + (Math.random() - 0.5) * 40;
+                        
+                        // Gradient along the curve
+                        const gradient = ctx.createLinearGradient(
+                            particles[i].x, particles[i].y,
+                            particles[j].x, particles[j].y
+                        );
+                        gradient.addColorStop(0, `rgba(${color1.r}, ${color1.g}, ${color1.b}, ${opacity})`);
+                        gradient.addColorStop(0.5, `rgba(${mixedR}, ${mixedG}, ${mixedB}, ${opacity * 1.3})`);
+                        gradient.addColorStop(1, `rgba(${color2.r}, ${color2.g}, ${color2.b}, ${opacity})`);
+                        
+                        ctx.strokeStyle = gradient;
+                        ctx.lineWidth = 1 + opacity * 1.5;
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.quadraticCurveTo(cpX, cpY, particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+        
+        // Draw connections to mouse cursor with curves
+        function drawMouseConnections() {
+            if (mouse.x == null || mouse.y == null) return;
+            
+            particles.forEach(particle => {
+                const dx = particle.x - mouse.x;
+                const dy = particle.y - mouse.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < mouse.radius) {
+                    const opacity = (1 - distance / mouse.radius) * 0.4;
+                    const color = particle.getColor();
+                    
+                    // Curved connection to mouse
+                    const cpX = (particle.x + mouse.x) / 2 + Math.sin(Date.now() * 0.001) * 30;
+                    const cpY = (particle.y + mouse.y) / 2 + Math.cos(Date.now() * 0.001) * 30;
+                    
+                    ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${opacity})`;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(particle.x, particle.y);
+                    ctx.quadraticCurveTo(cpX, cpY, mouse.x, mouse.y);
+                    ctx.stroke();
+                }
+            });
+            
+            // Draw animated cursor glow with color shift
+            const time = Date.now() * 0.001;
+            const colorShift = Math.abs(Math.sin(time));
+            const gradient = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 60);
+            gradient.addColorStop(0, `rgba(${colors.secondary.r}, ${colors.secondary.g}, ${colors.secondary.b}, ${0.2 * colorShift})`);
+            gradient.addColorStop(0.5, `rgba(${colors.accent.r}, ${colors.accent.g}, ${colors.accent.b}, ${0.1 * colorShift})`);
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(mouse.x, mouse.y, 60, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        // Draw dynamic grid pattern with subtle color
+        function drawGrid() {
+            const time = Date.now() * 0.0003;
+            const gridSize = 30;
+            
+            // Vertical lines with wave
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                ctx.strokeStyle = `rgba(${colors.teal.r}, ${colors.teal.g}, ${colors.teal.b}, 0.08)`;
+                ctx.lineWidth = 0.5;
+                ctx.beginPath();
+                for (let y = 0; y <= canvas.height; y += 5) {
+                    const offset = Math.sin((y + x + time * 100) * 0.01) * 2;
+                    if (y === 0) {
+                        ctx.moveTo(x + offset, y);
+                    } else {
+                        ctx.lineTo(x + offset, y);
+                    }
+                }
+                ctx.stroke();
+            }
+            
+            // Horizontal lines with wave
+            for (let y = 0; y < canvas.height; y += gridSize) {
+                ctx.strokeStyle = `rgba(${colors.secondary.r}, ${colors.secondary.g}, ${colors.secondary.b}, 0.08)`;
+                ctx.lineWidth = 0.5;
+                ctx.beginPath();
+                for (let x = 0; x <= canvas.width; x += 5) {
+                    const offset = Math.cos((x + y + time * 100) * 0.01) * 2;
+                    if (x === 0) {
+                        ctx.moveTo(x, y + offset);
+                    } else {
+                        ctx.lineTo(x, y + offset);
+                    }
+                }
+                ctx.stroke();
+            }
+        }
+        
+        // Data flow lines with curves and colors
+        let flowLines = [];
+        
+        class FlowLine {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = -10;
+                this.speed = Math.random() * 2.5 + 1;
+                this.length = Math.random() * 120 + 60;
+                this.opacity = Math.random() * 0.4 + 0.2;
+                this.curve = Math.random() * 40 - 20;
+                this.colorIndex = Math.floor(Math.random() * 5);
+                this.phase = Math.random() * Math.PI * 2;
+            }
+            
+            getColor() {
+                const colorArray = [colors.primary, colors.secondary, colors.accent, colors.warm, colors.teal];
+                return colorArray[this.colorIndex];
+            }
+            
+            update() {
+                this.y += this.speed;
+                this.phase += 0.05;
+                if (this.y > canvas.height + 10) {
+                    this.y = -this.length;
+                    this.x = Math.random() * canvas.width;
+                }
+            }
+            
+            draw() {
+                const color = this.getColor();
+                const wave = Math.sin(this.phase) * this.curve;
+                
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                
+                // Draw curved line
+                for (let i = 0; i <= this.length; i += 10) {
+                    const progress = i / this.length;
+                    const xOffset = Math.sin((this.y + i) * 0.01 + this.phase) * this.curve;
+                    const currentOpacity = this.opacity * Math.sin(progress * Math.PI);
+                    
+                    ctx.lineTo(this.x + xOffset, this.y + i);
+                }
+                
+                const gradient = ctx.createLinearGradient(this.x, this.y, this.x + wave, this.y + this.length);
+                gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
+                gradient.addColorStop(0.5, `rgba(${color.r}, ${color.g}, ${color.b}, ${this.opacity})`);
+                gradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
+                
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+        }
+        
+        // Create flow lines
+        for (let i = 0; i < 20; i++) {
+            flowLines.push(new FlowLine());
+        }
+        
+        // Circular wave patterns
+        let waves = [];
+        
+        class Wave {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.radius = 0;
+                this.maxRadius = 200;
+                this.speed = 2;
+                this.opacity = 0.6;
+                this.colorIndex = Math.floor(Math.random() * 5);
+            }
+            
+            update() {
+                this.radius += this.speed;
+                this.opacity = (1 - this.radius / this.maxRadius) * 0.6;
+            }
+            
+            draw() {
+                const colorArray = [colors.primary, colors.secondary, colors.accent, colors.warm, colors.teal];
+                const color = colorArray[this.colorIndex];
+                
+                ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${this.opacity})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            isDead() {
+                return this.radius >= this.maxRadius;
+            }
+        }
+        
+        // Create waves periodically
+        setInterval(() => {
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * canvas.height;
+            waves.push(new Wave(x, y));
+        }, 3000);
+        
+        // Animation loop
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw grid with waves
+            drawGrid();
+            
+            // Draw and update waves
+            waves = waves.filter(wave => {
+                wave.update();
+                wave.draw();
+                return !wave.isDead();
+            });
+            
+            // Draw flow lines
+            flowLines.forEach(line => {
+                line.update();
+                line.draw();
+            });
+            
+            // Update and draw particles
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+            
+            // Draw neural network connections
+            drawConnections();
+            
+            // Draw mouse interactions
+            drawMouseConnections();
+            
+            requestAnimationFrame(animate);
+        }
+        
+        animate();
+        
+        // Create floating code snippets with colors
+        const codeSnippets = [
+            { text: 'def neural_net(x): return activation(W @ x + b)', color: 'primary' },
+            { text: 'import tensorflow as tf', color: 'secondary' },
+            { text: 'model.fit(X_train, y_train, epochs=100)', color: 'accent' },
+            { text: 'np.random.seed(42)', color: 'warm' },
+            { text: 'from sklearn.ensemble import RandomForestClassifier', color: 'teal' },
+            { text: 'optimizer = Adam(learning_rate=0.001)', color: 'primary' },
+            { text: 'loss = categorical_crossentropy', color: 'secondary' },
+            { text: 'y_pred = model.predict(X_test)', color: 'accent' },
+            { text: 'accuracy = np.mean(y_pred == y_true)', color: 'warm' },
+            { text: 'layer = Dense(128, activation="relu")', color: 'teal' },
+            { text: 'dropout = Dropout(0.5)', color: 'primary' },
+            { text: 'conv2d = Conv2D(32, (3,3), activation="relu")', color: 'secondary' },
+            { text: 'batch_size = 32', color: 'accent' },
+            { text: 'import pandas as pd', color: 'warm' },
+            { text: 'df = pd.read_csv("data.csv")', color: 'teal' },
+            { text: 'X_train, X_test = train_test_split(X, y)', color: 'primary' },
+            { text: 'scaler = StandardScaler()', color: 'secondary' },
+            { text: 'X_scaled = scaler.fit_transform(X)', color: 'accent' },
+            { text: 'plt.plot(history.history["loss"])', color: 'warm' },
+            { text: 'model.save("model.h5")', color: 'teal' },
+            { text: 'embedding = Embedding(vocab_size, 128)', color: 'primary' },
+            { text: 'attention_weights = softmax(scores)', color: 'secondary' },
+            { text: 'lstm = LSTM(256, return_sequences=True)', color: 'accent' },
+            { text: 'gru = GRU(128, dropout=0.2)', color: 'warm' },
+            { text: 'transformer = MultiHeadAttention(num_heads=8)', color: 'teal' },
+            { text: 'bert_model = BertModel.from_pretrained()', color: 'primary' },
+            { text: 'tokenizer.encode(text, max_length=512)', color: 'secondary' },
+            { text: 'gan_generator.train_on_batch(noise, labels)', color: 'accent' },
+            { text: 'vae_encoder = Encoder(latent_dim=32)', color: 'warm' },
+            { text: 'reinforcement_agent.update_q_values()', color: 'teal' },
+            { text: 'policy_gradient = compute_policy_loss()', color: 'primary' },
+            { text: 'cv2.imread("image.jpg")', color: 'secondary' },
+            { text: 'torch.nn.Conv2d(in_channels, out_channels)', color: 'accent' },
+            { text: 'optimizer.zero_grad(); loss.backward()', color: 'warm' },
+            { text: 'dataset = ImageFolder(root="./data")', color: 'teal' },
+            { text: 'from transformers import GPT2LMHeadModel', color: 'primary' }
+        ];
+        
+        function createFloatingCode() {
+            const snippet = codeSnippets[Math.floor(Math.random() * codeSnippets.length)];
+            const color = colors[snippet.color];
+            
+            const codeDiv = document.createElement('div');
+            codeDiv.className = 'code-float';
+            codeDiv.textContent = snippet.text;
+            codeDiv.style.color = `rgba(${color.r}, ${color.g}, ${color.b}, 0.4)`;
+            
+            const startX = Math.random() * 100 - 50;
+            const endX = Math.random() * 100 - 50;
+            const duration = 10 + Math.random() * 8;
+            const delay = Math.random() * 2;
+            
+            codeDiv.style.left = Math.random() * 100 + '%';
+            codeDiv.style.setProperty('--start-x', startX + 'px');
+            codeDiv.style.setProperty('--end-x', endX + 'px');
+            codeDiv.style.animationDuration = duration + 's';
+            codeDiv.style.animationDelay = delay + 's';
+            
+            document.body.appendChild(codeDiv);
+            
+            // Remove after animation
+            setTimeout(() => {
+                codeDiv.remove();
+            }, (duration + delay) * 1000);
+        }
+        
+        // Create initial code snippets (more dense)
+        for (let i = 0; i < 15; i++) {
+            setTimeout(() => createFloatingCode(), i * 1200);
+        }
+        
+        // Continuously create new snippets (more frequent)
+        setInterval(() => {
+            if (document.querySelectorAll('.code-float').length < 22) {
+                createFloatingCode();
+            }
+        }, 1800);
+        
+        // ============================================================
+        // LOGIN FORM FUNCTIONALITY
+        // ============================================================
+        
         function togglePassword() {
             const passInput = document.getElementById("app_password");
             passInput.type = passInput.type === "password" ? "text" : "password";
@@ -586,12 +1234,47 @@ function authenticateWithSMTP($email, $password) {
         }, 1000);
         <?php endif; ?>
 
-        // Form validation
+        // Form validation and success animation
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             const btn = document.getElementById('submitBtn');
             btn.disabled = true;
             btn.textContent = 'Authenticating...';
         });
+
+        // Trigger success animation if login was successful
+        <?php 
+        $showSuccessAnimation = false;
+        if (isset($_SESSION['login_success_animation']) && $_SESSION['login_success_animation'] === true) {
+            $showSuccessAnimation = true;
+            unset($_SESSION['login_success_animation']); // Clear the flag
+        }
+        ?>
+        
+        <?php if ($showSuccessAnimation): ?>
+        window.addEventListener('DOMContentLoaded', function() {
+            showSuccessAnimation();
+        });
+        
+        function showSuccessAnimation() {
+            const overlay = document.getElementById('successOverlay');
+            const card = document.querySelector('.login-card');
+            
+            // Show overlay with checkmark
+            setTimeout(() => {
+                overlay.classList.add('active');
+            }, 100);
+            
+            // Animate card exit
+            setTimeout(() => {
+                card.classList.add('success-exit');
+            }, 200);
+            
+            // Redirect after animation completes
+            setTimeout(() => {
+                window.location.href = 'index.php';
+            }, 1400);
+        }
+        <?php endif; ?>
     </script>
 </body>
 </html>
