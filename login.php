@@ -1,10 +1,9 @@
 <?php
 /**
  * ============================================================
- * SECURE LOGIN PAGE - TWO-STEP AUTHENTICATION
+ * SECURE LOGIN PAGE - OPTIMIZED & FAST
  * ============================================================
  * Features:
- * - Two-step login: Email first, then password
  * - Rate limiting & brute force protection
  * - NO email sending (activity logged directly to DB)
  * - Fast SMTP-only validation
@@ -39,164 +38,113 @@ if (isset($_SESSION['authenticated']) && $_SESSION['authenticated'] === true) {
 $error = "";
 $loginAttempts = 0;
 $blockUntil = null;
-$currentStep = 'email'; // Default step
-$userEmail = '';
-
-// Handle step tracking
-if (isset($_POST['step'])) {
-    $currentStep = $_POST['step'];
-}
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $userEmail = filter_var($_POST['email'] ?? '', FILTER_SANITIZE_EMAIL);
+    $userPass = $_POST['app_password'] ?? '';
     
-    // ============================================================
-    // STEP 1: EMAIL VERIFICATION
-    // ============================================================
-    if ($currentStep === 'email') {
-        $userEmail = filter_var($_POST['email'] ?? '', FILTER_SANITIZE_EMAIL);
+    // Validate input
+    if (empty($userEmail) || empty($userPass)) {
+        $error = "Email and password are required.";
+    } else {
+        // Get client IP
+        $ipAddress = getClientIP();
         
-        if (empty($userEmail)) {
-            $error = "Please enter your email address.";
-        } elseif (!filter_var($userEmail, FILTER_VALIDATE_EMAIL)) {
-            $error = "Please enter a valid email address.";
-        } else {
-            // Check if email exists in allowed domain (optional)
-            $allowedDomain = 'sxccal.edu';
-            $emailDomain = substr(strrchr($userEmail, "@"), 1);
-            
-            if ($emailDomain !== $allowedDomain) {
-                $error = "Please use your institutional email address (@$allowedDomain).";
-            } else {
-                // Email is valid - proceed to password step
-                $currentStep = 'password';
-                // Store email in session temporarily
-                $_SESSION['temp_login_email'] = $userEmail;
-            }
-        }
-    }
-    
-    // ============================================================
-    // STEP 2: PASSWORD VERIFICATION
-    // ============================================================
-    elseif ($currentStep === 'password') {
-        $userEmail = $_SESSION['temp_login_email'] ?? '';
-        $userPass = $_POST['app_password'] ?? '';
+        // Check rate limiting
+        $rateLimit = checkRateLimit($userEmail, $ipAddress);
         
-        if (empty($userEmail)) {
-            // Session expired or tampered
-            $error = "Session expired. Please start again.";
-            $currentStep = 'email';
-            unset($_SESSION['temp_login_email']);
-        } elseif (empty($userPass)) {
-            $error = "Please enter your password.";
+        if (!$rateLimit['allowed']) {
+            $blockUntilTime = strtotime($rateLimit['block_until']);
+            $remainingMinutes = ceil(($blockUntilTime - time()) / 60);
+            
+            $error = "Too many failed attempts. Account temporarily locked. Please try again in $remainingMinutes minutes.";
+            $loginAttempts = $rateLimit['attempts'];
+            $blockUntil = $rateLimit['block_until'];
+            
+            error_log("SECURITY: Login blocked for $userEmail from IP $ipAddress");
         } else {
-            // Get client IP
-            $ipAddress = getClientIP();
+            // Attempt SMTP authentication (FAST - no email sending)
+            $authResult = authenticateWithSMTP($userEmail, $userPass);
             
-            // Check rate limiting
-            $rateLimit = checkRateLimit($userEmail, $ipAddress);
-            
-            if (!$rateLimit['allowed']) {
-                $blockUntilTime = strtotime($rateLimit['block_until']);
-                $remainingMinutes = ceil(($blockUntilTime - time()) / 60);
+            if ($authResult['success']) {
+                // ============================================================
+                // SUCCESSFUL LOGIN
+                // ============================================================
                 
-                $error = "Too many failed attempts. Account temporarily locked. Please try again in $remainingMinutes minutes.";
-                $loginAttempts = $rateLimit['attempts'];
-                $blockUntil = $rateLimit['block_until'];
+                // Clear failed attempts
+                clearFailedAttempts($userEmail, $ipAddress);
                 
-                error_log("SECURITY: Login blocked for $userEmail from IP $ipAddress");
-            } else {
-                // Attempt SMTP authentication (FAST - no email sending)
-                $authResult = authenticateWithSMTP($userEmail, $userPass);
+                // Create/get user in database
+                $pdo = getDatabaseConnection();
+                $userId = createUserIfNotExists($pdo, $userEmail, null);
                 
-                if ($authResult['success']) {
-                    // ============================================================
-                    // SUCCESSFUL LOGIN
-                    // ============================================================
-                    
-                    // Clear failed attempts
-                    clearFailedAttempts($userEmail, $ipAddress);
-                    
-                    // Clear temporary session
-                    unset($_SESSION['temp_login_email']);
-                    
-                    // Create/get user in database
-                    $pdo = getDatabaseConnection();
-                    $userId = createUserIfNotExists($pdo, $userEmail, null);
-                    
-                    if (!$userId) {
-                        $error = "System error. Please contact administrator.";
-                        error_log("CRITICAL: Failed to create user for $userEmail");
-                    } else {
-                        // Record login activity (NO EMAIL SENT)
-                        $loginActivityId = recordLoginActivity($userEmail, $userId, 'success');
-                        
-                        // Set session variables
-                        $_SESSION['smtp_user'] = $userEmail;
-                        $_SESSION['smtp_pass'] = $userPass;
-                        $_SESSION['authenticated'] = true;
-                        $_SESSION['user_id'] = $userId;
-                        $_SESSION['login_time'] = time();
-                        $_SESSION['ip_address'] = $ipAddress;
-                        
-                        // Regenerate session ID for security
-                        session_regenerate_id(true);
-                        
-                        // Create session record
-                        createUserSession($userId, $loginActivityId);
-                        
-                        // Load IMAP config
-                        loadImapConfigToSession($userEmail, $userPass);
-                        
-                        // Check user role
-                        $superAdmins = ['admin@sxccal.edu', 'hod@sxccal.edu'];
-                        $_SESSION['user_role'] = in_array($userEmail, $superAdmins) ? 'super_admin' : 'user';
-                        
-                        // Load user settings
-                        if (file_exists('settings_helper.php')) {
-                            require_once 'settings_helper.php';
-                        }
-                        
-                        // Success - redirect
-                        header("Location: index.php");
-                        exit();
-                    }
+                if (!$userId) {
+                    $error = "System error. Please contact administrator.";
+                    error_log("CRITICAL: Failed to create user for $userEmail");
                 } else {
-                    // ============================================================
-                    // FAILED LOGIN
-                    // ============================================================
+                    // Record login activity (NO EMAIL SENT)
+                    $loginActivityId = recordLoginActivity($userEmail, $userId, 'success');
                     
-                    // Record failed attempt
-                    recordFailedAttempt($userEmail, $ipAddress, $authResult['error']);
+                    // Set session variables
+                    $_SESSION['smtp_user'] = $userEmail;
+                    $_SESSION['smtp_pass'] = $userPass;
+                    $_SESSION['authenticated'] = true;
+                    $_SESSION['user_id'] = $userId;
+                    $_SESSION['login_time'] = time();
+                    $_SESSION['ip_address'] = $ipAddress;
                     
-                    // Record in login activity
-                    $pdo = getDatabaseConnection();
-                    $userId = getUserId($pdo, $userEmail);
-                    recordLoginActivity($userEmail, $userId, 'failed', $authResult['error']);
+                    // Regenerate session ID for security
+                    session_regenerate_id(true);
                     
-                    // Check if now blocked
-                    $rateLimit = checkRateLimit($userEmail, $ipAddress);
-                    $loginAttempts = $rateLimit['attempts'];
+                    // Create session record
+                    createUserSession($userId, $loginActivityId);
                     
-                    if (!$rateLimit['allowed']) {
-                        $blockUntilTime = strtotime($rateLimit['block_until']);
-                        $remainingMinutes = ceil(($blockUntilTime - time()) / 60);
-                        $error = "Too many failed attempts. Account locked for $remainingMinutes minutes.";
-                    } else {
-                        $remaining = MAX_LOGIN_ATTEMPTS - $loginAttempts;
-                        $error = "Incorrect password. Please try again. ($remaining attempts remaining)";
+                    // Load IMAP config
+                    loadImapConfigToSession($userEmail, $userPass);
+                    
+                    // Check user role
+                    $superAdmins = ['admin@sxccal.edu', 'hod@sxccal.edu'];
+                    $_SESSION['user_role'] = in_array($userEmail, $superAdmins) ? 'super_admin' : 'user';
+                    
+                    // Load user settings
+                    if (file_exists('settings_helper.php')) {
+                        require_once 'settings_helper.php';
                     }
                     
-                    error_log("LOGIN FAILED: $userEmail from IP $ipAddress - {$authResult['error']}");
+                    // Success - redirect
+                    header("Location: index.php");
+                    exit();
                 }
+            } else {
+                // ============================================================
+                // FAILED LOGIN
+                // ============================================================
+                
+                // Record failed attempt
+                recordFailedAttempt($userEmail, $ipAddress, $authResult['error']);
+                
+                // Record in login activity
+                $pdo = getDatabaseConnection();
+                $userId = getUserId($pdo, $userEmail);
+                recordLoginActivity($userEmail, $userId, 'failed', $authResult['error']);
+                
+                // Check if now blocked
+                $rateLimit = checkRateLimit($userEmail, $ipAddress);
+                $loginAttempts = $rateLimit['attempts'];
+                
+                if (!$rateLimit['allowed']) {
+                    $blockUntilTime = strtotime($rateLimit['block_until']);
+                    $remainingMinutes = ceil(($blockUntilTime - time()) / 60);
+                    $error = "Too many failed attempts. Account locked for $remainingMinutes minutes.";
+                } else {
+                    $remaining = MAX_LOGIN_ATTEMPTS - $loginAttempts;
+                    $error = "Authentication failed. Please verify your credentials. ($remaining attempts remaining)";
+                }
+                
+                error_log("LOGIN FAILED: $userEmail from IP $ipAddress - {$authResult['error']}");
             }
         }
     }
-}
-
-// Retrieve email from session for password step
-if ($currentStep === 'password' && isset($_SESSION['temp_login_email'])) {
-    $userEmail = $_SESSION['temp_login_email'];
 }
 
 /**
@@ -264,7 +212,6 @@ function authenticateWithSMTP($email, $password) {
             --soft-white: #f8f9fa;
             --error-red: #dc3545;
             --warning-orange: #ff9800;
-            --primary-blue: #4f5d73;
         }
 
         * {
@@ -318,7 +265,7 @@ function authenticateWithSMTP($email, $password) {
             transform: translateY(8px);
             animation: cardFadeIn 350ms ease-out forwards;
             animation-delay: 100ms;
-            border: 0.1px solid rgb(202, 210, 223);
+            border:0.1px solid rgb(202, 210, 223);
         }
 
         @keyframes cardFadeIn {
@@ -358,7 +305,7 @@ function authenticateWithSMTP($email, $password) {
         h2 {
             font-size: 1.73rem;
             font-weight: 500;
-            margin-bottom: 10px;
+            margin-bottom: 28px;
             color: #727fa4;
             letter-spacing: 0.3px;
         }
@@ -368,39 +315,6 @@ function authenticateWithSMTP($email, $password) {
             color: #666;
             margin-bottom: 25px;
             line-height: 1.5;
-        }
-
-        /* Email Display (Step 2) */
-        .email-display {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 16px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid #e0e0e0;
-        }
-
-        .email-display .email-text {
-            flex: 1;
-            font-size: 0.95rem;
-            color: #333;
-            font-weight: 500;
-        }
-
-        .email-display .change-link {
-            color: var(--primary-blue);
-            text-decoration: none;
-            font-size: 0.85rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-
-        .email-display .change-link:hover {
-            color: #3a4a5e;
-            text-decoration: underline;
         }
 
         /* Alert Messages */
@@ -440,19 +354,6 @@ function authenticateWithSMTP($email, $password) {
         /* Form Elements */
         .input-group {
             margin-bottom: 20px;
-            opacity: 0;
-            animation: fadeInUp 0.4s ease-out forwards;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
 
         label {
@@ -522,6 +423,8 @@ function authenticateWithSMTP($email, $password) {
         }
 
         button:hover:not(:disabled) {
+            /* background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%); */
+            /* transform: translateY(-1px); */
             box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
         }
 
@@ -533,23 +436,6 @@ function authenticateWithSMTP($email, $password) {
             background: #ccc;
             cursor: not-allowed;
             transform: none;
-        }
-
-        /* Back Button */
-        .back-button {
-            background: transparent;
-            color: var(--primary-blue);
-            border: 1px solid #ddd;
-            padding: 12px;
-            margin-top: 12px;
-            text-transform: none;
-            letter-spacing: 0.5px;
-        }
-
-        .back-button:hover:not(:disabled) {
-            background: #f8f9fa;
-            border-color: var(--primary-blue);
-            box-shadow: none;
         }
 
         /* Security Info */
@@ -591,19 +477,6 @@ function authenticateWithSMTP($email, $password) {
             h2 {
                 font-size: 1.5rem;
             }
-
-            .brand-details {
-                font-size: 0.7rem;
-            }
-        }
-
-        /* Step indicator */
-        .step-indicator {
-            font-size: 0.75rem;
-            color: #999;
-            margin-bottom: 20px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
         }
     </style>
 </head>
@@ -620,13 +493,7 @@ function authenticateWithSMTP($email, $password) {
             </div>
 
             <h2>Authentication</h2>
-            
-            <?php if ($currentStep === 'email'): ?>
-                <p class="subtitle">Enter your institutional email to continue.</p>
-                <div class="step-indicator">Step 1 of 2</div>
-            <?php else: ?>
-                <div class="step-indicator">Step 2 of 2</div>
-            <?php endif; ?>
+            <!-- <p class="subtitle">Enter institutional credentials to continue.</p> -->
 
             <?php if ($error): ?>
                 <div class="error-toast">
@@ -640,80 +507,56 @@ function authenticateWithSMTP($email, $password) {
                 </div>
             <?php endif; ?>
 
-            <?php if ($loginAttempts > 0 && $loginAttempts < MAX_LOGIN_ATTEMPTS && $currentStep === 'password'): ?>
+            <?php if ($loginAttempts > 0 && $loginAttempts < MAX_LOGIN_ATTEMPTS): ?>
                 <div class="warning-toast">
                     ⚠️ Failed attempts: <?php echo $loginAttempts; ?>/<?php echo MAX_LOGIN_ATTEMPTS; ?>
                 </div>
             <?php endif; ?>
 
-            <?php if ($currentStep === 'email'): ?>
-                <!-- STEP 1: EMAIL INPUT -->
-                <form method="POST" id="emailForm">
-                    <input type="hidden" name="step" value="email">
-                    
-                    <div class="input-group">
-                        <label for="email">User ID / Email</label>
-                        <input 
-                            type="email" 
-                            name="email" 
-                            id="email" 
-                            placeholder="user@sxccal.edu" 
-                            required
-                            autocomplete="email"
-                            autofocus
-                            value="<?php echo htmlspecialchars($userEmail); ?>"
-                        >
-                    </div>
-
-                    <button type="submit" id="nextBtn">
-                        Next →
-                    </button>
-                </form>
-
-            <?php else: ?>
-                <!-- STEP 2: PASSWORD INPUT -->
-                <div class="email-display">
-                    <div class="email-text"><?php echo htmlspecialchars($userEmail); ?></div>
-                    <a href="?step=email" class="change-link">Change</a>
+            <form method="POST" id="loginForm">
+                <div class="input-group">
+                    <label for="email">User ID / Email</label>
+                    <input 
+                        type="email" 
+                        name="email" 
+                        id="email" 
+                        placeholder="user@sxccal.edu" 
+                        required
+                        <?php echo ($blockUntil ? 'disabled' : ''); ?>
+                        autocomplete="email"
+                        autofocus
+                    >
                 </div>
 
-                <form method="POST" id="passwordForm">
-                    <input type="hidden" name="step" value="password">
-                    
-                    <div class="input-group">
-                        <label for="app_password">App Password</label>
-                        <input 
-                            type="password" 
-                            name="app_password" 
-                            id="app_password" 
-                            placeholder="••••••••••••" 
-                            required
-                            <?php echo ($blockUntil ? 'disabled' : ''); ?>
-                            autocomplete="current-password"
-                            autofocus
-                        >
-                        
-                        <label class="checkbox-container">
-                            <input type="checkbox" id="toggleCheck" onclick="togglePassword()">
-                            <span>Show Password</span>
-                        </label>
-                    </div>
-
-                    <button 
-                        type="submit" 
-                        id="submitBtn"
+                <div class="input-group">
+                    <label for="app_password">App Password</label>
+                    <input 
+                        type="password" 
+                        name="app_password" 
+                        id="app_password" 
+                        placeholder="••••••••••••" 
+                        required
                         <?php echo ($blockUntil ? 'disabled' : ''); ?>
+                        autocomplete="current-password"
                     >
-                        <?php echo ($blockUntil ? 'Account Locked' : 'Verify & Sign In'); ?>
-                    </button>
+                    
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="toggleCheck" onclick="togglePassword()">
+                        <span>Show Password</span>
+                    </label>
+                </div>
 
-                    <button type="button" class="back-button" onclick="goBack()">
-                        ← Back to Email
-                    </button>
-                </form>
-            <?php endif; ?>
-
+                <button 
+                    type="submit" 
+                    id="submitBtn"
+                    <?php echo ($blockUntil ? 'disabled' : ''); ?>
+                >
+                    <?php echo ($blockUntil ? 'Account Locked' : 'Verify & Proceed'); ?>
+                </button>
+            </form>
             <footer>
+                <!-- St. Xavier's College (Autonomous), Kolkata<br>
+                Mail Delivery & Tracking System v2.0 -->
                 <br>
                 <span style="font-size:18px;color:#a3abc3;">Made with ♥︎ by MDTS Students</span>
             </footer>
@@ -724,10 +567,6 @@ function authenticateWithSMTP($email, $password) {
         function togglePassword() {
             const passInput = document.getElementById("app_password");
             passInput.type = passInput.type === "password" ? "text" : "password";
-        }
-
-        function goBack() {
-            window.location.href = '?step=email';
         }
 
         // Auto-unlock countdown if blocked
@@ -749,31 +588,11 @@ function authenticateWithSMTP($email, $password) {
         }, 1000);
         <?php endif; ?>
 
-        // Form validation for email step
-        <?php if ($currentStep === 'email'): ?>
-        document.getElementById('emailForm').addEventListener('submit', function(e) {
-            const btn = document.getElementById('nextBtn');
-            btn.disabled = true;
-            btn.textContent = 'Validating...';
-        });
-        <?php endif; ?>
-
-        // Form validation for password step
-        <?php if ($currentStep === 'password'): ?>
-        document.getElementById('passwordForm').addEventListener('submit', function(e) {
+        // Form validation
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
             const btn = document.getElementById('submitBtn');
             btn.disabled = true;
             btn.textContent = 'Authenticating...';
-        });
-        <?php endif; ?>
-
-        // Auto-focus on input fields
-        window.addEventListener('load', function() {
-            <?php if ($currentStep === 'email'): ?>
-                document.getElementById('email').focus();
-            <?php else: ?>
-                document.getElementById('app_password').focus();
-            <?php endif; ?>
         });
     </script>
 </body>
