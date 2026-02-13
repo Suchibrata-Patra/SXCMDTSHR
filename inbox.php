@@ -436,7 +436,7 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .message-item {
-            padding: 6px 20px;
+            padding: 12px 20px;
             border-bottom: 1px solid var(--border);
             cursor: pointer;
             transition: all 0.2s;
@@ -457,35 +457,18 @@ $lastSync = getLastSyncDate($userEmail);
         .message-item.selected {
             background: #F0F7FF;
             border-left: 3px solid var(--apple-blue);
-            /* padding-left: 17px; */
         }
 
-        .message-item.unread {
-            /* background: linear-gradient(90deg, #F5F9FF 0%, #FFFFFF 100%); */
-            /* background: #f6f6f6; */
-            /* border-left:1px solid blue; */
+        .message-item.unread .message-sender {
+            font-weight: 700;
+        }
+        
+        .message-item.unread .message-subject {
+            font-weight: 600;
         }
 
         .message-item.unread:hover {
             background: linear-gradient(90deg, #f9fcff 0%, #FAFAFA 100%);
-        }
-
-        /* .message-item.new {
-            background: linear-gradient(90deg, #E8F5E9 0%, #FFFFFF 100%);
-        } */
-
-        /* .message-item.new:hover {
-            background: linear-gradient(90deg, #DFF0E0 0%, #FAFAFA 100%);
-        } */
-
-        .message-item.new::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 3px;
-            background: var(--success-green);
         }
 
         .message-star {
@@ -505,6 +488,19 @@ $lastSync = getLastSyncDate($userEmail);
             color: var(--warning-orange);
         }
 
+        .message-important {
+            color: var(--warning-orange);
+            font-size: 18px;
+            margin-top: 2px;
+        }
+
+        .sender-email-hint {
+            font-size: 11px;
+            color: var(--apple-gray);
+            font-weight: 400;
+            margin-left: 4px;
+        }
+
         .message-content {
             flex: 1;
             min-width: 0;
@@ -512,16 +508,25 @@ $lastSync = getLastSyncDate($userEmail);
 
         .message-header {
             display: flex;
-            justify-content: space-between;
-            align-items: start;
-            margin-bottom: 4px;
+            align-items: baseline;
+            margin-bottom: 3px;
+            gap: 12px;
         }
 
         .message-sender {
-            font-weight: 600;
+            font-weight: 500;
             color: #1c1c1e;
-            font-size: 14px;
-            margin-right: 12px;
+            font-size: 13px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .message-sender strong,
+        .message-subject strong {
+            font-weight: 600;
+            color: var(--apple-gray);
+            margin-right: 4px;
         }
 
         .message-date {
@@ -529,17 +534,30 @@ $lastSync = getLastSyncDate($userEmail);
             color: var(--apple-gray);
             white-space: nowrap;
             font-weight: 500;
+            flex-shrink: 0;
+        }
+
+        .message-subject-line {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 3px;
         }
 
         .message-subject {
             font-size: 13px;
             color: #1c1c1e;
-            margin-bottom: 4px;
             font-weight: 500;
-            display: -webkit-box;
-            -webkit-line-clamp: 1;
-            -webkit-box-orient: vertical;
+            white-space: nowrap;
             overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+
+        .inline-attachment-icon {
+            font-size: 14px !important;
+            color: var(--apple-gray);
+            flex-shrink: 0;
         }
 
         .message-preview {
@@ -549,7 +567,21 @@ $lastSync = getLastSyncDate($userEmail);
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            line-height: 1.4;
+            line-height: 1.5;
+            margin-bottom: 4px;
+            font-style: italic;
+        }
+            line-height: 1.5;
+            margin-bottom: 4px;
+        }
+
+        .message-id-badge {
+            font-size: 10px;
+            color: var(--apple-gray);
+            background: var(--apple-bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 500;
         }
 
         .message-badges {
@@ -572,6 +604,17 @@ $lastSync = getLastSyncDate($userEmail);
         .badge-new {
             background: rgba(52, 199, 89, 0.15);
             color: var(--success-green);
+        }
+
+        .badge-new-inline {
+            display: inline-block;
+            background: rgba(52, 199, 89, 0.15);
+            color: var(--success-green);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            margin-top: 2px;
         }
 
         .badge-attachment {
@@ -636,9 +679,37 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .message-meta {
-            display: inline-flex;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            align-items: center;
+            padding-top: 2px;
+        }
+
+        .message-right-meta {
+            display: flex;
+            flex-direction: column;
             align-items: center;
             gap: 6px;
+            padding-top: 2px;
+            flex-shrink: 0;
+            min-width: 80px;
+        }
+
+        /* When there's no unread dot, move ID up to take its place */
+        .message-right-meta:not(.has-unread-dot) {
+            gap: 8px;
+        }
+
+        .message-right-meta:not(.has-unread-dot) .message-id-badge {
+            margin-top: 2px;
+        }
+
+        .message-right-meta .message-date {
+            font-size: 11px;
+            color: var(--apple-gray);
+            white-space: nowrap;
+            font-weight: 500;
         }
 
         .unread-dot {
@@ -1034,33 +1105,62 @@ $lastSync = getLastSyncDate($userEmail);
             container.innerHTML = messages.map(msg => {
                 const classes = ['message-item'];
                 if (msg.is_read == 0) classes.push('unread');
-                if (msg.is_new == 1) classes.push('new');
                 if (msg.id == currentMessageId) classes.push('selected');
 
-                const preview = msg.body ? msg.body.substring(0, 100) : '';
+                // Use body_preview if available, otherwise strip HTML from body
+                let preview = '';
+                if (msg.body_preview && msg.body_preview.trim()) {
+                    preview = msg.body_preview.substring(0, 150);
+                } else if (msg.body) {
+                    // Strip HTML tags and get plain text
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = msg.body;
+                    const plainText = tempDiv.textContent || tempDiv.innerText || '';
+                    preview = plainText.substring(0, 150);
+                } else {
+                    preview = 'No preview available';
+                }
+                
+                // Get sender email and name
+                const senderEmail = msg.sender_email || 'unknown@email.com';
+                const senderName = msg.sender_name || senderEmail;
+                
+                // Get subject or use default
+                const subjectDisplay = msg.subject || '(No Subject)';
 
                 return `
-                    <div class="${classes.join(' ')}" onclick="viewMessage(${msg.id}, event)">
-                    <span class="message-meta">
-    <span class="material-icons message-star ${msg.is_starred == 1 ? 'starred' : ''}"
-          onclick="toggleStar(${msg.id}, event)">
-        ${msg.is_starred == 1 ? 'star' : 'star_border'}
-    </span>
-
-    ${msg.is_read == 0 ? '<span class="unread-dot"></span>' : ''}
-</span>
+                    <div class="${classes.join(' ')}" onclick="viewMessage(${msg.id}, event)" data-message-id="${msg.id}">
+                        <span class="message-meta">
+                            <span class="material-icons message-star ${msg.is_starred == 1 ? 'starred' : ''}"
+                                  onclick="toggleStar(${msg.id}, event)">
+                                ${msg.is_starred == 1 ? 'star' : 'star_border'}
+                            </span>
+                            ${msg.is_important == 1 ? '<span class="material-icons message-important" title="Important">label_important</span>' : ''}
+                        </span>
 
                         <div class="message-content">
                             <div class="message-header">
-                                <span class="message-sender">${escapeHtml(msg.sender)}</span>
-                                <span class="message-date">${formatDate(msg.received_date)}</span>
+                                <span class="message-sender" title="${escapeHtml(senderEmail)}">
+                                     ${escapeHtml(senderName)} ${senderName !== senderEmail ? '<br><span class="sender-email-hint">&lt;' + escapeHtml(senderEmail) + '&gt;</span>' : ''}
+                                </span>
                             </div>
-                            <div class="message-subject">${escapeHtml(msg.subject)}</div>
-                            <div class="message-preview">${escapeHtml(preview)}</div>
-                            <div class="message-badges">
-                                ${msg.is_new == 1 ? '<span class="badge badge-new">NEW</span>' : ''}
-                                ${msg.has_attachments == 1 ? '<span class="badge badge-attachment"><span class="material-icons">attach_file</span> Attachments</span>' : ''}
+                            <div class="message-subject-line">
+                                <span class="message-subject" title="${escapeHtml(subjectDisplay)}">
+                                    <strong>Subject:</strong> ${escapeHtml(subjectDisplay)}
+                                </span>
+                                ${msg.has_attachments == 1 ? '<span class="inline-attachment-icon material-icons" title="Has attachments">attach_file</span>' : ''}
                             </div>
+                            <div class="message-preview" title="${escapeHtml(preview)}">
+                                ${escapeHtml(preview)}${preview.length >= 150 ? '...' : ''}
+                            </div>
+                        </div>
+                        
+                        <div class="message-right-meta ${msg.is_read == 0 ? 'has-unread-dot' : ''}">
+                            <span class="message-date" title="${formatDateLong(msg.received_date)}">
+                                ${formatDate(msg.received_date)}
+                            </span>
+                            ${msg.is_read == 0 ? '<span class="unread-dot"></span>' : ''}
+                            <span class="message-id-badge" title="Message ID: ${msg.id}">ID: ${msg.id}</span>
                         </div>
                     </div>
                 `;
@@ -1127,7 +1227,7 @@ $lastSync = getLastSyncDate($userEmail);
                             <div class="message-view-meta">
                                 <div class="message-view-meta-item">
                                     <span class="material-icons">person</span>
-                                    <span class="message-view-meta-label">From:</span> ${escapeHtml(msg.sender)}
+                                    <span class="message-view-meta-label"></span> ${escapeHtml(msg.sender)}
                                 </div>
                                 <div class="message-view-meta-item">
                                     <span class="material-icons">schedule</span>
@@ -1428,7 +1528,7 @@ $lastSync = getLastSyncDate($userEmail);
             
             const escapedTerm = escapeRegExpSearch(searchTerm);
             const regex = new RegExp(`(${escapedTerm})`, 'gi');
-            return text.replace(regex, '<mark style="background-color: #FFEB3B; color: #000; padding: 2px 0; border-radius: 2px; font-weight: 600;">$1</mark>');
+            return text.replace(regex, '<mark style="background-color: #f4cccc; color: #000; padding: 2px 3px; border-radius: 2px; font-weight: 600;">$1</mark>');
         }
         
         // Remove all highlights and restore original content
