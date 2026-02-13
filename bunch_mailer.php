@@ -56,6 +56,23 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             --ease-out: cubic-bezier(0, 0, .2, 1);
         }
 
+        /* ─── ANIMATIONS ─────────────────────────────────────────────── */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
         /* ─── RESET ──────────────────────────────────────────────────── */
         *,
         *::before,
@@ -411,11 +428,14 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         /* ─── ANALYSIS RESULTS ───────────────────────────────────────── */
         .analysis-results {
             display: none;
-            animation: fadeUp .25s var(--ease-out) both;
+            opacity: 0;
+            transition: opacity .25s var(--ease-out);
         }
 
         .analysis-results.active {
-            display: block;
+            display: block !important;
+            opacity: 1;
+            animation: fadeUp .25s var(--ease-out) both;
         }
 
         /* sticky mapping header */
@@ -1955,6 +1975,8 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             const zone = document.getElementById('uploadZone');
             const files = event.target.files || event.dataTransfer?.files;
 
+            console.log('=== CSV UPLOAD STARTED ===');
+
             if (!files || files.length === 0) {
                 console.log('No files selected');
                 return;
@@ -1993,23 +2015,25 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
                 formData.append('csv_file', file);
                 formData.append('action', 'analyze');
 
-                console.log('Uploading CSV to backend...');
+                console.log('▶ Uploading CSV to backend...');
                 const response = await fetch('bulk_mail_backend.php', {
                     method: 'POST',
                     body: formData
                 });
 
-                console.log('Response status:', response.status);
+                console.log('▶ Response status:', response.status);
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
                 const data = await response.json();
-                console.log('Backend response:', data);
+                console.log('▶ Backend response:', data);
 
                 if (data.success) {
-                    console.log('CSV analysis successful');
+                    console.log('✓ CSV analysis successful');
+                    console.log('  - Rows:', data.total_rows, '| Columns:', data.csv_columns.length);
+                    
                     currentCSVData = data;
 
                     // Show file loaded row
@@ -2018,22 +2042,38 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
                     document.getElementById('fileLoadedRow').classList.add('visible');
 
                     // Display analysis results
-                    console.log('Displaying analysis results...');
+                    console.log('▶ Calling displayAnalysisResults...');
                     displayAnalysisResults(data);
 
                     // Verify the section is visible
                     const analysisSection = document.getElementById('analysisResults');
-                    if (analysisSection.classList.contains('active')) {
-                        console.log('✓ Analysis results section is now visible');
-                    } else {
-                        console.error('✗ Failed to make analysis results visible');
-                    }
+                    const displayStyle = window.getComputedStyle(analysisSection).display;
+                    console.log('✓ Analysis section display:', displayStyle);
+                    console.log('✓ Has active class:', analysisSection.classList.contains('active'));
 
                     showAlert('success', `CSV loaded: ${data.total_rows} rows, ${data.csv_columns.length} columns`);
+                    console.log('=== CSV UPLOAD COMPLETED ===');
                 } else {
                     console.error('Backend returned error:', data.error);
                     throw new Error(data.error || 'Failed to analyze CSV');
                 }
+            } catch (err) {
+                console.error('Upload error:', err);
+
+                // Restore upload zone on error
+                zone.style.pointerEvents = '';
+                zone.innerHTML = `
+            <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSVUpload(event)">
+            <div class="upload-icon-wrap"><span class="material-icons-round">upload_file</span></div>
+            <p class="upload-title">Drop a CSV file, or click to browse</p>
+            <p class="upload-hint">Supports .csv up to 10 MB</p>`;
+
+                showAlert('error', 'Failed to upload CSV: ' + err.message);
+                console.log('=== CSV UPLOAD FAILED ===');
+            }
+
+            event.target.value = '';
+        }
             } catch (err) {
                 console.error('Upload error:', err);
 
@@ -2052,6 +2092,8 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
         }
 
         function displayAnalysisResults(data) {
+            console.log('▶ displayAnalysisResults called with data:', data);
+            
             currentMapping = data.suggested_mapping || {};
 
             buildMappingGrid(data.csv_columns);
@@ -2059,13 +2101,40 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             updateMappingMeta(data.total_rows, data.csv_columns.length);
             updateMappingSummary();
 
-            document.getElementById('analysisResults').classList.add('active');
+            // Force display the analysis results section
+            const analysisEl = document.getElementById('analysisResults');
+            
+            if (!analysisEl) {
+                console.error('✗ analysisResults element not found!');
+                return;
+            }
+            
+            console.log('▶ Adding active class to analysisResults');
+            analysisEl.classList.add('active');
+            
+            // Force display as backup
+            analysisEl.style.display = 'block';
+            
+            // Verify it's visible
+            setTimeout(() => {
+                const computedStyle = window.getComputedStyle(analysisEl);
+                console.log('✓ Analysis section display:', computedStyle.display);
+                console.log('✓ Analysis section opacity:', computedStyle.opacity);
+                console.log('✓ Has active class:', analysisEl.classList.contains('active'));
+                
+                if (computedStyle.display === 'none') {
+                    console.error('✗ WARNING: Analysis section still hidden!');
+                    // Force it again
+                    analysisEl.style.display = 'block !important';
+                }
+            }, 100);
 
             setTimeout(() => {
-                document.getElementById('analysisResults').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }, 80);
+                analysisEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 150);
 
             updateActionBar(data.total_rows);
+            console.log('✓ displayAnalysisResults completed');
         }
 
         /* ═══ MAPPING GRID ═══════════════════════════════════════════════ */
