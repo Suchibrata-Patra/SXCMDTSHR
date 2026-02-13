@@ -223,7 +223,7 @@ function authenticateWithSMTP($email, $password) {
         body, html {
             height: 100%;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background-color: rgb(102, 117, 142);
+            background-color: #ebebf0;
             background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
             background-size: 40px 40px;
             position: relative;
