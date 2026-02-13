@@ -1,4 +1,18 @@
 <?php
+/**
+ * ============================================================
+ * SECURE LOGIN PAGE - OPTIMIZED & FAST
+ * ============================================================
+ * Features:
+ * - Rate limiting & brute force protection
+ * - NO email sending (activity logged directly to DB)
+ * - Fast SMTP-only validation
+ * - Secure session management
+ * - Login activity tracking (separate from inbox)
+ * ============================================================
+ */
+
+require_once 'vendor/autoload.php';
 require_once 'config.php';
 require_once 'db_config.php';
 require_once 'login_auth_helper.php';
