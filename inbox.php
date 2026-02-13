@@ -29,11 +29,11 @@ use PHPMailer\PHPMailer\Exception;
 // Initialize secure session
 initializeSecureSession();
 
-// Redirect if already logged in
-if (isset($_SESSION['authenticated']) && $_SESSION['authenticated'] === true) {
-    header("Location: index.php");
-    exit();
-}
+// // Redirect if already logged in
+// if (isset($_SESSION['authenticated']) && $_SESSION['authenticated'] === true) {
+//     header("Location: index.php");
+//     exit();
+// }
 
 $error = "";
 $loginAttempts = 0;
