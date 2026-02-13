@@ -29,8 +29,15 @@ use PHPMailer\PHPMailer\Exception;
 // Initialize secure session
 initializeSecureSession();
 
-// Redirect if already logged in
-if (isset($_SESSION['authenticated']) && $_SESSION['authenticated'] === true) {
+// Check if we should show success animation
+$showSuccessAnimation = false;
+if (isset($_SESSION['show_success_animation']) && $_SESSION['show_success_animation'] === true) {
+    $showSuccessAnimation = true;
+    unset($_SESSION['show_success_animation']); // Clear the flag
+}
+
+// Redirect if already logged in (unless showing animation)
+if (isset($_SESSION['authenticated']) && $_SESSION['authenticated'] === true && !$showSuccessAnimation) {
     header("Location: index.php");
     exit();
 }
@@ -92,6 +99,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $_SESSION['user_id'] = $userId;
                     $_SESSION['login_time'] = time();
                     $_SESSION['ip_address'] = $ipAddress;
+                    $_SESSION['show_success_animation'] = true; // Flag for animation
                     
                     // Regenerate session ID for security
                     session_regenerate_id(true);
@@ -111,8 +119,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         require_once 'settings_helper.php';
                     }
                     
-                    // Success - redirect
-                    header("Location: index.php");
+                    // Reload page to show animation, then redirect
+                    header("Location: " . $_SERVER['PHP_SELF']);
                     exit();
                 }
             } else {
@@ -207,21 +215,25 @@ function authenticateWithSMTP($email, $password) {
     ?>
     <style>
         :root {
-            --primary-accent: #007aff;
-            --primary-dark: #0051d5;
-            --nature-green: #34c759;
+            --primary-accent: #1a237e;
+            --primary-dark: #0d1642;
+            --accent-gold: #c5a572;
             --soft-white: #ffffff;
-            --error-red: #ff3b30;
-            --warning-orange: #ff9500;
-            --bg-primary: #000000;
-            --bg-secondary: #1c1c1e;
-            --text-primary: #ffffff;
-            --text-secondary: rgba(255, 255, 255, 0.6);
-            --input-bg: rgba(255, 255, 255, 0.08);
-            --input-border: rgba(255, 255, 255, 0.12);
-            --card-bg: rgba(28, 28, 30, 0.7);
-            --shadow-subtle: 0 8px 32px rgba(0, 0, 0, 0.3);
-            --shadow-strong: 0 20px 60px rgba(0, 0, 0, 0.5);
+            --error-red: #d32f2f;
+            --warning-orange: #f57c00;
+            --bg-primary: #fafbfc;
+            --bg-secondary: #f5f7fa;
+            --text-primary: #1a1a1a;
+            --text-secondary: #64748b;
+            --text-tertiary: #94a3b8;
+            --input-bg: #ffffff;
+            --input-border: #e2e8f0;
+            --input-focus: #1a237e;
+            --card-bg: rgba(255, 255, 255, 0.98);
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08);
+            --shadow-xl: 0 12px 40px rgba(0, 0, 0, 0.1);
         }
 
         * {
@@ -232,15 +244,15 @@ function authenticateWithSMTP($email, $password) {
 
         body, html {
             height: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #fafbfc 0%, #f0f4f8 100%);
             color: var(--text-primary);
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             overflow-x: hidden;
         }
 
-        /* Animated background */
+        /* Subtle background pattern */
         body::before {
             content: '';
             position: fixed;
@@ -248,16 +260,25 @@ function authenticateWithSMTP($email, $password) {
             left: 0;
             width: 100%;
             height: 100%;
-            background: 
-                radial-gradient(circle at 20% 50%, rgba(0, 122, 255, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(52, 199, 89, 0.08) 0%, transparent 50%);
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(26, 35, 126, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(197, 165, 114, 0.04) 0%, transparent 50%);
             pointer-events: none;
-            animation: backgroundShift 20s ease-in-out infinite;
+            z-index: 0;
         }
 
-        @keyframes backgroundShift {
-            0%, 100% { opacity: 0.3; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.1); }
+        /* Decorative elements */
+        body::after {
+            content: '';
+            position: fixed;
+            top: -50%;
+            right: -20%;
+            width: 60%;
+            height: 60%;
+            background: radial-gradient(circle, rgba(26, 35, 126, 0.05) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
         }
 
         .page-wrapper {
@@ -265,7 +286,7 @@ function authenticateWithSMTP($email, $password) {
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 24px;
+            padding: 20px;
             position: relative;
             z-index: 1;
         }
@@ -273,15 +294,15 @@ function authenticateWithSMTP($email, $password) {
         /* Login Card */
         .login-card {
             width: 100%;
-            max-width: 440px;
+            max-width: 420px;
             background: var(--card-bg);
-            backdrop-filter: blur(40px) saturate(180%);
-            -webkit-backdrop-filter: blur(40px) saturate(180%);
-            border-radius: 20px;
-            padding: 48px 40px;
-            box-shadow: var(--shadow-strong);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            animation: cardEntry 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 12px;
+            padding: 36px 32px;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid rgba(26, 35, 126, 0.08);
+            animation: cardEntry 0.5s cubic-bezier(0.16, 1, 0.3, 1);
             position: relative;
             overflow: hidden;
         }
@@ -292,32 +313,33 @@ function authenticateWithSMTP($email, $password) {
             top: 0;
             left: 0;
             right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-accent), var(--accent-gold), var(--primary-accent));
+            opacity: 0.8;
         }
 
         @keyframes cardEntry {
             from { 
                 opacity: 0; 
-                transform: translateY(30px) scale(0.95);
+                transform: translateY(20px);
             }
             to { 
                 opacity: 1; 
-                transform: translateY(0) scale(1);
+                transform: translateY(0);
             }
         }
 
         /* Brand Header */
         .brand-header {
             text-align: center;
-            margin-bottom: 32px;
-            animation: fadeInDown 0.8s ease;
+            margin-bottom: 28px;
+            animation: fadeInDown 0.6s ease;
         }
 
         @keyframes fadeInDown {
             from {
                 opacity: 0;
-                transform: translateY(-20px);
+                transform: translateY(-15px);
             }
             to {
                 opacity: 1;
@@ -326,79 +348,76 @@ function authenticateWithSMTP($email, $password) {
         }
 
         .brand-logo {
-            width: 72px;
-            height: 72px;
-            margin-bottom: 16px;
-            filter: drop-shadow(0 4px 12px rgba(0, 122, 255, 0.3));
-            animation: logoFloat 3s ease-in-out infinite;
+            width: 68px;
+            height: 68px;
+            margin-bottom: 14px;
+            filter: drop-shadow(0 2px 8px rgba(26, 35, 126, 0.15));
+            transition: transform 0.3s ease;
         }
 
-        @keyframes logoFloat {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
+        .brand-logo:hover {
+            transform: scale(1.05);
         }
 
         .brand-details {
-            font-size: 10px;
+            font-size: 9.5px;
             font-weight: 500;
-            color: var(--text-secondary);
-            line-height: 1.6;
+            color: var(--text-tertiary);
+            line-height: 1.5;
             letter-spacing: 0.3px;
-            max-width: 360px;
+            max-width: 340px;
             margin: 0 auto;
         }
 
         /* Typography */
         h2 {
-            font-size: 28px;
+            font-size: 26px;
             font-weight: 700;
             letter-spacing: -0.5px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             text-align: center;
-            background: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.8) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--primary-accent);
+            position: relative;
         }
 
         .subtitle {
             font-size: 14px;
             color: var(--text-secondary);
             text-align: center;
-            margin-bottom: 32px;
+            margin-bottom: 28px;
             font-weight: 400;
         }
 
         /* Alert Messages */
         .error-toast, .warning-toast {
-            padding: 14px 18px;
-            border-radius: 12px;
-            margin-bottom: 24px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
             font-size: 13px;
             font-weight: 500;
             animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             display: flex;
             align-items: center;
             gap: 10px;
-            backdrop-filter: blur(10px);
+            border-left: 3px solid;
         }
 
         .error-toast {
-            background: rgba(255, 59, 48, 0.15);
-            border: 1px solid rgba(255, 59, 48, 0.3);
-            color: #ff6b6b;
+            background: #fef2f2;
+            border-left-color: var(--error-red);
+            color: #991b1b;
         }
 
         .warning-toast {
-            background: rgba(255, 149, 0, 0.15);
-            border: 1px solid rgba(255, 149, 0, 0.3);
-            color: #ffb74d;
+            background: #fffbeb;
+            border-left-color: var(--warning-orange);
+            color: #92400e;
         }
 
         @keyframes slideIn {
             from { 
                 opacity: 0; 
-                transform: translateX(-20px);
+                transform: translateX(-15px);
             }
             to { 
                 opacity: 1; 
@@ -408,7 +427,7 @@ function authenticateWithSMTP($email, $password) {
 
         /* Form Elements */
         .input-group {
-            margin-bottom: 24px;
+            margin-bottom: 20px;
             position: relative;
         }
 
@@ -416,8 +435,8 @@ function authenticateWithSMTP($email, $password) {
             display: block;
             font-size: 13px;
             font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
+            color: var(--text-primary);
+            margin-bottom: 7px;
             letter-spacing: 0.2px;
             transition: color 0.2s ease;
         }
@@ -425,45 +444,39 @@ function authenticateWithSMTP($email, $password) {
         input[type="email"],
         input[type="password"] {
             width: 100%;
-            padding: 14px 16px;
+            padding: 12px 14px;
             border: 1.5px solid var(--input-border);
             background: var(--input-bg);
-            backdrop-filter: blur(10px);
-            border-radius: 10px;
+            border-radius: 8px;
             font-size: 15px;
             color: var(--text-primary);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             outline: none;
             font-weight: 400;
         }
 
         input[type="email"]::placeholder,
         input[type="password"]::placeholder {
-            color: rgba(255, 255, 255, 0.3);
+            color: var(--text-tertiary);
         }
 
         input:focus {
-            border-color: var(--primary-accent);
-            background: rgba(255, 255, 255, 0.12);
-            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
-            transform: translateY(-1px);
-        }
-
-        input:focus + label {
-            color: var(--primary-accent);
+            border-color: var(--input-focus);
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.08);
         }
 
         input:disabled {
-            opacity: 0.5;
+            opacity: 0.6;
             cursor: not-allowed;
-            background: rgba(255, 255, 255, 0.03);
+            background: var(--bg-secondary);
         }
 
         .checkbox-container {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-top: 12px;
+            gap: 8px;
+            margin-top: 10px;
             font-size: 13px;
             color: var(--text-secondary);
             cursor: pointer;
@@ -476,8 +489,8 @@ function authenticateWithSMTP($email, $password) {
         }
 
         .checkbox-container input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             cursor: pointer;
             accent-color: var(--primary-accent);
         }
@@ -485,18 +498,18 @@ function authenticateWithSMTP($email, $password) {
         /* Button */
         button {
             width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, var(--primary-accent) 0%, var(--primary-dark) 100%);
+            padding: 14px;
+            background: var(--primary-accent);
             color: white;
             border: none;
-            border-radius: 12px;
+            border-radius: 8px;
             font-weight: 600;
             letter-spacing: 0.3px;
             cursor: pointer;
-            margin-top: 32px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-top: 24px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             font-size: 15px;
-            box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3);
+            box-shadow: 0 2px 8px rgba(26, 35, 126, 0.2);
             position: relative;
             overflow: hidden;
         }
@@ -513,8 +526,9 @@ function authenticateWithSMTP($email, $password) {
         }
 
         button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 122, 255, 0.4);
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(26, 35, 126, 0.25);
         }
 
         button:hover:not(:disabled)::before {
@@ -523,11 +537,11 @@ function authenticateWithSMTP($email, $password) {
 
         button:active:not(:disabled) {
             transform: translateY(0);
-            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
         }
 
         button:disabled {
-            background: rgba(255, 255, 255, 0.1);
+            background: #cbd5e1;
+            color: #64748b;
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
@@ -535,11 +549,11 @@ function authenticateWithSMTP($email, $password) {
 
         /* Security Info */
         .security-info {
-            margin-top: 24px;
-            padding: 14px 16px;
-            background: rgba(0, 122, 255, 0.08);
+            margin-top: 20px;
+            padding: 12px 14px;
+            background: #f1f5f9;
             border-left: 3px solid var(--primary-accent);
-            border-radius: 8px;
+            border-radius: 6px;
             font-size: 12px;
             color: var(--text-secondary);
             line-height: 1.6;
@@ -552,51 +566,183 @@ function authenticateWithSMTP($email, $password) {
 
         /* Footer */
         footer {
-            margin-top: 32px;
-            padding-top: 24px;
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            margin-top: 28px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
             font-size: 11px;
-            color: rgba(255, 255, 255, 0.4);
+            color: var(--text-tertiary);
             text-align: center;
-            line-height: 1.8;
+            line-height: 1.6;
         }
 
         footer span {
-            font-size: 16px;
-            color: rgba(255, 255, 255, 0.6);
+            font-size: 15px;
+            color: var(--text-secondary);
             display: inline-block;
-            margin-top: 8px;
+            margin-top: 6px;
+        }
+
+        /* Success animation overlay */
+        .success-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(26, 35, 126, 0.95) 0%, rgba(13, 22, 66, 0.98) 100%);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .success-overlay.active {
+            display: flex;
+            animation: overlayFadeIn 0.3s ease forwards;
+        }
+
+        @keyframes overlayFadeIn {
+            to { opacity: 1; }
+        }
+
+        .success-content {
+            text-align: center;
+            color: white;
+            animation: successContentEntry 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+        }
+
+        @keyframes successContentEntry {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .success-checkmark {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: checkmarkPulse 1s ease infinite;
+        }
+
+        @keyframes checkmarkPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .success-checkmark svg {
+            width: 48px;
+            height: 48px;
+            stroke: white;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            animation: checkmarkDraw 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
+        }
+
+        @keyframes checkmarkDraw {
+            from {
+                stroke-dasharray: 100;
+                stroke-dashoffset: 100;
+            }
+            to {
+                stroke-dasharray: 100;
+                stroke-dashoffset: 0;
+            }
+        }
+
+        .success-text {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .success-subtext {
+            font-size: 15px;
+            opacity: 0.8;
+            font-weight: 400;
+        }
+
+        .loading-dots {
+            display: inline-flex;
+            gap: 4px;
+            margin-left: 4px;
+        }
+
+        .loading-dots span {
+            width: 4px;
+            height: 4px;
+            background: white;
+            border-radius: 50%;
+            animation: dotPulse 1.4s ease-in-out infinite;
+        }
+
+        .loading-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loading-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes dotPulse {
+            0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+            40% { opacity: 1; transform: scale(1); }
         }
 
         /* Responsive */
         @media (max-width: 480px) {
             .login-card {
-                padding: 36px 28px;
-                border-radius: 16px;
+                padding: 28px 24px;
+                border-radius: 10px;
             }
             
             h2 {
-                font-size: 24px;
+                font-size: 23px;
             }
 
             .brand-logo {
-                width: 64px;
-                height: 64px;
+                width: 60px;
+                height: 60px;
             }
 
             button {
-                padding: 14px;
+                padding: 13px;
                 font-size: 14px;
             }
-        }
-
-        /* Smooth transitions for all interactive elements */
-        * {
-            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
         }
     </style>
 </head>
 <body>
+    <!-- Success Animation Overlay -->
+    <div class="success-overlay" id="successOverlay">
+        <div class="success-content">
+            <div class="success-checkmark">
+                <svg viewBox="0 0 52 52">
+                    <path d="M14 27l9 9 19-19" />
+                </svg>
+            </div>
+            <div class="success-text">Authentication Successful</div>
+            <div class="success-subtext">
+                Redirecting to dashboard<span class="loading-dots"><span></span><span></span><span></span></span>
+            </div>
+        </div>
+    </div>
+
     <div class="page-wrapper">
         <div class="login-card">
             <div class="brand-header">
@@ -710,6 +856,19 @@ function authenticateWithSMTP($email, $password) {
             btn.disabled = true;
             btn.textContent = 'Authenticating...';
         });
+
+        // Show success animation if login was successful
+        <?php if ($showSuccessAnimation): ?>
+        window.addEventListener('DOMContentLoaded', function() {
+            const overlay = document.getElementById('successOverlay');
+            overlay.classList.add('active');
+            
+            // Redirect after animation (2 seconds)
+            setTimeout(function() {
+                window.location.href = 'index.php';
+            }, 2000);
+        });
+        <?php endif; ?>
     </script>
 </body>
 </html>
