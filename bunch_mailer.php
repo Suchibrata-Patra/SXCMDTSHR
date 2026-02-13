@@ -1,7 +1,5 @@
 <?php
-// htdocs/bunch_mailer.php
 session_start();
-
 // Security check: Redirect to login if session credentials do not exist
 if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     header("Location: login.php");
@@ -10,7 +8,6 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 ?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <?php
         define('PAGE_TITLE', 'SXC MDTS | Mailmerge');
@@ -20,9 +17,7 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;450;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-
     <style>
-        /* ─── TOKENS ─────────────────────────────────────────────────── */
         :root {
             --blue:      #0071E3;
             --blue-mid:  #005BBF;
