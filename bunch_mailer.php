@@ -1571,8 +1571,20 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 
         /* ═══ DRIVE FILES ════════════════════════════════════════════════ */
         async function loadDriveFiles() {
+            console.log('🔵 loadDriveFiles() called');
+            
             const container = document.getElementById('driveFilesList');
             const loading   = document.getElementById('driveLoading');
+
+            console.log('🔵 Elements found:', {
+                container: container ? 'YES' : 'MISSING',
+                loading: loading ? 'YES' : 'MISSING'
+            });
+
+            if (!container || !loading) {
+                console.error('❌ Required elements not found in DOM!');
+                return;
+            }
 
             try {
                 const formData = new FormData();
@@ -1582,22 +1594,31 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
                 const directory   = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
                 const url         = directory + 'bulk_mail_backend.php';
 
-                console.log('Fetching drive files from:', url);
+                console.log('🔵 Fetch URL:', url);
+                console.log('🔵 Current path:', currentPath);
+                console.log('🔵 Directory:', directory);
                 
                 const response = await fetch(url, { method: 'POST', body: formData });
                 
-                console.log('Response status:', response.status);
+                console.log('🔵 Response status:', response.status);
+                console.log('🔵 Response OK:', response.ok);
                 
-                const data = await response.json();
+                const responseText = await response.text();
+                console.log('🔵 Raw response:', responseText.substring(0, 500));
                 
-                console.log('Drive files response:', data);
+                const data = JSON.parse(responseText);
+                
+                console.log('🔵 Parsed data:', data);
+                console.log('🔵 Files count:', data.files ? data.files.length : 'NO FILES PROPERTY');
 
                 if (data.success && data.files && data.files.length > 0) {
+                    console.log('✅ Files found:', data.files.length);
+                    
                     // Files found - show list
                     loading.style.display = 'none';
                     container.style.display = 'flex';
 
-                    container.innerHTML = data.files.map(f => `
+                    const html = data.files.map(f => `
                         <div class="drive-item" onclick="selectDriveFile('${f.path}','${f.name}','${f.formatted_size}','${f.extension}')">
                             <span class="drive-item-icon">${getFileIcon(f.extension)}</span>
                             <div class="drive-item-info">
@@ -1609,19 +1630,27 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
                             </div>
                         </div>
                     `).join('');
+                    
+                    console.log('🔵 HTML length:', html.length);
+                    container.innerHTML = html;
+                    console.log('✅ Files rendered to container');
+                    
                 } else if (data.success && data.files && data.files.length === 0) {
+                    console.log('⚠️ No files in drive');
                     // Success but no files - show empty state
                     container.style.display = 'none';
                     loading.style.display = 'block';
                     loading.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📁</div><h3>No files in drive</h3><p>Upload files to File_Drive folder</p></div>`;
                 } else {
+                    console.log('❌ Backend error:', data.error);
                     // Error from backend
                     container.style.display = 'none';
                     loading.style.display = 'block';
                     loading.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠️</div><h3>Could not load files</h3><p>${data.error || 'Unknown error'}</p></div>`;
                 }
             } catch (err) {
-                console.error('Drive files load error:', err);
+                console.error('❌ Drive files load error:', err);
+                console.error('❌ Error stack:', err.stack);
                 container.style.display = 'none';
                 loading.style.display = 'block';
                 loading.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠️</div><h3>Load failed</h3><p>${err.message}</p></div>`;
