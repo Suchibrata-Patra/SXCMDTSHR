@@ -185,6 +185,94 @@ try {
             outputJson($result);
             break;
 
+        // ─── TEST SMTP CONNECTION ──────────────────────────────────────────
+        // Verifies the SMTP connection and authentication WITHOUT sending any
+        // email. Returns full SMTP conversation log.
+        // Usage: process_bulk_mail.php?action=test_smtp
+        case 'test_smtp':
+            $debugLog = [];
+            try {
+                $testMailer = buildMailer($smtpUser, $smtpPass, $settings, false);
+                // Override debug output to capture into array
+                $testMailer->SMTPDebug  = 4;
+                $testMailer->Debugoutput = function (string $str) use (&$debugLog) {
+                    $debugLog[] = rtrim($str);
+                };
+                // smtpConnect() opens the connection and authenticates
+                $connected = $testMailer->smtpConnect([
+                    'ssl' => [
+                        'verify_peer'       => false,
+                        'verify_peer_name'  => false,
+                        'allow_self_signed' => true,
+                    ],
+                ]);
+                $testMailer->smtpClose();
+
+                outputJson([
+                    'success'    => $connected,
+                    'connected'  => $connected,
+                    'smtp_user'  => $smtpUser,
+                    'host'       => SMTP_HOST . ':' . SMTP_PORT,
+                    'log'        => $debugLog,
+                    'message'    => $connected
+                        ? 'SMTP connection and authentication successful.'
+                        : 'SMTP connection failed — check log for details.',
+                ]);
+            } catch (Throwable $e) {
+                outputJson([
+                    'success'   => false,
+                    'connected' => false,
+                    'error'     => $e->getMessage(),
+                    'log'       => $debugLog,
+                ]);
+            }
+            break;
+
+        // ─── TEST SEND (single email with full SMTP debug log) ────────────
+        // Sends ONE real email to a given address and returns the full SMTP
+        // conversation. Use this to verify delivery works end-to-end.
+        // Usage: POST process_bulk_mail.php?action=test_send  { "to": "user@example.com" }
+        case 'test_send':
+            $body        = json_decode(file_get_contents('php://input'), true) ?? [];
+            $testTo      = filter_var(trim((string)($body['to'] ?? $_POST['to'] ?? '')), FILTER_SANITIZE_EMAIL);
+            $testSubject = trim((string)($body['subject'] ?? 'SMTP Test — SXC MDTS Bulk Mailer'));
+
+            if (!$testTo || !filter_var($testTo, FILTER_VALIDATE_EMAIL)) {
+                outputJson(['success' => false, 'error' => 'Provide a valid "to" email address.']);
+            }
+
+            $smtpLog = [];
+            try {
+                $tm = buildMailer($smtpUser, $smtpPass, $settings, false);
+                $tm->SMTPDebug  = 4;
+                $tm->Debugoutput = function (string $s) use (&$smtpLog) {
+                    $smtpLog[] = rtrim($s);
+                };
+                $tm->setFrom($smtpUser, $_SESSION['user_settings']['display_name'] ?? DEFAULT_DISPLAY_NAME);
+                $tm->addAddress($testTo);
+                $tm->Subject = $testSubject;
+                $tm->isHTML(false);
+                $tm->Body    = "This is a test email from the SXC MDTS Bulk Mailer.\r\n"
+                             . "Sent at: " . date('Y-m-d H:i:s') . "\r\n"
+                             . "From SMTP account: {$smtpUser}";
+                $sent = $tm->send();
+
+                outputJson([
+                    'success'  => $sent,
+                    'to'       => $testTo,
+                    'subject'  => $testSubject,
+                    'smtp_log' => $smtpLog,
+                    'message'  => $sent ? 'Test email sent successfully.' : 'Send returned false: ' . $tm->ErrorInfo,
+                ]);
+            } catch (Throwable $e) {
+                outputJson([
+                    'success'  => false,
+                    'error'    => $e->getMessage(),
+                    'smtp_log' => $smtpLog,
+                ]);
+            }
+            break;
+
         // ─── PROCESS BATCH ────────────────────────────────────────────────
         //  Processes multiple emails in one HTTP request, reusing the SMTP
         //  connection across the whole batch.
@@ -314,7 +402,8 @@ function processNextEmail(
     string $smtpUser,
     string $smtpPass,
     array  $settings,
-    ?PHPMailer $sharedMailer = null
+    ?PHPMailer $sharedMailer = null,
+    bool   $debugToFile      = false
 ): array {
     $queueItem = null;
 
@@ -363,7 +452,7 @@ function processNextEmail(
     }
 
     // ── Send ─────────────────────────────────────────────────────────────
-    $sendResult = sendBulkEmail($pdo, $queueItem, $userId, $smtpUser, $smtpPass, $settings, $sharedMailer);
+    $sendResult = sendBulkEmail($pdo, $queueItem, $userId, $smtpUser, $smtpPass, $settings, $sharedMailer, $debugToFile);
 
     // ── Persist outcome ──────────────────────────────────────────────────
     if ($sendResult['success']) {
@@ -469,7 +558,7 @@ function processBatch(
     $noMore   = false;
 
     // ── Create a single reusable PHPMailer instance ───────────────────────
-    $mailer = buildMailer($smtpUser, $smtpPass, $settings);
+    $mailer = buildMailer($smtpUser, $smtpPass, $settings, false);
     $mailer->SMTPKeepAlive = true;   // THE critical change for bulk sending
 
     for ($i = 0; $i < $batchSize; $i++) {
@@ -540,9 +629,10 @@ function sendBulkEmail(
     string    $smtpUser,
     string    $smtpPass,
     array     $settings,
-    ?PHPMailer $sharedMailer = null
+    ?PHPMailer $sharedMailer = null,
+    bool      $debugToFile   = false
 ): array {
-    $mail = $sharedMailer ?? buildMailer($smtpUser, $smtpPass, $settings);
+    $mail = $sharedMailer ?? buildMailer($smtpUser, $smtpPass, $settings, $debugToFile);
 
     // When reusing a keepalive mailer, always reset addresses/attachments
     // so the previous recipient is not included in the new send.
@@ -751,22 +841,32 @@ function sendBulkEmail(
 
 /**
  * Creates and fully configures a PHPMailer instance.
- * Call once per batch; keep alive for the entire batch.
+ *
+ * Mirrors send.php's SMTP configuration exactly:
+ *  - smtp.hostinger.com : 465 (SMTPS / SSL)
+ *  - SMTPAuth enabled
+ *  - SSL peer verification disabled (Hostinger shared-hosting cert)
+ *  - UTF-8 / base64
+ *  - X-Mailer header suppressed   → lower spam score
+ *  - No Timeout override           → uses PHPMailer's safe default (300s)
+ *  - SMTPKeepAlive intentionally   → caller sets true for batch, false for single
+ *
+ * @param  bool $debugToFile  When true, SMTP conversation is logged to smtp_debug.log
  */
-function buildMailer(string $smtpUser, string $smtpPass, array $settings): PHPMailer
+function buildMailer(string $smtpUser, string $smtpPass, array $settings, bool $debugToFile = false): PHPMailer
 {
-    $mail = new PHPMailer(true);
+    $mail = new PHPMailer(true);   // true = throw exceptions on failure
 
+    // ── Transport ──────────────────────────────────────────────────────────
     $mail->isSMTP();
-    $mail->SMTPDebug  = 0;            // Change to SMTP::DEBUG_SERVER for SMTP tracing
     $mail->Host       = SMTP_HOST;
     $mail->SMTPAuth   = true;
     $mail->Username   = $smtpUser;
     $mail->Password   = $smtpPass;
-    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;   // SSL on 465
     $mail->Port       = SMTP_PORT;
 
-    // SSL settings for compatibility with shared hosting certificates
+    // ── SSL (Hostinger shared certs) ───────────────────────────────────────
     $mail->SMTPOptions = [
         'ssl' => [
             'verify_peer'       => false,
@@ -775,11 +875,27 @@ function buildMailer(string $smtpUser, string $smtpPass, array $settings): PHPMa
         ],
     ];
 
+    // ── Content defaults ───────────────────────────────────────────────────
     $mail->CharSet  = 'UTF-8';
     $mail->Encoding = 'base64';
 
-    // Connection timeout — fail fast rather than hanging
-    $mail->Timeout = 20;
+    // ── Suppress PHPMailer's "X-Mailer: PHPMailer …" header ───────────────
+    // This header is a well-known spam trigger for bulk-detection filters.
+    $mail->XMailer = ' ';
+
+    // ── SMTP debug: capture to log file when requested ────────────────────
+    // Enable by calling  process_bulk_mail.php?action=test_smtp
+    // Disable in production (SMTPDebug = 0).
+    if ($debugToFile) {
+        $mail->SMTPDebug  = 4;   // 4 = connection + commands + data + low-level
+        $logFile          = __DIR__ . '/logs/smtp_debug_' . date('Ymd_His') . '.log';
+        @mkdir(__DIR__ . '/logs', 0755, true);
+        $mail->Debugoutput = function (string $str) use ($logFile) {
+            file_put_contents($logFile, $str, FILE_APPEND | LOCK_EX);
+        };
+    } else {
+        $mail->SMTPDebug = 0;
+    }
 
     return $mail;
 }
@@ -1037,7 +1153,7 @@ function isSmtpPermanentFailure(string $errorMessage): bool
 
     $lower = strtolower($errorMessage);
     foreach ($permanent as $marker) {
-        if (str_contains($lower, $marker)) {
+        if (false !== strpos($lower, $marker)) {
             return true;
         }
     }
@@ -1052,19 +1168,19 @@ function humanReadableSmtpError(string $error): string
 {
     $lower = strtolower($error);
 
-    if (str_contains($lower, 'data not accepted') || str_contains($lower, '550')) {
+    if ((false !== strpos($lower, 'data not accepted')) || (false !== strpos($lower, '550'))) {
         return 'SMTP rejected the email. Possible causes: invalid recipient, spam filters, or sending limit reached.';
     }
-    if (str_contains($lower, 'connect') || str_contains($lower, 'timeout')) {
+    if ((false !== strpos($lower, 'connect')) || (false !== strpos($lower, 'timeout'))) {
         return 'Could not connect to SMTP server. Check your internet connection.';
     }
-    if (str_contains($lower, 'auth') || str_contains($lower, 'authenticate')) {
+    if ((false !== strpos($lower, 'auth')) || (false !== strpos($lower, 'authenticate'))) {
         return 'SMTP authentication failed. Check your email credentials.';
     }
-    if (str_contains($lower, 'rate') || str_contains($lower, 'too many')) {
+    if ((false !== strpos($lower, 'rate')) || (false !== strpos($lower, 'too many'))) {
         return 'SMTP rate limit reached. Email will be retried automatically.';
     }
-    if (str_contains($lower, 'invalid') && str_contains($lower, 'address')) {
+    if ((false !== strpos($lower, 'invalid')) && (false !== strpos($lower, 'address'))) {
         return 'Invalid email address — this email will not be retried.';
     }
 
@@ -1110,7 +1226,7 @@ function logEvent(string $level, string $message): void
 /**
  * Outputs a JSON-encoded response and terminates.
  */
-function outputJson(array $data): never
+function outputJson(array $data): void
 {
     echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit();
