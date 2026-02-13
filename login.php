@@ -214,21 +214,26 @@ function authenticateWithSMTP($email, $password) {
         include 'header.php';
     ?>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
         :root {
-            --sf-pro: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
-            --apple-blue: #007aff;
-            --apple-blue-dark: #0051d5;
-            --apple-gray: #86868b;
-            --apple-gray-light: #f5f5f7;
-            --apple-gray-medium: #e8e8ed;
-            --apple-text: #1d1d1f;
-            --apple-text-secondary: #86868b;
-            --apple-red: #ff3b30;
-            --apple-orange: #ff9500;
-            --apple-white: #ffffff;
-            --apple-border: rgba(0, 0, 0, 0.04);
-            --apple-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
-            --apple-shadow-hover: 0 4px 24px rgba(0, 0, 0, 0.08);
+            --academic-navy: #1e3a5f;
+            --academic-navy-dark: #152a45;
+            --academic-gold: #b8935e;
+            --text-primary: #1a1d29;
+            --text-secondary: #6b7280;
+            --text-tertiary: #9ca3af;
+            --pearl-white: #fdfcfa;
+            --soft-white: #ffffff;
+            --glass-bg: rgba(255, 255, 255, 0.65);
+            --input-inset: rgba(0, 0, 0, 0.03);
+            --focus-glow: rgba(30, 58, 95, 0.15);
+            --error-red: #c5374d;
+            --warning-amber: #d97706;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.02);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.04);
+            --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.06);
+            --shadow-xl: 0 20px 48px rgba(0, 0, 0, 0.08);
         }
 
         * {
@@ -239,12 +244,46 @@ function authenticateWithSMTP($email, $password) {
 
         body, html {
             height: 100%;
-            font-family: var(--sf-pro);
-            background: var(--apple-gray-light);
-            color: var(--apple-text);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            background: linear-gradient(135deg, #fdfcfa 0%, #f7f5f2 50%, #faf8f5 100%);
+            color: var(--text-primary);
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             text-rendering: optimizeLegibility;
+            overflow-x: hidden;
+        }
+
+        /* Subtle grain texture */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23noise)" opacity="0.015"/></svg>');
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Ambient gradient */
+        body::after {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at 30% 40%, rgba(30, 58, 95, 0.04) 0%, transparent 50%),
+                        radial-gradient(ellipse at 70% 60%, rgba(184, 147, 94, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+            animation: ambientShift 20s ease-in-out infinite;
+        }
+
+        @keyframes ambientShift {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-5%, -5%); }
         }
 
         .page-wrapper {
@@ -252,247 +291,336 @@ function authenticateWithSMTP($email, $password) {
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 20px;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 1;
+            animation: pageEntry 0.8s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* Login Card - Pure Apple Style */
+        @keyframes pageEntry {
+            from {
+                opacity: 0;
+                transform: scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Frosted Glass Card */
         .login-card {
             width: 100%;
-            max-width: 380px;
-            background: var(--apple-white);
-            border-radius: 18px;
-            padding: 44px 40px 40px;
-            box-shadow: var(--apple-shadow);
-            transition: box-shadow 0.3s ease;
+            max-width: 440px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px) saturate(180%);
+            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            border-radius: 20px;
+            padding: 56px 48px 48px;
+            box-shadow: var(--shadow-xl),
+                        0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            position: relative;
+            overflow: visible;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .login-card:hover {
-            box-shadow: var(--apple-shadow-hover);
+            box-shadow: 0 24px 56px rgba(0, 0, 0, 0.1),
+                        0 0 0 1px rgba(255, 255, 255, 0.6) inset;
         }
 
-        /* Brand Header - Apple Minimalism */
+        /* Brand Header */
         .brand-header {
             text-align: center;
-            margin-bottom: 32px;
+            margin-bottom: 40px;
         }
 
         .brand-logo {
-            width: 64px;
-            height: 64px;
-            margin-bottom: 16px;
-            transition: transform 0.2s ease;
+            width: 72px;
+            height: 72px;
+            margin-bottom: 20px;
+            opacity: 0.96;
+            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.06));
+            transition: all 0.3s ease;
         }
 
         .brand-logo:hover {
+            opacity: 1;
             transform: scale(1.02);
         }
 
         .brand-details {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 400;
-            color: var(--apple-text-secondary);
-            line-height: 1.4;
-            letter-spacing: -0.01em;
+            color: var(--text-tertiary);
+            line-height: 1.6;
+            letter-spacing: 0.4px;
+            opacity: 0.7;
         }
 
-        /* Typography - Apple Style */
+        /* Typography */
         h2 {
-            font-size: 32px;
-            font-weight: 600;
+            font-size: 28px;
+            font-weight: 500;
             letter-spacing: -0.02em;
-            color: var(--apple-text);
+            color: var(--text-primary);
             text-align: center;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
         }
 
         .subtitle {
-            font-size: 17px;
-            font-weight: 400;
-            color: var(--apple-text-secondary);
-            text-align: center;
-            margin-bottom: 32px;
-            letter-spacing: -0.01em;
-        }
-
-        /* Alert Messages - Apple Notifications */
-        .error-toast, .warning-toast {
-            padding: 16px 20px;
-            border-radius: 12px;
-            margin-bottom: 24px;
             font-size: 15px;
             font-weight: 400;
-            letter-spacing: -0.01em;
-            line-height: 1.4;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 36px;
+            letter-spacing: 0.01em;
+        }
+
+        /* Alert Messages */
+        .error-toast, .warning-toast {
+            padding: 14px 18px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            font-weight: 400;
+            letter-spacing: 0.01em;
+            line-height: 1.5;
+            backdrop-filter: blur(10px);
+            animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .error-toast {
-            background: rgba(255, 59, 48, 0.08);
-            color: var(--apple-red);
+            background: rgba(197, 55, 77, 0.08);
+            color: var(--error-red);
+            border: 1px solid rgba(197, 55, 77, 0.15);
         }
 
         .warning-toast {
-            background: rgba(255, 149, 0, 0.08);
-            color: var(--apple-orange);
+            background: rgba(217, 119, 6, 0.08);
+            color: var(--warning-amber);
+            border: 1px solid rgba(217, 119, 6, 0.15);
         }
 
-        /* Form Elements - Apple Input Style */
+        @keyframes toastSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Form Elements with Floating Labels */
         .input-group {
-            margin-bottom: 20px;
+            margin-bottom: 24px;
+            position: relative;
         }
 
         label {
-            display: block;
-            font-size: 13px;
+            position: absolute;
+            left: 16px;
+            top: 15px;
+            font-size: 15px;
             font-weight: 400;
-            color: var(--apple-text-secondary);
-            margin-bottom: 8px;
-            letter-spacing: -0.01em;
+            color: var(--text-tertiary);
+            pointer-events: none;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            letter-spacing: 0.01em;
         }
 
         input[type="email"],
         input[type="password"] {
             width: 100%;
-            padding: 14px 16px;
-            border: 1px solid var(--apple-gray-medium);
-            background: var(--apple-white);
-            border-radius: 10px;
-            font-size: 17px;
+            padding: 18px 16px 8px;
+            border: none;
+            background: var(--soft-white);
+            box-shadow: inset 0 1px 3px var(--input-inset);
+            border-radius: 12px;
+            font-size: 16px;
             font-weight: 400;
-            color: var(--apple-text);
-            letter-spacing: -0.01em;
-            transition: all 0.2s ease;
+            color: var(--text-primary);
+            letter-spacing: 0.01em;
+            transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
             outline: none;
+            font-family: 'Inter', sans-serif;
             -webkit-appearance: none;
-            font-family: var(--sf-pro);
         }
 
         input[type="email"]::placeholder,
         input[type="password"]::placeholder {
-            color: #c7c7cc;
+            opacity: 0;
+        }
+
+        /* Floating label on focus or when filled */
+        input:focus + label,
+        input:not(:placeholder-shown) + label {
+            top: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--academic-navy);
+            letter-spacing: 0.03em;
         }
 
         input:focus {
-            border-color: var(--apple-blue);
-            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+            background: var(--soft-white);
+            box-shadow: inset 0 1px 3px var(--input-inset),
+                        0 0 0 3px var(--focus-glow);
         }
 
         input:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-            background: var(--apple-gray-light);
+            background: rgba(255, 255, 255, 0.5);
         }
 
         .checkbox-container {
             display: flex;
             align-items: center;
             gap: 10px;
-            margin-top: 12px;
-            font-size: 15px;
+            margin-top: 14px;
+            font-size: 14px;
             font-weight: 400;
-            color: var(--apple-text);
+            color: var(--text-secondary);
             cursor: pointer;
             user-select: none;
-            letter-spacing: -0.01em;
+            letter-spacing: 0.01em;
+            transition: color 0.15s ease;
+        }
+
+        .checkbox-container:hover {
+            color: var(--text-primary);
         }
 
         .checkbox-container input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             cursor: pointer;
-            accent-color: var(--apple-blue);
+            accent-color: var(--academic-navy);
         }
 
-        /* Button - Apple Blue Button */
+        /* Premium Button */
         button {
             width: 100%;
-            padding: 14px;
-            background: var(--apple-blue);
-            color: var(--apple-white);
+            padding: 16px;
+            background: linear-gradient(135deg, var(--academic-navy) 0%, var(--academic-navy-dark) 100%);
+            color: var(--soft-white);
             border: none;
-            border-radius: 10px;
-            font-size: 17px;
+            border-radius: 14px;
+            font-size: 16px;
             font-weight: 500;
-            letter-spacing: -0.01em;
+            letter-spacing: 0.02em;
             cursor: pointer;
-            margin-top: 24px;
-            transition: all 0.2s ease;
-            font-family: var(--sf-pro);
-            -webkit-appearance: none;
+            margin-top: 32px;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            font-family: 'Inter', sans-serif;
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Glass highlight on button */
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, transparent 100%);
+            border-radius: 14px 14px 0 0;
+            pointer-events: none;
         }
 
         button:hover:not(:disabled) {
-            background: var(--apple-blue-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(30, 58, 95, 0.2);
+            background: linear-gradient(135deg, #244466 0%, #1a3352 100%);
         }
 
         button:active:not(:disabled) {
-            transform: scale(0.98);
+            transform: translateY(0);
+            box-shadow: var(--shadow-md);
         }
 
         button:disabled {
-            background: var(--apple-gray-medium);
-            color: var(--apple-gray);
+            background: #d1d5db;
+            color: #9ca3af;
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
-        /* Security Info - Apple Info Box */
+        button:disabled::before {
+            display: none;
+        }
+
+        /* Security Info */
         .security-info {
-            margin-top: 24px;
-            padding: 16px;
-            background: var(--apple-gray-light);
-            border-radius: 12px;
-            font-size: 13px;
+            margin-top: 28px;
+            padding: 16px 18px;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            font-size: 12px;
             font-weight: 400;
-            color: var(--apple-text-secondary);
-            line-height: 1.5;
-            letter-spacing: -0.01em;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            letter-spacing: 0.02em;
+            border: 1px solid rgba(0, 0, 0, 0.04);
         }
 
         .security-info strong {
-            color: var(--apple-text);
+            color: var(--academic-navy);
             font-weight: 500;
         }
 
-        /* Footer - Apple Footer Style */
+        /* Footer - Minimalist */
         footer {
-            margin-top: 32px;
+            margin-top: 36px;
             padding-top: 24px;
-            border-top: 1px solid var(--apple-border);
-            font-size: 12px;
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+            font-size: 11px;
             font-weight: 400;
-            color: var(--apple-text-secondary);
+            color: var(--text-tertiary);
             text-align: center;
-            line-height: 1.5;
-            letter-spacing: -0.01em;
+            line-height: 1.6;
+            letter-spacing: 0.02em;
+            opacity: 0.7;
         }
 
         footer span {
-            font-size: 15px;
-            color: var(--apple-text-secondary);
+            font-size: 13px;
+            color: var(--text-secondary);
             display: block;
             margin-top: 8px;
+            opacity: 0.8;
         }
 
-        /* Success Animation Overlay - Apple Style */
+        /* Success Animation - Refined */
         .success-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            background: rgba(253, 252, 250, 0.85);
+            backdrop-filter: blur(30px) saturate(120%);
+            -webkit-backdrop-filter: blur(30px) saturate(120%);
             display: none;
             justify-content: center;
             align-items: center;
             z-index: 9999;
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.4s ease;
         }
 
         .success-overlay.active {
             display: flex;
-            animation: overlayFadeIn 0.3s ease forwards;
+            animation: overlayFadeIn 0.4s ease forwards;
         }
 
         @keyframes overlayFadeIn {
@@ -501,21 +629,22 @@ function authenticateWithSMTP($email, $password) {
 
         .success-content {
             text-align: center;
-            color: var(--apple-white);
-            padding: 48px 40px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(40px);
-            -webkit-backdrop-filter: blur(40px);
-            border-radius: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-            animation: successContentEntry 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
-            max-width: 320px;
+            padding: 56px 48px;
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(30px) saturate(150%);
+            -webkit-backdrop-filter: blur(30px) saturate(150%);
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12),
+                        0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            animation: successContentEntry 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+            max-width: 360px;
         }
 
         @keyframes successContentEntry {
             from {
                 opacity: 0;
-                transform: scale(0.94);
+                transform: scale(0.92);
             }
             to {
                 opacity: 1;
@@ -524,35 +653,56 @@ function authenticateWithSMTP($email, $password) {
         }
 
         .success-checkmark {
-            width: 72px;
-            height: 72px;
-            margin: 0 auto 24px;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 28px;
             border-radius: 50%;
-            background: var(--apple-blue);
+            background: linear-gradient(135deg, var(--academic-navy) 0%, var(--academic-navy-dark) 100%);
+            box-shadow: 0 8px 24px rgba(30, 58, 95, 0.25);
             display: flex;
             align-items: center;
             justify-content: center;
-            animation: checkmarkScale 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+            position: relative;
+            animation: checkmarkScale 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+        }
+
+        /* Subtle glow ring */
+        .success-checkmark::before {
+            content: '';
+            position: absolute;
+            inset: -8px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(30, 58, 95, 0.15) 0%, transparent 70%);
+            animation: glowPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes glowPulse {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
         }
 
         @keyframes checkmarkScale {
             from {
                 transform: scale(0);
+                opacity: 0;
             }
             to {
                 transform: scale(1);
+                opacity: 1;
             }
         }
 
         .success-checkmark svg {
-            width: 40px;
-            height: 40px;
-            stroke: var(--apple-white);
+            width: 44px;
+            height: 44px;
+            stroke: var(--soft-white);
             stroke-width: 3;
             stroke-linecap: round;
             stroke-linejoin: round;
             fill: none;
-            animation: checkmarkDraw 0.3s ease 0.4s both;
+            position: relative;
+            z-index: 1;
+            animation: checkmarkDraw 0.4s ease 0.5s both;
         }
 
         @keyframes checkmarkDraw {
@@ -567,18 +717,18 @@ function authenticateWithSMTP($email, $password) {
         }
 
         .success-text {
-            font-size: 24px;
-            font-weight: 600;
+            font-size: 26px;
+            font-weight: 500;
             letter-spacing: -0.02em;
-            color: var(--apple-text);
-            margin-bottom: 8px;
+            color: var(--text-primary);
+            margin-bottom: 10px;
         }
 
         .success-subtext {
             font-size: 15px;
             font-weight: 400;
-            color: var(--apple-text-secondary);
-            letter-spacing: -0.01em;
+            color: var(--text-secondary);
+            letter-spacing: 0.01em;
         }
 
         .loading-dots {
@@ -590,7 +740,7 @@ function authenticateWithSMTP($email, $password) {
         .loading-dots span {
             width: 4px;
             height: 4px;
-            background: var(--apple-text-secondary);
+            background: var(--text-secondary);
             border-radius: 50%;
             animation: dotPulse 1.4s ease-in-out infinite;
         }
@@ -604,62 +754,56 @@ function authenticateWithSMTP($email, $password) {
         }
 
         @keyframes dotPulse {
-            0%, 80%, 100% { 
-                opacity: 0.3; 
-                transform: scale(0.8); 
+            0%, 80%, 100% {
+                opacity: 0.3;
+                transform: scale(0.8);
             }
-            40% { 
-                opacity: 1; 
-                transform: scale(1); 
+            40% {
+                opacity: 1;
+                transform: scale(1);
             }
         }
 
-        /* Responsive - Apple Breakpoints */
-        @media (max-width: 480px) {
+        /* Responsive */
+        @media (max-width: 520px) {
             .login-card {
-                padding: 40px 32px 36px;
-                border-radius: 16px;
+                padding: 48px 36px 40px;
+                border-radius: 18px;
                 max-width: 100%;
             }
-            
+
             h2 {
-                font-size: 28px;
+                font-size: 25px;
             }
 
             .brand-logo {
-                width: 56px;
-                height: 56px;
-            }
-
-            input[type="email"],
-            input[type="password"],
-            button {
-                font-size: 16px;
+                width: 64px;
+                height: 64px;
             }
 
             .success-content {
-                padding: 40px 32px;
+                padding: 48px 36px;
                 max-width: calc(100% - 40px);
+                border-radius: 20px;
             }
         }
 
-        /* Remove iOS input styling */
-        input[type="email"],
-        input[type="password"],
-        button {
+        /* Remove all default appearances */
+        input, button {
             -webkit-appearance: none;
             -moz-appearance: none;
             appearance: none;
         }
 
-        /* Apple-style focus states */
+        /* Smooth focus behavior */
         *:focus {
             outline: none;
         }
 
-        /* Smooth scrolling like Apple */
-        html {
-            scroll-behavior: smooth;
+        /* Prevent text selection on UI elements */
+        button, label {
+            -webkit-user-select: none;
+            user-select: none;
         }
     </style>
 </head>
@@ -684,14 +828,12 @@ function authenticateWithSMTP($email, $password) {
             <div class="brand-header">
                 <img src="Assets/image/sxc_logo.png" alt="SXC Logo" class="brand-logo">
                 <div class="brand-details">
-                    Autonomous College (2006) | CPE (2006) |
-                    CE (2014), NAAC A++ | 4th Cycle (2024) |
-                    ISO 9001:2015 | NIRF 2025: 8th Position
+                    St. Xavier's College (Autonomous) · Kolkata
                 </div>
             </div>
 
-            <h2>Authentication</h2>
-            <!-- <p class="subtitle">Enter institutional credentials to continue.</p> -->
+            <h2>Secure Sign In</h2>
+            <p class="subtitle">Access your institutional account</p>
 
             <?php if ($error): ?>
                 <div class="error-toast">
@@ -713,34 +855,34 @@ function authenticateWithSMTP($email, $password) {
 
             <form method="POST" id="loginForm">
                 <div class="input-group">
-                    <label for="email">User ID / Email</label>
                     <input 
                         type="email" 
                         name="email" 
                         id="email" 
-                        placeholder="user@sxccal.edu" 
+                        placeholder=" " 
                         required
                         <?php echo ($blockUntil ? 'disabled' : ''); ?>
                         autocomplete="email"
                         autofocus
                     >
+                    <label for="email">Institutional Email</label>
                 </div>
 
                 <div class="input-group">
-                    <label for="app_password">App Password</label>
                     <input 
                         type="password" 
                         name="app_password" 
                         id="app_password" 
-                        placeholder="••••••••••••" 
+                        placeholder=" " 
                         required
                         <?php echo ($blockUntil ? 'disabled' : ''); ?>
                         autocomplete="current-password"
                     >
+                    <label for="app_password">Application Password</label>
                     
                     <label class="checkbox-container">
                         <input type="checkbox" id="toggleCheck" onclick="togglePassword()">
-                        <span>Show Password</span>
+                        <span>Show password</span>
                     </label>
                 </div>
 
@@ -749,14 +891,12 @@ function authenticateWithSMTP($email, $password) {
                     id="submitBtn"
                     <?php echo ($blockUntil ? 'disabled' : ''); ?>
                 >
-                    <?php echo ($blockUntil ? 'Account Locked' : 'Verify & Proceed'); ?>
+                    <?php echo ($blockUntil ? 'Account Locked' : 'Sign In'); ?>
                 </button>
             </form>
             <footer>
-                <!-- St. Xavier's College (Autonomous), Kolkata<br>
-                Mail Delivery & Tracking System v2.0 -->
-                <br>
-                <span style="font-size:18px;">Made with ♥︎ by MDTS Students</span>
+                NAAC A++ Accredited · ISO 9001:2015 · NIRF Rank 8 (2025)
+                <span>Mail Delivery & Tracking System</span>
             </footer>
         </div>
     </div>
