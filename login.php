@@ -407,11 +407,11 @@ function authenticateWithSMTP($email, $password) {
         button {
             width: 100%;
             padding: 16px;
-            background: linear-gradient(180deg, #1a1a1a 0%, #0e0e0e 100%);
+            background: black;
             color: white;
             border: none;
             border-radius: 6px;
-            font-weight: 600;
+            font-weight: 500;
             text-transform: uppercase;
             letter-spacing: 2.5px;
             cursor: pointer;
