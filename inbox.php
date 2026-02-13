@@ -576,9 +576,9 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .message-id-badge {
-            font-size: 10px;
+            font-size: 5px;
             color: var(--apple-gray);
-            background: var(--apple-bg);
+            background: rgb(239, 239, 239);
             padding: 2px 6px;
             border-radius: 4px;
             font-weight: 500;
@@ -1141,12 +1141,12 @@ $lastSync = getLastSyncDate($userEmail);
                         <div class="message-content">
                             <div class="message-header">
                                 <span class="message-sender" title="${escapeHtml(senderEmail)}">
-                                     ${escapeHtml(senderName)} ${senderName !== senderEmail ? '<br><span class="sender-email-hint">&lt;' + escapeHtml(senderEmail) + '&gt;</span>' : ''}
+                                     ${escapeHtml(senderName)} ${senderName !== senderEmail ? '<span class="sender-email-hint">&lt;' + escapeHtml(senderEmail) + '&gt;</span>' : ''}
                                 </span>
                             </div>
                             <div class="message-subject-line">
                                 <span class="message-subject" title="${escapeHtml(subjectDisplay)}">
-                                    <strong>Subject:</strong> ${escapeHtml(subjectDisplay)}
+                                    ${escapeHtml(subjectDisplay)}
                                 </span>
                                 ${msg.has_attachments == 1 ? '<span class="inline-attachment-icon material-icons" title="Has attachments">attach_file</span>' : ''}
                             </div>
@@ -1227,7 +1227,7 @@ $lastSync = getLastSyncDate($userEmail);
                             <div class="message-view-meta">
                                 <div class="message-view-meta-item">
                                     <span class="material-icons">person</span>
-                                    <span class="message-view-meta-label"></span> ${escapeHtml(msg.sender)}
+                                    <span class="message-view-meta-label">From:</span> ${escapeHtml(msg.sender)}
                                 </div>
                                 <div class="message-view-meta-item">
                                     <span class="material-icons">schedule</span>
