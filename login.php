@@ -739,6 +739,23 @@ function authenticateWithSMTP($email, $password) {
         const canvas = document.getElementById('techBackground');
         const ctx = canvas.getContext('2d');
         
+        // Mouse position tracking
+        let mouse = {
+            x: null,
+            y: null,
+            radius: 150
+        };
+        
+        window.addEventListener('mousemove', function(event) {
+            mouse.x = event.x;
+            mouse.y = event.y;
+        });
+        
+        window.addEventListener('mouseout', function() {
+            mouse.x = null;
+            mouse.y = null;
+        });
+        
         // Set canvas size
         function resizeCanvas() {
             canvas.width = window.innerWidth;
@@ -751,38 +768,68 @@ function authenticateWithSMTP($email, $password) {
         class Particle {
             constructor() {
                 this.reset();
+                this.baseX = this.x;
+                this.baseY = this.y;
             }
             
             reset() {
                 this.x = Math.random() * canvas.width;
                 this.y = Math.random() * canvas.height;
-                this.vx = (Math.random() - 0.5) * 0.5;
-                this.vy = (Math.random() - 0.5) * 0.5;
-                this.radius = Math.random() * 2 + 1;
+                this.vx = (Math.random() - 0.5) * 0.8;
+                this.vy = (Math.random() - 0.5) * 0.8;
+                this.radius = Math.random() * 2.5 + 0.8;
+                this.baseX = this.x;
+                this.baseY = this.y;
             }
             
             update() {
-                this.x += this.vx;
-                this.y += this.vy;
+                // Base movement
+                this.baseX += this.vx;
+                this.baseY += this.vy;
                 
                 // Wrap around edges
-                if (this.x < 0) this.x = canvas.width;
-                if (this.x > canvas.width) this.x = 0;
-                if (this.y < 0) this.y = canvas.height;
-                if (this.y > canvas.height) this.y = 0;
+                if (this.baseX < 0) this.baseX = canvas.width;
+                if (this.baseX > canvas.width) this.baseX = 0;
+                if (this.baseY < 0) this.baseY = canvas.height;
+                if (this.baseY > canvas.height) this.baseY = 0;
+                
+                // Mouse interaction - particles move away from cursor
+                if (mouse.x != null && mouse.y != null) {
+                    let dx = this.baseX - mouse.x;
+                    let dy = this.baseY - mouse.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < mouse.radius) {
+                        let force = (mouse.radius - distance) / mouse.radius;
+                        let angle = Math.atan2(dy, dx);
+                        this.x = this.baseX + Math.cos(angle) * force * 40;
+                        this.y = this.baseY + Math.sin(angle) * force * 40;
+                    } else {
+                        // Smoothly return to base position
+                        this.x += (this.baseX - this.x) * 0.05;
+                        this.y += (this.baseY - this.y) * 0.05;
+                    }
+                } else {
+                    this.x = this.baseX;
+                    this.y = this.baseY;
+                }
             }
             
             draw() {
-                ctx.fillStyle = 'rgba(45, 90, 39, 0.4)';
+                // Glow effect
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = 'rgba(45, 90, 39, 0.5)';
+                ctx.fillStyle = 'rgba(45, 90, 39, 0.6)';
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
                 ctx.fill();
+                ctx.shadowBlur = 0;
             }
         }
         
-        // Create particles
+        // Create MORE particles for denser effect
         const particles = [];
-        const particleCount = Math.min(Math.floor(canvas.width * canvas.height / 15000), 80);
+        const particleCount = Math.min(Math.floor(canvas.width * canvas.height / 8000), 150);
         
         for (let i = 0; i < particleCount; i++) {
             particles.push(new Particle());
@@ -790,7 +837,7 @@ function authenticateWithSMTP($email, $password) {
         
         // Draw connections between nearby particles (neural network effect)
         function drawConnections() {
-            const maxDistance = 150;
+            const maxDistance = 120;
             
             for (let i = 0; i < particles.length; i++) {
                 for (let j = i + 1; j < particles.length; j++) {
@@ -799,9 +846,19 @@ function authenticateWithSMTP($email, $password) {
                     const distance = Math.sqrt(dx * dx + dy * dy);
                     
                     if (distance < maxDistance) {
-                        const opacity = (1 - distance / maxDistance) * 0.15;
-                        ctx.strokeStyle = `rgba(45, 90, 39, ${opacity})`;
-                        ctx.lineWidth = 0.5;
+                        const opacity = (1 - distance / maxDistance) * 0.25;
+                        
+                        // Gradient line for better effect
+                        const gradient = ctx.createLinearGradient(
+                            particles[i].x, particles[i].y,
+                            particles[j].x, particles[j].y
+                        );
+                        gradient.addColorStop(0, `rgba(45, 90, 39, ${opacity})`);
+                        gradient.addColorStop(0.5, `rgba(45, 90, 39, ${opacity * 1.2})`);
+                        gradient.addColorStop(1, `rgba(45, 90, 39, ${opacity})`);
+                        
+                        ctx.strokeStyle = gradient;
+                        ctx.lineWidth = 0.8;
                         ctx.beginPath();
                         ctx.moveTo(particles[i].x, particles[i].y);
                         ctx.lineTo(particles[j].x, particles[j].y);
@@ -811,11 +868,41 @@ function authenticateWithSMTP($email, $password) {
             }
         }
         
+        // Draw connections to mouse cursor
+        function drawMouseConnections() {
+            if (mouse.x == null || mouse.y == null) return;
+            
+            particles.forEach(particle => {
+                const dx = particle.x - mouse.x;
+                const dy = particle.y - mouse.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < mouse.radius) {
+                    const opacity = (1 - distance / mouse.radius) * 0.3;
+                    ctx.strokeStyle = `rgba(45, 90, 39, ${opacity})`;
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(particle.x, particle.y);
+                    ctx.lineTo(mouse.x, mouse.y);
+                    ctx.stroke();
+                }
+            });
+            
+            // Draw cursor glow
+            const gradient = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 50);
+            gradient.addColorStop(0, 'rgba(45, 90, 39, 0.15)');
+            gradient.addColorStop(1, 'rgba(45, 90, 39, 0)');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(mouse.x, mouse.y, 50, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
         // Draw grid pattern
         function drawGrid() {
-            ctx.strokeStyle = 'rgba(229, 231, 235, 0.3)';
+            ctx.strokeStyle = 'rgba(229, 231, 235, 0.25)';
             ctx.lineWidth = 0.5;
-            const gridSize = 40;
+            const gridSize = 30;
             
             // Vertical lines
             for (let x = 0; x < canvas.width; x += gridSize) {
@@ -834,12 +921,58 @@ function authenticateWithSMTP($email, $password) {
             }
         }
         
+        // Data flow lines animation
+        let flowLines = [];
+        
+        class FlowLine {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = -10;
+                this.speed = Math.random() * 2 + 1;
+                this.length = Math.random() * 100 + 50;
+                this.opacity = Math.random() * 0.3 + 0.1;
+            }
+            
+            update() {
+                this.y += this.speed;
+                if (this.y > canvas.height + 10) {
+                    this.y = -this.length;
+                    this.x = Math.random() * canvas.width;
+                }
+            }
+            
+            draw() {
+                const gradient = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.length);
+                gradient.addColorStop(0, `rgba(45, 90, 39, 0)`);
+                gradient.addColorStop(0.5, `rgba(45, 90, 39, ${this.opacity})`);
+                gradient.addColorStop(1, `rgba(45, 90, 39, 0)`);
+                
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x, this.y + this.length);
+                ctx.stroke();
+            }
+        }
+        
+        // Create flow lines
+        for (let i = 0; i < 15; i++) {
+            flowLines.push(new FlowLine());
+        }
+        
         // Animation loop
         function animate() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             // Draw grid
             drawGrid();
+            
+            // Draw flow lines
+            flowLines.forEach(line => {
+                line.update();
+                line.draw();
+            });
             
             // Update and draw particles
             particles.forEach(particle => {
@@ -849,6 +982,9 @@ function authenticateWithSMTP($email, $password) {
             
             // Draw neural network connections
             drawConnections();
+            
+            // Draw mouse interactions
+            drawMouseConnections();
             
             requestAnimationFrame(animate);
         }
@@ -876,7 +1012,23 @@ function authenticateWithSMTP($email, $password) {
             'scaler = StandardScaler()',
             'X_scaled = scaler.fit_transform(X)',
             'plt.plot(history.history["loss"])',
-            'model.save("model.h5")'
+            'model.save("model.h5")',
+            'embedding = Embedding(vocab_size, 128)',
+            'attention_weights = softmax(scores)',
+            'lstm = LSTM(256, return_sequences=True)',
+            'gru = GRU(128, dropout=0.2)',
+            'transformer = MultiHeadAttention(num_heads=8)',
+            'bert_model = BertModel.from_pretrained()',
+            'tokenizer.encode(text, max_length=512)',
+            'gan_generator.train_on_batch(noise, labels)',
+            'vae_encoder = Encoder(latent_dim=32)',
+            'reinforcement_agent.update_q_values()',
+            'policy_gradient = compute_policy_loss()',
+            'cv2.imread("image.jpg")',
+            'torch.nn.Conv2d(in_channels, out_channels)',
+            'optimizer.zero_grad(); loss.backward()',
+            'dataset = ImageFolder(root="./data")',
+            'from transformers import GPT2LMHeadModel'
         ];
         
         function createFloatingCode() {
@@ -886,8 +1038,8 @@ function authenticateWithSMTP($email, $password) {
             
             const startX = Math.random() * 100 - 50;
             const endX = Math.random() * 100 - 50;
-            const duration = 15 + Math.random() * 15;
-            const delay = Math.random() * 5;
+            const duration = 12 + Math.random() * 10;
+            const delay = Math.random() * 3;
             
             codeDiv.style.left = Math.random() * 100 + '%';
             codeDiv.style.setProperty('--start-x', startX + 'px');
@@ -903,17 +1055,17 @@ function authenticateWithSMTP($email, $password) {
             }, (duration + delay) * 1000);
         }
         
-        // Create initial code snippets
-        for (let i = 0; i < 8; i++) {
-            setTimeout(() => createFloatingCode(), i * 2000);
+        // Create initial code snippets (more dense)
+        for (let i = 0; i < 12; i++) {
+            setTimeout(() => createFloatingCode(), i * 1500);
         }
         
-        // Continuously create new snippets
+        // Continuously create new snippets (more frequent)
         setInterval(() => {
-            if (document.querySelectorAll('.code-float').length < 10) {
+            if (document.querySelectorAll('.code-float').length < 18) {
                 createFloatingCode();
             }
-        }, 3000);
+        }, 2000);
         
         // ============================================================
         // LOGIN FORM FUNCTIONALITY
