@@ -681,14 +681,10 @@ function sendBulkEmail(
 
         $sentEmailId = (int)$pdo->lastInsertId();
 
-        // ── Link email to user via user_email_access (access_type=sender) ─
-        // This is how the system knows this email belongs to the current user.
-        // Without this row the email will NOT appear in the user's Sent view.
-        $pdo->prepare("
-            INSERT INTO user_email_access (
-                user_id, email_id, access_type, created_at
-            ) VALUES (?, ?, 'sender', NOW())
-        ")->execute([$userId, $sentEmailId]);
+        // NOTE: NO insert into user_email_access here.
+        // user_email_access.email_id has FK → emails.id (the IMAP inbox table).
+        // sent_emails_new is a SEPARATE, standalone table owned by sender_email.
+        // The two systems must not be cross-linked.
 
         // ── Log attachment record ─────────────────────────────────────────
         if ($hasAttachment) {
@@ -715,21 +711,10 @@ function sendBulkEmail(
                 $ext,
             ]);
 
-            // ── Link attachment to user via user_attachment_access ────────
-            // Schema requires email_id (NOT NULL) and display_filename (NOT NULL).
-            // We only insert this here (at send time) because email_id is only
-            // available after the sent_emails_new row is created.
-            $pdo->prepare("
-                INSERT INTO user_attachment_access (
-                    user_id, attachment_id, email_id, display_filename, created_at
-                ) VALUES (?, ?, ?, ?, NOW())
-                ON DUPLICATE KEY UPDATE email_id = VALUES(email_id)
-            ")->execute([
-                $userId,
-                $queueItem['attachment_id'] ?? 0,
-                $sentEmailId,
-                $fileName,
-            ]);
+            // NOTE: NO insert into user_attachment_access here.
+            // user_attachment_access.email_id has FK → emails.id (IMAP system).
+            // Attachment ownership for bulk-sent mail is tracked via
+            // sent_email_attachments_new.sent_email_id → sent_emails_new.id above.
         }
 
         return [
