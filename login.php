@@ -421,8 +421,8 @@ function authenticateWithSMTP($email, $password) {
         }
 
         button:hover:not(:disabled) {
-            background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
-            transform: translateY(-1px);
+            /* background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%); */
+            /* transform: translateY(-1px); */
             box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
         }
 
