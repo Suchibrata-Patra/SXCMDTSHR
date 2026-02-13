@@ -111,9 +111,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         require_once 'settings_helper.php';
                     }
                     
-                    // Success - redirect
-                    header("Location: index.php");
-                    exit();
+                    // Set success flag for animation
+                    $_SESSION['login_success_animation'] = true;
+                    
+                    // Success - don't redirect immediately, let JS handle it
+                    // header("Location: index.php");
+                    // exit();
                 }
             } else {
                 // ============================================================
@@ -224,9 +227,71 @@ function authenticateWithSMTP($email, $password) {
             height: 100%;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background-color: #f5f5f7;
-            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
-            background-size: 40px 40px;
             position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated Background Canvas */
+        #techBackground {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.4;
+        }
+
+        /* Floating Code Snippets */
+        .code-float {
+            position: fixed;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: rgba(45, 90, 39, 0.3);
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 0;
+            animation: floatCode linear infinite;
+        }
+
+        @keyframes floatCode {
+            from {
+                transform: translateY(100vh) translateX(var(--start-x));
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.6;
+            }
+            90% {
+                opacity: 0.6;
+            }
+            to {
+                transform: translateY(-100px) translateX(var(--end-x));
+                opacity: 0;
+            }
+        }
+
+        /* Neural Network Pulses */
+        .neural-pulse {
+            position: fixed;
+            width: 4px;
+            height: 4px;
+            background: radial-gradient(circle, rgba(45, 90, 39, 0.8), transparent);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 0.4;
+            }
+            50% {
+                transform: scale(1.5);
+                opacity: 0.8;
+            }
         }
 
         /* Subtle radial gradient overlay */
@@ -466,6 +531,89 @@ function authenticateWithSMTP($email, $password) {
             font-size: 0.95rem;
         }
 
+        /* Success Animation */
+        .success-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 300ms ease;
+        }
+
+        .success-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .success-checkmark {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2d5a27 0%, #3d7a37 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 40px rgba(45, 90, 39, 0.3);
+            transform: scale(0);
+            animation: checkmarkPop 500ms cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .success-checkmark svg {
+            width: 40px;
+            height: 40px;
+            stroke: white;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            stroke-dasharray: 50;
+            stroke-dashoffset: 50;
+            animation: checkmarkDraw 400ms ease-out 200ms forwards;
+        }
+
+        @keyframes checkmarkPop {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes checkmarkDraw {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        .login-card.success-exit {
+            animation: cardExitSuccess 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes cardExitSuccess {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+        }
+
         /* Responsive */
         @media (max-width: 480px) {
             .login-card {
@@ -475,10 +623,23 @@ function authenticateWithSMTP($email, $password) {
             h2 {
                 font-size: 1.5rem;
             }
+
+            .success-checkmark {
+                width: 70px;
+                height: 70px;
+            }
+
+            .success-checkmark svg {
+                width: 35px;
+                height: 35px;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Animated Tech Background -->
+    <canvas id="techBackground"></canvas>
+    
     <div class="page-wrapper">
         <div class="login-card">
             <div class="brand-header">
@@ -561,7 +722,203 @@ function authenticateWithSMTP($email, $password) {
         </div>
     </div>
 
+    <!-- Success Animation Overlay -->
+    <div class="success-overlay" id="successOverlay">
+        <div class="success-checkmark">
+            <svg viewBox="0 0 52 52">
+                <polyline points="14 27 22 35 38 19"/>
+            </svg>
+        </div>
+    </div>
+
     <script>
+        // ============================================================
+        // ANIMATED TECH BACKGROUND - AI/ML INSPIRED
+        // ============================================================
+        
+        const canvas = document.getElementById('techBackground');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Particle system for neural network effect
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+            
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.radius = Math.random() * 2 + 1;
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                // Wrap around edges
+                if (this.x < 0) this.x = canvas.width;
+                if (this.x > canvas.width) this.x = 0;
+                if (this.y < 0) this.y = canvas.height;
+                if (this.y > canvas.height) this.y = 0;
+            }
+            
+            draw() {
+                ctx.fillStyle = 'rgba(45, 90, 39, 0.4)';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        // Create particles
+        const particles = [];
+        const particleCount = Math.min(Math.floor(canvas.width * canvas.height / 15000), 80);
+        
+        for (let i = 0; i < particleCount; i++) {
+            particles.push(new Particle());
+        }
+        
+        // Draw connections between nearby particles (neural network effect)
+        function drawConnections() {
+            const maxDistance = 150;
+            
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < maxDistance) {
+                        const opacity = (1 - distance / maxDistance) * 0.15;
+                        ctx.strokeStyle = `rgba(45, 90, 39, ${opacity})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+        
+        // Draw grid pattern
+        function drawGrid() {
+            ctx.strokeStyle = 'rgba(229, 231, 235, 0.3)';
+            ctx.lineWidth = 0.5;
+            const gridSize = 40;
+            
+            // Vertical lines
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            
+            // Horizontal lines
+            for (let y = 0; y < canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+        
+        // Animation loop
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw grid
+            drawGrid();
+            
+            // Update and draw particles
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+            
+            // Draw neural network connections
+            drawConnections();
+            
+            requestAnimationFrame(animate);
+        }
+        
+        animate();
+        
+        // Create floating code snippets
+        const codeSnippets = [
+            'def neural_net(x): return activation(W @ x + b)',
+            'import tensorflow as tf',
+            'model.fit(X_train, y_train, epochs=100)',
+            'np.random.seed(42)',
+            'from sklearn.ensemble import RandomForestClassifier',
+            'optimizer = Adam(learning_rate=0.001)',
+            'loss = categorical_crossentropy',
+            'y_pred = model.predict(X_test)',
+            'accuracy = np.mean(y_pred == y_true)',
+            'layer = Dense(128, activation="relu")',
+            'dropout = Dropout(0.5)',
+            'conv2d = Conv2D(32, (3,3), activation="relu")',
+            'batch_size = 32',
+            'import pandas as pd',
+            'df = pd.read_csv("data.csv")',
+            'X_train, X_test = train_test_split(X, y)',
+            'scaler = StandardScaler()',
+            'X_scaled = scaler.fit_transform(X)',
+            'plt.plot(history.history["loss"])',
+            'model.save("model.h5")'
+        ];
+        
+        function createFloatingCode() {
+            const codeDiv = document.createElement('div');
+            codeDiv.className = 'code-float';
+            codeDiv.textContent = codeSnippets[Math.floor(Math.random() * codeSnippets.length)];
+            
+            const startX = Math.random() * 100 - 50;
+            const endX = Math.random() * 100 - 50;
+            const duration = 15 + Math.random() * 15;
+            const delay = Math.random() * 5;
+            
+            codeDiv.style.left = Math.random() * 100 + '%';
+            codeDiv.style.setProperty('--start-x', startX + 'px');
+            codeDiv.style.setProperty('--end-x', endX + 'px');
+            codeDiv.style.animationDuration = duration + 's';
+            codeDiv.style.animationDelay = delay + 's';
+            
+            document.body.appendChild(codeDiv);
+            
+            // Remove after animation
+            setTimeout(() => {
+                codeDiv.remove();
+            }, (duration + delay) * 1000);
+        }
+        
+        // Create initial code snippets
+        for (let i = 0; i < 8; i++) {
+            setTimeout(() => createFloatingCode(), i * 2000);
+        }
+        
+        // Continuously create new snippets
+        setInterval(() => {
+            if (document.querySelectorAll('.code-float').length < 10) {
+                createFloatingCode();
+            }
+        }, 3000);
+        
+        // ============================================================
+        // LOGIN FORM FUNCTIONALITY
+        // ============================================================
+        
         function togglePassword() {
             const passInput = document.getElementById("app_password");
             passInput.type = passInput.type === "password" ? "text" : "password";
@@ -586,12 +943,47 @@ function authenticateWithSMTP($email, $password) {
         }, 1000);
         <?php endif; ?>
 
-        // Form validation
+        // Form validation and success animation
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             const btn = document.getElementById('submitBtn');
             btn.disabled = true;
             btn.textContent = 'Authenticating...';
         });
+
+        // Trigger success animation if login was successful
+        <?php 
+        $showSuccessAnimation = false;
+        if (isset($_SESSION['login_success_animation']) && $_SESSION['login_success_animation'] === true) {
+            $showSuccessAnimation = true;
+            unset($_SESSION['login_success_animation']); // Clear the flag
+        }
+        ?>
+        
+        <?php if ($showSuccessAnimation): ?>
+        window.addEventListener('DOMContentLoaded', function() {
+            showSuccessAnimation();
+        });
+        
+        function showSuccessAnimation() {
+            const overlay = document.getElementById('successOverlay');
+            const card = document.querySelector('.login-card');
+            
+            // Show overlay with checkmark
+            setTimeout(() => {
+                overlay.classList.add('active');
+            }, 100);
+            
+            // Animate card exit
+            setTimeout(() => {
+                card.classList.add('success-exit');
+            }, 200);
+            
+            // Redirect after animation completes
+            setTimeout(() => {
+                window.location.href = 'index.php';
+            }, 1400);
+        }
+        <?php endif; ?>
     </script>
 </body>
 </html>
