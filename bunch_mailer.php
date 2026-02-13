@@ -1576,24 +1576,17 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
             const container = document.getElementById('driveFilesList');
             const loading   = document.getElementById('driveLoading');
             const panelBody = document.getElementById('attachPanelBody');
-            const driveContent = document.getElementById('driveAttachContent');
 
-            console.log('🔵 Elements found:', {
-                container: container ? 'YES' : 'MISSING',
-                loading: loading ? 'YES' : 'MISSING',
-                panelBody: panelBody ? 'YES' : 'MISSING',
-                driveContent: driveContent ? 'YES' : 'MISSING'
-            });
+            console.log('🔵 Elements:', { container: !!container, loading: !!loading, panelBody: !!panelBody });
 
             // Force panel to be expanded
             if (panelBody) {
                 panelBody.classList.remove('collapsed');
                 panelBody.style.height = '';
-                console.log('🔵 Panel expanded');
             }
 
             if (!container || !loading) {
-                console.error('❌ Required elements not found in DOM!');
+                console.error('❌ Required elements not found!');
                 return;
             }
 
@@ -1605,36 +1598,26 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
                 const directory   = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
                 const url         = directory + 'bulk_mail_backend.php';
 
-                console.log('🔵 Fetch URL:', url);
-                console.log('🔵 Current path:', currentPath);
-                console.log('🔵 Directory:', directory);
+                console.log('🔵 Fetching from:', url);
                 
                 const response = await fetch(url, { method: 'POST', body: formData });
-                
-                console.log('🔵 Response status:', response.status);
-                console.log('🔵 Response OK:', response.ok);
-                
-                const responseText = await response.text();
-                console.log('🔵 Raw response:', responseText.substring(0, 500));
-                
-                const data = JSON.parse(responseText);
-                
-                console.log('🔵 Parsed data:', data);
-                console.log('🔵 Files count:', data.files ? data.files.length : 'NO FILES PROPERTY');
+                const data     = await response.json();
+
+                console.log('🔵 Response:', data);
 
                 if (data.success && data.files && data.files.length > 0) {
                     console.log('✅ Files found:', data.files.length);
                     
-                    // FORCE visibility - use !important style properties
+                    // FORCE visibility with !important
                     loading.style.cssText = 'display: none !important';
-                    container.style.cssText = 'display: flex !important; flex-direction: column; gap: 4px;';
+                    container.style.cssText = 'display: flex !important; flex-direction: column; gap: 4px; max-height: 260px; overflow-y: auto;';
 
-                    const html = data.files.map(f => {
-                        // Escape quotes in file path/name to prevent breaking onclick
-                        const escapedPath = f.path.replace(/'/g, "\\'");
-                        const escapedName = f.name.replace(/'/g, "\\'");
+                    container.innerHTML = data.files.map(f => {
+                        // Escape quotes to prevent breaking onclick
+                        const path = f.path.replace(/'/g, "\\'");
+                        const name = f.name.replace(/'/g, "\\'");
                         return `
-                        <div class="drive-item" onclick="selectDriveFile('${escapedPath}','${escapedName}','${f.formatted_size}','${f.extension}')">
+                        <div class="drive-item" onclick="selectDriveFile('${path}','${name}','${f.formatted_size}','${f.extension}')">
                             <span class="drive-item-icon">${getFileIcon(f.extension)}</span>
                             <div class="drive-item-info">
                                 <div class="drive-item-name">${f.name}</div>
@@ -1644,40 +1627,22 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
                                 <span class="material-icons-round">check</span>
                             </div>
                         </div>
-                    `;
-                    }).join('');
+                    `;}).join('');
                     
-                    console.log('🔵 HTML length:', html.length);
-                    container.innerHTML = html;
-                    
-                    // Double-check visibility after rendering
-                    setTimeout(() => {
-                        const finalDisplay = window.getComputedStyle(container).display;
-                        console.log('🔵 Container final display:', finalDisplay);
-                        if (finalDisplay === 'none') {
-                            console.error('❌ Container is still hidden! Forcing...');
-                            container.style.cssText = 'display: flex !important; flex-direction: column; gap: 4px;';
-                        }
-                    }, 100);
-                    
-                    console.log('✅ Files rendered to container');
-                    
-                } else if (data.success && data.files && data.files.length === 0) {
-                    console.log('⚠️ No files in drive');
-                    // Success but no files - show empty state
+                    console.log('✅ Rendered to DOM');
+                } else if (data.success) {
+                    // No files
                     container.style.cssText = 'display: none !important';
                     loading.style.cssText = 'display: block !important';
                     loading.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📁</div><h3>No files in drive</h3><p>Upload files to File_Drive folder</p></div>`;
                 } else {
-                    console.log('❌ Backend error:', data.error);
-                    // Error from backend
+                    // Error
                     container.style.cssText = 'display: none !important';
                     loading.style.cssText = 'display: block !important';
                     loading.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠️</div><h3>Could not load files</h3><p>${data.error || 'Unknown error'}</p></div>`;
                 }
             } catch (err) {
-                console.error('❌ Drive files load error:', err);
-                console.error('❌ Error stack:', err.stack);
+                console.error('❌ Error:', err);
                 container.style.cssText = 'display: none !important';
                 loading.style.cssText = 'display: block !important';
                 loading.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠️</div><h3>Load failed</h3><p>${err.message}</p></div>`;
@@ -2209,9 +2174,6 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 
             // Final queue reload
             await loadQueue();
-                    ? `Sent ${success}, failed ${failed}`
-                    : `All ${success} emails sent successfully`
-            );
         }
 
         async function clearQueue() {
