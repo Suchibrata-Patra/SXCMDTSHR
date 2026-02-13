@@ -627,63 +627,108 @@ function sendBulkEmail(
         }
 
         // ── Log to sent_emails_new ────────────────────────────────────────
-        $emailUuid = generateUuidV4();
-        $attachmentCount = ($driveFilePath !== '' && file_exists($driveFilePath)) ? 1 : 0;
+        // Column mapping (actual schema):
+        //   body_text        ← plain-text version of the message
+        //   body_html        ← full rendered HTML body
+        //   cc_list / bcc_list  ← NOT cc_emails / bcc_emails
+        //   has_attachments  ← tinyint boolean, NOT attachment_count
+        //   email_type       ← enum('sent','draft'), required
+        //   sender_name      ← exists in schema
+        //   NO user_id, recipient_name, message_content, closing_wish,
+        //      sender_designation, additional_info, cc_emails, bcc_emails,
+        //      attachment_count  (these columns do not exist in this table)
+        // ─────────────────────────────────────────────────────────────────
+        $emailUuid      = generateUuidV4();
+        $hasAttachment  = ($driveFilePath !== '' && file_exists($driveFilePath)) ? 1 : 0;
+
+        // Store custom fields in body_text as structured plain text so the
+        // information is not lost (closing_wish, designation, additional_info
+        // are not columns in sent_emails_new).
+        $bodyText = buildPlainTextBody($emailBody);
 
         $stmt = $pdo->prepare("
             INSERT INTO sent_emails_new (
-                email_uuid, user_id, sender_email, recipient_email, recipient_name,
-                subject, article_title, message_content,
-                closing_wish, sender_name, sender_designation, additional_info,
-                cc_emails, bcc_emails, attachment_count,
-                sent_at, created_at
+                email_uuid,
+                sender_email,   sender_name,
+                recipient_email,
+                cc_list,        bcc_list,
+                subject,        article_title,
+                body_text,      body_html,
+                has_attachments, email_type,
+                is_deleted,
+                sent_at,        created_at
             ) VALUES (
-                ?, ?, ?, ?, ?,
-                ?, ?, ?,
-                ?, ?, ?, ?,
-                '', '', ?,
+                ?,
+                ?, ?,
+                ?,
+                '', '',
+                ?, ?,
+                ?, ?,
+                ?, 'sent',
+                0,
                 NOW(), NOW()
             )
         ");
 
         $stmt->execute([
             $emailUuid,
-            $userId,
-            $smtpUser,
+            $smtpUser,      $senderName,
             $recipientEmail,
-            $recipientName,
-            $subject,
-            $articleTitle,
-            $messageContent,
-            $closingWish,
-            $senderName,
-            $senderDesig,
-            $additionalInfo,
-            $attachmentCount,
+            $subject,       $articleTitle,
+            $bodyText,      $emailBody,
+            $hasAttachment,
         ]);
 
         $sentEmailId = (int)$pdo->lastInsertId();
 
+        // ── Link email to user via user_email_access (access_type=sender) ─
+        // This is how the system knows this email belongs to the current user.
+        // Without this row the email will NOT appear in the user's Sent view.
+        $pdo->prepare("
+            INSERT INTO user_email_access (
+                user_id, email_id, access_type, created_at
+            ) VALUES (?, ?, 'sender', NOW())
+        ")->execute([$userId, $sentEmailId]);
+
         // ── Log attachment record ─────────────────────────────────────────
-        if ($attachmentCount > 0) {
+        if ($hasAttachment) {
+            $fileName = basename($driveFilePath);
             $ext      = strtolower(pathinfo($driveFilePath, PATHINFO_EXTENSION));
             $mimeType = getMimeTypeFromExtension($ext);
 
             $pdo->prepare("
                 INSERT INTO sent_email_attachments_new (
-                    sent_email_id, email_uuid, original_filename,
-                    stored_filename, file_path, file_size,
-                    mime_type, file_extension, uploaded_at
+                    sent_email_id, email_uuid,
+                    original_filename, stored_filename,
+                    file_path, file_size,
+                    mime_type, file_extension,
+                    uploaded_at
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
             ")->execute([
                 $sentEmailId,
                 $emailUuid,
-                basename($driveFilePath),
-                basename($driveFilePath),
+                $fileName,
+                $fileName,
                 $driveFilePath,
                 @filesize($driveFilePath) ?: 0,
                 $mimeType,
                 $ext,
+            ]);
+
+            // ── Link attachment to user via user_attachment_access ────────
+            // Schema requires email_id (NOT NULL) and display_filename (NOT NULL).
+            // We only insert this here (at send time) because email_id is only
+            // available after the sent_emails_new row is created.
+            $pdo->prepare("
+                INSERT INTO user_attachment_access (
+                    user_id, attachment_id, email_id, display_filename, created_at
+                ) VALUES (?, ?, ?, ?, NOW())
+                ON DUPLICATE KEY UPDATE email_id = VALUES(email_id)
+            ")->execute([
+                $userId,
+                $queueItem['attachment_id'] ?? 0,
+                $sentEmailId,
+                $fileName,
             ]);
         }
 

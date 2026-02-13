@@ -400,13 +400,11 @@ function registerDriveFileAsAttachment($pdo, $userId, $filePath) {
         
         $attachmentId = $pdo->lastInsertId();
         
-        // Create access record
-        $stmt = $pdo->prepare("
-            INSERT INTO user_attachment_access (user_id, attachment_id, created_at)
-            VALUES (?, ?, NOW())
-            ON DUPLICATE KEY UPDATE created_at = NOW()
-        ");
-        $stmt->execute([$userId, $attachmentId]);
+        // NOTE: user_attachment_access is NOT inserted here.
+        // That table requires email_id (NOT NULL), which is only available
+        // after the email is sent and logged to sent_emails_new.
+        // The insert happens in process_bulk_mail.php inside sendBulkEmail()
+        // once the sent_emails_new row exists.
         
         return $attachmentId;
         
