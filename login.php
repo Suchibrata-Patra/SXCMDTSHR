@@ -29,8 +29,15 @@ use PHPMailer\PHPMailer\Exception;
 // Initialize secure session
 initializeSecureSession();
 
-// Redirect if already logged in
-if (isset($_SESSION['authenticated']) && $_SESSION['authenticated'] === true) {
+// Check if we should show success animation
+$showSuccessAnimation = false;
+if (isset($_SESSION['show_success_animation']) && $_SESSION['show_success_animation'] === true) {
+    $showSuccessAnimation = true;
+    unset($_SESSION['show_success_animation']); // Clear the flag
+}
+
+// Redirect if already logged in (unless showing animation)
+if (isset($_SESSION['authenticated']) && $_SESSION['authenticated'] === true && !$showSuccessAnimation) {
     header("Location: index.php");
     exit();
 }
@@ -92,6 +99,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $_SESSION['user_id'] = $userId;
                     $_SESSION['login_time'] = time();
                     $_SESSION['ip_address'] = $ipAddress;
+                    $_SESSION['show_success_animation'] = true; // Flag for animation
                     
                     // Regenerate session ID for security
                     session_regenerate_id(true);
@@ -111,8 +119,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         require_once 'settings_helper.php';
                     }
                     
-                    // Success - redirect
-                    header("Location: index.php");
+                    // Reload page to show animation, then redirect
+                    header("Location: " . $_SERVER['PHP_SELF']);
                     exit();
                 }
             } else {
@@ -207,11 +215,20 @@ function authenticateWithSMTP($email, $password) {
     ?>
     <style>
         :root {
-            --primary-accent: #000000;
-            --nature-green: #2d5a27;
-            --soft-white: #f8f9fa;
-            --error-red: #dc3545;
-            --warning-orange: #ff9800;
+            --sf-pro: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+            --apple-blue: #007aff;
+            --apple-blue-dark: #0051d5;
+            --apple-gray: #86868b;
+            --apple-gray-light: #f5f5f7;
+            --apple-gray-medium: #e8e8ed;
+            --apple-text: #1d1d1f;
+            --apple-text-secondary: #86868b;
+            --apple-red: #ff3b30;
+            --apple-orange: #ff9500;
+            --apple-white: #ffffff;
+            --apple-border: rgba(0, 0, 0, 0.04);
+            --apple-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+            --apple-shadow-hover: 0 4px 24px rgba(0, 0, 0, 0.08);
         }
 
         * {
@@ -222,10 +239,12 @@ function authenticateWithSMTP($email, $password) {
 
         body, html {
             height: 100%;
-            font-family: 'Inter', sans-serif;
-            background-color: #f5f5f7;
-            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
-            background-size: 40px 40px;
+            font-family: var(--sf-pro);
+            background: var(--apple-gray-light);
+            color: var(--apple-text);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
         }
 
         .page-wrapper {
@@ -236,204 +255,430 @@ function authenticateWithSMTP($email, $password) {
             padding: 20px;
         }
 
+        /* Login Card - Pure Apple Style */
         .login-card {
             width: 100%;
-            max-width: 420px;
-            padding: 40px;
-            background: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 20px 40px rgba(20, 40, 80, 0.35);
-            animation: fadeIn 0.6s ease-out;
+            max-width: 380px;
+            background: var(--apple-white);
+            border-radius: 18px;
+            padding: 44px 40px 40px;
+            box-shadow: var(--apple-shadow);
+            transition: box-shadow 0.3s ease;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .login-card:hover {
+            box-shadow: var(--apple-shadow-hover);
         }
 
+        /* Brand Header - Apple Minimalism */
         .brand-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 25px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #f0f0f0;
+            text-align: center;
+            margin-bottom: 32px;
         }
 
         .brand-logo {
-            width: 60px;
-            height: auto;
-            flex-shrink: 0;
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+            transition: transform 0.2s ease;
+        }
+
+        .brand-logo:hover {
+            transform: scale(1.02);
         }
 
         .brand-details {
-            font-size: 0.6rem;
-            line-height: 1.3;
-            color: #666;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.2px;
+            font-size: 11px;
+            font-weight: 400;
+            color: var(--apple-text-secondary);
+            line-height: 1.4;
+            letter-spacing: -0.01em;
         }
 
+        /* Typography - Apple Style */
         h2 {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.8rem;
-            color: var(--primary-accent);
-            margin: 0 0 5px 0;
+            font-size: 32px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            color: var(--apple-text);
+            text-align: center;
+            margin-bottom: 8px;
         }
 
         .subtitle {
-            color: #777;
-            font-size: 0.9rem;
-            margin-bottom: 30px;
+            font-size: 17px;
+            font-weight: 400;
+            color: var(--apple-text-secondary);
+            text-align: center;
+            margin-bottom: 32px;
+            letter-spacing: -0.01em;
         }
 
-        /* Error/Warning Messages */
+        /* Alert Messages - Apple Notifications */
+        .error-toast, .warning-toast {
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            font-size: 15px;
+            font-weight: 400;
+            letter-spacing: -0.01em;
+            line-height: 1.4;
+        }
+
         .error-toast {
-            background: #fff5f5;
-            color: #c53030;
-            padding: 14px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            margin-bottom: 20px;
-            border-left: 4px solid #c53030;
-            animation: slideIn 0.3s ease-out;
+            background: rgba(255, 59, 48, 0.08);
+            color: var(--apple-red);
         }
 
         .warning-toast {
-            background: #fff9e6;
-            color: #ff9800;
-            padding: 14px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            margin-bottom: 20px;
-            border-left: 4px solid #ff9800;
+            background: rgba(255, 149, 0, 0.08);
+            color: var(--apple-orange);
         }
 
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-10px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        /* Form Elements */
+        /* Form Elements - Apple Input Style */
         .input-group {
             margin-bottom: 20px;
         }
 
         label {
             display: block;
-            font-size: 0.7rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1.2px;
-            color: #999;
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--apple-text-secondary);
             margin-bottom: 8px;
+            letter-spacing: -0.01em;
         }
 
         input[type="email"],
         input[type="password"] {
             width: 100%;
-            padding: 12px 5px;
-            border: none;
-            border-bottom: 2px solid #e0e0e0;
-            background: transparent;
-            font-size: 1rem;
-            transition: border-color 0.3s;
+            padding: 14px 16px;
+            border: 1px solid var(--apple-gray-medium);
+            background: var(--apple-white);
+            border-radius: 10px;
+            font-size: 17px;
+            font-weight: 400;
+            color: var(--apple-text);
+            letter-spacing: -0.01em;
+            transition: all 0.2s ease;
             outline: none;
+            -webkit-appearance: none;
+            font-family: var(--sf-pro);
+        }
+
+        input[type="email"]::placeholder,
+        input[type="password"]::placeholder {
+            color: #c7c7cc;
         }
 
         input:focus {
-            border-bottom-color: var(--nature-green);
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
         }
 
         input:disabled {
-            opacity: 0.6;
+            opacity: 0.5;
             cursor: not-allowed;
+            background: var(--apple-gray-light);
         }
 
         .checkbox-container {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             margin-top: 12px;
-            font-size: 0.85rem;
-            color: #666;
+            font-size: 15px;
+            font-weight: 400;
+            color: var(--apple-text);
             cursor: pointer;
             user-select: none;
+            letter-spacing: -0.01em;
         }
 
         .checkbox-container input[type="checkbox"] {
-            width: auto;
+            width: 20px;
+            height: 20px;
             cursor: pointer;
+            accent-color: var(--apple-blue);
         }
 
-        /* Button */
+        /* Button - Apple Blue Button */
         button {
             width: 100%;
-            padding: 16px;
-            background: var(--primary-accent);
-            color: white;
+            padding: 14px;
+            background: var(--apple-blue);
+            color: var(--apple-white);
             border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 2px;
+            border-radius: 10px;
+            font-size: 17px;
+            font-weight: 500;
+            letter-spacing: -0.01em;
             cursor: pointer;
-            margin-top: 25px;
-            transition: all 0.3s ease;
-            font-size: 0.9rem;
+            margin-top: 24px;
+            transition: all 0.2s ease;
+            font-family: var(--sf-pro);
+            -webkit-appearance: none;
         }
 
         button:hover:not(:disabled) {
-            background: #222;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            background: var(--apple-blue-dark);
+        }
+
+        button:active:not(:disabled) {
+            transform: scale(0.98);
         }
 
         button:disabled {
-            background: #ccc;
+            background: var(--apple-gray-medium);
+            color: var(--apple-gray);
             cursor: not-allowed;
-            transform: none;
         }
 
-        /* Security Info */
+        /* Security Info - Apple Info Box */
         .security-info {
-            margin-top: 20px;
-            padding: 12px;
-            background: #f0f7ff;
-            border-left: 3px solid #2196f3;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            color: #555;
+            margin-top: 24px;
+            padding: 16px;
+            background: var(--apple-gray-light);
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--apple-text-secondary);
+            line-height: 1.5;
+            letter-spacing: -0.01em;
         }
 
         .security-info strong {
-            color: #2196f3;
+            color: var(--apple-text);
+            font-weight: 500;
         }
 
-        /* Footer */
+        /* Footer - Apple Footer Style */
         footer {
-            margin-top: 10px;
-            padding-top: 20px;
-            border-top: 1px solid #f0f0f0;
-            font-size: 0.7rem;
-            color: #bbb;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid var(--apple-border);
+            font-size: 12px;
+            font-weight: 400;
+            color: var(--apple-text-secondary);
             text-align: center;
+            line-height: 1.5;
+            letter-spacing: -0.01em;
         }
 
-        /* Responsive */
+        footer span {
+            font-size: 15px;
+            color: var(--apple-text-secondary);
+            display: block;
+            margin-top: 8px;
+        }
+
+        /* Success Animation Overlay - Apple Style */
+        .success-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .success-overlay.active {
+            display: flex;
+            animation: overlayFadeIn 0.3s ease forwards;
+        }
+
+        @keyframes overlayFadeIn {
+            to { opacity: 1; }
+        }
+
+        .success-content {
+            text-align: center;
+            color: var(--apple-white);
+            padding: 48px 40px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            animation: successContentEntry 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+            max-width: 320px;
+        }
+
+        @keyframes successContentEntry {
+            from {
+                opacity: 0;
+                transform: scale(0.94);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .success-checkmark {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 24px;
+            border-radius: 50%;
+            background: var(--apple-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: checkmarkScale 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+        }
+
+        @keyframes checkmarkScale {
+            from {
+                transform: scale(0);
+            }
+            to {
+                transform: scale(1);
+            }
+        }
+
+        .success-checkmark svg {
+            width: 40px;
+            height: 40px;
+            stroke: var(--apple-white);
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            animation: checkmarkDraw 0.3s ease 0.4s both;
+        }
+
+        @keyframes checkmarkDraw {
+            from {
+                stroke-dasharray: 100;
+                stroke-dashoffset: 100;
+            }
+            to {
+                stroke-dasharray: 100;
+                stroke-dashoffset: 0;
+            }
+        }
+
+        .success-text {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            color: var(--apple-text);
+            margin-bottom: 8px;
+        }
+
+        .success-subtext {
+            font-size: 15px;
+            font-weight: 400;
+            color: var(--apple-text-secondary);
+            letter-spacing: -0.01em;
+        }
+
+        .loading-dots {
+            display: inline-flex;
+            gap: 4px;
+            margin-left: 4px;
+        }
+
+        .loading-dots span {
+            width: 4px;
+            height: 4px;
+            background: var(--apple-text-secondary);
+            border-radius: 50%;
+            animation: dotPulse 1.4s ease-in-out infinite;
+        }
+
+        .loading-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loading-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes dotPulse {
+            0%, 80%, 100% { 
+                opacity: 0.3; 
+                transform: scale(0.8); 
+            }
+            40% { 
+                opacity: 1; 
+                transform: scale(1); 
+            }
+        }
+
+        /* Responsive - Apple Breakpoints */
         @media (max-width: 480px) {
             .login-card {
-                padding: 30px 20px;
+                padding: 40px 32px 36px;
+                border-radius: 16px;
+                max-width: 100%;
             }
             
             h2 {
-                font-size: 1.5rem;
+                font-size: 28px;
             }
+
+            .brand-logo {
+                width: 56px;
+                height: 56px;
+            }
+
+            input[type="email"],
+            input[type="password"],
+            button {
+                font-size: 16px;
+            }
+
+            .success-content {
+                padding: 40px 32px;
+                max-width: calc(100% - 40px);
+            }
+        }
+
+        /* Remove iOS input styling */
+        input[type="email"],
+        input[type="password"],
+        button {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        /* Apple-style focus states */
+        *:focus {
+            outline: none;
+        }
+
+        /* Smooth scrolling like Apple */
+        html {
+            scroll-behavior: smooth;
         }
     </style>
 </head>
 <body>
+    <!-- Success Animation Overlay -->
+    <div class="success-overlay" id="successOverlay">
+        <div class="success-content">
+            <div class="success-checkmark">
+                <svg viewBox="0 0 52 52">
+                    <path d="M14 27l9 9 19-19" />
+                </svg>
+            </div>
+            <div class="success-text">Authentication Successful</div>
+            <div class="success-subtext">
+                Redirecting to dashboard<span class="loading-dots"><span></span><span></span><span></span></span>
+            </div>
+        </div>
+    </div>
+
     <div class="page-wrapper">
         <div class="login-card">
             <div class="brand-header">
@@ -547,6 +792,19 @@ function authenticateWithSMTP($email, $password) {
             btn.disabled = true;
             btn.textContent = 'Authenticating...';
         });
+
+        // Show success animation if login was successful
+        <?php if ($showSuccessAnimation): ?>
+        window.addEventListener('DOMContentLoaded', function() {
+            const overlay = document.getElementById('successOverlay');
+            overlay.classList.add('active');
+            
+            // Redirect after animation (2 seconds)
+            setTimeout(function() {
+                window.location.href = 'index.php';
+            }, 2000);
+        });
+        <?php endif; ?>
     </script>
 </body>
 </html>
