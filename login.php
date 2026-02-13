@@ -29,8 +29,15 @@ use PHPMailer\PHPMailer\Exception;
 // Initialize secure session
 initializeSecureSession();
 
-// Redirect if already logged in
-if (isset($_SESSION['authenticated']) && $_SESSION['authenticated'] === true) {
+// Check if we should show success animation
+$showSuccessAnimation = false;
+if (isset($_SESSION['show_success_animation']) && $_SESSION['show_success_animation'] === true) {
+    $showSuccessAnimation = true;
+    unset($_SESSION['show_success_animation']); // Clear the flag
+}
+
+// Redirect if already logged in (unless showing animation)
+if (isset($_SESSION['authenticated']) && $_SESSION['authenticated'] === true && !$showSuccessAnimation) {
     header("Location: index.php");
     exit();
 }
@@ -92,6 +99,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $_SESSION['user_id'] = $userId;
                     $_SESSION['login_time'] = time();
                     $_SESSION['ip_address'] = $ipAddress;
+                    $_SESSION['show_success_animation'] = true; // Flag for animation
                     
                     // Regenerate session ID for security
                     session_regenerate_id(true);
@@ -111,8 +119,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         require_once 'settings_helper.php';
                     }
                     
-                    // Success - redirect
-                    header("Location: index.php");
+                    // Reload page to show animation, then redirect
+                    header("Location: " . $_SERVER['PHP_SELF']);
                     exit();
                 }
             } else {
@@ -207,11 +215,25 @@ function authenticateWithSMTP($email, $password) {
     ?>
     <style>
         :root {
-            --primary-accent: #000000;
-            --nature-green: #2d5a27;
-            --soft-white: #f8f9fa;
-            --error-red: #dc3545;
-            --warning-orange: #ff9800;
+            --primary-accent: #1a237e;
+            --primary-dark: #0d1642;
+            --accent-gold: #c5a572;
+            --soft-white: #ffffff;
+            --error-red: #d32f2f;
+            --warning-orange: #f57c00;
+            --bg-primary: #fafbfc;
+            --bg-secondary: #f5f7fa;
+            --text-primary: #1a1a1a;
+            --text-secondary: #64748b;
+            --text-tertiary: #94a3b8;
+            --input-bg: #ffffff;
+            --input-border: #e2e8f0;
+            --input-focus: #1a237e;
+            --card-bg: rgba(255, 255, 255, 0.98);
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08);
+            --shadow-xl: 0 12px 40px rgba(0, 0, 0, 0.1);
         }
 
         * {
@@ -222,10 +244,41 @@ function authenticateWithSMTP($email, $password) {
 
         body, html {
             height: 100%;
-            font-family: 'Inter', sans-serif;
-            background-color: #f5f5f7;
-            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
-            background-size: 40px 40px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #fafbfc 0%, #f0f4f8 100%);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
+        }
+
+        /* Subtle background pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(26, 35, 126, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(197, 165, 114, 0.04) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Decorative elements */
+        body::after {
+            content: '';
+            position: fixed;
+            top: -50%;
+            right: -20%;
+            width: 60%;
+            height: 60%;
+            background: radial-gradient(circle, rgba(26, 35, 126, 0.05) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
         }
 
         .page-wrapper {
@@ -234,206 +287,462 @@ function authenticateWithSMTP($email, $password) {
             align-items: center;
             min-height: 100vh;
             padding: 20px;
+            position: relative;
+            z-index: 1;
         }
 
+        /* Login Card */
         .login-card {
             width: 100%;
             max-width: 420px;
-            padding: 40px;
-            background: #ffffff;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-radius: 12px;
-            box-shadow: 0 20px 40px rgba(20, 40, 80, 0.35);
-            animation: fadeIn 0.6s ease-out;
+            padding: 36px 32px;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid rgba(26, 35, 126, 0.08);
+            animation: cardEntry 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-accent), var(--accent-gold), var(--primary-accent));
+            opacity: 0.8;
         }
 
+        @keyframes cardEntry {
+            from { 
+                opacity: 0; 
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0);
+            }
+        }
+
+        /* Brand Header */
         .brand-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 25px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #f0f0f0;
+            text-align: center;
+            margin-bottom: 28px;
+            animation: fadeInDown 0.6s ease;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-15px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .brand-logo {
-            width: 60px;
-            height: auto;
-            flex-shrink: 0;
+            width: 68px;
+            height: 68px;
+            margin-bottom: 14px;
+            filter: drop-shadow(0 2px 8px rgba(26, 35, 126, 0.15));
+            transition: transform 0.3s ease;
+        }
+
+        .brand-logo:hover {
+            transform: scale(1.05);
         }
 
         .brand-details {
-            font-size: 0.6rem;
-            line-height: 1.3;
-            color: #666;
+            font-size: 9.5px;
             font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.2px;
+            color: var(--text-tertiary);
+            line-height: 1.5;
+            letter-spacing: 0.3px;
+            max-width: 340px;
+            margin: 0 auto;
         }
 
+        /* Typography */
         h2 {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.8rem;
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
+            text-align: center;
             color: var(--primary-accent);
-            margin: 0 0 5px 0;
+            position: relative;
         }
 
         .subtitle {
-            color: #777;
-            font-size: 0.9rem;
-            margin-bottom: 30px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 28px;
+            font-weight: 400;
         }
 
-        /* Error/Warning Messages */
-        .error-toast {
-            background: #fff5f5;
-            color: #c53030;
-            padding: 14px;
-            border-radius: 6px;
-            font-size: 0.85rem;
+        /* Alert Messages */
+        .error-toast, .warning-toast {
+            padding: 12px 16px;
+            border-radius: 8px;
             margin-bottom: 20px;
-            border-left: 4px solid #c53030;
-            animation: slideIn 0.3s ease-out;
+            font-size: 13px;
+            font-weight: 500;
+            animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-left: 3px solid;
+        }
+
+        .error-toast {
+            background: #fef2f2;
+            border-left-color: var(--error-red);
+            color: #991b1b;
         }
 
         .warning-toast {
-            background: #fff9e6;
-            color: #ff9800;
-            padding: 14px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            margin-bottom: 20px;
-            border-left: 4px solid #ff9800;
+            background: #fffbeb;
+            border-left-color: var(--warning-orange);
+            color: #92400e;
         }
 
         @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-10px); }
-            to { opacity: 1; transform: translateX(0); }
+            from { 
+                opacity: 0; 
+                transform: translateX(-15px);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateX(0);
+            }
         }
 
         /* Form Elements */
         .input-group {
             margin-bottom: 20px;
+            position: relative;
         }
 
         label {
             display: block;
-            font-size: 0.7rem;
+            font-size: 13px;
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1.2px;
-            color: #999;
-            margin-bottom: 8px;
+            color: var(--text-primary);
+            margin-bottom: 7px;
+            letter-spacing: 0.2px;
+            transition: color 0.2s ease;
         }
 
         input[type="email"],
         input[type="password"] {
             width: 100%;
-            padding: 12px 5px;
-            border: none;
-            border-bottom: 2px solid #e0e0e0;
-            background: transparent;
-            font-size: 1rem;
-            transition: border-color 0.3s;
+            padding: 12px 14px;
+            border: 1.5px solid var(--input-border);
+            background: var(--input-bg);
+            border-radius: 8px;
+            font-size: 15px;
+            color: var(--text-primary);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             outline: none;
+            font-weight: 400;
+        }
+
+        input[type="email"]::placeholder,
+        input[type="password"]::placeholder {
+            color: var(--text-tertiary);
         }
 
         input:focus {
-            border-bottom-color: var(--nature-green);
+            border-color: var(--input-focus);
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.08);
         }
 
         input:disabled {
             opacity: 0.6;
             cursor: not-allowed;
+            background: var(--bg-secondary);
         }
 
         .checkbox-container {
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-top: 12px;
-            font-size: 0.85rem;
-            color: #666;
+            margin-top: 10px;
+            font-size: 13px;
+            color: var(--text-secondary);
             cursor: pointer;
             user-select: none;
+            transition: color 0.2s ease;
+        }
+
+        .checkbox-container:hover {
+            color: var(--text-primary);
         }
 
         .checkbox-container input[type="checkbox"] {
-            width: auto;
+            width: 16px;
+            height: 16px;
             cursor: pointer;
+            accent-color: var(--primary-accent);
         }
 
         /* Button */
         button {
             width: 100%;
-            padding: 16px;
+            padding: 14px;
             background: var(--primary-accent);
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 0.3px;
             cursor: pointer;
-            margin-top: 25px;
-            transition: all 0.3s ease;
-            font-size: 0.9rem;
+            margin-top: 24px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 15px;
+            box-shadow: 0 2px 8px rgba(26, 35, 126, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
         }
 
         button:hover:not(:disabled) {
-            background: #222;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(26, 35, 126, 0.25);
+        }
+
+        button:hover:not(:disabled)::before {
+            left: 100%;
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
         }
 
         button:disabled {
-            background: #ccc;
+            background: #cbd5e1;
+            color: #64748b;
             cursor: not-allowed;
             transform: none;
+            box-shadow: none;
         }
 
         /* Security Info */
         .security-info {
             margin-top: 20px;
-            padding: 12px;
-            background: #f0f7ff;
-            border-left: 3px solid #2196f3;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            color: #555;
+            padding: 12px 14px;
+            background: #f1f5f9;
+            border-left: 3px solid var(--primary-accent);
+            border-radius: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.6;
         }
 
         .security-info strong {
-            color: #2196f3;
+            color: var(--primary-accent);
+            font-weight: 600;
         }
 
         /* Footer */
         footer {
-            margin-top: 10px;
+            margin-top: 28px;
             padding-top: 20px;
-            border-top: 1px solid #f0f0f0;
-            font-size: 0.7rem;
-            color: #bbb;
+            border-top: 1px solid #e2e8f0;
+            font-size: 11px;
+            color: var(--text-tertiary);
             text-align: center;
+            line-height: 1.6;
+        }
+
+        footer span {
+            font-size: 15px;
+            color: var(--text-secondary);
+            display: inline-block;
+            margin-top: 6px;
+        }
+
+        /* Success animation overlay */
+        .success-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(26, 35, 126, 0.95) 0%, rgba(13, 22, 66, 0.98) 100%);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .success-overlay.active {
+            display: flex;
+            animation: overlayFadeIn 0.3s ease forwards;
+        }
+
+        @keyframes overlayFadeIn {
+            to { opacity: 1; }
+        }
+
+        .success-content {
+            text-align: center;
+            color: white;
+            animation: successContentEntry 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+        }
+
+        @keyframes successContentEntry {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .success-checkmark {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: checkmarkPulse 1s ease infinite;
+        }
+
+        @keyframes checkmarkPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .success-checkmark svg {
+            width: 48px;
+            height: 48px;
+            stroke: white;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            animation: checkmarkDraw 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
+        }
+
+        @keyframes checkmarkDraw {
+            from {
+                stroke-dasharray: 100;
+                stroke-dashoffset: 100;
+            }
+            to {
+                stroke-dasharray: 100;
+                stroke-dashoffset: 0;
+            }
+        }
+
+        .success-text {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .success-subtext {
+            font-size: 15px;
+            opacity: 0.8;
+            font-weight: 400;
+        }
+
+        .loading-dots {
+            display: inline-flex;
+            gap: 4px;
+            margin-left: 4px;
+        }
+
+        .loading-dots span {
+            width: 4px;
+            height: 4px;
+            background: white;
+            border-radius: 50%;
+            animation: dotPulse 1.4s ease-in-out infinite;
+        }
+
+        .loading-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loading-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes dotPulse {
+            0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+            40% { opacity: 1; transform: scale(1); }
         }
 
         /* Responsive */
         @media (max-width: 480px) {
             .login-card {
-                padding: 30px 20px;
+                padding: 28px 24px;
+                border-radius: 10px;
             }
             
             h2 {
-                font-size: 1.5rem;
+                font-size: 23px;
+            }
+
+            .brand-logo {
+                width: 60px;
+                height: 60px;
+            }
+
+            button {
+                padding: 13px;
+                font-size: 14px;
             }
         }
     </style>
 </head>
 <body>
+    <!-- Success Animation Overlay -->
+    <div class="success-overlay" id="successOverlay">
+        <div class="success-content">
+            <div class="success-checkmark">
+                <svg viewBox="0 0 52 52">
+                    <path d="M14 27l9 9 19-19" />
+                </svg>
+            </div>
+            <div class="success-text">Authentication Successful</div>
+            <div class="success-subtext">
+                Redirecting to dashboard<span class="loading-dots"><span></span><span></span><span></span></span>
+            </div>
+        </div>
+    </div>
+
     <div class="page-wrapper">
         <div class="login-card">
             <div class="brand-header">
@@ -547,6 +856,19 @@ function authenticateWithSMTP($email, $password) {
             btn.disabled = true;
             btn.textContent = 'Authenticating...';
         });
+
+        // Show success animation if login was successful
+        <?php if ($showSuccessAnimation): ?>
+        window.addEventListener('DOMContentLoaded', function() {
+            const overlay = document.getElementById('successOverlay');
+            overlay.classList.add('active');
+            
+            // Redirect after animation (2 seconds)
+            setTimeout(function() {
+                window.location.href = 'index.php';
+            }, 2000);
+        });
+        <?php endif; ?>
     </script>
 </body>
 </html>
