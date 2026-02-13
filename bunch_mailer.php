@@ -1673,53 +1673,104 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 
         /* ═══ CSV UPLOAD & ANALYSIS ══════════════════════════════════════ */
         async function handleCSVUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+    const zone = document.getElementById('uploadZone');
+    const files = event.target.files || event.dataTransfer?.files;
 
-            // Show loading state
-            const zone = document.getElementById('uploadZone');
-            zone.style.pointerEvents = 'none';
-            zone.innerHTML = `<div class="spinner-sm" style="margin:0 auto 8px"></div><p style="font-size:13px;color:var(--ink-3)">Analysing CSV…</p>`;
+    if (!files || files.length === 0) {
+        console.log('No files selected');
+        return;
+    }
 
-            try {
-                const formData = new FormData();
-                formData.append('csv_file', file);
-                formData.append('action', 'analyze');
+    const file = files[0];
+    console.log('File selected:', file.name, 'Size:', file.size);
 
-                const response = await fetch('bulk_mail_backend.php', { method: 'POST', body: formData });
-                const data     = await response.json();
+    // Validate file type
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+        showAlert('error', 'Please upload a CSV file');
+        event.target.value = '';
+        return;
+    }
 
-                // Restore upload zone
-                zone.style.pointerEvents = '';
-                zone.innerHTML = `
-                    <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSVUpload(event)">
-                    <div class="upload-icon-wrap"><span class="material-icons-round">upload_file</span></div>
-                    <p class="upload-title">Drop a CSV file, or click to browse</p>
-                    <p class="upload-hint">Supports .csv up to 10 MB</p>`;
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+        showAlert('error', 'File size exceeds 10MB limit');
+        event.target.value = '';
+        return;
+    }
 
-                if (data.success) {
-                    currentCSVData = data;
-                    // Show file loaded row
-                    document.getElementById('fileLoadedName').textContent = data.filename;
-                    document.getElementById('fileLoadedSize').textContent = data.csv_columns.length + ' columns · ' + data.total_rows + ' rows';
-                    document.getElementById('fileLoadedRow').classList.add('visible');
-                    displayAnalysisResults(data);
-                } else {
-                    showAlert('error', data.error || 'Failed to analyse CSV');
-                }
-            } catch (err) {
-                // Restore upload zone on error
-                zone.style.pointerEvents = '';
-                zone.innerHTML = `
-                    <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSVUpload(event)">
-                    <div class="upload-icon-wrap"><span class="material-icons-round">upload_file</span></div>
-                    <p class="upload-title">Drop a CSV file, or click to browse</p>
-                    <p class="upload-hint">Supports .csv up to 10 MB</p>`;
-                showAlert('error', 'Failed to upload CSV: ' + err.message);
-            }
+    // Show uploading state
+    zone.style.pointerEvents = 'none';
+    zone.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+            <div class="upload-icon-wrap">
+                <span class="material-icons-round" style="animation:spin 1s linear infinite">sync</span>
+            </div>
+            <p class="upload-title">Analysing ${file.name}...</p>
+        </div>`;
 
-            event.target.value = '';
+    try {
+        // Upload to backend
+        const formData = new FormData();
+        formData.append('csv_file', file);
+        formData.append('action', 'analyze');
+
+        console.log('Uploading CSV to backend...');
+        const response = await fetch('bulk_mail_backend.php', {
+            method: 'POST',
+            body: formData
+        });
+
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
+
+        const data = await response.json();
+        console.log('Backend response:', data);
+
+        if (data.success) {
+            console.log('CSV analysis successful');
+            currentCSVData = data;
+            
+            // Show file loaded row
+            document.getElementById('fileLoadedName').textContent = data.filename;
+            document.getElementById('fileLoadedSize').textContent = data.csv_columns.length + ' columns · ' + data.total_rows + ' rows';
+            document.getElementById('fileLoadedRow').classList.add('visible');
+            
+            // Display analysis results
+            console.log('Displaying analysis results...');
+            displayAnalysisResults(data);
+            
+            // Verify the section is visible
+            const analysisSection = document.getElementById('analysisResults');
+            if (analysisSection.classList.contains('active')) {
+                console.log('✓ Analysis results section is now visible');
+            } else {
+                console.error('✗ Failed to make analysis results visible');
+            }
+            
+            showAlert('success', `CSV loaded: ${data.total_rows} rows, ${data.csv_columns.length} columns`);
+        } else {
+            console.error('Backend returned error:', data.error);
+            throw new Error(data.error || 'Failed to analyze CSV');
+        }
+    } catch (err) {
+        console.error('Upload error:', err);
+        
+        // Restore upload zone on error
+        zone.style.pointerEvents = '';
+        zone.innerHTML = `
+            <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSVUpload(event)">
+            <div class="upload-icon-wrap"><span class="material-icons-round">upload_file</span></div>
+            <p class="upload-title">Drop a CSV file, or click to browse</p>
+            <p class="upload-hint">Supports .csv up to 10 MB</p>`;
+        
+        showAlert('error', 'Failed to upload CSV: ' + err.message);
+    }
+
+    event.target.value = '';
+}
 
         function displayAnalysisResults(data) {
             currentMapping = data.suggested_mapping || {};
