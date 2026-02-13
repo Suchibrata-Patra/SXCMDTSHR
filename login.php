@@ -222,10 +222,24 @@ function authenticateWithSMTP($email, $password) {
 
         body, html {
             height: 100%;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background-color: #f5f5f7;
             background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
             background-size: 40px 40px;
+            position: relative;
+        }
+
+        /* Subtle radial gradient overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 30%, rgba(0, 0, 0, 0.02), transparent 60%);
+            pointer-events: none;
+            z-index: 0;
         }
 
         .page-wrapper {
@@ -234,85 +248,105 @@ function authenticateWithSMTP($email, $password) {
             align-items: center;
             min-height: 100vh;
             padding: 20px;
+            position: relative;
+            z-index: 1;
         }
 
         .login-card {
+            background: white;
+            padding: 45px 40px;
+            border-radius: 22px;
+            box-shadow: 
+                0 8px 24px rgba(0, 0, 0, 0.06),
+                0 2px 6px rgba(0, 0, 0, 0.04);
             width: 100%;
             max-width: 420px;
-            padding: 40px;
-            background: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 20px 40px rgba(20, 40, 80, 0.35);
-            animation: fadeIn 0.6s ease-out;
+            opacity: 0;
+            transform: translateY(8px);
+            animation: cardFadeIn 350ms ease-out forwards;
+            animation-delay: 100ms;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes cardFadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
+        /* Brand Header */
         .brand-header {
             display: flex;
             align-items: center;
-            gap: 15px;
-            margin-bottom: 25px;
-            padding-bottom: 20px;
+            gap: 14px;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
             border-bottom: 1px solid #f0f0f0;
         }
 
         .brand-logo {
-            width: 60px;
-            height: auto;
+            width: 52px;
+            height: 52px;
+            object-fit: contain;
             flex-shrink: 0;
         }
 
         .brand-details {
-            font-size: 0.6rem;
-            line-height: 1.3;
+            font-size: 0.68rem;
+            line-height: 1.55;
             color: #666;
-            font-weight: 500;
-            text-transform: uppercase;
+            opacity: 0.65;
             letter-spacing: 0.2px;
         }
 
+        /* Heading */
         h2 {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.8rem;
-            color: var(--primary-accent);
-            margin: 0 0 5px 0;
+            font-size: 1.73rem;
+            font-weight: 500;
+            margin-bottom: 28px;
+            color: #1a1a1a;
+            letter-spacing: 0.3px;
         }
 
         .subtitle {
-            color: #777;
-            font-size: 0.9rem;
-            margin-bottom: 30px;
+            font-size: 0.95rem;
+            color: #666;
+            margin-bottom: 25px;
+            line-height: 1.5;
         }
 
-        /* Error/Warning Messages */
-        .error-toast {
-            background: #fff5f5;
-            color: #c53030;
-            padding: 14px;
-            border-radius: 6px;
-            font-size: 0.85rem;
+        /* Alert Messages */
+        .error-toast, .warning-toast {
+            padding: 14px 16px;
+            border-radius: 10px;
             margin-bottom: 20px;
-            border-left: 4px solid #c53030;
-            animation: slideIn 0.3s ease-out;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            opacity: 0;
+            animation: slideInRight 0.4s ease-out forwards;
+        }
+
+        .error-toast {
+            background: #fef2f2;
+            border-left: 3px solid var(--error-red);
+            color: #991b1b;
         }
 
         .warning-toast {
-            background: #fff9e6;
-            color: #ff9800;
-            padding: 14px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            margin-bottom: 20px;
-            border-left: 4px solid #ff9800;
+            background: #fff7ed;
+            border-left: 3px solid var(--warning-orange);
+            color: #9a3412;
         }
 
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-10px); }
-            to { opacity: 1; transform: translateX(0); }
+        @keyframes slideInRight {
+            from { 
+                opacity: 0; 
+                transform: translateX(10px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateX(0); 
+            }
         }
 
         /* Form Elements */
@@ -335,15 +369,17 @@ function authenticateWithSMTP($email, $password) {
             width: 100%;
             padding: 12px 5px;
             border: none;
-            border-bottom: 2px solid #e0e0e0;
+            border-bottom: 2px solid #dadada;
             background: transparent;
             font-size: 1rem;
-            transition: border-color 0.3s;
+            transition: border-color 180ms ease, transform 150ms ease;
             outline: none;
         }
 
         input:focus {
-            border-bottom-color: var(--nature-green);
+            border-bottom-color: #1f2a44;
+            transform: scaleY(1.02);
+            transform-origin: bottom;
         }
 
         input:disabled {
@@ -371,23 +407,27 @@ function authenticateWithSMTP($email, $password) {
         button {
             width: 100%;
             padding: 16px;
-            background: var(--primary-accent);
+            background: linear-gradient(180deg, #1a1a1a 0%, #0e0e0e 100%);
             color: white;
             border: none;
             border-radius: 6px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 2.5px;
             cursor: pointer;
             margin-top: 25px;
-            transition: all 0.3s ease;
+            transition: all 180ms ease;
             font-size: 0.9rem;
         }
 
         button:hover:not(:disabled) {
-            background: #222;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
         }
 
         button:disabled {
@@ -413,12 +453,17 @@ function authenticateWithSMTP($email, $password) {
 
         /* Footer */
         footer {
-            margin-top: 10px;
+            margin-top: 22px;
             padding-top: 20px;
             border-top: 1px solid #f0f0f0;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: #bbb;
+            opacity: 0.6;
             text-align: center;
+        }
+
+        footer span {
+            font-size: 0.95rem;
         }
 
         /* Responsive */
