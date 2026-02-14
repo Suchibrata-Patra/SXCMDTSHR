@@ -4,11 +4,19 @@ require 'vendor/autoload.php';
 require 'config.php';
 require 'db_config.php';
 
-// Security check
-if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
+// Security check - allow both session credentials AND env credentials
+$hasSessionAuth = isset($_SESSION['smtp_user']) && isset($_SESSION['smtp_pass']);
+$hasEnvAuth = !empty(env('SMTP_USERNAME')) && !empty(env('SMTP_PASSWORD'));
+
+// Check if user is authenticated (either via session OR env)
+if (!$hasSessionAuth && !$hasEnvAuth) {
     header("Location: login.php");
     exit();
 }
+
+// Determine which credentials to use (prefer ENV for security)
+$smtpUser = env('SMTP_USERNAME') ?: ($_SESSION['smtp_user'] ?? '');
+$smtpPass = env('SMTP_PASSWORD') ?: ($_SESSION['smtp_pass'] ?? '');
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -86,15 +94,33 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         $settings = $_SESSION['user_settings'] ?? [];
 
-        $mail->Host = "smtp.hostinger.com";
+        // Get SMTP configuration from environment (most secure)
+        $mail->Host = env('SMTP_HOST', 'smtp.hostinger.com');
         $mail->SMTPAuth = true;
-        $mail->Username = $_SESSION['smtp_user'];
-        $mail->Password = $_SESSION['smtp_pass'];
-        $mail->Port = 465;
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+        $mail->Username = $smtpUser;
+        $mail->Password = $smtpPass;
+        $mail->Port = (int)env('SMTP_PORT', 465);
+        $mail->SMTPSecure = env('SMTP_ENCRYPTION', 'ssl') === 'tls' 
+            ? PHPMailer::ENCRYPTION_STARTTLS 
+            : PHPMailer::ENCRYPTION_SMTPS;
         
-        $displayName = !empty($settings['display_name']) ? $settings['display_name'] : "St. Xavier's College";
-        $mail->setFrom($_SESSION['smtp_user'], $displayName);
+        // SSL/TLS Options for Hostinger
+        $mail->SMTPOptions = [
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+                'allow_self_signed' => true
+            ]
+        ];
+        
+        // Get FROM name and email from environment
+        $displayName = !empty($settings['display_name']) 
+            ? $settings['display_name'] 
+            : env('FROM_NAME', "St. Xavier's College");
+        
+        $fromEmail = env('FROM_EMAIL', $smtpUser);
+        
+        $mail->setFrom($fromEmail, $displayName);
         
         // ==================== Capture Form Fields ====================
         $recipient = filter_var(trim($_POST['email'] ?? ''), FILTER_SANITIZE_EMAIL);
