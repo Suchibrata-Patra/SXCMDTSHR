@@ -748,21 +748,21 @@ function initializeSecureSession() {
  * Load IMAP configuration to session
  * Uses system SMTP credentials from ENV
  */
-function loadImapConfigToSession($userEmail, $userPassword = null) {
-    // Get system credentials from environment
-    $smtpCreds = getSmtpCredentials();
+// function loadImapConfigToSession($userEmail, $userPassword = null) {
+//     // Get system credentials from environment
+//     $smtpCreds = getSmtpCredentials();
     
-    $_SESSION['imap_config'] = [
-        'host' => env('IMAP_HOST', $smtpCreds['host']),
-        'port' => env('IMAP_PORT', 993),
-        'username' => $userEmail,
-        'password' => $userPassword ?? $smtpCreds['password'],
-        'encryption' => env('IMAP_ENCRYPTION', 'ssl'),
-        'validate_cert' => env('IMAP_VALIDATE_CERT', false)
-    ];
+//     $_SESSION['imap_config'] = [
+//         'host' => env('IMAP_HOST', $smtpCreds['host']),
+//         'port' => env('IMAP_PORT', 993),
+//         'username' => $userEmail,
+//         'password' => $userPassword ?? $smtpCreds['password'],
+//         'encryption' => env('IMAP_ENCRYPTION', 'ssl'),
+//         'validate_cert' => env('IMAP_VALIDATE_CERT', false)
+//     ];
     
-    return true;
-}
+//     return true;
+// }
 
 /**
  * Create user if not exists
