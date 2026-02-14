@@ -788,8 +788,7 @@ if (isset($_GET['preview'])) {
         <!-- TOP BAR -->
         <div class="topbar">
             <div class="topbar-title">
-                <span class="material-icons-round">add_to_drive</span>
-                Personal Drive
+                <span class="material-icons-round">add_to_drive</span>Drive
             </div>
             <div class="topbar-spacer"></div>
             <div class="search-wrap">
