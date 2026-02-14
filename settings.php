@@ -567,7 +567,7 @@ $isLocked = isset($s['settings_locked']) &&
 
         <form id="appleSettingsForm" method="post" action="save_settings.php">
             <!-- IDENTITY SECTION -->
-            <h2 id="identity">Default Email Signature [Official Identity]</h2>
+            <h2 id="identity">Default Email Signature ( Official Identity )</h2>
             <div class="section-card">
                 <div class="setting-row">
                     <div class="setting-info">
