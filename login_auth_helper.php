@@ -23,7 +23,7 @@ require_once 'db_config.php';
 // define('MAX_LOGIN_ATTEMPTS', 5);           // Max attempts before block
 // define('RATE_LIMIT_WINDOW', 900);         // 15 minutes in seconds
 // define('ACCOUNT_LOCK_DURATION', 1800);    // 30 minutes in seconds
-define('SESSION_TIMEOUT', 3600);           // 1 hour in seconds
+// define('SESSION_TIMEOUT', 3600);           // 1 hour in seconds
 define('REMEMBER_ME_DURATION', 2592000);   // 30 days in seconds
 
 // Password policy
