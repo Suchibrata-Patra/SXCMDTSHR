@@ -11,7 +11,7 @@
  * - SMTP credentials from ENV for email sending only
  * ============================================================
  */
-
+require_once __DIR__ . '/security_handler.php';
 require_once 'vendor/autoload.php';
 require_once 'config.php';
 require_once 'db_config.php';
