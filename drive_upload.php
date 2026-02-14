@@ -290,6 +290,10 @@ if (isset($_GET['preview'])) {
         /* ── LAYOUT ─────────────────────────────────────────── */
         .app-shell  { display:flex; flex:1; overflow:hidden; }
         .main-col   { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+        
+        a{
+            text-decoration: none;
+        }
 
         /* ── TOP BAR ─────────────────────────────────────────── */
         .topbar {
