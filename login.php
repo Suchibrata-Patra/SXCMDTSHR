@@ -51,7 +51,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $rateLimit = checkRateLimit($userEmail, $ipAddress);
         
         if (!$rateLimit['allowed']) {
-            $blockUntilTime = strtotime($rateLimit['block_until']);
+            $blockUntilTime = !empty($rateLimit['block_until']) ? strtotime($rateLimit['block_until']) : time();
             $remainingMinutes = ceil(($blockUntilTime - time()) / 60);
             
             $error = "Too many failed attempts. Account temporarily locked. Please try again in $remainingMinutes minutes.";
@@ -142,7 +142,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $loginAttempts = $rateLimit['attempts'];
                 
                 if (!$rateLimit['allowed']) {
-                    $blockUntilTime = strtotime($rateLimit['block_until']);
+                    $blockUntilTime = !empty($rateLimit['block_until']) ? strtotime($rateLimit['block_until']) : time();
                     $remainingMinutes = ceil(($blockUntilTime - time()) / 60);
                     $error = "Too many failed attempts. Account locked for $remainingMinutes minutes.";
                 } else {
@@ -450,7 +450,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             <?php if ($error): ?>
                 <div class="error-toast">
-                    <?php echo htmlspecialchars($error); ?>
+                    🔒 <?php echo htmlspecialchars($error); ?>
                 </div>
             <?php endif; ?>
 
