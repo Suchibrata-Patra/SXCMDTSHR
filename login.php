@@ -238,12 +238,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         .brand-details {
-            font-size: 0.68rem;
-            color: #888;
-            line-height: 1.5;
-            letter-spacing: 0.3px;
-            text-align:left;
-        }
+    font-size: 0.68rem;
+    color: #888;
+    line-height: 1.5;
+    letter-spacing: 0.3px;
+
+    display: flex;
+    align-items: center;      /* vertical center */
+    justify-content: flex-start; /* horizontal left */
+}
+
 
         /* Title */
         h2 {
