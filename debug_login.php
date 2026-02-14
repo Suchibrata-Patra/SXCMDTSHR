@@ -3,7 +3,7 @@
  * debug_login.php - Debug script to check login issues
  * Run this to diagnose why login is not working
  */
-
+require_once __DIR__ . '/security_handler.php';
 require_once 'config.php';
 require_once 'db_config.php';
 

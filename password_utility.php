@@ -9,7 +9,7 @@
  * - Reset user passwords
  * ============================================================
  */
-
+require_once __DIR__ . '/security_handler.php';
 require_once 'config.php';
 require_once 'db_config.php';
 

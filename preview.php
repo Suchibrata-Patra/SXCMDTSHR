@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/security_handler.php';
 // /Applications/XAMPP/xamppfiles/htdocs/preview.php
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = $_POST['email'];

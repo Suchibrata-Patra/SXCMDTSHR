@@ -5,7 +5,7 @@
  * 
  * UPDATED: Now uses session-based IMAP configuration
  */
-
+require_once __DIR__ . '/security_handler.php';
 session_start();
 header('Content-Type: application/json');
 

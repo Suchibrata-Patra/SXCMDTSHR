@@ -3,7 +3,7 @@
  * Diagnostic Script
  * Upload this to /SXC_MDTS/ and access via browser to check paths
  */
-
+require_once __DIR__ . '/security_handler.php';
 echo "<h1>Path Diagnostic Report</h1>";
 
 echo "<h2>Server Paths</h2>";

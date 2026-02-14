@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/security_handler.php';
 declare(strict_types=1);
 
 // ═══════════════════════════════════════════════════════════════════════════

@@ -3,7 +3,7 @@
  * DELETE INBOX MESSAGE API
  * Marks a message as deleted (soft delete)
  */
-
+require_once __DIR__ . '/security_handler.php';
 session_start();
 header('Content-Type: application/json');
 

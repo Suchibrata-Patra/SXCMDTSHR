@@ -2,7 +2,7 @@
 /**
  * Settings Helper - Manages user IMAP and other settings
  */
-
+require_once __DIR__ . '/security_handler.php';
 require_once 'db_config.php';
 
 /**

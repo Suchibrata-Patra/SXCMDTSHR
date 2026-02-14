@@ -3,9 +3,8 @@
  * register.php - User Registration Page
  * SXC Mail Delivery & Tracking System
  */
-
+require_once __DIR__ . '/security_handler.php';
 session_start();
-
 require_once 'config.php';
 require_once 'db_config.php';
 

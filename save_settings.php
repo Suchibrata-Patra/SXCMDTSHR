@@ -4,7 +4,7 @@
  * Handles both regular settings AND IMAP settings
  * No more artificial separation!
  */
-
+require_once __DIR__ . '/security_handler.php';
 session_start();
 ini_set('display_errors', 0);
 header('Content-Type: application/json');

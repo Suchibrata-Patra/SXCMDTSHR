@@ -1,5 +1,6 @@
 <?php
 // update_email_label.php - AJAX endpoint for updating email labels
+require_once __DIR__ . '/security_handler.php';
 session_start();
 require 'db_config.php';
 

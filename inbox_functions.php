@@ -4,7 +4,7 @@
  * Supports body_preview for fast queries
  * New vs unread email distinction
  */
-
+require_once __DIR__ . '/security_handler.php';
 require_once 'db_config.php';
 
 /**

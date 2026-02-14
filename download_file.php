@@ -2,7 +2,7 @@
 /**
  * download_file.php - Secure file download with encrypted IDs
  */
-
+require_once __DIR__ . '/security_handler.php';
 session_start();
 
 // Security check

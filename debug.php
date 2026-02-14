@@ -4,7 +4,7 @@
  * Returns read statuses for multiple emails
  * Used by sent_history.php for real-time updates
  */
-
+require_once __DIR__ . '/security_handler.php';
 session_start();
 header('Content-Type: application/json');
 

@@ -10,7 +10,7 @@
  * - Comprehensive error handling
  * - Preview before processing
  */
-
+require_once __DIR__ . '/security_handler.php';
 session_start();
 
 // Security check

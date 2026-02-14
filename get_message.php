@@ -3,7 +3,7 @@
  * GET MESSAGE API - OPTIMIZED
  * Fetches a single message by ID with FULL body
  */
-
+require_once __DIR__ . '/security_handler.php';
 session_start();
 header('Content-Type: application/json');
 

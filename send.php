@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/security_handler.php';
 session_start();
 require 'vendor/autoload.php';
 require 'config.php';

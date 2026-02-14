@@ -4,6 +4,7 @@
      ============================================================ -->
 
 <?php
+require_once __DIR__ . '/security_handler.php';
 // Get current settings
 $settings = getSettingsWithDefaults($userEmail);
 $isLocked = areSettingsLocked($userEmail);
