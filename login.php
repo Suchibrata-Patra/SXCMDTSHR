@@ -1,14 +1,14 @@
 <?php
 /**
  * ============================================================
- * SECURE LOGIN PAGE - OPTIMIZED & FAST
+ * LOGIN PAGE - DATABASE AUTHENTICATION VERSION
  * ============================================================
  * Features:
+ * - Database-based password authentication
  * - Rate limiting & brute force protection
- * - NO email sending (activity logged directly to DB)
- * - Fast SMTP-only validation
+ * - Login activity tracking
  * - Secure session management
- * - Login activity tracking (separate from inbox)
+ * - SMTP credentials from ENV for email sending only
  * ============================================================
  */
 
@@ -22,9 +22,6 @@ if (file_exists(__DIR__ . '/.env')) {
     $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
     $dotenv->load();
 }
-
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
 
 // Initialize secure session
 initializeSecureSession();
@@ -41,7 +38,7 @@ $blockUntil = null;
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $userEmail = filter_var($_POST['email'] ?? '', FILTER_SANITIZE_EMAIL);
-    $userPass = $_POST['app_password'] ?? '';
+    $userPass = $_POST['password'] ?? '';
     
     // Validate input
     if (empty($userEmail) || empty($userPass)) {
@@ -63,58 +60,70 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             
             error_log("SECURITY: Login blocked for $userEmail from IP $ipAddress");
         } else {
-            // Attempt SMTP authentication (FAST - no email sending)
-            $authResult = authenticateWithSMTP($userEmail, $userPass);
+            // Attempt database authentication
+            $authResult = authenticateWithDatabase($userEmail, $userPass);
             
             if ($authResult['success']) {
                 // ============================================================
                 // SUCCESSFUL LOGIN
                 // ============================================================
                 
+                $user = $authResult['user'];
+                
                 // Clear failed attempts
                 clearFailedAttempts($userEmail, $ipAddress);
                 
-                // Create/get user in database
-                $pdo = getDatabaseConnection();
-                $userId = createUserIfNotExists($pdo, $userEmail, null);
+                // Record login activity
+                $loginActivityId = recordLoginActivity($userEmail, $user['id'], 'success');
                 
-                if (!$userId) {
-                    $error = "System error. Please contact administrator.";
-                    error_log("CRITICAL: Failed to create user for $userEmail");
-                } else {
-                    // Record login activity (NO EMAIL SENT)
-                    $loginActivityId = recordLoginActivity($userEmail, $userId, 'success');
-                    
-                    // Set session variables
-                    $_SESSION['smtp_user'] = $userEmail;
-                    $_SESSION['smtp_pass'] = $userPass;
-                    $_SESSION['authenticated'] = true;
-                    $_SESSION['user_id'] = $userId;
-                    $_SESSION['login_time'] = time();
-                    $_SESSION['ip_address'] = $ipAddress;
-                    
-                    // Regenerate session ID for security
-                    session_regenerate_id(true);
-                    
-                    // Create session record
-                    createUserSession($userId, $loginActivityId);
-                    
-                    // Load IMAP config
-                    loadImapConfigToSession($userEmail, $userPass);
-                    
-                    // Check user role
-                    $superAdmins = ['admin@sxccal.edu', 'hod@sxccal.edu'];
-                    $_SESSION['user_role'] = in_array($userEmail, $superAdmins) ? 'super_admin' : 'user';
-                    
-                    // Load user settings
-                    if (file_exists('settings_helper.php')) {
-                        require_once 'settings_helper.php';
-                    }
-                    
-                    // Success - redirect
-                    header("Location: index.php");
+                // Get SMTP credentials from environment for email sending
+                $smtpCreds = getSmtpCredentials();
+                
+                // Set session variables
+                $_SESSION['user_email'] = $userEmail;
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['user_uuid'] = $user['user_uuid'];
+                $_SESSION['full_name'] = $user['full_name'];
+                $_SESSION['authenticated'] = true;
+                $_SESSION['login_time'] = time();
+                $_SESSION['ip_address'] = $ipAddress;
+                
+                // Store SMTP credentials for email sending (from ENV)
+                $_SESSION['smtp_user'] = $smtpCreds['username'];
+                $_SESSION['smtp_pass'] = $smtpCreds['password'];
+                $_SESSION['smtp_host'] = $smtpCreds['host'];
+                $_SESSION['smtp_port'] = $smtpCreds['port'];
+                
+                // Regenerate session ID for security
+                session_regenerate_id(true);
+                
+                // Create session record
+                createUserSession($user['id'], $loginActivityId);
+                
+                // Load IMAP config (using system credentials)
+                loadImapConfigToSession($smtpCreds['username'], $smtpCreds['password']);
+                
+                // Check user role
+                $superAdmins = ['admin@sxccal.edu', 'hod@sxccal.edu'];
+                $_SESSION['user_role'] = (in_array($userEmail, $superAdmins) || $user['is_admin']) ? 'super_admin' : 'user';
+                $_SESSION['is_admin'] = $user['is_admin'];
+                
+                // Check if password change required
+                if ($user['require_password_change']) {
+                    $_SESSION['require_password_change'] = true;
+                    header("Location: change_password.php");
                     exit();
                 }
+                
+                // Load user settings
+                if (file_exists('settings_helper.php')) {
+                    require_once 'settings_helper.php';
+                }
+                
+                // Success - redirect
+                header("Location: index.php");
+                exit();
+                
             } else {
                 // ============================================================
                 // FAILED LOGIN
@@ -144,56 +153,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 error_log("LOGIN FAILED: $userEmail from IP $ipAddress - {$authResult['error']}");
             }
         }
-    }
-}
-
-/**
- * Fast SMTP authentication (NO EMAIL SENDING)
- * Only validates credentials - 10x faster than sending email
- */
-function authenticateWithSMTP($email, $password) {
-    $mail = new PHPMailer(true);
-    
-    try {
-        // Configure SMTP
-        $mail->isSMTP();
-        $mail->Host = env("SMTP_HOST");
-        $mail->SMTPAuth = true;
-        $mail->Username = $email;
-        $mail->Password = $password;
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-        $mail->Port = env("SMTP_PORT");
-        $mail->Timeout = 10; // Fast timeout
-        $mail->SMTPDebug = 0; // No debug output
-        
-        // Test connection (doesn't send email)
-        $mail->smtpConnect();
-        $mail->smtpClose();
-        
-        return [
-            'success' => true,
-            'error' => null
-        ];
-        
-    } catch (Exception $e) {
-        $errorMsg = $mail->ErrorInfo;
-        
-        // Categorize error
-        if (strpos($errorMsg, 'authenticate') !== false || 
-            strpos($errorMsg, 'credentials') !== false ||
-            strpos($errorMsg, 'password') !== false) {
-            $category = 'Invalid credentials';
-        } elseif (strpos($errorMsg, 'connect') !== false || 
-                  strpos($errorMsg, 'timeout') !== false) {
-            $category = 'Connection failed';
-        } else {
-            $category = 'SMTP error';
-        }
-        
-        return [
-            'success' => false,
-            'error' => $category
-        ];
     }
 }
 
@@ -237,16 +196,16 @@ function authenticateWithSMTP($email, $password) {
             left: 0;
             width: 100%;
             height: 100%;
-            background: radial-gradient(circle at 50% 30%, rgba(0, 0, 0, 0.02), transparent 60%);
+            background: radial-gradient(circle at 30% 50%, rgba(79, 93, 115, 0.03) 0%, transparent 50%);
             pointer-events: none;
             z-index: 0;
         }
 
         .page-wrapper {
-            display: flex;
-            justify-content: center;
-            align-items: center;
             min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             padding: 20px;
             position: relative;
             z-index: 1;
@@ -254,116 +213,107 @@ function authenticateWithSMTP($email, $password) {
 
         .login-card {
             background: white;
-            padding: 45px 40px;
-            border-radius: 22px;
-            box-shadow: 
-                0 8px 24px rgba(0, 0, 0, 0.06),
-                0 2px 6px rgba(0, 0, 0, 0.04);
+            padding: 40px 35px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             width: 100%;
             max-width: 420px;
-            opacity: 0;
-            transform: translateY(8px);
-            animation: cardFadeIn 350ms ease-out forwards;
-            animation-delay: 100ms;
-            border:0.1px solid rgb(202, 210, 223);
+            position: relative;
         }
 
-        @keyframes cardFadeIn {
+        /* Brand Header */
+        .brand-header {
+            text-align: center;
+            margin-bottom: 28px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .brand-logo {
+            width: 70px;
+            height: 70px;
+            margin-bottom: 12px;
+            object-fit: contain;
+        }
+
+        .brand-details {
+            font-size: 0.68rem;
+            color: #888;
+            line-height: 1.5;
+            letter-spacing: 0.3px;
+        }
+
+        /* Title */
+        h2 {
+            font-size: 1.75rem;
+            margin-bottom: 8px;
+            color: rgb(79, 93, 115);
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: #888;
+            text-align: center;
+            margin-bottom: 25px;
+            font-weight: 400;
+        }
+
+        /* Error/Warning Messages */
+        .error-toast {
+            background: linear-gradient(135deg, #fee 0%, #fdd 100%);
+            color: #c33;
+            padding: 14px 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            border-left: 3px solid #c33;
+            animation: slideDown 0.3s ease;
+        }
+
+        .warning-toast {
+            background: linear-gradient(135deg, #fff4e5 0%, #ffe8cc 100%);
+            color: #d68000;
+            padding: 14px 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            border-left: 3px solid #ff9800;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
 
-        /* Brand Header */
-        .brand-header {
+        /* Form */
+        form {
             display: flex;
-            align-items: center;
-            gap: 14px;
-            margin-bottom: 32px;
-            padding-bottom: 24px;
-            border-bottom: 1px solid #f0f0f0;
+            flex-direction: column;
+            gap: 20px;
         }
 
-        .brand-logo {
-            width: 52px;
-            height: 52px;
-            object-fit: contain;
-            flex-shrink: 0;
-        }
-
-        .brand-details {
-            font-size: 0.78rem;
-            line-height: 1.15;
-            font-weight: 400;
-            color: #727fa4;
-            opacity: 0.65;
-            letter-spacing: 0.2px;
-        }
-
-        /* Heading */
-        h2 {
-            font-size: 1.73rem;
-            font-weight: 500;
-            margin-bottom: 28px;
-            color: #727fa4;
-            letter-spacing: 0.3px;
-        }
-
-        .subtitle {
-            font-size: 0.95rem;
-            color: #666;
-            margin-bottom: 25px;
-            line-height: 1.5;
-        }
-
-        /* Alert Messages */
-        .error-toast, .warning-toast {
-            padding: 14px 16px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            font-size: 0.85rem;
-            line-height: 1.5;
-            opacity: 0;
-            animation: slideInRight 0.4s ease-out forwards;
-        }
-
-        .error-toast {
-            background: #fef2f2;
-            border-left: 3px solid var(--error-red);
-            color: #991b1b;
-        }
-
-        .warning-toast {
-            background: #fff7ed;
-            border-left: 3px solid var(--warning-orange);
-            color: #9a3412;
-        }
-
-        @keyframes slideInRight {
-            from { 
-                opacity: 0; 
-                transform: translateX(10px); 
-            }
-            to { 
-                opacity: 1; 
-                transform: translateX(0); 
-            }
-        }
-
-        /* Form Elements */
         .input-group {
-            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
         label {
-            display: block;
-            font-size: 0.7rem;
-            font-weight: 600;
+            font-size: 0.8rem;
+            color: #555;
+            font-weight: 500;
             text-transform: uppercase;
-            letter-spacing: 1.2px;
-            color: #999;
-            margin-bottom: 8px;
+            letter-spacing: 1px;
         }
 
         input[type="email"],
@@ -423,8 +373,6 @@ function authenticateWithSMTP($email, $password) {
         }
 
         button:hover:not(:disabled) {
-            /* background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%); */
-            /* transform: translateY(-1px); */
             box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
         }
 
@@ -493,7 +441,7 @@ function authenticateWithSMTP($email, $password) {
             </div>
 
             <h2>Authentication</h2>
-            <!-- <p class="subtitle">Enter institutional credentials to continue.</p> -->
+            <!-- <p class="subtitle">Enter your credentials to continue.</p> -->
 
             <?php if ($error): ?>
                 <div class="error-toast">
@@ -515,7 +463,7 @@ function authenticateWithSMTP($email, $password) {
 
             <form method="POST" id="loginForm">
                 <div class="input-group">
-                    <label for="email">User ID / Email</label>
+                    <label for="email">Email Address</label>
                     <input 
                         type="email" 
                         name="email" 
@@ -529,11 +477,11 @@ function authenticateWithSMTP($email, $password) {
                 </div>
 
                 <div class="input-group">
-                    <label for="app_password">App Password</label>
+                    <label for="password">Password</label>
                     <input 
                         type="password" 
-                        name="app_password" 
-                        id="app_password" 
+                        name="password" 
+                        id="password" 
                         placeholder="••••••••••••" 
                         required
                         <?php echo ($blockUntil ? 'disabled' : ''); ?>
@@ -551,23 +499,27 @@ function authenticateWithSMTP($email, $password) {
                     id="submitBtn"
                     <?php echo ($blockUntil ? 'disabled' : ''); ?>
                 >
-                    <?php echo ($blockUntil ? 'Account Locked' : 'Verify & Proceed'); ?>
+                    <?php echo ($blockUntil ? 'Account Locked' : 'Login'); ?>
                 </button>
             </form>
+
+            <div class="security-info">
+                <strong>🔐 Database Authentication</strong><br>
+                Login credentials are verified against the database. SMTP credentials for email sending are configured in the system environment.
+            </div>
+
             <footer>
-                <!-- St. Xavier's College (Autonomous), Kolkata<br>
-                Mail Delivery & Tracking System v2.0 -->
-                <br>
-                <!-- <span style="font-size:18px;color:#a3abc3;">Made with ♥︎ by MDTS Students</span> -->
-                <br>
-                <span style="font-size:15px;font-weight:600;color:#ff0b0b;">Currently Disabled for further Development Purpose</span>
+                St. Xavier's College (Autonomous), Kolkata<br>
+                Mail Delivery & Tracking System v2.0
+                <br><br>
+                <span style="font-size:15px;font-weight:600;color:#4f5d73;">Secure Database Authentication</span>
             </footer>
         </div>
     </div>
 
     <script>
         function togglePassword() {
-            const passInput = document.getElementById("app_password");
+            const passInput = document.getElementById("password");
             passInput.type = passInput.type === "password" ? "text" : "password";
         }
 

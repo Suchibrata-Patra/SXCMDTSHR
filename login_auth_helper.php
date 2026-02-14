@@ -1,14 +1,15 @@
 <?php
 /**
  * ============================================================
- * LOGIN AUTHENTICATION HELPER - SECURE & OPTIMIZED
+ * LOGIN AUTHENTICATION HELPER - DATABASE AUTH VERSION
  * ============================================================
  * Features:
+ * - Database-based password authentication
  * - Rate limiting & brute force protection
  * - Login activity tracking (separate from inbox)
  * - Session management with security
  * - IP & device fingerprinting
- * - Fast SMTP validation (connection pooling ready)
+ * - SMTP credentials stored in ENV for email sending
  * ============================================================
  */
 
@@ -25,10 +26,231 @@ define('ACCOUNT_LOCK_DURATION', 1800);    // 30 minutes in seconds
 define('SESSION_TIMEOUT', 3600);           // 1 hour in seconds
 define('REMEMBER_ME_DURATION', 2592000);   // 30 days in seconds
 
+// Password policy
+define('MIN_PASSWORD_LENGTH', 8);
+define('REQUIRE_UPPERCASE', true);
+define('REQUIRE_LOWERCASE', true);
+define('REQUIRE_NUMBER', true);
+define('REQUIRE_SPECIAL', true);
+
 // Security headers
 define('SECURE_COOKIE', true);             // Use secure cookies (HTTPS only)
 define('HTTPONLY_COOKIE', true);           // Prevent XSS cookie access
 define('SAMESITE_COOKIE', 'Strict');       // CSRF protection
+
+// ============================================================
+// DATABASE AUTHENTICATION
+// ============================================================
+
+/**
+ * Authenticate user with database credentials
+ * @param string $email User email
+ * @param string $password User password (plain text)
+ * @return array ['success' => bool, 'user' => array|null, 'error' => string|null]
+ */
+function authenticateWithDatabase($email, $password) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) {
+            return [
+                'success' => false,
+                'user' => null,
+                'error' => 'Database connection failed'
+            ];
+        }
+        
+        // Get user from database
+        $stmt = $pdo->prepare("
+            SELECT 
+                id,
+                user_uuid,
+                email,
+                full_name,
+                password_hash,
+                is_active,
+                is_admin,
+                require_password_change,
+                failed_login_count,
+                account_locked_until
+            FROM users
+            WHERE email = :email
+        ");
+        
+        $stmt->execute([':email' => $email]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        // Check if user exists
+        if (!$user) {
+            error_log("LOGIN FAILED: User not found - $email");
+            return [
+                'success' => false,
+                'user' => null,
+                'error' => 'Invalid credentials'
+            ];
+        }
+        
+        // Check if account is active
+        if (!$user['is_active']) {
+            error_log("LOGIN FAILED: Account inactive - $email");
+            return [
+                'success' => false,
+                'user' => null,
+                'error' => 'Account is inactive'
+            ];
+        }
+        
+        // Check if account is locked
+        if ($user['account_locked_until'] && strtotime($user['account_locked_until']) > time()) {
+            $minutesLeft = ceil((strtotime($user['account_locked_until']) - time()) / 60);
+            error_log("LOGIN FAILED: Account locked - $email (locked for $minutesLeft minutes)");
+            return [
+                'success' => false,
+                'user' => null,
+                'error' => "Account locked for $minutesLeft minutes"
+            ];
+        }
+        
+        // Check if password is set
+        if (empty($user['password_hash'])) {
+            error_log("LOGIN FAILED: No password set - $email");
+            return [
+                'success' => false,
+                'user' => null,
+                'error' => 'No password set for this account'
+            ];
+        }
+        
+        // Verify password
+        if (!password_verify($password, $user['password_hash'])) {
+            // Increment failed login count
+            incrementFailedLoginCount($pdo, $user['id']);
+            
+            error_log("LOGIN FAILED: Invalid password - $email");
+            return [
+                'success' => false,
+                'user' => null,
+                'error' => 'Invalid credentials'
+            ];
+        }
+        
+        // Check if password needs rehashing (if algorithm changed)
+        if (password_needs_rehash($user['password_hash'], PASSWORD_DEFAULT)) {
+            $newHash = password_hash($password, PASSWORD_DEFAULT);
+            $stmt = $pdo->prepare("
+                UPDATE users 
+                SET password_hash = :hash, 
+                    password_updated_at = NOW(),
+                    updated_at = NOW()
+                WHERE id = :id
+            ");
+            $stmt->execute([
+                ':hash' => $newHash,
+                ':id' => $user['id']
+            ]);
+        }
+        
+        // Reset failed login count and unlock account
+        resetFailedLoginCount($pdo, $user['id']);
+        
+        // Remove sensitive data before returning
+        unset($user['password_hash']);
+        
+        error_log("✓ LOGIN SUCCESS: $email (User ID: {$user['id']})");
+        
+        return [
+            'success' => true,
+            'user' => $user,
+            'error' => null
+        ];
+        
+    } catch (PDOException $e) {
+        error_log("DATABASE AUTH ERROR: " . $e->getMessage());
+        return [
+            'success' => false,
+            'user' => null,
+            'error' => 'Authentication system error'
+        ];
+    }
+}
+
+/**
+ * Increment failed login count and lock account if needed
+ */
+function incrementFailedLoginCount($pdo, $userId) {
+    try {
+        $stmt = $pdo->prepare("
+            UPDATE users 
+            SET failed_login_count = failed_login_count + 1,
+                updated_at = NOW()
+            WHERE id = :id
+        ");
+        $stmt->execute([':id' => $userId]);
+        
+        // Get updated count
+        $stmt = $pdo->prepare("SELECT failed_login_count FROM users WHERE id = :id");
+        $stmt->execute([':id' => $userId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        $failedCount = $result['failed_login_count'] ?? 0;
+        
+        // Lock account if max attempts reached
+        if ($failedCount >= MAX_LOGIN_ATTEMPTS) {
+            $lockUntil = date('Y-m-d H:i:s', time() + ACCOUNT_LOCK_DURATION);
+            $stmt = $pdo->prepare("
+                UPDATE users 
+                SET account_locked_until = :lock_until,
+                    updated_at = NOW()
+                WHERE id = :id
+            ");
+            $stmt->execute([
+                ':lock_until' => $lockUntil,
+                ':id' => $userId
+            ]);
+            
+            error_log("🚨 ACCOUNT LOCKED: User ID $userId locked until $lockUntil");
+        }
+        
+        return true;
+        
+    } catch (PDOException $e) {
+        error_log("Failed to increment login count: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Reset failed login count after successful login
+ */
+function resetFailedLoginCount($pdo, $userId) {
+    try {
+        $stmt = $pdo->prepare("
+            UPDATE users 
+            SET failed_login_count = 0,
+                account_locked_until = NULL,
+                updated_at = NOW()
+            WHERE id = :id
+        ");
+        return $stmt->execute([':id' => $userId]);
+        
+    } catch (PDOException $e) {
+        error_log("Failed to reset login count: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Get SMTP credentials from environment for email sending
+ * These are used ONLY for sending emails, not for authentication
+ */
+function getSmtpCredentials() {
+    return [
+        'host' => env('SMTP_HOST'),
+        'port' => env('SMTP_PORT'),
+        'username' => env('SMTP_USERNAME'),
+        'password' => env('SMTP_PASSWORD'),
+        'encryption' => env('SMTP_ENCRYPTION', 'ssl')
+    ];
+}
 
 // ============================================================
 // RATE LIMITING & BRUTE FORCE PROTECTION
@@ -205,9 +427,6 @@ function recordLoginActivity($email, $userId, $status = 'success', $failureReaso
         $sessionId = session_id();
         $deviceFingerprint = generateDeviceFingerprint();
         
-        // Optional: Get geolocation (requires external API)
-        // $location = getGeoLocation($ipAddress);
-        
         // Check if login_activity table exists
         $stmt = $pdo->query("SHOW TABLES LIKE 'login_activity'");
         if ($stmt->rowCount() === 0) {
@@ -244,19 +463,33 @@ function recordLoginActivity($email, $userId, $status = 'success', $failureReaso
         if ($loginActivityId) {
             error_log("✓ Login activity recorded: ID=$loginActivityId, Email=$email, Status=$status, IP=$ipAddress");
         } else {
-            error_log("WARNING: Login activity executed but no ID returned for $email");
+            error_log("ERROR: Login activity inserted but no ID returned for $email");
         }
         
-        // Check for suspicious activity only on success
-        if ($status === 'success') {
+        // Check for suspicious patterns
+        if ($status === 'success' && $loginActivityId) {
             checkSuspiciousLogin($loginActivityId, $email, $ipAddress);
         }
         
         return $loginActivityId;
         
     } catch (PDOException $e) {
-        error_log("EXCEPTION in recordLoginActivity: " . $e->getMessage());
-        error_log("SQL Error Code: " . $e->getCode());
+        error_log("Failed to record login activity: " . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Get user ID by email
+ */
+function getUserId($pdo, $email) {
+    try {
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = :email");
+        $stmt->execute([':email' => $email]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result ? $result['id'] : null;
+    } catch (PDOException $e) {
+        error_log("Failed to get user ID: " . $e->getMessage());
         return null;
     }
 }
@@ -269,32 +502,17 @@ function recordLogoutActivity($sessionId, $reason = 'user_logout') {
         $pdo = getDatabaseConnection();
         if (!$pdo) return false;
         
-        // Update login activity
-        $stmt = $pdo->prepare("
-            UPDATE login_activity
-            SET logout_timestamp = NOW(),
-                session_duration = TIMESTAMPDIFF(SECOND, login_timestamp, NOW())
-            WHERE session_id = :session_id
-            AND logout_timestamp IS NULL
-            ORDER BY login_timestamp DESC
-            LIMIT 1
-        ");
-        
-        $stmt->execute([':session_id' => $sessionId]);
-        
-        // Update user_sessions if exists
         $stmt = $pdo->prepare("
             UPDATE user_sessions
-            SET is_active = 0, logout_reason = :reason
+            SET is_active = 0,
+                logout_reason = :reason
             WHERE session_id = :session_id
         ");
         
-        $stmt->execute([
-            ':session_id' => $sessionId,
-            ':reason' => $reason
+        return $stmt->execute([
+            ':reason' => $reason,
+            ':session_id' => $sessionId
         ]);
-        
-        return true;
         
     } catch (PDOException $e) {
         error_log("Failed to record logout: " . $e->getMessage());
@@ -307,9 +525,9 @@ function recordLogoutActivity($sessionId, $reason = 'user_logout') {
 // ============================================================
 
 /**
- * Create user session with security
+ * Create user session record in database
  */
-function createUserSession($userId, $loginActivityId) {
+function createUserSession($userId, $loginActivityId = null) {
     try {
         $pdo = getDatabaseConnection();
         if (!$pdo) {
@@ -524,6 +742,69 @@ function initializeSecureSession() {
     }
     
     return true;
+}
+
+/**
+ * Load IMAP configuration to session
+ * Uses system SMTP credentials from ENV
+ */
+function loadImapConfigToSession($userEmail, $userPassword = null) {
+    // Get system credentials from environment
+    $smtpCreds = getSmtpCredentials();
+    
+    $_SESSION['imap_config'] = [
+        'host' => env('IMAP_HOST', $smtpCreds['host']),
+        'port' => env('IMAP_PORT', 993),
+        'username' => $userEmail,
+        'password' => $userPassword ?? $smtpCreds['password'],
+        'encryption' => env('IMAP_ENCRYPTION', 'ssl'),
+        'validate_cert' => env('IMAP_VALIDATE_CERT', false)
+    ];
+    
+    return true;
+}
+
+/**
+ * Create user if not exists
+ */
+function createUserIfNotExists($pdo, $email, $fullName = null) {
+    try {
+        // Check if user exists
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = :email");
+        $stmt->execute([':email' => $email]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($user) {
+            return $user['id'];
+        }
+        
+        // Create new user
+        $uuid = sprintf(
+            '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff),
+            mt_rand(0, 0x0fff) | 0x4000,
+            mt_rand(0, 0x3fff) | 0x8000,
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+        );
+        
+        $stmt = $pdo->prepare("
+            INSERT INTO users (user_uuid, email, full_name, is_active, created_at, updated_at)
+            VALUES (:uuid, :email, :name, 1, NOW(), NOW())
+        ");
+        
+        $stmt->execute([
+            ':uuid' => $uuid,
+            ':email' => $email,
+            ':name' => $fullName
+        ]);
+        
+        return $pdo->lastInsertId();
+        
+    } catch (PDOException $e) {
+        error_log("Failed to create user: " . $e->getMessage());
+        return null;
+    }
 }
 
 /**
