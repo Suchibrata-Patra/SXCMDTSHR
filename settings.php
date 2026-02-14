@@ -572,21 +572,21 @@ $isLocked = isset($s['settings_locked']) &&
                 <div class="setting-row">
                     <div class="setting-info">
                         <span class="setting-title">Display Name</span>
-                        <span class="setting-desc">How your name appears in the 'From' field</span>
+                        <span class="setting-desc">How name appears in the 'From' field</span>
                     </div>
                     <input type="text" name="display_name" value="<?= htmlspecialchars($s['display_name']) ?>" placeholder="Your Name">
                 </div>
                 <div class="setting-row">
                     <div class="setting-info">
                         <span class="setting-title">Official Designation</span>
-                        <span class="setting-desc">Your title for institutional signatures</span>
+                        <span class="setting-desc">Title for institutional signatures</span>
                     </div>
                     <input type="text" name="designation" value="<?= htmlspecialchars($s['designation']) ?>" placeholder="Professor">
                 </div>
                 <div class="setting-row">
                     <div class="setting-info">
                         <span class="setting-title">Department</span>
-                        <span class="setting-desc">Your academic/administrative department</span>
+                        <span class="setting-desc">Academic/administrative department</span>
                     </div>
                     <select name="dept">
                         <option value="statistics" <?= $s['dept']=='statistics'?'selected':'' ?>>Statistics</option>
