@@ -659,7 +659,7 @@ $isLocked = isset($s['settings_locked']) &&
                 </div>
                 <div class="setting-row">
                     <div class="setting-info">
-                        <span class="setting-title">Read Receipts<span style="font-size:0.4rem;color:red;">Currently Under Development</span></span>
+                        <span class="setting-title">Read Receipts<span style="font-size:0.6rem;color:red;"> ( Under Development )</span></span>
                         <span class="setting-desc">Request acknowledgement for every email sent</span>
                     </div>
                     <label class="switch">
