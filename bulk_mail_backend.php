@@ -7,13 +7,14 @@
  */
 
 session_start();
+require_once 'config.php';  // Load .env file
 require_once 'db_config.php';
 
 // Set JSON header
 header('Content-Type: application/json');
 
-// Drive directory configuration
-define('DRIVE_DIR', '/home/u955994755/domains/holidayseva.com/public_html/SXC_MDTS/File_Drive');
+// Get Drive directory from environment - NO hardcoded path
+$driveDir = env('DRIVE_DIR');
 
 // Get action from request - support both GET, POST FormData, and POST JSON
 $action = '';
@@ -58,20 +59,20 @@ try {
     
     switch ($action) {
         case 'list_drive_files':
-            // List files from /SXCMDTSHR/File_Drive directory
-            if (!is_dir(DRIVE_DIR)) {
-                throw new Exception('Drive directory not found: ' . DRIVE_DIR);
+            // List files from File_Drive directory
+            if (!is_dir($driveDir)) {
+                throw new Exception('Drive directory not found: ' . $driveDir);
             }
             
             $files = [];
-            $items = scandir(DRIVE_DIR);
+            $items = scandir($driveDir);
             
             foreach ($items as $item) {
                 if ($item === '.' || $item === '..') {
                     continue;
                 }
                 
-                $fullPath = DRIVE_DIR . '/' . $item;
+                $fullPath = $driveDir . '/' . $item;
                 
                 // Only include files, not directories
                 if (is_file($fullPath)) {
@@ -94,7 +95,7 @@ try {
             echo json_encode([
                 'success' => true,
                 'files' => $files,
-                'directory' => DRIVE_DIR,
+                'directory' => $driveDir,
                 'count' => count($files)
             ]);
             break;
