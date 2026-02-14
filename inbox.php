@@ -1,7 +1,6 @@
 <?php
 /**
- * SXC MDTS Inbox - Redesigned with Light Clean UI/UX
- * Inspired by drive.php aesthetic
+ * Professional Inbox Page - Refactored with External Sidebar
  */
 session_start();
 
@@ -54,6 +53,7 @@ if (isset($_GET['action'])) {
             $message = getInboxMessageById($messageId, $userEmail);
             
             if ($message) {
+                // Mark as read
                 markMessageAsRead($messageId, $userEmail);
                 echo json_encode(['success' => true, 'message' => $message]);
             } else {
@@ -107,13 +107,27 @@ $lastSync = getLastSyncDate($userEmail);
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <?php
-        define('PAGE_TITLE', 'SXC MDTS | Inbox');
+        define('PAGE_TITLE', 'SXC MDTS | Dashboard');
         include 'header.php';
     ?>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
+        :root {
+            --apple-blue: #007AFF;
+            --apple-gray: #8E8E93;
+            --apple-light-gray: #C7C7CC;
+            --apple-bg: #F2F2F7;
+            --glass: rgba(255, 255, 255, 0.7);
+            --border: #E5E5EA;
+            --success-green: #34C759;
+            --warning-orange: #FF9500;
+            --danger-red: #FF3B30;
+            --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --hover-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -121,372 +135,369 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-            min-height: 100vh;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--apple-bg);
+            color: #1c1c1e;
             display: flex;
-            overflow-x: hidden;
+            height: 100vh;
+            overflow: hidden;
             -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
-        /* ═══════════════════════════════════════════════════════════ */
-        /*  MAIN CONTAINER                                              */
-        /* ═══════════════════════════════════════════════════════════ */
+        /* ========== MAIN CONTENT ========== */
         .main-content {
             flex: 1;
             display: flex;
             flex-direction: column;
-            padding: 24px;
-            gap: 20px;
-            max-width: 1400px;
-            margin: 0 auto;
-            width: 100%;
+            overflow: hidden;
         }
 
-        /* ═══════════════════════════════════════════════════════════ */
-        /*  HEADER                                                       */
-        /* ═══════════════════════════════════════════════════════════ */
+        /* ========== HEADER ========== */
         .page-header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 16px;
-            padding: 24px 28px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            animation: slideDown 0.4s ease;
         }
 
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .header-left {
+            flex: 1;
         }
 
-        .header-left h1 {
-            font-size: 28px;
+        .page-title {
+            font-size: 24px;
             font-weight: 700;
-            color: #1a1a2e;
+            color: #1c1c1e;
             letter-spacing: -0.5px;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
-        .header-left p {
-            font-size: 14px;
-            color: #64748b;
+        .page-subtitle {
+            font-size: 13px;
+            color: var(--apple-gray);
             font-weight: 400;
         }
 
         .header-actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             align-items: center;
         }
 
         .btn {
-            padding: 10px 18px;
+            padding: 8px 14px;
             border: none;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            font-family: inherit;
-        }
-
-        .btn .material-icons-round {
-            font-size: 20px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-secondary {
-            background: white;
-            color: #64748b;
-            border: 1.5px solid #e2e8f0;
-        }
-
-        .btn-secondary:hover {
-            background: #f8fafc;
-            border-color: #cbd5e1;
-            transform: translateY(-1px);
-        }
-
-        .sync-btn.syncing .material-icons-round {
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        /* ═══════════════════════════════════════════════════════════ */
-        /*  STATS CARDS                                                  */
-        /* ═══════════════════════════════════════════════════════════ */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            animation: fadeIn 0.5s ease 0.1s backwards;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .stat-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 14px;
-            padding: 20px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: pointer;
-            border: 1.5px solid rgba(255, 255, 255, 0.8);
-        }
-
-        .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
-            border-color: rgba(102, 126, 234, 0.3);
-        }
-
-        .stat-card .stat-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 12px;
-            font-size: 22px;
-        }
-
-        .stat-card.total .stat-icon {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .stat-card.unread .stat-icon {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-        }
-
-        .stat-card.new .stat-icon {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-        }
-
-        .stat-card .stat-label {
-            font-size: 13px;
-            color: #64748b;
-            font-weight: 500;
-            margin-bottom: 4px;
-        }
-
-        .stat-card .stat-value {
-            font-size: 32px;
-            font-weight: 700;
-            color: #1a1a2e;
-            line-height: 1;
-        }
-
-        /* ═══════════════════════════════════════════════════════════ */
-        /*  FILTER BAR                                                   */
-        /* ═══════════════════════════════════════════════════════════ */
-        .filter-bar {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 14px;
-            padding: 18px 24px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            align-items: center;
-            animation: fadeIn 0.5s ease 0.2s backwards;
-        }
-
-        .search-box {
-            position: relative;
-            flex: 1;
-            min-width: 200px;
-        }
-
-        .search-box .material-icons-round {
-            position: absolute;
-            left: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #94a3b8;
-            font-size: 20px;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 11px 16px 11px 46px;
-            border: 1.5px solid #e2e8f0;
-            border-radius: 10px;
-            font-size: 14px;
-            font-family: inherit;
-            transition: all 0.3s;
-            background: white;
-        }
-
-        .search-box input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .filter-chip {
-            padding: 8px 16px;
-            border: 1.5px solid #e2e8f0;
-            border-radius: 20px;
+            border-radius: 8px;
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s;
-            background: white;
-            color: #64748b;
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
         }
 
-        .filter-chip .material-icons-round {
+        .btn .material-icons {
             font-size: 18px;
         }
 
-        .filter-chip.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .btn-primary {
+            background: var(--apple-blue);
             color: white;
-            border-color: transparent;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
 
-        .filter-chip:hover:not(.active) {
-            background: #f8fafc;
-            border-color: #cbd5e1;
+        .btn-primary:hover {
+            background: #0051D5;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
         }
 
-        /* ═══════════════════════════════════════════════════════════ */
-        /*  MESSAGE LIST                                                 */
-        /* ═══════════════════════════════════════════════════════════ */
-        .messages-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 14px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-            overflow: hidden;
-            animation: fadeIn 0.5s ease 0.3s backwards;
-            flex: 1;
+        .btn-icon {
+            padding: 8px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-icon:hover {
+            background: var(--apple-bg);
+            border-color: var(--apple-blue);
+        }
+
+        .btn-icon .material-icons {
+            color: var(--apple-gray);
+            transition: transform 0.3s ease;
+        }
+
+        .btn-icon.rotating .material-icons {
+            animation: rotate 0.6s linear;
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ========== STATS BAR ========== */
+        .stats-bar {
+            background: white;
+            padding: 12px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stat-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .stat-icon.total {
+            background: rgb(229,56,81,0.1);
+            color: rgb(229,56,81);
+        }
+
+        .stat-icon.unread {
+            background: rgb(144,236,64, 0.1);
+            color: rgb(144,236,64);
+        }
+
+        .stat-icon.new {
+            background: rgb(20,121,246,0.1);
+            color: rgb(20,121,246);
+        }
+
+        .stat-content {
             display: flex;
             flex-direction: column;
         }
 
-        .message-list {
+        .stat-number {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1c1c1e;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--apple-gray);
+            margin-top: 2px;
+        }
+
+        .sync-info {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--apple-gray);
+        }
+
+        .sync-info .material-icons {
+            font-size: 14px;
+        }
+
+        /* ========== CONTENT AREA WITH SPLIT PANE ========== */
+        .content-wrapper {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .messages-pane {
+            width: 40%;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border);
+            background: white;
+        }
+
+        .message-view-pane {
+            width: 60%;
+            display: flex;
+            flex-direction: column;
+            background: #FAFAFA;
+        }
+
+        /* ========== TOOLBAR ========== */
+        .toolbar {
+            background: white;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .search-box {
+            flex: 1;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 8px 12px 8px 36px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            background: var(--apple-bg);
+            transition: all 0.2s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            background: white;
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+
+        .search-box .material-icons {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--apple-gray);
+            font-size: 18px;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        .filter-btn {
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #1c1c1e;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .filter-btn:hover {
+            background: var(--apple-bg);
+            border-color: var(--apple-blue);
+        }
+
+        .filter-btn.active {
+            background: var(--apple-blue);
+            color: white;
+            border-color: var(--apple-blue);
+        }
+
+        .filter-btn .material-icons {
+            font-size: 14px;
+        }
+
+        /* ========== MESSAGES AREA ========== */
+        .messages-area {
+            flex: 1;
             overflow-y: auto;
-            max-height: calc(100vh - 400px);
         }
 
-        .message-list::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .message-list::-webkit-scrollbar-track {
-            background: #f1f5f9;
-        }
-
-        .message-list::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-
-        .message-list::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
+        .messages-container {
+            background: white;
         }
 
         .message-item {
-            display: flex;
-            align-items: center;
-            padding: 18px 24px;
-            border-bottom: 1px solid #f1f5f9;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
             cursor: pointer;
             transition: all 0.2s;
-            gap: 16px;
+            display: flex;
+            gap: 12px;
+            align-items: start;
+            position: relative;
+        }
+
+        .message-item:last-child {
+            border-bottom: none;
         }
 
         .message-item:hover {
-            background: linear-gradient(90deg, rgba(102, 126, 234, 0.04) 0%, rgba(118, 75, 162, 0.04) 100%);
+            background: #FAFAFA;
         }
 
-        .message-item.unread {
-            background: rgba(240, 147, 251, 0.05);
+        .message-item.selected {
+            background: #F0F7FF;
+            border-left: 3px solid var(--apple-blue);
+        }
+
+        .message-item.unread .message-sender {
+            font-weight: 700;
+        }
+        
+        .message-item.unread .message-subject {
+            font-weight: 600;
         }
 
         .message-item.unread:hover {
-            background: rgba(240, 147, 251, 0.1);
+            background: linear-gradient(90deg, #f9fcff 0%, #FAFAFA 100%);
         }
 
-        .message-checkbox {
-            width: 20px;
-            height: 20px;
-            border: 2px solid #cbd5e1;
-            border-radius: 6px;
+        .message-star {
             cursor: pointer;
-            flex-shrink: 0;
+            color: var(--apple-light-gray);
+            font-size: 18px;
+            margin-top: 2px;
             transition: all 0.2s;
         }
 
-        .message-checkbox:hover {
-            border-color: #667eea;
+        .message-star:hover {
+            color: var(--warning-orange);
+            transform: scale(1.1);
         }
 
-        .message-checkbox.checked {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-color: transparent;
+        .message-star.starred {
+            color: var(--warning-orange);
         }
 
-        .message-avatar {
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 700;
-            font-size: 16px;
-            flex-shrink: 0;
-            text-transform: uppercase;
+        .message-important {
+            color: var(--warning-orange);
+            font-size: 18px;
+            margin-top: 2px;
+        }
+
+        .sender-email-hint {
+            font-size: 11px;
+            color: var(--apple-gray);
+            font-weight: 400;
+            margin-left: 4px;
         }
 
         .message-content {
@@ -496,952 +507,997 @@ $lastSync = getLastSyncDate($userEmail);
 
         .message-header {
             display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 4px;
+            align-items: baseline;
+            margin-bottom: 3px;
+            gap: 12px;
         }
 
         .message-sender {
-            font-weight: 600;
-            color: #1a1a2e;
-            font-size: 14px;
-        }
-
-        .message-item.unread .message-sender {
-            font-weight: 700;
-        }
-
-        .message-subject {
-            font-size: 14px;
-            color: #1a1a2e;
-            margin-bottom: 4px;
             font-weight: 500;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .message-item.unread .message-subject {
-            font-weight: 600;
-        }
-
-        .message-preview {
+            color: #1c1c1e;
             font-size: 13px;
-            color: #64748b;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
-        .message-meta {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 8px;
+        .message-sender strong,
+        .message-subject strong {
+            font-weight: 600;
+            color: var(--apple-gray);
+            margin-right: 4px;
+        }
+
+        .message-date {
+            font-size: 11px;
+            color: var(--apple-gray);
+            white-space: nowrap;
+            font-weight: 500;
             flex-shrink: 0;
         }
 
-        .message-time {
-            font-size: 12px;
-            color: #94a3b8;
-            font-weight: 500;
-            white-space: nowrap;
-        }
-
-        .message-actions {
-            display: flex;
-            gap: 4px;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-
-        .message-item:hover .message-actions {
-            opacity: 1;
-        }
-
-        .message-action-btn {
-            width: 32px;
-            height: 32px;
-            border: none;
-            background: white;
-            border-radius: 8px;
-            cursor: pointer;
+        .message-subject-line {
             display: flex;
             align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-            color: #64748b;
+            gap: 6px;
+            margin-bottom: 3px;
         }
 
-        .message-action-btn:hover {
-            background: #f1f5f9;
-            color: #1a1a2e;
-            transform: scale(1.1);
+        .message-subject {
+            font-size: 13px;
+            color: #1c1c1e;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
         }
 
-        .message-action-btn.starred {
-            color: #fbbf24;
+        .inline-attachment-icon {
+            font-size: 14px !important;
+            color: var(--apple-gray);
+            flex-shrink: 0;
         }
 
-        .message-action-btn .material-icons-round {
-            font-size: 18px;
+        .message-preview {
+            font-size: 12px;
+            color: var(--apple-gray);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.5;
+            margin-bottom: 4px;
+            font-style: italic;
+            line-height: 1.5;
+            margin-bottom: 4px;
+        }
+
+        .message-id-badge {
+            font-size: 5px !important;
+            color: var(--apple-gray);
+            background: rgb(207, 207, 207);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .message-badges {
+            display: flex;
+            gap: 4px;
+            margin-top: 6px;
+            flex-wrap: wrap;
         }
 
         .badge {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 11px;
+            gap: 3px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
         }
 
-        .badge.new {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
+        .badge-new {
+            background: rgba(52, 199, 89, 0.15);
+            color: var(--success-green);
         }
 
-        .badge.unread-badge {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
+        .badge-new-inline {
+            display: inline-block;
+            background: rgba(52, 199, 89, 0.15);
+            color: var(--success-green);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            margin-top: 2px;
         }
 
-        /* ═══════════════════════════════════════════════════════════ */
-        /*  MODAL                                                        */
-        /* ═══════════════════════════════════════════════════════════ */
-        .modal-backdrop {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(8px);
-            z-index: 9999;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            animation: fadeInBackdrop 0.3s ease;
+        .badge-attachment {
+            background: rgb(227, 227, 227);
+            color: rgb(33, 33, 33);
+            padding: 5px 7px;
+            border-radius: 20px;
         }
 
-        .modal-backdrop.show {
-            display: flex;
+        .badge-attachment .material-icons {
+            font-size: 11px;
         }
 
-        @keyframes fadeInBackdrop {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .modal {
+        /* ========== MESSAGE VIEW PANE ========== */
+        .message-view-header {
             background: white;
-            border-radius: 16px;
-            max-width: 900px;
-            width: 100%;
-            max-height: 90vh;
-            overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 20px;
+        }
+
+        .message-view-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1c1c1e;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .message-view-meta {
             display: flex;
-            flex-direction: column;
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(40px) scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        .modal-header {
-            padding: 24px 28px;
-            border-bottom: 1px solid #f1f5f9;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-header h2 {
-            font-size: 20px;
-            font-weight: 700;
-            color: #1a1a2e;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            flex: 1;
-            margin-right: 16px;
-        }
-
-        .modal-close {
-            width: 36px;
-            height: 36px;
-            border: none;
-            background: #f1f5f9;
-            border-radius: 10px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-            flex-shrink: 0;
-        }
-
-        .modal-close:hover {
-            background: #e2e8f0;
-            transform: rotate(90deg);
-        }
-
-        .modal-close .material-icons-round {
-            font-size: 20px;
-            color: #64748b;
-        }
-
-        .modal-body {
-            padding: 24px 28px;
-            overflow-y: auto;
-            flex: 1;
-        }
-
-        .message-detail-header {
-            margin-bottom: 24px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        .message-detail-subject {
-            font-size: 24px;
-            font-weight: 700;
-            color: #1a1a2e;
-            margin-bottom: 16px;
-            line-height: 1.3;
-        }
-
-        .message-detail-meta {
-            display: flex;
-            align-items: center;
             gap: 12px;
             flex-wrap: wrap;
+            margin-bottom: 12px;
         }
 
-        .message-detail-from {
+        .message-view-meta-item {
             display: flex;
             align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: var(--apple-gray);
+        }
+
+        .message-view-meta-item .material-icons {
+            font-size: 14px;
+        }
+
+        .message-view-meta-label {
+            font-weight: 600;
+            color: #1c1c1e;
+        }
+
+        .message-view-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .message-view-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .message-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            align-items: center;
+            padding-top: 2px;
+        }
+
+        .message-right-meta {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding-top: 2px;
+            flex-shrink: 0;
+            min-width: 80px;
+        }
+
+        /* When there's no unread dot, move ID up to take its place */
+        .message-right-meta:not(.has-unread-dot) {
+            gap: 8px;
+        }
+
+        .message-right-meta:not(.has-unread-dot) .message-id-badge {
+            margin-top: 2px;
+        }
+
+        .message-right-meta .message-date {
+            font-size: 11px;
+            color: var(--apple-gray);
+            white-space: nowrap;
+            font-weight: 500;
+        }
+
+        .unread-dot {
+            width: 10px;
+            height: 10px;
+            background-color: #1a73e8;
+            /* nice Google-ish blue */
+            border-radius: 50%;
+        }
+
+        .message-detail {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            font-size: 14px;
+            line-height: 1.7;
+            color: #1c1c1e;
+            box-shadow: var(--card-shadow);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .message-detail p {
+            margin-bottom: 12px;
+        }
+
+        .message-detail a {
+            color: var(--apple-blue);
+            text-decoration: none;
+        }
+
+        .message-detail a:hover {
+            text-decoration: underline;
+        }
+
+        /* Attachments */
+        .attachments-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .attachments-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1c1c1e;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .attachments-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
             gap: 10px;
         }
 
-        .message-detail-from .message-avatar {
-            width: 40px;
-            height: 40px;
-            font-size: 15px;
+        .attachment-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: all 0.2s;
+            cursor: pointer;
         }
 
-        .sender-info strong {
-            display: block;
-            font-size: 14px;
+        .attachment-card:hover {
+            border-color: var(--apple-blue);
+            box-shadow: var(--card-shadow);
+            transform: translateY(-2px);
+        }
+
+        .attachment-icon {
+            font-size: 36px;
+            margin-bottom: 6px;
+        }
+
+        .attachment-name {
+            font-size: 11px;
+            font-weight: 500;
+            color: #1c1c1e;
+            margin-bottom: 3px;
+            word-break: break-word;
+        }
+
+        .attachment-size {
+            font-size: 10px;
+            color: var(--apple-gray);
+        }
+
+        /* ========== EMPTY STATE ========== */
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-title {
+            font-size: 18px;
             font-weight: 600;
-            color: #1a1a2e;
-            margin-bottom: 2px;
+            color: #1c1c1e;
+            margin-bottom: 6px;
         }
 
-        .sender-info span {
+        .empty-text {
+            font-size: 14px;
+            color: var(--apple-gray);
+            max-width: 320px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* ========== LOADING ========== */
+        .loading {
+            padding: 40px;
+            text-align: center;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            border: 2px solid var(--border);
+            border-top-color: var(--apple-blue);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 12px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
             font-size: 13px;
-            color: #64748b;
+            color: var(--apple-gray);
         }
 
-        .message-detail-date {
-            font-size: 13px;
-            color: #94a3b8;
-        }
-
-        .message-detail-body {
-            font-size: 15px;
-            line-height: 1.7;
-            color: #334155;
-        }
-
-        .message-detail-body p {
-            margin-bottom: 14px;
-        }
-
-        /* ═══════════════════════════════════════════════════════════ */
-        /*  TOAST NOTIFICATIONS                                          */
-        /* ═══════════════════════════════════════════════════════════ */
-        .toast-container {
+        /* ========== TOAST NOTIFICATIONS ========== */
+        .toast {
             position: fixed;
             bottom: 24px;
             right: 24px;
-            z-index: 10000;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .toast {
-            background: white;
-            border-radius: 12px;
-            padding: 16px 20px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            background: #1c1c1e;
+            color: white;
+            padding: 12px 18px;
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
             display: flex;
             align-items: center;
-            gap: 12px;
-            min-width: 300px;
-            animation: toastIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            border-left: 4px solid;
+            gap: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            z-index: 2000;
+            animation: toastSlideIn 0.3s ease-out;
+            max-width: 360px;
         }
 
-        @keyframes toastIn {
+        @keyframes toastSlideIn {
             from {
+                transform: translateX(100%);
                 opacity: 0;
-                transform: translateX(100px);
             }
+
             to {
-                opacity: 1;
                 transform: translateX(0);
+                opacity: 1;
             }
         }
 
         .toast.success {
-            border-color: #10b981;
+            background: var(--success-green);
         }
 
         .toast.error {
-            border-color: #ef4444;
+            background: var(--danger-red);
         }
 
-        .toast.info {
-            border-color: #3b82f6;
-        }
-
-        .toast .material-icons-round {
-            font-size: 24px;
-        }
-
-        .toast.success .material-icons-round {
-            color: #10b981;
-        }
-
-        .toast.error .material-icons-round {
-            color: #ef4444;
-        }
-
-        .toast.info .material-icons-round {
-            color: #3b82f6;
-        }
-
-        .toast-message {
-            flex: 1;
-            font-size: 14px;
-            font-weight: 500;
-            color: #1a1a2e;
-        }
-
-        /* ═══════════════════════════════════════════════════════════ */
-        /*  EMPTY STATE                                                  */
-        /* ═══════════════════════════════════════════════════════════ */
-        .empty-state {
-            text-align: center;
-            padding: 80px 20px;
-            color: #64748b;
-        }
-
-        .empty-state .material-icons-round {
-            font-size: 64px;
-            color: #cbd5e1;
-            margin-bottom: 16px;
-        }
-
-        .empty-state h3 {
-            font-size: 20px;
-            font-weight: 600;
-            color: #1a1a2e;
-            margin-bottom: 8px;
-        }
-
-        .empty-state p {
-            font-size: 14px;
-            color: #64748b;
-        }
-
-        /* ═══════════════════════════════════════════════════════════ */
-        /*  LOADING                                                      */
-        /* ═══════════════════════════════════════════════════════════ */
-        .loading-spinner {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 40px;
-        }
-
-        .loading-spinner .material-icons-round {
-            font-size: 36px;
-            color: #667eea;
-            animation: spin 1s linear infinite;
-        }
-
-        /* ═══════════════════════════════════════════════════════════ */
-        /*  RESPONSIVE                                                   */
-        /* ═══════════════════════════════════════════════════════════ */
-        @media (max-width: 768px) {
-            .main-content {
-                padding: 16px;
-                gap: 16px;
-            }
-
-            .page-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 16px;
-                padding: 20px;
-            }
-
-            .header-actions {
-                width: 100%;
-                justify-content: stretch;
-            }
-
-            .header-actions .btn {
-                flex: 1;
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .filter-bar {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .search-box {
-                min-width: 100%;
-            }
-
-            .message-item {
-                padding: 14px 16px;
-            }
-
-            .message-avatar {
-                width: 36px;
-                height: 36px;
-                font-size: 14px;
-            }
-
-            .message-actions {
-                opacity: 1;
-            }
-
-            .modal {
-                max-width: 100%;
-                margin: 0;
-                border-radius: 16px 16px 0 0;
-            }
-        }
-
-        /* ═══════════════════════════════════════════════════════════ */
-        /*  HIGHLIGHT STYLES                                             */
-        /* ═══════════════════════════════════════════════════════════ */
-        mark {
-            background-color: #fef08a;
-            color: #1a1a2e;
-            padding: 2px 4px;
-            border-radius: 4px;
-            font-weight: 600;
+        .toast .material-icons {
+            font-size: 18px;
         }
     </style>
 </head>
+
 <body>
-    <!-- Main Content -->
+    <!-- ========== SIDEBAR (EXTERNAL) ========== -->
+    <?php require 'sidebar.php'; ?>
+
+    <!-- ========== MAIN CONTENT ========== -->
     <div class="main-content">
         <!-- Header -->
-        <div class="page-header">
+        <!-- <div class="page-header">
             <div class="header-left">
-                <h1>📬 Inbox</h1>
-                <p><?= htmlspecialchars($userEmail) ?> • <?= $lastSync ? 'Last sync: ' . date('M d, Y H:i', strtotime($lastSync)) : 'Never synced' ?></p>
+                <h1 class="page-title">📬 Inbox</h1>
+                <p class="page-subtitle">View and manage your incoming emails</p>
             </div>
             <div class="header-actions">
-                <button class="btn btn-secondary" onclick="window.location.href='compose.php'">
-                    <span class="material-icons-round">edit</span>
-                    Compose
+                <button class="btn-icon" onclick="syncMessages()" title="Sync now" id="syncBtn">
+                    <span class="material-icons">sync</span>
                 </button>
-                <button class="btn btn-primary sync-btn" onclick="syncMessages()">
-                    <span class="material-icons-round">sync</span>
-                    Sync
+                <button class="btn-icon" onclick="forceRefresh()" title="Force refresh" id="refreshBtn">
+                    <span class="material-icons">refresh</span>
+                </button>
+                <button class="btn-icon" onclick="location.href='index.php'">
+                    <span class="material-icons">edit</span>
                 </button>
             </div>
-        </div>
+        </div> -->
 
-        <!-- Stats Cards -->
-        <div class="stats-grid">
-            <div class="stat-card total" onclick="clearFilters()">
-                <div class="stat-icon">
-                    <span class="material-icons-round">mail</span>
+        <!-- Stats bar -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-icon total">
+                    <span class="material-icons">mail</span>
                 </div>
-                <div class="stat-label">Total Messages</div>
-                <div class="stat-value" id="totalCount"><?= $totalCount ?></div>
-            </div>
-            <div class="stat-card unread" onclick="filterUnread()">
-                <div class="stat-icon">
-                    <span class="material-icons-round">mark_email_unread</span>
-                </div>
-                <div class="stat-label">Unread</div>
-                <div class="stat-value" id="unreadCount"><?= $unreadCount ?></div>
-            </div>
-            <div class="stat-card new" onclick="filterNew()">
-                <div class="stat-icon">
-                    <span class="material-icons-round">fiber_new</span>
-                </div>
-                <div class="stat-label">New Today</div>
-                <div class="stat-value" id="newCount"><?= $newCount ?></div>
-            </div>
-        </div>
-
-        <!-- Filter Bar -->
-        <div class="filter-bar">
-            <div class="search-box">
-                <span class="material-icons-round">search</span>
-                <input type="text" id="searchInput" placeholder="Search messages..." autocomplete="off">
-            </div>
-            <div class="filter-chip" id="filterAll" onclick="clearFilters()">
-                <span class="material-icons-round">all_inbox</span>
-                All
-            </div>
-            <div class="filter-chip" id="filterUnread" onclick="filterUnread()">
-                <span class="material-icons-round">mark_email_unread</span>
-                Unread
-            </div>
-            <div class="filter-chip" id="filterStarred" onclick="filterStarred()">
-                <span class="material-icons-round">star</span>
-                Starred
-            </div>
-            <div class="filter-chip" id="filterNew" onclick="filterNew()">
-                <span class="material-icons-round">fiber_new</span>
-                New
-            </div>
-        </div>
-
-        <!-- Messages Container -->
-        <div class="messages-container">
-            <div class="message-list" id="messageList">
-                <?php if (empty($messages)): ?>
-                    <div class="empty-state">
-                        <span class="material-icons-round">inbox</span>
-                        <h3>No messages yet</h3>
-                        <p>Your inbox is empty. Sync to fetch new messages.</p>
+                <div class="stat-content">
+                    <div class="stat-number" id="totalCount">
+                        <?= $totalCount ?>
                     </div>
-                <?php else: ?>
-                    <?php foreach ($messages as $msg): ?>
-                        <?php
-                        $fromParts = explode('@', $msg['sender_email']);
-                        $initial = strtoupper(substr($fromParts[0], 0, 1));
-                        $isUnread = empty($msg['read_at']);
-                        $isNew = !empty($msg['is_new']) && $msg['is_new'] == 1;
-                        $isStarred = !empty($msg['starred']) && $msg['starred'] == 1;
-                        ?>
-                        <div class="message-item <?= $isUnread ? 'unread' : '' ?>" 
-                             data-message-id="<?= $msg['id'] ?>"
-                             onclick="openMessage(<?= $msg['id'] ?>)">
-                            <div class="message-checkbox" onclick="event.stopPropagation(); toggleSelect(this)"></div>
-                            <div class="message-avatar"><?= $initial ?></div>
-                            <div class="message-content">
-                                <div class="message-header">
-                                    <span class="message-sender"><?= htmlspecialchars($msg['sender_name'] ?: $msg['sender_email']) ?></span>
-                                    <?php if ($isNew): ?>
-                                        <span class="badge new">New</span>
-                                    <?php endif; ?>
-                                    <?php if ($isUnread): ?>
-                                        <span class="badge unread-badge">Unread</span>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="message-subject"><?= htmlspecialchars($msg['subject'] ?: '(No Subject)') ?></div>
-                                <div class="message-preview"><?= htmlspecialchars(substr(strip_tags($msg['body_text'] ?? $msg['body_html'] ?? ''), 0, 100)) ?></div>
-                            </div>
-                            <div class="message-meta">
-                                <div class="message-time"><?= date('M d', strtotime($msg['received_at'])) ?></div>
-                                <div class="message-actions">
-                                    <button class="message-action-btn <?= $isStarred ? 'starred' : '' ?>" 
-                                            onclick="event.stopPropagation(); toggleStar(<?= $msg['id'] ?>, this)"
-                                            title="Star">
-                                        <span class="material-icons-round"><?= $isStarred ? 'star' : 'star_outline' ?></span>
-                                    </button>
-                                    <button class="message-action-btn" 
-                                            onclick="event.stopPropagation(); deleteMessage(<?= $msg['id'] ?>)"
-                                            title="Delete">
-                                        <span class="material-icons-round">delete_outline</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
+                    <div class="stat-label">Total Received</div>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Message Detail Modal -->
-    <div class="modal-backdrop" id="messageModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h2 id="modalSubject">Message</h2>
-                <button class="modal-close" onclick="closeMessageModal()">
-                    <span class="material-icons-round">close</span>
+            <div class="stat-item">
+                <div class="stat-icon unread">
+                    <span class="material-icons">mark_email_unread</span>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="unreadCount">
+                        <?= $unreadCount ?>
+                    </div>
+                    <div class="stat-label">Unread</div>
+                </div>
+            </div>
+
+            <div class="stat-item">
+                <div class="stat-icon new">
+                    <span class="material-icons">fiber_new</span>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="newCount">
+                        <?= $newCount ?>
+                    </div>
+                    <div class="stat-label">New Today</div>
+                </div>
+            </div>
+
+            
+            <div class="sync-info">
+            <div class="header-actions">
+                <button class="btn-icon" onclick="syncMessages()" title="Sync now" id="syncBtn">
+                    <span class="material-icons">sync</span>
+                </button>
+                <button class="btn-icon" onclick="forceRefresh()" title="Force refresh" id="refreshBtn">
+                    <span class="material-icons">refresh</span>
+                </button>
+                <button class="btn-icon" onclick="location.href='index.php'">
+                    <span class="material-icons">edit</span>
                 </button>
             </div>
-            <div class="modal-body" id="modalBody">
-                <div class="loading-spinner">
-                    <span class="material-icons-round">autorenew</span>
+                <span class="material-icons">schedule</span>
+                <span id="lastSyncText">
+                    <?php if ($lastSync): ?>
+                    Last synced:
+                    <?= date('g:i A', strtotime($lastSync)) ?>
+                    <?php else: ?>
+                    Never synced
+                    <?php endif; ?>
+                </span>
+            </div>
+        </div>
+
+        <!-- Content wrapper with split panes -->
+        <div class="content-wrapper">
+            <!-- Left pane: Messages list -->
+            <div class="messages-pane">
+                <!-- Toolbar -->
+                <div class="toolbar">
+                    <div class="search-box">
+                        <span class="material-icons">search</span>
+                        <input type="text" id="searchInput" placeholder="Search..." onkeyup="searchMessages()">
+                    </div>
+
+                    <div class="filter-group">
+                        <button class="filter-btn" id="filterUnread" onclick="toggleFilter('unread')">
+                            <span class="material-icons">mark_email_unread</span>
+                            Unread
+                        </button>
+                        <button class="filter-btn" id="filterStarred" onclick="toggleFilter('starred')">
+                            <span class="material-icons">star</span>
+                            Starred
+                        </button>
+                        <button class="filter-btn" id="filterNew" onclick="toggleFilter('new')">
+                            <span class="material-icons">fiber_new</span>
+                            New
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Messages list -->
+                <div class="messages-area">
+                    <div class="messages-container" id="messagesList">
+                        <div class="loading">
+                            <div class="loading-spinner"></div>
+                            <div class="loading-text">Loading messages...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right pane: Message view -->
+            <div class="message-view-pane">
+                <div id="messageViewContent">
+                    <div class="empty-state">
+                        <div class="empty-icon">✉️</div>
+                        <div class="empty-title">No message selected</div>
+                        <div class="empty-text">Click on a message to view its contents</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Toast Container -->
-    <div class="toast-container" id="toastContainer"></div>
 
     <script>
-        // ═══════════════════════════════════════════════════════════
-        //  GLOBAL STATE
-        // ═══════════════════════════════════════════════════════════
-        let currentFilters = {
-            search: '',
-            unread_only: false,
-            starred_only: false,
-            new_only: false
-        };
-        const originalMessageContent = new Map();
+        let currentFilters = { unread_only: false, starred_only: false, new_only: false };
+        let currentSearchQuery = '';
+        let currentMessageId = null;
+        let selectedMessageElement = null;
 
-        // ═══════════════════════════════════════════════════════════
-        //  INITIALIZATION
-        // ═══════════════════════════════════════════════════════════
-        document.addEventListener('DOMContentLoaded', function() {
-            storeOriginalContent();
-            setupSearchListener();
-            setActiveFilter('filterAll');
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchMessages();
         });
 
-        // ═══════════════════════════════════════════════════════════
-        //  SYNC MESSAGES
-        // ═══════════════════════════════════════════════════════════
-        async function syncMessages() {
-            const btn = document.querySelector('.sync-btn');
-            btn.classList.add('syncing');
-            
-            try {
-                const response = await fetch('inbox.php?action=sync&limit=50&force=true');
-                const data = await response.json();
-                
-                if (data.success) {
-                    await fetchMessages();
-                    await updateCounts();
-                    showToast(data.message || 'Inbox synced successfully!', 'success');
-                } else {
-                    showToast(data.error || 'Sync failed', 'error');
-                }
-            } catch (error) {
-                showToast('Sync error: ' + error.message, 'error');
-            } finally {
-                btn.classList.remove('syncing');
-            }
-        }
-
-        // ═══════════════════════════════════════════════════════════
-        //  FETCH MESSAGES
-        // ═══════════════════════════════════════════════════════════
         async function fetchMessages() {
-            const messageList = document.getElementById('messageList');
-            messageList.innerHTML = '<div class="loading-spinner"><span class="material-icons-round">autorenew</span></div>';
-            
             try {
                 const params = new URLSearchParams({
                     action: 'fetch_messages',
                     limit: 50,
-                    offset: 0,
-                    ...currentFilters
+                    offset: 0
                 });
-                
-                const response = await fetch('inbox.php?' + params);
+
+                if (currentSearchQuery) params.append('search', currentSearchQuery);
+                if (currentFilters.unread_only) params.append('unread_only', '1');
+                if (currentFilters.starred_only) params.append('starred_only', '1');
+                if (currentFilters.new_only) params.append('new_only', '1');
+
+                const response = await fetch(`inbox.php?${params.toString()}`);
                 const data = await response.json();
-                
-                if (data.success && data.messages) {
+
+                if (data.success) {
                     renderMessages(data.messages);
                     document.getElementById('totalCount').textContent = data.total;
-                    
-                    setTimeout(() => {
-                        storeOriginalContent();
-                        performClientSideSearch();
-                    }, 100);
                 }
             } catch (error) {
-                messageList.innerHTML = `<div class="empty-state">
-                    <span class="material-icons-round">error_outline</span>
-                    <h3>Error loading messages</h3>
-                    <p>${escapeHtml(error.message)}</p>
-                </div>`;
+                console.error('Error fetching messages:', error);
+                document.getElementById('messagesList').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">⚠️</div>
+                        <div class="empty-title">Error loading messages</div>
+                        <div class="empty-text">Please try refreshing the page</div>
+                    </div>
+                `;
             }
         }
 
-        // ═══════════════════════════════════════════════════════════
-        //  RENDER MESSAGES
-        // ═══════════════════════════════════════════════════════════
         function renderMessages(messages) {
-            const messageList = document.getElementById('messageList');
-            
+            const container = document.getElementById('messagesList');
+
             if (!messages || messages.length === 0) {
-                messageList.innerHTML = `<div class="empty-state">
-                    <span class="material-icons-round">inbox</span>
-                    <h3>No messages found</h3>
-                    <p>Try adjusting your filters or sync to fetch new messages.</p>
-                </div>`;
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <div class="empty-title">No messages found</div>
+                        <div class="empty-text">Your inbox is empty or no messages match your filters</div>
+                    </div>
+                `;
                 return;
             }
-            
-            messageList.innerHTML = messages.map(msg => {
-                const initial = msg.sender_email.charAt(0).toUpperCase();
-                const isUnread = !msg.read_at;
-                const isNew = msg.is_new == 1;
-                const isStarred = msg.starred == 1;
+
+            container.innerHTML = messages.map(msg => {
+                const classes = ['message-item'];
+                if (msg.is_read == 0) classes.push('unread');
+                if (msg.id == currentMessageId) classes.push('selected');
+
+                // Use body_preview if available, otherwise strip HTML from body
+                let preview = '';
+                if (msg.body_preview && msg.body_preview.trim()) {
+                    preview = msg.body_preview.substring(0, 150);
+                } else if (msg.body) {
+                    // Strip HTML tags and get plain text
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = msg.body;
+                    const plainText = tempDiv.textContent || tempDiv.innerText || '';
+                    preview = plainText.substring(0, 150);
+                } else {
+                    preview = 'No preview available';
+                }
                 
+                // Get sender email and name
+                const senderEmail = msg.sender_email || 'unknown@email.com';
+                const senderName = msg.sender_name || senderEmail;
+                
+                // Get subject or use default
+                const subjectDisplay = msg.subject || '(No Subject)';
+
                 return `
-                    <div class="message-item ${isUnread ? 'unread' : ''}" 
-                         data-message-id="${msg.id}"
-                         onclick="openMessage(${msg.id})">
-                        <div class="message-checkbox" onclick="event.stopPropagation(); toggleSelect(this)"></div>
-                        <div class="message-avatar">${initial}</div>
+                    <div class="${classes.join(' ')}" onclick="viewMessage(${msg.id}, event)" data-message-id="${msg.id}">
+                        <span class="message-meta">
+                            <span class="material-icons message-star ${msg.is_starred == 1 ? 'starred' : ''}"
+                                  onclick="toggleStar(${msg.id}, event)">
+                                ${msg.is_starred == 1 ? 'star' : 'star_border'}
+                            </span>
+                            ${msg.is_important == 1 ? '<span class="material-icons message-important" title="Important">label_important</span>' : ''}
+                        </span>
+
                         <div class="message-content">
                             <div class="message-header">
-                                <span class="message-sender">${escapeHtml(msg.sender_name || msg.sender_email)}</span>
-                                ${isNew ? '<span class="badge new">New</span>' : ''}
-                                ${isUnread ? '<span class="badge unread-badge">Unread</span>' : ''}
+                                <span class="message-sender" title="${escapeHtml(senderEmail)}">
+                                     ${escapeHtml(senderName)} ${senderName !== senderEmail ? '<span class="sender-email-hint">&lt;' + escapeHtml(senderEmail) + '&gt;</span>' : ''}
+                                </span>
                             </div>
-                            <div class="message-subject">${escapeHtml(msg.subject || '(No Subject)')}</div>
-                            <div class="message-preview">${escapeHtml((msg.body_text || msg.body_html || '').replace(/<[^>]*>/g, '').substring(0, 100))}</div>
+                            <div class="message-subject-line">
+                                <span class="message-subject" title="${escapeHtml(subjectDisplay)}">
+                                    ${escapeHtml(subjectDisplay)}
+                                </span>
+                                ${msg.has_attachments == 1 ? '<span class="inline-attachment-icon material-icons" title="Has attachments">attach_file</span>' : ''}
+                            </div>
+                            <div class="message-preview" title="${escapeHtml(preview)}">
+                                ${escapeHtml(preview)}${preview.length >= 150 ? '...' : ''}
+                            </div>
                         </div>
-                        <div class="message-meta">
-                            <div class="message-time">${formatDate(msg.received_at)}</div>
-                            <div class="message-actions">
-                                <button class="message-action-btn ${isStarred ? 'starred' : ''}" 
-                                        onclick="event.stopPropagation(); toggleStar(${msg.id}, this)"
-                                        title="Star">
-                                    <span class="material-icons-round">${isStarred ? 'star' : 'star_outline'}</span>
-                                </button>
-                                <button class="message-action-btn" 
-                                        onclick="event.stopPropagation(); deleteMessage(${msg.id})"
-                                        title="Delete">
-                                    <span class="material-icons-round">delete_outline</span>
-                                </button>
-                            </div>
+                        
+                        <div class="message-right-meta ${msg.is_read == 0 ? 'has-unread-dot' : ''}">
+                            <span class="message-date" title="${formatDateLong(msg.received_date)}">
+                                ${formatDate(msg.received_date)}
+                            </span>
+                            ${msg.is_read == 0 ? '<span class="unread-dot"></span>' : ''}
+                            <span class="message-id-badge" title="Message ID: ${msg.id}">ID: ${msg.id}</span>
                         </div>
                     </div>
                 `;
             }).join('');
         }
 
-        // ═══════════════════════════════════════════════════════════
-        //  OPEN MESSAGE DETAIL
-        // ═══════════════════════════════════════════════════════════
-        async function openMessage(id) {
-            const modal = document.getElementById('messageModal');
-            const modalBody = document.getElementById('modalBody');
-            const modalSubject = document.getElementById('modalSubject');
-            
-            modal.classList.add('show');
-            modalBody.innerHTML = '<div class="loading-spinner"><span class="material-icons-round">autorenew</span></div>';
-            modalSubject.textContent = 'Loading...';
-            
+        async function viewMessage(messageId, event) {
+            if (event) {
+                // Remove selected class from previous element
+                if (selectedMessageElement) {
+                    selectedMessageElement.classList.remove('selected');
+                }
+
+                // Add selected class to clicked element
+                selectedMessageElement = event.currentTarget;
+                selectedMessageElement.classList.add('selected');
+            }
+
+            currentMessageId = messageId;
+
             try {
-                const response = await fetch(`inbox.php?action=get_message&id=${id}`);
+                const response = await fetch(`inbox.php?action=get_message&id=${messageId}`);
                 const data = await response.json();
-                
-                if (data.success && data.message) {
+
+                if (data.success) {
                     const msg = data.message;
-                    const initial = msg.sender_email.charAt(0).toUpperCase();
-                    
-                    modalSubject.textContent = msg.subject || '(No Subject)';
-                    modalBody.innerHTML = `
-                        <div class="message-detail-header">
-                            <h3 class="message-detail-subject">${escapeHtml(msg.subject || '(No Subject)')}</h3>
-                            <div class="message-detail-meta">
-                                <div class="message-detail-from">
-                                    <div class="message-avatar">${initial}</div>
-                                    <div class="sender-info">
-                                        <strong>${escapeHtml(msg.sender_name || msg.sender_email)}</strong>
-                                        <span>&lt;${escapeHtml(msg.sender_email)}&gt;</span>
-                                    </div>
+
+                    // Parse attachments
+                    let attachments = [];
+                    if (msg.has_attachments && msg.attachment_data) {
+                        try {
+                            attachments = JSON.parse(msg.attachment_data);
+                        } catch (e) { }
+                    }
+
+                    // Build body HTML
+                    let bodyHtml = `<div class="message-detail">${escapeHtml(msg.body)}</div>`;
+
+                    // Add attachments section
+                    if (attachments.length > 0) {
+                        bodyHtml += `
+                            <div class="attachments-section">
+                                <div class="attachments-title">
+                                    <span class="material-icons">attach_file</span>
+                                    ${attachments.length} Attachment${attachments.length > 1 ? 's' : ''}
                                 </div>
-                                <div class="message-detail-date">${formatDateTime(msg.received_at)}</div>
+                                <div class="attachments-grid">
+                                    ${attachments.map(att => `
+                                        <div class="attachment-card" onclick="downloadAttachment(${msg.id}, '${escapeHtml(att.filename)}')">
+                                            <div class="attachment-icon">${att.icon || '📎'}</div>
+                                            <div class="attachment-name">${escapeHtml(att.filename)}</div>
+                                            <div class="attachment-size">${formatBytes(att.size)}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    // Render message view
+                    document.getElementById('messageViewContent').innerHTML = `
+                        <div class="message-view-header">
+                            <div class="message-view-title">${escapeHtml(msg.subject)}</div>
+                            <div class="message-view-meta">
+                                <div class="message-view-meta-item">
+                                    <span class="material-icons">person</span>
+                                    <span class="message-view-meta-label">From:</span> ${escapeHtml(msg.sender)}
+                                </div>
+                                <div class="message-view-meta-item">
+                                    <span class="material-icons">schedule</span>
+                                    <span class="message-view-meta-label">Date:</span> ${formatDateLong(msg.received_date)}
+                                </div>
+                            </div>
+                            <div class="message-view-actions">
+                                <button class="filter-btn" onclick="toggleStarFromView()">
+                                    <span class="material-icons">${msg.is_starred == 1 ? 'star' : 'star_border'}</span>
+                                    ${msg.is_starred == 1 ? 'Starred' : 'Star'}
+                                </button>
+                                <button class="filter-btn" onclick="deleteMessageFromView()">
+                                    <span class="material-icons">delete</span>
+                                    Delete
+                                </button>
                             </div>
                         </div>
-                        <div class="message-detail-body">
-                            ${msg.body_html || msg.body_text.replace(/\n/g, '<br>') || '<p>No content</p>'}
+                        <div class="message-view-body">
+                            ${bodyHtml}
                         </div>
                     `;
-                    
-                    // Mark as read and update UI
-                    const messageItem = document.querySelector(`[data-message-id="${id}"]`);
-                    if (messageItem) {
-                        messageItem.classList.remove('unread');
-                        const unreadBadge = messageItem.querySelector('.badge.unread-badge');
-                        if (unreadBadge) unreadBadge.remove();
-                    }
-                    
-                    await updateCounts();
+
+                    // Refresh list to update read status
+                    setTimeout(() => fetchMessages(), 100);
+                    updateCounts();
+                }
+            } catch (error) {
+                console.error('Error viewing message:', error);
+                showToast('Failed to load message', 'error');
+            }
+        }
+
+        async function syncMessages() {
+            const btn = document.getElementById('syncBtn');
+            btn.classList.add('rotating');
+
+            try {
+                const response = await fetch('inbox.php?action=sync&limit=50&force=false');
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast(`Synced ${data.new_count} new messages`, 'success');
+                    fetchMessages();
+                    updateCounts();
+                    updateLastSyncTime();
                 } else {
-                    throw new Error(data.error || 'Message not found');
+                    showToast(data.error || 'Sync failed', 'error');
                 }
             } catch (error) {
-                modalBody.innerHTML = `<div class="empty-state">
-                    <span class="material-icons-round">error_outline</span>
-                    <h3>Error loading message</h3>
-                    <p>${escapeHtml(error.message)}</p>
-                </div>`;
+                console.error('Sync error:', error);
+                showToast('Sync failed', 'error');
+            } finally {
+                setTimeout(() => btn.classList.remove('rotating'), 600);
             }
         }
 
-        function closeMessageModal() {
-            document.getElementById('messageModal').classList.remove('show');
-        }
+        async function forceRefresh() {
+            const btn = document.getElementById('refreshBtn');
+            btn.classList.add('rotating');
 
-        // ═══════════════════════════════════════════════════════════
-        //  FILTERS
-        // ═══════════════════════════════════════════════════════════
-        function clearFilters() {
-            currentFilters = {
-                search: '',
-                unread_only: false,
-                starred_only: false,
-                new_only: false
-            };
-            setActiveFilter('filterAll');
-            fetchMessages();
-        }
-
-        function filterUnread() {
-            currentFilters = {
-                search: '',
-                unread_only: true,
-                starred_only: false,
-                new_only: false
-            };
-            setActiveFilter('filterUnread');
-            fetchMessages();
-        }
-
-        function filterStarred() {
-            currentFilters = {
-                search: '',
-                unread_only: false,
-                starred_only: true,
-                new_only: false
-            };
-            setActiveFilter('filterStarred');
-            fetchMessages();
-        }
-
-        function filterNew() {
-            currentFilters = {
-                search: '',
-                unread_only: false,
-                starred_only: false,
-                new_only: true
-            };
-            setActiveFilter('filterNew');
-            fetchMessages();
-        }
-
-        function setActiveFilter(id) {
-            document.querySelectorAll('.filter-chip').forEach(chip => {
-                chip.classList.remove('active');
-            });
-            document.getElementById(id).classList.add('active');
-        }
-
-        // ═══════════════════════════════════════════════════════════
-        //  MESSAGE ACTIONS
-        // ═══════════════════════════════════════════════════════════
-        async function toggleStar(id, btn) {
             try {
-                const response = await fetch(`inbox.php?action=toggle_star&id=${id}`);
+                const response = await fetch('inbox.php?action=sync&limit=50&force=true');
                 const data = await response.json();
-                
+
                 if (data.success) {
-                    btn.classList.toggle('starred');
-                    const icon = btn.querySelector('.material-icons-round');
-                    icon.textContent = btn.classList.contains('starred') ? 'star' : 'star_outline';
+                    showToast(`Refreshed: ${data.new_count} new messages`, 'success');
+                    fetchMessages();
+                    updateCounts();
+                    updateLastSyncTime();
+                } else {
+                    showToast(data.error || 'Refresh failed', 'error');
                 }
             } catch (error) {
-                showToast('Error toggling star', 'error');
+                console.error('Refresh error:', error);
+                showToast('Refresh failed', 'error');
+            } finally {
+                setTimeout(() => btn.classList.remove('rotating'), 600);
             }
         }
 
-        async function deleteMessage(id) {
-            if (!confirm('Delete this message?')) return;
-            
+        function toggleFilter(filterType) {
+            const filterBtn = document.getElementById('filter' + filterType.charAt(0).toUpperCase() + filterType.slice(1));
+
+            if (filterType === 'unread') {
+                currentFilters.unread_only = !currentFilters.unread_only;
+                filterBtn.classList.toggle('active');
+            } else if (filterType === 'starred') {
+                currentFilters.starred_only = !currentFilters.starred_only;
+                filterBtn.classList.toggle('active');
+            } else if (filterType === 'new') {
+                currentFilters.new_only = !currentFilters.new_only;
+                filterBtn.classList.toggle('active');
+            }
+
+            fetchMessages();
+        }
+
+        function searchMessages() {
+            currentSearchQuery = document.getElementById('searchInput').value;
+            fetchMessages();
+        }
+
+        async function toggleStar(messageId, event) {
+            event.stopPropagation();
+
             try {
-                const response = await fetch(`inbox.php?action=delete&id=${id}`);
+                const response = await fetch(`inbox.php?action=toggle_star&id=${messageId}`);
                 const data = await response.json();
-                
+
                 if (data.success) {
-                    const messageItem = document.querySelector(`[data-message-id="${id}"]`);
-                    if (messageItem) {
-                        messageItem.style.animation = 'fadeOut 0.3s ease';
-                        setTimeout(() => {
-                            messageItem.remove();
-                            updateCounts();
-                        }, 300);
+                    fetchMessages();
+                    if (currentMessageId === messageId) {
+                        viewMessage(messageId);
                     }
-                    showToast('Message deleted', 'success');
                 }
             } catch (error) {
-                showToast('Error deleting message', 'error');
+                console.error('Error toggling star:', error);
             }
         }
 
-        function toggleSelect(checkbox) {
-            checkbox.classList.toggle('checked');
+        async function toggleStarFromView() {
+            if (!currentMessageId) return;
+            await toggleStar(currentMessageId, { stopPropagation: () => { } });
         }
 
-        // ═══════════════════════════════════════════════════════════
-        //  UPDATE COUNTS
-        // ═══════════════════════════════════════════════════════════
+        async function deleteMessageFromView() {
+            if (!currentMessageId) return;
+
+            if (!confirm('Are you sure you want to delete this message?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`inbox.php?action=delete&id=${currentMessageId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('Message deleted', 'success');
+                    currentMessageId = null;
+                    document.getElementById('messageViewContent').innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">✉️</div>
+                            <div class="empty-title">No message selected</div>
+                            <div class="empty-text">Click on a message to view its contents</div>
+                        </div>
+                    `;
+                    fetchMessages();
+                    updateCounts();
+                } else {
+                    showToast('Failed to delete message', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting message:', error);
+                showToast('Failed to delete message', 'error');
+            }
+        }
+
+        function downloadAttachment(messageId, filename) {
+            window.location.href = `download_attachment.php?message_id=${messageId}&filename=${encodeURIComponent(filename)}`;
+        }
+
         async function updateCounts() {
             try {
                 const response = await fetch('inbox.php?action=get_counts');
                 const data = await response.json();
-                
+
                 if (data.success) {
                     document.getElementById('unreadCount').textContent = data.unread;
                     document.getElementById('newCount').textContent = data.new;
+
+                    const sidebarBadge = document.getElementById('sidebarUnreadBadge');
+                    if (sidebarBadge) {
+                        sidebarBadge.textContent = data.unread;
+                        sidebarBadge.style.display = data.unread > 0 ? 'block' : 'none';
+                    }
                 }
             } catch (error) {
                 console.error('Error updating counts:', error);
             }
         }
 
-        // ═══════════════════════════════════════════════════════════
-        //  SEARCH
-        // ═══════════════════════════════════════════════════════════
-        function setupSearchListener() {
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                searchInput.addEventListener('input', performClientSideSearch);
-                searchInput.addEventListener('keyup', (e) => {
-                    if (e.key === 'Escape') {
-                        searchInput.value = '';
-                        performClientSideSearch();
-                    }
-                });
-            }
+        function updateLastSyncTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            document.getElementById('lastSyncText').textContent = 'Last synced: ' + timeStr;
         }
 
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return diffMins + 'm ago';
+            if (diffHours < 24) return diffHours + 'h ago';
+            if (diffDays < 7) return diffDays + 'd ago';
+
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        function formatDateLong(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showToast(message, type = 'info') {
+            document.querySelectorAll('.toast').forEach(t => t.remove());
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            const icon = type === 'success' ? 'check_circle' :
+                type === 'error' ? 'error' :
+                    'info';
+
+            toast.innerHTML = `
+                <span class="material-icons">${icon}</span>
+                <span>${message}</span>
+            `;
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'toastSlideIn 0.3s ease-out reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Auto-update counts every 30 seconds
+        setInterval(updateCounts, 30000);
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + R to sync
+            if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+                e.preventDefault();
+                syncMessages();
+            }
+        });
+
+        // ========== CLIENT-SIDE SEARCH WITH YELLOW HIGHLIGHTING ==========
+        
+        // Store original content for each message item
+        const originalMessageContent = new Map();
+        
+        // Initialize original content storage
         function storeOriginalContent() {
-            originalMessageContent.clear();
             const messageItems = document.querySelectorAll('.message-item');
             messageItems.forEach(item => {
                 const id = item.dataset.messageId;
@@ -1458,17 +1514,53 @@ $lastSync = getLastSyncDate($userEmail);
                 }
             });
         }
-
+        
+        // Escape special regex characters
+        function escapeRegExpSearch(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+        
+        // Highlight matching text with yellow background
+        function highlightMatches(text, searchTerm) {
+            if (!searchTerm || !text) return text;
+            
+            const escapedTerm = escapeRegExpSearch(searchTerm);
+            const regex = new RegExp(`(${escapedTerm})`, 'gi');
+            return text.replace(regex, '<mark style="background-color: #f4cccc; color: #000; padding: 2px 3px; border-radius: 2px; font-weight: 600;">$1</mark>');
+        }
+        
+        // Remove all highlights and restore original content
+        function removeAllHighlights() {
+            const messageItems = document.querySelectorAll('.message-item');
+            messageItems.forEach(item => {
+                const id = item.dataset.messageId;
+                const original = originalMessageContent.get(id);
+                
+                if (original) {
+                    const senderEl = item.querySelector('.message-sender');
+                    const subjectEl = item.querySelector('.message-subject');
+                    const previewEl = item.querySelector('.message-preview');
+                    
+                    if (senderEl) senderEl.innerHTML = original.sender;
+                    if (subjectEl) subjectEl.innerHTML = original.subject;
+                    if (previewEl) previewEl.innerHTML = original.preview;
+                }
+            });
+        }
+        
+        // Perform client-side search and highlight
         function performClientSideSearch() {
             const searchInput = document.getElementById('searchInput');
             const searchTerm = searchInput ? searchInput.value.trim() : '';
             
+            // If search is empty, restore original content
             if (!searchTerm) {
                 removeAllHighlights();
-                document.querySelectorAll('.message-item').forEach(item => {
+                // Show all messages
+                const messageItems = document.querySelectorAll('.message-item');
+                messageItems.forEach(item => {
                     item.style.display = 'flex';
                 });
-                removeNoResultsMessage();
                 return;
             }
             
@@ -1482,10 +1574,12 @@ $lastSync = getLastSyncDate($userEmail);
                 
                 if (!original) return;
                 
+                // Get text content for matching
                 const senderText = original.sender.replace(/<[^>]*>/g, '').toLowerCase();
                 const subjectText = original.subject.replace(/<[^>]*>/g, '').toLowerCase();
                 const previewText = original.preview.replace(/<[^>]*>/g, '').toLowerCase();
                 
+                // Check if search term matches
                 const senderMatch = senderText.includes(searchLower);
                 const subjectMatch = subjectText.includes(searchLower);
                 const previewMatch = previewText.includes(searchLower);
@@ -1496,6 +1590,7 @@ $lastSync = getLastSyncDate($userEmail);
                     item.style.display = 'flex';
                     visibleCount++;
                     
+                    // Apply highlighting
                     const senderEl = item.querySelector('.message-sender');
                     const subjectEl = item.querySelector('.message-subject');
                     const previewEl = item.querySelector('.message-preview');
@@ -1522,171 +1617,76 @@ $lastSync = getLastSyncDate($userEmail);
                 }
             });
             
-            if (visibleCount === 0) {
-                showNoResultsMessage();
-            } else {
-                removeNoResultsMessage();
-            }
-        }
-
-        function removeAllHighlights() {
-            const messageItems = document.querySelectorAll('.message-item');
-            messageItems.forEach(item => {
-                const id = item.dataset.messageId;
-                const original = originalMessageContent.get(id);
-                
-                if (original) {
-                    const senderEl = item.querySelector('.message-sender');
-                    const subjectEl = item.querySelector('.message-subject');
-                    const previewEl = item.querySelector('.message-preview');
-                    
-                    if (senderEl) senderEl.innerHTML = original.sender;
-                    if (subjectEl) subjectEl.innerHTML = original.subject;
-                    if (previewEl) previewEl.innerHTML = original.preview;
-                }
-            });
-        }
-
-        function highlightMatches(text, searchTerm) {
-            if (!searchTerm || !text) return text;
-            
-            const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const regex = new RegExp(`(${escapedTerm})`, 'gi');
-            return text.replace(regex, '<mark>$1</mark>');
-        }
-
-        function showNoResultsMessage() {
+            // Show "no results" message if needed
             const messageList = document.getElementById('messageList');
-            let noResultsDiv = document.getElementById('searchNoResults');
-            
-            if (!noResultsDiv) {
-                noResultsDiv = document.createElement('div');
-                noResultsDiv.id = 'searchNoResults';
-                noResultsDiv.className = 'empty-state';
-                noResultsDiv.innerHTML = `
-                    <span class="material-icons-round">search_off</span>
-                    <h3>No results found</h3>
-                    <p>Try adjusting your search terms</p>
-                `;
-                messageList.appendChild(noResultsDiv);
+            if (visibleCount === 0 && messageList) {
+                // Check if no-results message already exists
+                let noResultsDiv = document.getElementById('searchNoResults');
+                if (!noResultsDiv) {
+                    noResultsDiv = document.createElement('div');
+                    noResultsDiv.id = 'searchNoResults';
+                    noResultsDiv.style.cssText = 'text-align: center; padding: 60px 20px; color: #8E8E93;';
+                    noResultsDiv.innerHTML = `
+                        <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
+                        <div style="font-size: 18px; font-weight: 600; color: #1c1c1e; margin-bottom: 8px;">No results found</div>
+                        <div style="font-size: 14px;">Try adjusting your search terms</div>
+                    `;
+                    messageList.appendChild(noResultsDiv);
+                }
+                noResultsDiv.style.display = 'block';
+            } else {
+                const noResultsDiv = document.getElementById('searchNoResults');
+                if (noResultsDiv) {
+                    noResultsDiv.style.display = 'none';
+                }
             }
-            noResultsDiv.style.display = 'block';
         }
-
-        function removeNoResultsMessage() {
-            const noResultsDiv = document.getElementById('searchNoResults');
-            if (noResultsDiv) {
-                noResultsDiv.style.display = 'none';
+        
+        // Override the existing searchMessages function to use client-side search
+        const originalSearchMessages = searchMessages;
+        searchMessages = function() {
+            // Store original content if not already stored
+            if (originalMessageContent.size === 0) {
+                storeOriginalContent();
             }
-        }
-
-        // ═══════════════════════════════════════════════════════════
-        //  TOAST NOTIFICATIONS
-        // ═══════════════════════════════════════════════════════════
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
             
-            const icons = {
-                success: 'check_circle',
-                error: 'error',
-                info: 'info'
-            };
+            // Perform client-side search with highlighting
+            performClientSideSearch();
+        };
+        
+        // Store original content after messages are loaded
+        const originalFetchMessages = fetchMessages;
+        fetchMessages = async function() {
+            await originalFetchMessages();
             
-            toast.innerHTML = `
-                <span class="material-icons-round">${icons[type] || 'info'}</span>
-                <div class="toast-message">${escapeHtml(message)}</div>
-            `;
-            
-            container.appendChild(toast);
-            
+            // Wait a bit for DOM to update, then store original content
             setTimeout(() => {
-                toast.style.animation = 'toastOut 0.3s ease forwards';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        // ═══════════════════════════════════════════════════════════
-        //  UTILITIES
-        // ═══════════════════════════════════════════════════════════
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        function formatDate(dateStr) {
-            const date = new Date(dateStr);
-            const now = new Date();
-            const diff = now - date;
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            
-            if (days === 0) return 'Today';
-            if (days === 1) return 'Yesterday';
-            if (days < 7) return `${days}d ago`;
-            
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        }
-
-        function formatDateTime(dateStr) {
-            const date = new Date(dateStr);
-            return date.toLocaleDateString('en-US', {
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
-            });
-        }
-
-        // Close modal on backdrop click
-        document.getElementById('messageModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeMessageModal();
+                storeOriginalContent();
+            }, 100);
+        };
+        
+        // Attach search event listener
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                // Store original content on page load
+                setTimeout(() => {
+                    storeOriginalContent();
+                }, 500);
+                
+                // Real-time search as user types
+                searchInput.addEventListener('input', performClientSideSearch);
+                
+                // Clear search on ESC key
+                searchInput.addEventListener('keyup', (e) => {
+                    if (e.key === 'Escape') {
+                        searchInput.value = '';
+                        performClientSideSearch();
+                    }
+                });
             }
         });
-
-        // ESC key to close modal
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeMessageModal();
-            }
-        });
-
-        // Auto-update counts every 30 seconds
-        setInterval(updateCounts, 30000);
-
-        // Keyboard shortcut: Ctrl/Cmd + R to sync
-        document.addEventListener('keydown', function(e) {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
-                e.preventDefault();
-                syncMessages();
-            }
-        });
-
-        // Add fadeOut animation
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes fadeOut {
-                from {
-                    opacity: 1;
-                    transform: translateX(0);
-                }
-                to {
-                    opacity: 0;
-                    transform: translateX(-20px);
-                }
-            }
-            @keyframes toastOut {
-                to {
-                    opacity: 0;
-                    transform: translateX(100px);
-                }
-            }
-        `;
-        document.head.appendChild(style);
     </script>
 </body>
+
 </html>
