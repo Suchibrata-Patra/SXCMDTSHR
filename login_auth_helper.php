@@ -37,12 +37,17 @@ define('REQUIRE_SPECIAL', true);
 define('SECURE_COOKIE', true);             // Use secure cookies (HTTPS only)
 define('HTTPONLY_COOKIE', true);           // Prevent XSS cookie access
 define('SAMESITE_COOKIE', 'Strict');       // CSRF protection
-define('ACCOUNT_LOCK_DURATION',10)
+define('ACCOUNT_LOCK_DURATION',10);
 // ============================================================
 // DATABASE AUTHENTICATION
 // ============================================================
 
-
+/**
+ * Authenticate user with database credentials
+ * @param string $email User email
+ * @param string $password User password (plain text)
+ * @return array ['success' => bool, 'user' => array|null, 'error' => string|null]
+ */
 function authenticateWithDatabase($email, $password) {
     try {
         $pdo = getDatabaseConnection();
