@@ -1,5 +1,4 @@
 <?php
-require_once __DIR__ . '/security_handler.php';
 session_start();
 
 // Load environment configuration
