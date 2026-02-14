@@ -601,7 +601,7 @@ $isLocked = isset($s['settings_locked']) &&
                     </div>
                     <input type="email" name="hod_email" value="<?= htmlspecialchars($s['hod_email']) ?>" placeholder="hod@sxc.edu">
                 </div>
-                <div class="setting-row">
+                <!-- <div class="setting-row">
                     <div class="setting-info">
                         <span class="setting-title">Staff ID</span>
                         <span class="setting-desc">UID for administrative logs</span>
@@ -614,7 +614,7 @@ $isLocked = isset($s['settings_locked']) &&
                         <span class="setting-desc">Office location for contact info</span>
                     </div>
                     <input type="text" name="room_no" value="<?= htmlspecialchars($s['room_no']) ?>" placeholder="A-201">
-                </div>
+                </div> -->
                 <!-- <div class="setting-row">
                     <div class="setting-info">
                         <span class="setting-title">Extension Number</span>
