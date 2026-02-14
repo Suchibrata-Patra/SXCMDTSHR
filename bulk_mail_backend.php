@@ -1,18 +1,34 @@
 <?php
-session_start();
-require_once 'config.php';
-require_once 'db_config.php';
-header('Content-Type: application/json'); // For Setting the JSON header
-$driveDir = env('DRIVE_DIR'); // Fetching the Drive directory from environment
-$action = ''; // Get action from request [ support both GET, POST FormData, and POST JSON ]
+/**
+ * Bulk Mail Backend
+ * 
+ * Handles CSV file uploads, analysis, email queue population, and drive file management
+ * Uses bulk_mail_queue table from u955994755_SXC_MDTS database
+ */
 
+session_start();
+require_once 'config.php';  // Load .env file
+require_once 'db_config.php';
+
+// Set JSON header
+header('Content-Type: application/json');
+
+// Get Drive directory from environment - NO hardcoded path
+$driveDir = env('DRIVE_DIR');
+
+// Get action from request - support both GET, POST FormData, and POST JSON
+$action = '';
+
+// Try POST FormData first
 if (isset($_POST['action'])) {
-    $action = $_POST['action']; // Trying the POST FormData first
+    $action = $_POST['action'];
 }
+// Then try GET
 elseif (isset($_GET['action'])) {
-    $action = $_GET['action']; // Then try GET Form Data
+    $action = $_GET['action'];
 }
-else { // Finally try JSON POST
+// Finally try JSON POST
+else {
     $jsonInput = file_get_contents('php://input');
     if ($jsonInput) {
         $jsonData = json_decode($jsonInput, true);
