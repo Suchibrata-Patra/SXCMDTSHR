@@ -450,7 +450,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             <?php if ($error): ?>
                 <div class="error-toast">
-                    🔒 <?php echo htmlspecialchars($error); ?>
+                    <?php echo htmlspecialchars($error); ?>
                 </div>
             <?php endif; ?>
 
