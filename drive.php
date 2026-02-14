@@ -36,16 +36,41 @@ function fmtBytes(int $b): string {
 }
 
 function sanitizeName(string $n): string {
-    $n = preg_replace('/[^\w\.\-]/', '_', basename($n));
+    // Get basename only (strip any path separators)
+    $n = basename($n);
+    // Remove truly dangerous characters: null bytes, slashes, backslashes, angle brackets, pipe, colon, asterisk, question mark, quote chars
+    $n = preg_replace('/[\x00\x0a\x0d\/\\\\<>|:*?"\'`]/', '', $n);
+    // Prevent double-dots (path traversal)
     $n = preg_replace('/\.\.+/', '.', $n);
+    // Collapse multiple spaces
+    $n = preg_replace('/\s+/', ' ', $n);
+    // Trim leading/trailing spaces and dots
+    $n = trim($n, ' .');
+    // Ensure not empty
+    if ($n === '') $n = 'file';
     return substr($n, 0, 200);
 }
 
 function safePath(string $dir, string $file): string|false {
-    $real = realpath($dir . '/' . $file);
     $base = realpath($dir);
-    if ($real && $base && str_starts_with($real, $base . DIRECTORY_SEPARATOR)) {
-        return $real;
+    if (!$base) return false;
+    // Construct and normalize the candidate path
+    $candidate = $base . DIRECTORY_SEPARATOR . $file;
+    // For existing files, use realpath; for non-existing, manually check containment
+    if (file_exists($candidate)) {
+        $real = realpath($candidate);
+        if ($real && str_starts_with($real, $base . DIRECTORY_SEPARATOR)) {
+            return $real;
+        }
+        return false;
+    }
+    // For non-existing files (e.g. rename target check), verify no traversal
+    // Normalize by resolving any .. or . components in file portion only
+    $normalized = $base . DIRECTORY_SEPARATOR . $file;
+    // Check the directory component resolves inside base
+    $dirPart = realpath(dirname($normalized));
+    if ($dirPart && $dirPart === $base) {
+        return $normalized;
     }
     return false;
 }
@@ -261,8 +286,8 @@ if (isset($_GET['preview'])) {
             --surface-2: #f7f7fc;
             --border:    rgba(100,100,160,0.12);
             --border-2:  rgba(100,100,160,0.22);
-            --blue:      #1479f6;
-            --blue-2:    #4186db;
+            --blue:      #4f46e5;
+            --blue-2:    #6366f1;
             --blue-glow: rgba(79,70,229,0.15);
             --red:       #ef4444;
             --green:     #10b981;
@@ -290,10 +315,6 @@ if (isset($_GET['preview'])) {
         /* ── LAYOUT ─────────────────────────────────────────── */
         .app-shell  { display:flex; flex:1; overflow:hidden; }
         .main-col   { flex:1; display:flex; flex-direction:column; overflow:hidden; }
-        
-        a{
-            text-decoration: none !important;
-        }
 
         /* ── TOP BAR ─────────────────────────────────────────── */
         .topbar {
@@ -776,6 +797,62 @@ if (isset($_GET['preview'])) {
         }
         @keyframes rowFadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
 
+        /* Thumbnail toggle button */
+        .btn-thumb-toggle {
+            height: 36px;
+            padding: 0 12px;
+            background: var(--surface-2);
+            color: var(--ink-3);
+            border: 1.5px solid var(--border-2);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all .18s;
+            white-space: nowrap;
+        }
+        .btn-thumb-toggle:hover  { border-color:var(--blue); color:var(--blue); background:var(--blue-glow); }
+        .btn-thumb-toggle.active { border-color:var(--blue); color:var(--blue); background:rgba(79,70,229,.1); }
+        .btn-thumb-toggle .material-icons-round { font-size:16px; }
+
+        /* Grid thumbnail mode */
+        .file-grid.thumb-mode .grid-card { padding:0 0 12px; overflow:hidden; }
+        .file-grid.thumb-mode .grid-thumb-wrap {
+            width:100%; aspect-ratio:16/10;
+            background:var(--surface-2);
+            overflow:hidden;
+            display:flex; align-items:center; justify-content:center;
+            border-bottom:1px solid var(--border);
+            margin-bottom:10px;
+            position:relative;
+        }
+        .file-grid.thumb-mode .grid-thumb-img {
+            width:100%; height:100%; object-fit:cover;
+            transition:transform .3s var(--ease);
+        }
+        .grid-card:hover .file-grid.thumb-mode .grid-thumb-img { transform:scale(1.04); }
+        .file-grid.thumb-mode .grid-thumb-icon {
+            font-size:40px; color:var(--ink-4);
+            display:flex; align-items:center; justify-content:center;
+            width:100%; height:100%;
+        }
+        .file-grid.thumb-mode .grid-thumb-icon img {
+            width:48px; height:48px; object-fit:contain;
+        }
+        .file-grid.thumb-mode .grid-name  { padding:0 12px; }
+        .file-grid.thumb-mode .grid-meta  { padding:0 12px; }
+        .file-grid.thumb-mode .grid-actions { padding:0 12px; }
+        .file-grid.thumb-mode .grid-icon { display:none; }
+        .file-grid.thumb-mode .grid-card-check { top:6px; left:6px; }
+
+        /* Non-thumb mode: hide thumb wrap */
+        .grid-thumb-wrap { display:none; }
+        .file-grid.thumb-mode .grid-thumb-wrap { display:flex; }
+
         /* Hidden file input */
         #fileInput { display:none; }
     </style>
@@ -788,7 +865,8 @@ if (isset($_GET['preview'])) {
         <!-- TOP BAR -->
         <div class="topbar">
             <div class="topbar-title">
-                <span class="material-icons-round">add_to_drive</span>Drive
+                <span class="material-icons-round">add_to_drive</span>
+                My Drive
             </div>
             <div class="topbar-spacer"></div>
             <div class="search-wrap">
@@ -806,6 +884,11 @@ if (isset($_GET['preview'])) {
                     <span class="material-icons-round">density_small</span>
                 </button>
             </div>
+            <!-- Thumbnail toggle — only shown in grid view -->
+            <button class="btn-thumb-toggle" id="btnThumbToggle" title="Toggle thumbnails" onclick="toggleThumbnails()" style="display:none">
+                <span class="material-icons-round" id="thumbToggleIcon">image</span>
+                <span id="thumbToggleLabel">Thumbnails</span>
+            </button>
             <select id="sortSelect" onchange="applySort(this.value)">
                 <option value="name|asc">Name A→Z</option>
                 <option value="name|desc">Name Z→A</option>
@@ -994,6 +1077,7 @@ let currentView = 'list';
 let currentSort = { key:'name', order:'asc' };
 let currentFilter = 'all';
 let pendingDelete = [];
+let showThumbs   = false;  // grid thumbnail mode
 
 // ── ICON MAP ──────────────────────────────────────────────
 // Uses PNG icons from /Assets/icons/ folder
@@ -1137,11 +1221,50 @@ function renderTable() {
 
 function renderGrid() {
     const grid = document.getElementById('fileGrid');
+    // Keep thumb-mode class in sync
+    grid.classList.toggle('thumb-mode', showThumbs);
+
     if (filtered.length === 0) {
         grid.innerHTML = `<div style="grid-column:1/-1">${emptyState()}</div>`;
         return;
     }
-    grid.innerHTML = filtered.map((f, i) => `
+
+    const imgExts = ['jpg','jpeg','png','gif','bmp','webp','svg','ico','avif'];
+
+    grid.innerHTML = filtered.map((f, i) => {
+        const ext = f.ext.toLowerCase();
+        const isImage = imgExts.includes(ext);
+        const previewUrl = `${API}?preview=${encodeURIComponent(f.name)}`;
+
+        // Build thumbnail section (only used in thumb-mode)
+        let thumbHtml = '';
+        if (showThumbs) {
+            if (isImage) {
+                thumbHtml = `<div class="grid-thumb-wrap">
+                    <img class="grid-thumb-img" src="${previewUrl}" alt="${esc(f.name)}"
+                         loading="lazy"
+                         onerror="this.parentElement.innerHTML='<div class=grid-thumb-icon><img src=\'${iconSrc(f.cat)}\' alt=\'\'></div>'">
+                </div>`;
+            } else if (f.cat === 'video') {
+                // Video poster frame via video element
+                thumbHtml = `<div class="grid-thumb-wrap" style="background:#0f172a">
+                    <video class="grid-thumb-img" preload="metadata" muted
+                        style="object-fit:cover"
+                        onerror="this.parentElement.innerHTML='<div class=grid-thumb-icon><img src=\'${iconSrc(f.cat)}\' alt=\'\'></div>'">
+                        <source src="${previewUrl}#t=1">
+                    </video>
+                </div>`;
+            } else {
+                // Non-previewable: show large category icon
+                thumbHtml = `<div class="grid-thumb-wrap">
+                    <div class="grid-thumb-icon">
+                        <img src="${iconSrc(f.cat)}" alt="${f.cat}">
+                    </div>
+                </div>`;
+            }
+        }
+
+        return `
         <div class="grid-card" data-name="${esc(f.name)}"
              style="animation-delay:${Math.min(i*20,300)}ms"
              ondblclick="openPreview('${esc(f.name)}','${f.cat}')">
@@ -1149,6 +1272,7 @@ function renderGrid() {
                 onclick="event.stopPropagation()"
                 onchange="rowCheckChange()"
                 data-name="${esc(f.name)}">
+            ${thumbHtml}
             <img class="grid-icon" src="${iconSrc(f.cat)}" alt="${f.cat}"
                  onerror="this.style.fontSize='40px';this.style.lineHeight='1';this.alt='${CAT_EMOJI[f.cat]||'📁'}'">
             <div class="grid-name" title="${esc(f.name)}">${esc(f.name)}</div>
@@ -1167,8 +1291,8 @@ function renderGrid() {
                     <span class="material-icons-round">delete</span>
                 </button>
             </div>
-        </div>
-    `).join('');
+        </div>`;
+    }).join('');
 }
 
 function emptyState() {
@@ -1193,6 +1317,9 @@ function setView(v) {
     ['list','grid','compact'].forEach(x => {
         document.getElementById('btn'+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle('active', x===v);
     });
+    // Show thumbnail toggle only in grid view
+    const thumbBtn = document.getElementById('btnThumbToggle');
+    thumbBtn.style.display = v === 'grid' ? 'flex' : 'none';
     renderFiles();
 }
 
@@ -1236,6 +1363,20 @@ function setFilter(cat, btn) {
     currentFilter = cat;
     document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.cat === cat));
     renderFiles();
+}
+
+function toggleThumbnails() {
+    showThumbs = !showThumbs;
+    const btn   = document.getElementById('btnThumbToggle');
+    const icon  = document.getElementById('thumbToggleIcon');
+    const label = document.getElementById('thumbToggleLabel');
+    const grid  = document.getElementById('fileGrid');
+    btn.classList.toggle('active', showThumbs);
+    icon.textContent  = showThumbs ? 'hide_image' : 'image';
+    label.textContent = showThumbs ? 'Icons' : 'Thumbnails';
+    grid.classList.toggle('thumb-mode', showThumbs);
+    // Re-render grid to build/remove thumb elements
+    if (currentView === 'grid') renderGrid();
 }
 
 // ═══════════════════════════════════════════════════════════
