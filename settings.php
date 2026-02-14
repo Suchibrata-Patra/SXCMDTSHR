@@ -98,6 +98,10 @@ $defaults = [
 ];
 
 $s = array_merge($defaults, $userSettings);
+
+// Resolve lock state once at the top — used by both HTML and inline JS
+$isLocked = isset($s['settings_locked']) && 
+            ($s['settings_locked'] === true || $s['settings_locked'] === 'true' || $s['settings_locked'] === '1');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -561,7 +565,7 @@ $s = array_merge($defaults, $userSettings);
             <p>Customize your email experience • <?= htmlspecialchars($userEmail) ?></p>
         </div>
 
-        <form id="appleSettingsForm">
+        <form id="appleSettingsForm" method="post" action="save_settings.php">
             <!-- IDENTITY SECTION -->
             <h2 id="identity">Official Identity</h2>
             <div class="section-card">
@@ -1131,85 +1135,49 @@ Your Title"><?= htmlspecialchars($s['signature']) ?></textarea>
             });
         });
 
-        // AJAX Form Submission
-        document.getElementById('appleSettingsForm').onsubmit = async function(e) {
+        // AJAX Form Submission — POST only, no page navigation
+        document.getElementById('appleSettingsForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+            e.stopPropagation();
+
+            const saveBtn = document.querySelector('.btn-deploy');
+            const originalHTML = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<span class="material-icons">hourglass_top</span> Saving…';
+            saveBtn.disabled = true;
+
+            // Collect form data
             const formData = new FormData(this);
-            
-            // Check if IMAP settings are being modified
-            const isLocked = <?= $isLocked ? 'true' : 'false' ?>;
-            const hasImapChanges = false; // IMAP settings are now read-only, sourced from env
-            
-            // Warn user if configuring IMAP for the first time
-            if (!isLocked && hasImapChanges) {
-                const imapServer = formData.get('imap_server');
-                const imapPort = formData.get('imap_port');
-                const imapUsername = formData.get('imap_username');
-                
-                if (imapServer || imapPort || imapUsername) {
-                    const confirmMsg = '⚠️ WARNING: IMAP Settings Lock\n\n' +
-                                     'After saving, your IMAP settings will be LOCKED and cannot be changed ' +
-                                     'without super administrator authorization.\n\n' +
-                                     'Please verify:\n' +
-                                     '• IMAP Server: ' + (imapServer || 'Not set') + '\n' +
-                                     '• IMAP Port: ' + (imapPort || 'Not set') + '\n' +
-                                     '• IMAP Username: ' + (imapUsername || 'Not set') + '\n\n' +
-                                     'Are you sure all information is correct?';
-                    
-                    if (!confirm(confirmMsg)) {
-                        return false;
-                    }
-                }
-            }
-            
-            // Add unchecked checkboxes as 'false'
-            const checkboxes = this.querySelectorAll('input[type="checkbox"]');
-            checkboxes.forEach(checkbox => {
-                if (!checkbox.checked) {
-                    formData.set(checkbox.name, 'false');
-                }
+
+            // Represent unchecked checkboxes explicitly as 'false'
+            this.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                formData.set(cb.name, cb.checked ? 'true' : 'false');
             });
-            
+
             try {
                 const response = await fetch('save_settings.php', {
                     method: 'POST',
                     body: formData
                 });
-                
+
+                if (!response.ok) throw new Error('Server returned ' + response.status);
+
                 const result = await response.json();
-                
+
                 if (result.success) {
-                    // Show success toast
                     const toast = document.getElementById('successToast');
                     toast.classList.add('show');
-                    
-                    // If IMAP settings were locked, show additional message
-                    if (result.locked) {
-                        setTimeout(() => {
-                            alert('🔒 IMAP Settings Locked\n\nYour IMAP configuration has been saved and locked for security. Only a super administrator can modify these settings now.');
-                        }, 500);
-                    }
-                    
-                    setTimeout(() => {
-                        toast.classList.remove('show');
-                        // Reload page to reflect locked state
-                        if (result.locked) {
-                            location.reload();
-                        }
-                    }, 3000);
+                    setTimeout(() => toast.classList.remove('show'), 3000);
                 } else {
-                    if (result.locked) {
-                        alert('🔒 Settings Locked\n\n' + (result.message || 'IMAP settings are locked and can only be modified by a super administrator.'));
-                    } else {
-                        alert('Error saving settings: ' + (result.message || 'Unknown error'));
-                    }
+                    alert('❌ ' + (result.message || 'Unknown error'));
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Failed to save settings. Please try again.');
+            } catch (err) {
+                console.error('Save error:', err);
+                alert('❌ Failed to save settings: ' + err.message);
+            } finally {
+                saveBtn.innerHTML = originalHTML;
+                saveBtn.disabled = false;
             }
-        };
+        });
     </script>
 </body>
 </html>
