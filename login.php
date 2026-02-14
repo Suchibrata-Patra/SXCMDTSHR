@@ -242,8 +242,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     color: #888;
     line-height: 1.5;
     letter-spacing: 0.3px;
-
     display: flex;
+    align-items: center;      vertical center
     justify-content: flex-start; /* horizontal left */
 }
 
