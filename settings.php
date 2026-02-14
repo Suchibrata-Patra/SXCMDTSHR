@@ -1034,7 +1034,7 @@ Your Title"><?= htmlspecialchars($s['signature']) ?></textarea>
             <div class="section-card">
                 <div class="setting-row">
                     <div class="setting-info">
-                        <span class="setting-title">Two-Factor Authentication</span>
+                        <span class="setting-title">Two-Factor Authentication (2FA) </span>
                         <span class="setting-desc">Require additional verification on login</span>
                     </div>
                     <label class="switch">
