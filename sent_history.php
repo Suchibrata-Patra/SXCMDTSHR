@@ -4,7 +4,6 @@
  * Works with sent_emails_new table structure
  * Replace lines 1-270 with this code
  */
-require_once __DIR__ . '/security_handler.php';
 session_start();
 require 'config.php';
 require 'db_config.php';

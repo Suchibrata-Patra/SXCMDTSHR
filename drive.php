@@ -3,7 +3,6 @@
 //  drive.php  —  SXC MDTS Secure File Drive
 //  Full CRUD + share links + multi-view + preview for any file type
 // ═══════════════════════════════════════════════════════════════════
-require_once __DIR__ . '/security_handler.php';
 session_start();
 require_once 'config.php';
 require_once 'db_config.php';

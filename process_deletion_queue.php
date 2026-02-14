@@ -11,7 +11,6 @@
  * Usage: Add to crontab to run every hour or as needed
  * Example: 0 * * * * /usr/bin/php /path/to/process_deletion_queue.php >> /var/log/deletion_queue.log 2>&1
  */
-require_once __DIR__ . '/security_handler.php';
 require_once(__DIR__ . '/db_config.php');
 require_once(__DIR__ . '/config.php'); // For IMAP credentials
 

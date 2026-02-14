@@ -12,7 +12,6 @@
  * - SMTP credentials stored in ENV for email sending
  * ============================================================
  */
-require_once __DIR__ . '/security_handler.php';
 require_once 'db_config.php';
 
 // ============================================================

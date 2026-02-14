@@ -14,7 +14,6 @@
 
 // DON'T load security_handler.php on login page - it causes conflicts
 // The login page has its own security measures
-require_once __DIR__ . '/security_handler.php';  // ← This was causing the crash
 require_once 'vendor/autoload.php';
 require_once 'config.php';
 require_once 'db_config.php';

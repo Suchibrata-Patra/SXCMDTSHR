@@ -1,7 +1,6 @@
 <?php
 // manage_labels.php - Label Management Interface
 // Labels are global/shared across all users
-require_once __DIR__ . '/security_handler.php';
 session_start();
 
 if (file_exists('config.php')) {

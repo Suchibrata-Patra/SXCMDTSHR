@@ -2,7 +2,6 @@
 /**
  * Professional Inbox Page - Refactored with External Sidebar
  */
-require_once __DIR__ . '/security_handler.php';
 session_start();
 
 // Security check

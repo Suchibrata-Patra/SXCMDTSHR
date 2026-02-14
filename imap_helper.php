@@ -3,7 +3,6 @@
  * IMAP Helper - OPTIMIZED VERSION
  * Includes body_preview generation for fast inbox queries
  */
-require_once __DIR__ . '/security_handler.php';
 require_once 'db_config.php';
 require_once 'settings_helper.php';
 require_once 'inbox_functions.php';

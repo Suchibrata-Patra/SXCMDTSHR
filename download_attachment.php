@@ -3,7 +3,6 @@
  * DOWNLOAD ATTACHMENT - OPTIMIZED WITH CACHING
  * Downloads attachment from IMAP on first request and caches it for future downloads
  */
-require_once __DIR__ . '/security_handler.php';
 session_start();
 
 // Check authentication

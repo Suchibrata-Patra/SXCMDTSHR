@@ -1,5 +1,4 @@
 <?php
-require_once __DIR__ . '/security_handler.php';
 $current_page = basename($_SERVER['PHP_SELF'], '.php');
 $userEmail = $_SESSION['smtp_user'] ?? 'user@example.com';
 $userInitial = strtoupper(substr($userEmail, 0, 1));

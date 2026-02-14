@@ -3,7 +3,6 @@
  * View Message Page
  * Displays full message content
  */
-require_once __DIR__ . '/security_handler.php';
 session_start();
 
 // Check authentication

@@ -7,7 +7,6 @@
  * pushes the FULL array into $_SESSION['temp_attachments'] so send.php
  * finds it exactly the same way as a file uploaded from the browser.
  */
-require_once __DIR__ . '/security_handler.php';
 session_start();
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/db_config.php';

@@ -4,7 +4,6 @@
  * Handles file uploads with deduplication and encrypted download links
  * ENHANCED VERSION - Guarantees proper file and database registration
  */
-require_once __DIR__ . '/security_handler.php';
 session_start();
 
 // Security check

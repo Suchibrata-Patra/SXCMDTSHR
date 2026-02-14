@@ -10,7 +10,6 @@
  * - Tracks download activity
  * - Validates file access permissions
  */
-require_once __DIR__ . '/security_handler.php';
 session_start();
 
 // Security check - user must be logged in

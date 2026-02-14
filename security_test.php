@@ -9,7 +9,6 @@
  * WARNING: DO NOT leave this file on production servers!
  */
 
-require_once __DIR__ . '/security_handler.php';
 
 $tests = [];
 $passed = 0;
