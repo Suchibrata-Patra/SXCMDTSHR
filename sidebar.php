@@ -58,12 +58,12 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
     }
 
     .logo-image {
-        width: 40px;
-        height: 40px;
-        border-radius: 8px;
+        width: auto;
+        height: 50px;
+        /* border-radius: 8px; */
         object-fit: cover;
         background: white;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        /* box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); */
     }
 
     .logo-text {
