@@ -551,7 +551,7 @@ $_SESSION['user_settings'] = $settings;
                                 <span style="color: #FF3B30;">*</span>
                             </label>
                             <input type="text" name="subject" id="subject" 
-                                   placeholder="Enter email subject" value="Invitatino to the Campus as Guest" required>
+                                   placeholder="Enter email subject" value="Invitation to the Campus as Guest" required>
                         </div>
 
                         <div class="form-group">
