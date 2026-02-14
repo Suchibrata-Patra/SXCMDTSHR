@@ -715,8 +715,7 @@ $isLocked = isset($s['settings_locked']) &&
                     <div>
                         <div style="font-weight: 600; color: #0c4a6e; margin-bottom: 4px;">Server-managed configuration</div>
                         <p style="font-size: 13px; color: #0369a1; line-height: 1.6; margin: 0;">
-                            These values are set by the system administrator and cannot be edited here.
-                            Your login password is used for both SMTP and IMAP - it is <strong>never stored</strong> in the database.
+                           These values are configured at the server level by the email client/sender infrastructure. To help ensure optimal deliverability and reduce the risk of messages being marked as spam, we recommend using a reputable and trusted sender IP provider. Please note that these settings are secured at the root code level and are not editable from the application interface. Your login ID and password are used exclusively for cloud-based home authentication. They are not related to SMTP or IMAP configurations, which are fixed and can only be modified with developer authorization.
                         </p>
                     </div>
                 </div>
