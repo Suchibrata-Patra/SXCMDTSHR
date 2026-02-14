@@ -1415,6 +1415,9 @@ if (!$hasSessionAuth && $hasEnvAuth) {
 
                                 <!-- Drive content -->
                                 <div id="driveAttachContent" class="attach-content active">
+                                    <button onclick="testBackend()" style="margin: 0 0 12px 0; padding: 8px 16px; background: #0071E3; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500; width: 100%;">
+                                        🔧 Test Backend Connection
+                                    </button>
                                     <div class="loading-wrap" id="driveLoading">
                                         <div class="spinner-sm"></div>
                                         <p>Loading files…</p>
@@ -1658,6 +1661,60 @@ if (!$hasSessionAuth && $hasEnvAuth) {
                 container.style.cssText = 'display: none !important';
                 loading.style.cssText = 'display: block !important';
                 loading.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠️</div><h3>Load failed</h3><p>${err.message}</p></div>`;
+            }
+        }
+
+        async function testBackend() {
+            try {
+                const formData = new FormData();
+                formData.append('action', 'test_connection');
+                
+                const currentPath = window.location.pathname;
+                const directory = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
+                const url = directory + 'bulk_mail_backend.php';
+                
+                console.log('🧪 Testing backend at:', url);
+                
+                const response = await fetch(url, { method: 'POST', body: formData });
+                const contentType = response.headers.get('content-type');
+                const text = await response.text();
+                
+                console.log('📥 Response headers:', { contentType, status: response.status });
+                console.log('📥 Raw response:', text);
+                
+                if (!contentType || !contentType.includes('application/json')) {
+                    showAlert('error', 'Backend returned non-JSON response. Check console for details.');
+                    console.error('Expected JSON but got:', contentType);
+                    console.error('Response body:', text.substring(0, 500));
+                    return;
+                }
+                
+                try {
+                    const data = JSON.parse(text);
+                    console.log('✅ Parsed data:', data);
+                    
+                    if (data.success) {
+                        const details = [
+                            `PHP Version: ${data.php_version}`,
+                            `Drive Dir: ${data.drive_dir}`,
+                            `Drive Exists: ${data.drive_exists ? 'Yes' : 'No'}`,
+                            `Drive Writable: ${data.drive_writable ? 'Yes' : 'No'}`,
+                            `Session Active: ${data.session_active ? 'Yes' : 'No'}`,
+                            `User: ${data.user_email}`
+                        ].join('\n');
+                        
+                        showAlert('success', 'Backend test successful! ✅');
+                        console.log('Backend test results:\n' + details);
+                    } else {
+                        showAlert('error', 'Backend test failed: ' + data.error);
+                    }
+                } catch (e) {
+                    console.error('JSON parse error:', e);
+                    showAlert('error', 'Backend returned invalid JSON. Check console.');
+                }
+            } catch (err) {
+                console.error('❌ Test error:', err);
+                showAlert('error', 'Backend test failed: ' + err.message);
             }
         }
 
