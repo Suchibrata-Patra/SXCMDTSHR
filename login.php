@@ -559,7 +559,8 @@ function authenticateWithSMTP($email, $password) {
                 Mail Delivery & Tracking System v2.0 -->
                 <br>
                 <span style="font-size:18px;color:#a3abc3;">Made with ♥︎ by MDTS Students</span>
-                <span style="font-size:10px;color: #ff0b0b;">Currently Disabled for the Developmend Purpose</span>
+                <br>
+                <span style="font-size:15px;color: #ff0b0b;">Currently Disabled for the Developmend Purpose</span>
             </footer>
         </div>
     </div>
