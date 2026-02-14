@@ -133,10 +133,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $ccEmails = !empty($_POST['ccEmails']) ? array_map('trim', explode(',', $_POST['ccEmails'])) : [];
         $bccEmails = !empty($_POST['bccEmails']) ? array_map('trim', explode(',', $_POST['bccEmails'])) : [];
         
-        $signatureWish = trim($_POST['signatureWish'] ?? env('DEFAULT_SIGNATURE_WISH', 'Best Regards,'));
-        $signatureName = trim($_POST['signatureName'] ?? env('DEFAULT_SIGNATURE_NAME', ''));
-        $signatureDesignation = trim($_POST['signatureDesignation'] ?? env('DEFAULT_SIGNATURE_DESIGNATION', ''));
-        $signatureExtra = trim($_POST['signatureExtra'] ?? env('DEFAULT_SIGNATURE_EXTRA', ''));
+        $signatureWish = trim($_POST['signatureWish'] ?? '');
+        $signatureName = trim($_POST['signatureName'] ?? '');
+        $signatureDesignation = trim($_POST['signatureDesignation'] ?? '');
+        $signatureExtra = trim($_POST['signatureExtra'] ?? '');
         
         // Label information (optional)
         $labelId = !empty($_POST['label_id']) ? intval($_POST['label_id']) : null;
