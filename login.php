@@ -196,16 +196,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             left: 0;
             width: 100%;
             height: 100%;
-            background: radial-gradient(circle at 30% 50%, rgba(79, 93, 115, 0.03) 0%, transparent 50%);
+            background: radial-gradient(circle at 50% 30%, rgba(0, 0, 0, 0.02), transparent 60%);
             pointer-events: none;
             z-index: 0;
         }
 
         .page-wrapper {
-            min-height: 100vh;
             display: flex;
-            align-items: center;
             justify-content: center;
+            align-items: center;
+            min-height: 100vh;
             padding: 20px;
             position: relative;
             z-index: 1;
@@ -213,107 +213,116 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         .login-card {
             background: white;
-            padding: 40px 35px;
-            border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 45px 40px;
+            border-radius: 22px;
+            box-shadow: 
+                0 8px 24px rgba(0, 0, 0, 0.06),
+                0 2px 6px rgba(0, 0, 0, 0.04);
             width: 100%;
             max-width: 420px;
-            position: relative;
+            opacity: 0;
+            transform: translateY(8px);
+            animation: cardFadeIn 350ms ease-out forwards;
+            animation-delay: 100ms;
+            border:0.1px solid rgb(202, 210, 223);
         }
 
-        /* Brand Header */
-        .brand-header {
-            text-align: center;
-            margin-bottom: 28px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .brand-logo {
-            width: 70px;
-            height: 70px;
-            margin-bottom: 12px;
-            object-fit: contain;
-        }
-
-        .brand-details {
-            font-size: 0.68rem;
-            color: #888;
-            line-height: 1.5;
-            letter-spacing: 0.3px;
-        }
-
-        /* Title */
-        h2 {
-            font-size: 1.75rem;
-            margin-bottom: 8px;
-            color: rgb(79, 93, 115);
-            font-weight: 600;
-            text-align: center;
-            letter-spacing: -0.5px;
-        }
-
-        .subtitle {
-            font-size: 0.9rem;
-            color: #888;
-            text-align: center;
-            margin-bottom: 25px;
-            font-weight: 400;
-        }
-
-        /* Error/Warning Messages */
-        .error-toast {
-            background: linear-gradient(135deg, #fee 0%, #fdd 100%);
-            color: #c33;
-            padding: 14px 16px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            font-size: 0.85rem;
-            border-left: 3px solid #c33;
-            animation: slideDown 0.3s ease;
-        }
-
-        .warning-toast {
-            background: linear-gradient(135deg, #fff4e5 0%, #ffe8cc 100%);
-            color: #d68000;
-            padding: 14px 16px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            font-size: 0.85rem;
-            border-left: 3px solid #ff9800;
-            animation: slideDown 0.3s ease;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
+        @keyframes cardFadeIn {
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
 
-        /* Form */
-        form {
+        /* Brand Header */
+        .brand-header {
             display: flex;
-            flex-direction: column;
-            gap: 20px;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #f0f0f0;
         }
 
+        .brand-logo {
+            width: 52px;
+            height: 52px;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+
+        .brand-details {
+            font-size: 0.78rem;
+            line-height: 1.15;
+            font-weight: 400;
+            color: #727fa4;
+            opacity: 0.65;
+            letter-spacing: 0.2px;
+        }
+
+        /* Heading */
+        h2 {
+            font-size: 1.73rem;
+            font-weight: 500;
+            margin-bottom: 28px;
+            color: #727fa4;
+            letter-spacing: 0.3px;
+        }
+
+        .subtitle {
+            font-size: 0.95rem;
+            color: #666;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        /* Alert Messages */
+        .error-toast, .warning-toast {
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            opacity: 0;
+            animation: slideInRight 0.4s ease-out forwards;
+        }
+
+        .error-toast {
+            background: #fef2f2;
+            border-left: 3px solid var(--error-red);
+            color: #991b1b;
+        }
+
+        .warning-toast {
+            background: #fff7ed;
+            border-left: 3px solid var(--warning-orange);
+            color: #9a3412;
+        }
+
+        @keyframes slideInRight {
+            from { 
+                opacity: 0; 
+                transform: translateX(10px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateX(0); 
+            }
+        }
+
+        /* Form Elements */
         .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+            margin-bottom: 20px;
         }
 
         label {
-            font-size: 0.8rem;
-            color: #555;
-            font-weight: 500;
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.2px;
+            color: #999;
+            margin-bottom: 8px;
         }
 
         input[type="email"],
@@ -373,6 +382,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         button:hover:not(:disabled) {
+            /* background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%); */
+            /* transform: translateY(-1px); */
             box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
         }
 
@@ -441,7 +452,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
 
             <h2>Authentication</h2>
-            <!-- <p class="subtitle">Enter your credentials to continue.</p> -->
+            <!-- <p class="subtitle">Enter institutional credentials to continue.</p> -->
 
             <?php if ($error): ?>
                 <div class="error-toast">
@@ -463,7 +474,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             <form method="POST" id="loginForm">
                 <div class="input-group">
-                    <label for="email">Email Address</label>
+                    <label for="email">User ID / Email</label>
                     <input 
                         type="email" 
                         name="email" 
@@ -477,11 +488,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </div>
 
                 <div class="input-group">
-                    <label for="password">Password</label>
+                    <label for="app_password">App Password</label>
                     <input 
                         type="password" 
-                        name="password" 
-                        id="password" 
+                        name="app_password" 
+                        id="app_password" 
                         placeholder="••••••••••••" 
                         required
                         <?php echo ($blockUntil ? 'disabled' : ''); ?>
@@ -499,27 +510,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     id="submitBtn"
                     <?php echo ($blockUntil ? 'disabled' : ''); ?>
                 >
-                    <?php echo ($blockUntil ? 'Account Locked' : 'Login'); ?>
+                    <?php echo ($blockUntil ? 'Account Locked' : 'Verify & Proceed'); ?>
                 </button>
             </form>
-
-            <div class="security-info">
-                <strong>🔐 Database Authentication</strong><br>
-                Login credentials are verified against the database. SMTP credentials for email sending are configured in the system environment.
-            </div>
-
             <footer>
-                St. Xavier's College (Autonomous), Kolkata<br>
-                Mail Delivery & Tracking System v2.0
-                <br><br>
-                <span style="font-size:15px;font-weight:600;color:#4f5d73;">Secure Database Authentication</span>
+                <!-- St. Xavier's College (Autonomous), Kolkata<br>
+                Mail Delivery & Tracking System v2.0 -->
+                <br>
+                <span style="font-size:18px;color:#a3abc3;">Made with ♥︎ by MDTS Students</span>
             </footer>
         </div>
     </div>
 
     <script>
         function togglePassword() {
-            const passInput = document.getElementById("password");
+            const passInput = document.getElementById("app_password");
             passInput.type = passInput.type === "password" ? "text" : "password";
         }
 
