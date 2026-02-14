@@ -80,41 +80,41 @@ function getUserIdByEmail($pdo, $email) {
 /**
  * Create user if doesn't exist
  */
-function createUserIfNotExists($pdo, $email, $displayName = null) {
-    try {
-        $existingId = getUserId($pdo, $email);
-        if ($existingId) {
-            return $existingId;
-        }
+// function createUserIfNotExists($pdo, $email, $displayName = null) {
+//     try {
+//         $existingId = getUserId($pdo, $email);
+//         if ($existingId) {
+//             return $existingId;
+//         }
         
-        // Generate UUID for new user
-        $uuid = generateUuidV4();
+//         // Generate UUID for new user
+//         $uuid = generateUuidV4();
         
-        // Check if users table has user_uuid column
-        $stmt = $pdo->query("SHOW COLUMNS FROM users LIKE 'user_uuid'");
-        $hasUuidColumn = $stmt->rowCount() > 0;
+//         // Check if users table has user_uuid column
+//         $stmt = $pdo->query("SHOW COLUMNS FROM users LIKE 'user_uuid'");
+//         $hasUuidColumn = $stmt->rowCount() > 0;
         
-        if ($hasUuidColumn) {
-            $stmt = $pdo->prepare("
-                INSERT INTO users (user_uuid, email, full_name, created_at)
-                VALUES (?, ?, ?, NOW())
-            ");
-            $stmt->execute([$uuid, $email, $displayName]);
-        } else {
-            $stmt = $pdo->prepare("
-                INSERT INTO users (email, display_name, created_at) 
-                VALUES (?, ?, NOW())
-            ");
-            $stmt->execute([$email, $displayName ?? $email]);
-        }
+//         if ($hasUuidColumn) {
+//             $stmt = $pdo->prepare("
+//                 INSERT INTO users (user_uuid, email, full_name, created_at)
+//                 VALUES (?, ?, ?, NOW())
+//             ");
+//             $stmt->execute([$uuid, $email, $displayName]);
+//         } else {
+//             $stmt = $pdo->prepare("
+//                 INSERT INTO users (email, display_name, created_at) 
+//                 VALUES (?, ?, NOW())
+//             ");
+//             $stmt->execute([$email, $displayName ?? $email]);
+//         }
         
-        return $pdo->lastInsertId();
+//         return $pdo->lastInsertId();
         
-    } catch (PDOException $e) {
-        error_log("Error creating user: " . $e->getMessage());
-        return null;
-    }
-}
+//     } catch (PDOException $e) {
+//         error_log("Error creating user: " . $e->getMessage());
+//         return null;
+//     }
+// }
 
 // ==================== EMAIL MANAGEMENT ====================
 
