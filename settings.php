@@ -716,7 +716,7 @@ $isLocked = isset($s['settings_locked']) &&
                         <div style="font-weight: 600; color: #0c4a6e; margin-bottom: 4px;">Server-managed configuration</div>
                         <p style="font-size: 13px; color: #0369a1; line-height: 1.6; margin: 0;">
                             These values are set by the system administrator and cannot be edited here.
-                            Your login password is used for both SMTP and IMAP — it is <strong>never stored</strong> in the database.
+                            Your login password is used for both SMTP and IMAP - it is <strong>never stored</strong> in the database.
                         </p>
                     </div>
                 </div>
