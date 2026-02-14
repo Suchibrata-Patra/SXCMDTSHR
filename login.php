@@ -255,7 +255,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             margin-bottom: 8px;
             color: rgb(79, 93, 115);
             font-weight: 600;
-            text-align: left;
+            text-align: left !important;
             letter-spacing: -0.5px;
         }
 
