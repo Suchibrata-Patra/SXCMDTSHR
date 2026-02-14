@@ -261,7 +261,7 @@ try {
                     'success'    => $connected,
                     'connected'  => $connected,
                     'smtp_user'  => $smtpUser,
-                    'host'       => env('SMTP_HOST', 'smtp.hostinger.com') . ':' . env('SMTP_PORT', 465),
+                    'host'       => env('SMTP_HOST') . ':' . env('SMTP_PORT'),
                     'log'        => $debugLog,
                     'message'    => $connected
                         ? 'SMTP connection and authentication successful.'
@@ -623,12 +623,12 @@ function sendBulkEmail(
     $mail->clearCustomHeaders();
 
     try {
-        // Sender - use FROM_NAME and FROM_EMAIL from env, with fallbacks
+        // Sender - use FROM_NAME and FROM_EMAIL from env ONLY
         $displayName = !empty($settings['display_name']) 
             ? $settings['display_name'] 
-            : env('FROM_NAME', "St. Xavier's College");
+            : env('FROM_NAME');
         
-        $fromEmail = env('FROM_EMAIL', $smtpUser);
+        $fromEmail = env('FROM_EMAIL') ?: $smtpUser;
         
         $mail->setFrom($fromEmail, $displayName);
         $mail->addReplyTo($fromEmail, $displayName);
@@ -818,16 +818,19 @@ function buildMailer(string $smtpUser, string $smtpPass, array $settings, bool $
 {
     $mail = new PHPMailer(true);
 
-    // SMTP Configuration from ENV
+    // SMTP Configuration - ALL from ENV, NO defaults
     $mail->isSMTP();
-    $mail->Host       = env('SMTP_HOST', 'smtp.hostinger.com');
+    $mail->Host       = env('SMTP_HOST');
     $mail->SMTPAuth   = true;
     $mail->Username   = $smtpUser;
     $mail->Password   = $smtpPass;
-    $mail->SMTPSecure = env('SMTP_ENCRYPTION', 'ssl') === 'tls' ? PHPMailer::ENCRYPTION_STARTTLS : PHPMailer::ENCRYPTION_SMTPS;
-    $mail->Port       = (int)env('SMTP_PORT', 465);
+    
+    // Determine encryption type from ENV
+    $encryption = env('SMTP_ENCRYPTION');
+    $mail->SMTPSecure = ($encryption === 'tls') ? PHPMailer::ENCRYPTION_STARTTLS : PHPMailer::ENCRYPTION_SMTPS;
+    $mail->Port       = (int)env('SMTP_PORT');
 
-    // SSL Options (for Hostinger shared hosting)
+    // SSL Options
     $mail->SMTPOptions = [
         'ssl' => [
             'verify_peer'       => false,
