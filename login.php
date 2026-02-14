@@ -166,59 +166,41 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     ?>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
         :root {
-            /* Academic Color Palette */
-            --primary-navy:    #1a2332;
-            --secondary-navy:  #2d3748;
-            --accent-gold:     #c49c5a;
-            --accent-burgundy: #8b3a3a;
-            --accent-teal:     #2c7a7b;
-            --text-primary:    #1a1a1a;
-            --text-secondary:  #4a5568;
-            --text-muted:      #718096;
-            --bg-primary:      #f7f9fc;
-            --bg-secondary:    #e2e8f0;
-            --surface:         #ffffff;
-            --border-light:    #cbd5e0;
-            --border-medium:   #a0aec0;
-            --shadow-sm:       0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-            --shadow-md:       0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --shadow-lg:       0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            --shadow-xl:       0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --ink:       #1a1a2e;
+            --ink-2:     #2d2d44;
+            --ink-3:     #6b6b8a;
+            --ink-4:     #a8a8c0;
+            --bg:        #f0f0f7;
+            --surface:   #ffffff;
+            --surface-2: #f7f7fc;
+            --border:    rgba(100,100,160,0.12);
+            --border-2:  rgba(100,100,160,0.22);
+            --blue:      #5781a9;
+            --blue-2:    #c6d3ea;
+            --blue-glow: rgba(79,70,229,0.15);
+            --red:       #ef4444;
+            --green:     #10b981;
+            --amber:     #f59e0b;
+            --r:         10px;
+            --r-lg:      16px;
+            --shadow:    0 1px 3px rgba(79,70,229,0.08), 0 4px 16px rgba(79,70,229,0.06);
+            --shadow-lg: 0 8px 32px rgba(79,70,229,0.14), 0 2px 8px rgba(0,0,0,0.06);
+            --ease:      cubic-bezier(.4,0,.2,1);
+            --ease-spring: cubic-bezier(.34,1.56,.64,1);
         }
 
-        *,*::before,*::after { 
-            box-sizing: border-box; 
-            margin: 0; 
-            padding: 0; 
-        }
+        *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
 
         body, html {
             height: 100%;
-            font-family: 'Inter', -apple-system, sans-serif;
-            background: linear-gradient(135deg, #f7f9fc 0%, #e2e8f0 100%);
-            color: var(--text-primary);
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--ink);
             -webkit-font-smoothing: antialiased;
-            position: relative;
-        }
-
-        /* Academic Background Pattern */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: 
-                linear-gradient(90deg, rgba(203, 213, 224, 0.1) 1px, transparent 1px),
-                linear-gradient(rgba(203, 213, 224, 0.1) 1px, transparent 1px);
-            background-size: 50px 50px;
-            pointer-events: none;
-            z-index: 0;
         }
 
         .page-wrapper {
@@ -226,128 +208,122 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 40px 24px;
-            position: relative;
-            z-index: 1;
+            padding: 24px;
         }
 
         .login-card {
             background: var(--surface);
-            border: 1px solid var(--border-light);
-            border-top: 4px solid var(--primary-navy);
-            padding: 48px 44px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--r-lg);
+            padding: 40px;
             width: 100%;
-            max-width: 480px;
-            box-shadow: var(--shadow-xl);
+            max-width: 440px;
+            box-shadow: var(--shadow-lg);
             position: relative;
+            animation: cardIn 0.4s var(--ease-spring) forwards;
         }
 
-        .login-card::after {
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: none; }
+        }
+
+        .login-card::before {
             content: '';
             position: absolute;
-            left: 0;
-            top: 0;
-            width: 4px;
-            height: 100%;
-            background: linear-gradient(to bottom, var(--accent-gold) 0%, var(--accent-burgundy) 50%, var(--accent-teal) 100%);
+            inset: 0;
+            background: linear-gradient(135deg, rgba(79,70,229,.04), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+            border-radius: var(--r-lg);
+            pointer-events: none;
+        }
+
+        .login-card:hover::before {
+            /* opacity: 1; */
         }
 
         /* Brand Header */
         .brand-header {
             text-align: center;
-            margin-bottom: 36px;
-            padding-bottom: 28px;
-            border-bottom: 2px solid var(--bg-secondary);
+            margin-bottom: 28px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border);
             display: flex;
             flex-direction: column;
             align-items: center;
         }
 
         .brand-logo {
-            width: 90px;
-            height: 90px;
-            margin-bottom: 16px;
+            width: 80px;
+            height: 80px;
+            margin-bottom: 12px;
             object-fit: contain;
-            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
         }
 
         .brand-details {
             font-size: 0.7rem;
-            color: var(--text-muted);
-            line-height: 1.7;
+            color: var(--ink-3);
+            line-height: 1.6;
             letter-spacing: 0.3px;
-            max-width: 380px;
+            max-width: 360px;
         }
+
 
         /* Title */
         h2 {
-            font-size: 1.875rem;
-            font-weight: 600;
-            color: var(--primary-navy);
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--ink);
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 8px;
             letter-spacing: -0.5px;
-            font-family: 'Crimson Text', Georgia, serif;
-            position: relative;
-        }
-
-        h2::after {
-            content: '';
-            position: absolute;
-            bottom: -8px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 60px;
-            height: 3px;
-            background: linear-gradient(to right, var(--accent-gold), var(--accent-burgundy));
         }
 
         .subtitle {
             text-align: center;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            margin-bottom: 32px;
+            color: var(--ink-3);
+            font-size: 0.875rem;
+            margin-bottom: 24px;
         }
 
         /* Error & Warning Toasts */
         .error-toast, .warning-toast {
-            padding: 14px 18px;
-            margin-bottom: 20px;
+            padding: 12px 16px;
+            border-radius: var(--r);
+            margin-bottom: 16px;
             font-size: 0.875rem;
             display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            border-left: 4px solid;
-            animation: slideDown 0.3s ease;
+            align-items: center;
+            gap: 8px;
+            animation: toastIn 0.25s var(--ease-spring) forwards;
         }
 
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: none; }
         }
 
         .error-toast {
-            background: #fef2f2;
-            border-color: var(--accent-burgundy);
-            color: #7f1d1d;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1.5px solid rgba(239, 68, 68, 0.3);
+            color: var(--red);
         }
 
         .error-toast::before {
             content: '⚠';
-            font-size: 1.2rem;
-            flex-shrink: 0;
+            font-size: 1.1rem;
         }
 
         .warning-toast {
-            background: #fffbeb;
-            border-color: #d97706;
-            color: #78350f;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1.5px solid rgba(245, 158, 11, 0.3);
+            color: var(--amber);
         }
 
         .warning-toast::before {
             content: '⚡';
-            font-size: 1.2rem;
-            flex-shrink: 0;
+            font-size: 1.1rem;
         }
 
         /* Form */
@@ -364,41 +340,43 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         label {
-            font-size: 0.8125rem;
-            color: var(--text-primary);
+            font-size: 0.8rem;
+            color: var(--ink-2);
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.8px;
+            letter-spacing: 0.5px;
         }
 
         input[type="email"],
         input[type="password"] {
             width: 100%;
-            height: 44px;
-            border: 2px solid var(--border-light);
-            padding: 0 16px;
-            font-family: 'Inter', -apple-system, sans-serif;
-            font-size: 0.9375rem;
-            color: var(--text-primary);
+            height: 40px;
+            border: 1.5px solid var(--border-2);
+            border-radius: 8px;
+            padding: 0 12px;
+            font-family: inherit;
+            font-size: 14px;
+            color: var(--ink);
             background: var(--surface);
             outline: none;
-            transition: all 0.2s ease;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
 
         input[type="email"]::placeholder,
         input[type="password"]::placeholder {
-            color: var(--text-muted);
+            color: var(--ink-4);
         }
 
         input:focus {
-            border-color: var(--primary-navy);
-            box-shadow: 0 0 0 3px rgba(26, 35, 50, 0.1);
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px var(--blue-glow);
         }
 
+
         input:disabled {
-            opacity: 0.6;
+            opacity: 0.5;
             cursor: not-allowed;
-            background: var(--bg-secondary);
+            background: var(--surface-2);
         }
 
         .checkbox-container {
@@ -406,129 +384,108 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             align-items: center;
             gap: 8px;
             margin-top: 8px;
-            font-size: 0.8125rem;
-            color: var(--text-secondary);
+            font-size: 0.8rem;
+            color: var(--ink-3);
             cursor: pointer;
             user-select: none;
         }
 
         .checkbox-container input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
+            width: auto;
             cursor: pointer;
-            accent-color: var(--primary-navy);
+            accent-color: var(--blue);
         }
 
         /* Button */
         button {
             width: 100%;
-            height: 48px;
-            padding: 0 24px;
-            background: linear-gradient(135deg, var(--primary-navy) 0%, var(--secondary-navy) 100%);
+            height: 40px;
+            padding: 0 16px;
+            background: var(--blue);
             color: white;
             border: none;
-            font-family: 'Inter', -apple-system, sans-serif;
-            font-size: 0.9375rem;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1.2px;
             cursor: pointer;
             margin-top: 8px;
-            transition: all 0.3s ease;
+            transition: all 0.18s;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
-            transition: left 0.6s;
+            gap: 6px;
         }
 
         button:hover:not(:disabled) {
-            background: linear-gradient(135deg, var(--secondary-navy) 0%, var(--primary-navy) 100%);
-            box-shadow: var(--shadow-lg);
+            background: var(--blue-2);
             transform: translateY(-1px);
-        }
-
-        button:hover:not(:disabled)::before {
-            left: 100%;
+            box-shadow: var(--shadow);
         }
 
         button:active:not(:disabled) {
-            transform: translateY(0);
+            transform: scale(0.98);
         }
 
         button:disabled {
-            background: var(--border-medium);
+            background: var(--ink-4);
             cursor: not-allowed;
             transform: none;
-            opacity: 0.7;
+            opacity: 0.6;
         }
 
         /* Security Info */
         .security-info {
-            margin-top: 24px;
-            padding: 14px 16px;
-            background: #f0f9ff;
-            border-left: 4px solid var(--accent-teal);
+            margin-top: 20px;
+            padding: 12px 14px;
+            background: var(--surface-2);
+            border-left: 3px solid var(--blue);
+            border-radius: var(--r);
             font-size: 0.75rem;
-            color: var(--text-secondary);
-            line-height: 1.6;
+            color: var(--ink-3);
         }
 
         .security-info strong {
-            color: var(--accent-teal);
-            font-weight: 600;
+            color: var(--blue);
         }
 
         /* Footer */
         footer {
-            margin-top: 32px;
-            padding-top: 24px;
-            border-top: 2px solid var(--bg-secondary);
-            font-size: 0.75rem;
-            color: var(--text-muted);
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            font-size: 0.7rem;
+            color: var(--ink-3);
             text-align: center;
-            line-height: 1.8;
+            line-height: 1.6;
         }
 
         footer span {
-            font-size: 0.8125rem;
-            color: var(--primary-navy);
+            font-size: 0.8rem;
+            color: var(--ink-2);
             font-weight: 600;
             display: block;
-            margin-top: 10px;
-            letter-spacing: 0.5px;
+            margin-top: 8px;
         }
 
         /* Responsive */
         @media (max-width: 480px) {
             .login-card {
-                padding: 36px 28px;
+                padding: 32px 24px;
             }
             
             h2 {
-                font-size: 1.625rem;
+                font-size: 1.5rem;
             }
 
             .brand-logo {
-                width: 75px;
-                height: 75px;
+                width: 70px;
+                height: 70px;
             }
 
             button {
-                height: 44px;
-                font-size: 0.875rem;
+                height: 38px;
+                font-size: 13px;
             }
         }
     </style>
@@ -612,7 +569,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 St. Xavier's College (Autonomous), Kolkata<br>
                 Mail Delivery & Tracking System v2.0
                 <br><br>
-                <span style="font-size:15px;font-weight:600;color:#4f5d73;">Secure Database Authentication</span>
+                <span>Secure Database Authentication</span>
             </footer>
         </div>
     </div>
