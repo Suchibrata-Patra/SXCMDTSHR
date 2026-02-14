@@ -4,6 +4,9 @@
  * ENHANCED VERSION with improved attachment linking
  */
 
+// Load environment configuration
+require_once __DIR__ . '/config.php';
+
 // Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -31,11 +34,11 @@ function getDatabaseConnection() {
     }
     
     try {
-        // Direct database credentials
-        $host = "localhost";
-        $dbname = "u955994755_SXC_MDTS";
-        $username = "u955994755_DB_supremacy";
-        $password = "sxccal.edu#MDTS@2026";
+        // Get database credentials from environment
+        $host = env('DB_HOST', 'localhost');
+        $dbname = env('DB_NAME', 'u955994755_SXC_MDTS');
+        $username = env('DB_USERNAME', 'u955994755_DB_supremacy');
+        $password = env('DB_PASSWORD', 'sxccal.edu#MDTS@2026');
         
         $dsn = "mysql:host=$host;dbname=$dbname;charset=utf8mb4";
         
