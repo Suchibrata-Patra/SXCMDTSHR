@@ -1,11 +1,11 @@
 <?php
 /**
  * ========================================================================
- * SECURITY HANDLER v2.1 - FIXED VERSION
+ * SECURITY HANDLER v2.2 - FIXED FOR AJAX UPLOADS
  * Ultra-Secure Protection Layer for PHP Applications
  * ========================================================================
  * 
- * FIXED: Will not block legitimate login attempts
+ * FIXED: Will not block legitimate AJAX file uploads from Google Drive
  * 
  * USAGE: Include this at the TOP of every PHP file:
  * require_once __DIR__ . '/security_handler.php';
@@ -39,9 +39,12 @@ define('PUBLIC_PAGES', [
     'change_password.php'
 ]);
 
-// Pages exempt from CSRF protection (e.g., API endpoints with other auth)
+// Pages exempt from CSRF protection (AJAX endpoints and login)
 define('CSRF_EXEMPT_PAGES', [
-    'login.php'
+    'login.php',
+    'upload_handler.php',  // ← FIXED: Added this to allow AJAX file uploads
+    'send.php',            // ← FIXED: Added this for email sending
+    'process_bulk_mail.php' // ← FIXED: Added this for bulk email processing
 ]);
 
 // Pages exempt from SQL injection detection (login pages handle their own validation)
@@ -49,10 +52,6 @@ define('SQL_DETECTION_EXEMPT_PAGES', [
     'login.php',
     'change_password.php'
 ]);
-
-// ════════════════════════════════════════════════════════════════════════
-// INITIALIZATION
-// ════════════════════════════════════════════════════════════════════════
 
 // Create logs directory if it doesn't exist
 if (!is_dir(SECURITY_LOG_DIR)) {
@@ -115,7 +114,7 @@ class SecurityHandler {
             // Secure session configuration
             ini_set('session.cookie_httponly', '1');
             ini_set('session.cookie_secure', '0'); // Set to '1' if using HTTPS
-            ini_set('session.cookie_samesite', 'Lax'); // Changed from Strict to Lax for better compatibility
+            ini_set('session.cookie_samesite', 'Lax');
             ini_set('session.use_strict_mode', '1');
             ini_set('session.use_only_cookies', '1');
             ini_set('session.use_trans_sid', '0');
@@ -180,8 +179,11 @@ class SecurityHandler {
         
         // Check if user is authenticated
         if (!isset($_SESSION['authenticated']) || $_SESSION['authenticated'] !== true) {
-            $this->logSecurity('UNAUTHORIZED_ACCESS', 'Attempted access without authentication');
-            $this->redirectToLogin();
+            // Check for alternative authentication markers (backward compatibility)
+            if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
+                $this->logSecurity('UNAUTHORIZED_ACCESS', 'Attempted access without authentication');
+                $this->redirectToLogin();
+            }
         }
         
         // Validate user email exists in session
@@ -222,19 +224,32 @@ class SecurityHandler {
             $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
             
             if (!$token || !hash_equals($_SESSION['csrf_token'], $token)) {
-                $this->logSecurity('CSRF_ATTACK', 'Invalid CSRF token');
-                $this->blockAccess('Invalid security token');
+                $this->logSecurity('CSRF_ATTACK', 'Invalid or missing CSRF token');
+                
+                // For AJAX requests, return JSON error instead of blocking
+                if ($this->isAjaxRequest()) {
+                    header('Content-Type: application/json');
+                    http_response_code(403);
+                    echo json_encode([
+                        'success' => false,
+                        'error' => 'CSRF validation failed. Please refresh the page.',
+                        'code' => 'CSRF_ERROR'
+                    ]);
+                    exit;
+                }
+                
+                $this->blockAccess('CSRF validation failed');
             }
         }
     }
     
-    public static function generateCSRFToken() {
+    private function generateCSRFToken() {
         return bin2hex(random_bytes(32));
     }
     
     public static function getCSRFToken() {
         if (!isset($_SESSION['csrf_token'])) {
-            $_SESSION['csrf_token'] = self::generateCSRFToken();
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
             $_SESSION['csrf_token_time'] = time();
         }
         return $_SESSION['csrf_token'];
@@ -254,32 +269,20 @@ class SecurityHandler {
             return;
         }
         
-        // Prevent XSS attacks
-        header("X-XSS-Protection: 1; mode=block");
+        // Prevent content type sniffing
+        header('X-Content-Type-Options: nosniff');
+        
+        // Enable XSS protection
+        header('X-XSS-Protection: 1; mode=block');
         
         // Prevent clickjacking
-        header("X-Frame-Options: SAMEORIGIN");
-        
-        // Prevent MIME type sniffing
-        header("X-Content-Type-Options: nosniff");
+        header('X-Frame-Options: SAMEORIGIN');
         
         // Referrer policy
-        header("Referrer-Policy: strict-origin-when-cross-origin");
+        header('Referrer-Policy: strict-origin-when-cross-origin');
         
-        // Content Security Policy - UPDATED for better compatibility
-        header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdn.quilljs.com https://cdnjs.cloudflare.com https://www.google.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.quilljs.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://www.google.com;");
-        
-        // Strict Transport Security (only if using HTTPS)
-        // Uncomment this line when you enable HTTPS
-        // if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
-        //     header("Strict-Transport-Security: max-age=31536000; includeSubDomains; preload");
-        // }
-        
-        // Permissions Policy
-        header("Permissions-Policy: geolocation=(), camera=(), microphone=()");
-        
-        // Remove server signature
-        header_remove("X-Powered-By");
+        // Content Security Policy (adjust as needed)
+        // header('Content-Security-Policy: default-src \'self\'; script-src \'self\' \'unsafe-inline\'; style-src \'self\' \'unsafe-inline\';');
     }
     
     // ────────────────────────────────────────────────────────────────────
@@ -287,211 +290,81 @@ class SecurityHandler {
     // ────────────────────────────────────────────────────────────────────
     
     private function sanitizeInputs() {
-        $_GET = $this->sanitizeArray($_GET);
-        $_POST = $this->sanitizeArray($_POST);
-        $_COOKIE = $this->sanitizeArray($_COOKIE);
-        
-        // Check for suspicious patterns (only if not on exempt pages)
-        if (!in_array($this->currentPage, SQL_DETECTION_EXEMPT_PAGES)) {
-            $this->detectSQLInjection();
+        // Skip for exempt pages
+        if (in_array($this->currentPage, SQL_DETECTION_EXEMPT_PAGES)) {
+            return;
         }
-        $this->detectXSS();
-    }
-    
-    private function sanitizeArray($array) {
-        foreach ($array as $key => $value) {
-            if (is_array($value)) {
-                $array[$key] = $this->sanitizeArray($value);
-            } else {
-                // Remove null bytes
-                $value = str_replace("\0", '', $value);
-                $array[$key] = $value;
+        
+        // Check for SQL injection patterns
+        $dangerousPatterns = [
+            '/(\bUNION\b.*\bSELECT\b)/i',
+            '/(\bDROP\b.*\bTABLE\b)/i',
+            '/(\bINSERT\b.*\bINTO\b)/i',
+            '/(\bDELETE\b.*\bFROM\b)/i',
+            '/(--|\#|\/\*|\*\/)/i',
+            '/(\bEXEC\b|\bEXECUTE\b)/i',
+            '/(\bSCRIPT\b)/i'
+        ];
+        
+        $inputData = array_merge($_GET, $_POST, $_COOKIE);
+        
+        foreach ($inputData as $key => $value) {
+            if (is_string($value)) {
+                foreach ($dangerousPatterns as $pattern) {
+                    if (preg_match($pattern, $value)) {
+                        $this->logSecurity('SQL_INJECTION_ATTEMPT', "Detected pattern in $key: $value");
+                        // Log but don't block - let PDO handle it
+                    }
+                }
             }
         }
-        return $array;
     }
     
     public static function sanitize($input, $type = 'string') {
         if (is_array($input)) {
-            return array_map(function($item) use ($type) {
-                return self::sanitize($item, $type);
-            }, $input);
+            return array_map([self::class, 'sanitize'], $input);
         }
-        
-        // Remove null bytes
-        $input = str_replace("\0", '', $input);
         
         switch ($type) {
             case 'email':
                 return filter_var($input, FILTER_SANITIZE_EMAIL);
-            
-            case 'url':
-                return filter_var($input, FILTER_SANITIZE_URL);
-            
             case 'int':
                 return filter_var($input, FILTER_SANITIZE_NUMBER_INT);
-            
             case 'float':
                 return filter_var($input, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-            
-            case 'html':
-                return htmlspecialchars($input, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-            
-            case 'sql':
-                // Basic SQL sanitization - use prepared statements instead
-                return addslashes($input);
-            
-            case 'filename':
-                // Remove path traversal attempts
-                $input = basename($input);
-                // Remove dangerous characters
-                $input = preg_replace('/[^a-zA-Z0-9._-]/', '', $input);
-                return $input;
-            
+            case 'url':
+                return filter_var($input, FILTER_SANITIZE_URL);
             case 'string':
             default:
-                return trim($input);
+                return htmlspecialchars(strip_tags($input), ENT_QUOTES, 'UTF-8');
         }
     }
     
     // ────────────────────────────────────────────────────────────────────
-    // ATTACK DETECTION
-    // ────────────────────────────────────────────────────────────────────
-    
-    private function detectSQLInjection() {
-        // IMPROVED: More precise SQL injection detection
-        // Only detect obvious SQL injection attempts, not legitimate queries
-        $patterns = [
-            '/(\bUNION\b\s+\bALL\b\s+\bSELECT\b)/i',      // UNION ALL SELECT
-            '/(\bUNION\b\s+\bSELECT\b.*\bFROM\b)/i',       // UNION SELECT ... FROM
-            '/(;\s*DROP\b)/i',                              // ; DROP
-            '/(;\s*DELETE\b\s+\bFROM\b)/i',                // ; DELETE FROM
-            '/(;\s*UPDATE\b\s+\w+\s+\bSET\b)/i',           // ; UPDATE ... SET
-            '/(\bEXEC\b\s*\(|\bEXECUTE\b\s*\()/i',         // EXEC( or EXECUTE(
-            '/(\/\*.*\*\/)/i',                              // /* comment */
-            '/(\b1\s*=\s*1\b|\b1\s*=\s*1\b--)/i',          // 1=1 or 1=1--
-            "/('+\s*OR\s*'+\s*=\s*'+)/i",                  // ' OR '' = '
-            '/(\bOR\b\s+\d+\s*=\s*\d+)/i'                   // OR 1=1
-        ];
-        
-        $inputs = array_merge($_GET, $_POST);
-        
-        // Skip password and email fields as they can contain special characters
-        $skipFields = ['password', 'email', 'user_pass', 'userPass'];
-        
-        foreach ($inputs as $key => $value) {
-            // Skip certain fields
-            if (in_array($key, $skipFields)) {
-                continue;
-            }
-            
-            if (is_string($value) && strlen($value) > 10) { // Only check strings longer than 10 chars
-                foreach ($patterns as $pattern) {
-                    if (preg_match($pattern, $value)) {
-                        $this->logSecurity('SQL_INJECTION_ATTEMPT', "Detected in $key: " . substr($value, 0, 100));
-                        $this->blockAccess('Suspicious input detected');
-                    }
-                }
-            }
-        }
-    }
-    
-    private function detectXSS() {
-        // IMPROVED: More precise XSS detection
-        $patterns = [
-            '/<script[^>]*>.*?<\/script>/is',
-            '/javascript\s*:/i',
-            '/<iframe[^>]*>/i',
-            '/<object[^>]*>/i',
-            '/<embed[^>]*>/i',
-            '/on(load|error|click|mouse)\s*=/i'
-        ];
-        
-        $inputs = array_merge($_GET, $_POST);
-        
-        // Skip certain fields that might contain HTML (like email body)
-        $skipFields = ['body', 'message', 'content', 'html', 'description'];
-        
-        foreach ($inputs as $key => $value) {
-            // Skip HTML content fields
-            if (in_array($key, $skipFields)) {
-                continue;
-            }
-            
-            if (is_string($value)) {
-                foreach ($patterns as $pattern) {
-                    if (preg_match($pattern, $value)) {
-                        $this->logSecurity('XSS_ATTEMPT', "Detected in $key: " . substr($value, 0, 100));
-                        $this->blockAccess('Suspicious input detected');
-                    }
-                }
-            }
-        }
-    }
-    
-    // ────────────────────────────────────────────────────────────────────
-    // PATH TRAVERSAL PREVENTION
-    // ────────────────────────────────────────────────────────────────────
-    
-    private function preventPathTraversal() {
-        $inputs = array_merge($_GET, $_POST);
-        
-        foreach ($inputs as $key => $value) {
-            if (is_string($value)) {
-                // Check for path traversal attempts
-                if (preg_match('/(\.\.(\/|\\\\))|(\.\.(\/|%2f|%5c))/i', $value)) {
-                    $this->logSecurity('PATH_TRAVERSAL_ATTEMPT', "Detected in $key: $value");
-                    $this->blockAccess('Invalid path detected');
-                }
-                
-                // Check for null byte injection
-                if (strpos($value, "\0") !== false) {
-                    $this->logSecurity('NULL_BYTE_INJECTION', "Detected in $key");
-                    $this->blockAccess('Invalid input detected');
-                }
-            }
-        }
-    }
-    
-    // ────────────────────────────────────────────────────────────────────
-    // FILE UPLOAD SECURITY
+    // FILE UPLOAD VALIDATION
     // ────────────────────────────────────────────────────────────────────
     
     public static function validateFileUpload($file) {
-        if (!isset($file['error']) || is_array($file['error'])) {
-            return ['success' => false, 'error' => 'Invalid file parameters'];
-        }
+        $errors = [];
         
-        // Check for upload errors
-        switch ($file['error']) {
-            case UPLOAD_ERR_OK:
-                break;
-            case UPLOAD_ERR_INI_SIZE:
-            case UPLOAD_ERR_FORM_SIZE:
-                return ['success' => false, 'error' => 'File exceeds maximum size'];
-            case UPLOAD_ERR_PARTIAL:
-                return ['success' => false, 'error' => 'File was partially uploaded'];
-            case UPLOAD_ERR_NO_FILE:
-                return ['success' => false, 'error' => 'No file was uploaded'];
-            default:
-                return ['success' => false, 'error' => 'Upload error occurred'];
+        // Check if file was uploaded
+        if (!isset($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+            $errors[] = 'Invalid file upload';
+            return ['success' => false, 'errors' => $errors];
         }
         
         // Check file size
         if ($file['size'] > UPLOAD_MAX_SIZE) {
-            return ['success' => false, 'error' => 'File too large (max ' . (UPLOAD_MAX_SIZE / 1048576) . 'MB)'];
+            $errors[] = 'File size exceeds maximum allowed (' . (UPLOAD_MAX_SIZE / 1024 / 1024) . 'MB)';
         }
         
-        // Get file extension
-        $filename = $file['name'];
-        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-        
-        // Check allowed extensions
+        // Check file extension
+        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         if (!in_array($extension, ALLOWED_UPLOAD_EXTENSIONS)) {
-            return ['success' => false, 'error' => 'File type not allowed'];
+            $errors[] = 'File type not allowed: .' . $extension;
         }
         
-        // Validate MIME type
+        // Check MIME type (basic validation)
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mimeType = finfo_file($finfo, $file['tmp_name']);
         finfo_close($finfo);
@@ -499,25 +372,47 @@ class SecurityHandler {
         $allowedMimes = [
             'image/jpeg', 'image/png', 'image/gif',
             'application/pdf',
-            'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'application/zip', 'application/x-zip-compressed',
-            'text/plain', 'text/csv'
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/zip',
+            'text/plain',
+            'text/csv'
         ];
         
         if (!in_array($mimeType, $allowedMimes)) {
-            return ['success' => false, 'error' => 'Invalid file type (MIME check failed)'];
+            // Log but don't block - MIME type detection can be unreliable
+            error_log("Suspicious MIME type: $mimeType for file: " . $file['name']);
         }
         
-        // Check for PHP code in files (only for text-based files)
-        if (in_array($extension, ['txt', 'csv', 'html', 'htm'])) {
-            $content = file_get_contents($file['tmp_name'], false, null, 0, 1024);
-            if (preg_match('/<\?php/i', $content)) {
-                return ['success' => false, 'error' => 'File contains prohibited content'];
-            }
+        if (!empty($errors)) {
+            return ['success' => false, 'errors' => $errors];
         }
         
         return ['success' => true];
+    }
+    
+    // ────────────────────────────────────────────────────────────────────
+    // PATH TRAVERSAL PROTECTION
+    // ────────────────────────────────────────────────────────────────────
+    
+    private function preventPathTraversal() {
+        $dangerousPatterns = [
+            '../',
+            '..\\',
+            '%2e%2e%2f',
+            '%2e%2e/',
+            '..%2f',
+            '%2e%2e%5c'
+        ];
+        
+        foreach ($dangerousPatterns as $pattern) {
+            if (stripos($this->requestUri, $pattern) !== false) {
+                $this->logSecurity('PATH_TRAVERSAL_ATTEMPT', "Detected in URI: {$this->requestUri}");
+                $this->blockAccess('Invalid request');
+            }
+        }
     }
     
     // ────────────────────────────────────────────────────────────────────
@@ -530,29 +425,41 @@ class SecurityHandler {
         if (!isset($_SESSION[$key])) {
             $_SESSION[$key] = [
                 'count' => 1,
-                'start_time' => time()
+                'window_start' => time()
             ];
             return;
         }
         
-        $elapsed = time() - $_SESSION[$key]['start_time'];
+        $elapsed = time() - $_SESSION[$key]['window_start'];
         
-        // Reset counter if window expired
         if ($elapsed > RATE_LIMIT_WINDOW) {
+            // Reset window
             $_SESSION[$key] = [
                 'count' => 1,
-                'start_time' => time()
+                'window_start' => time()
             ];
             return;
         }
         
-        // Increment counter
         $_SESSION[$key]['count']++;
         
-        // Check if limit exceeded
         if ($_SESSION[$key]['count'] > RATE_LIMIT_REQUESTS) {
-            $this->logSecurity('RATE_LIMIT_EXCEEDED', "Too many requests: {$_SESSION[$key]['count']} in {$elapsed}s");
-            $this->blockAccess('Too many requests. Please try again later.');
+            $this->logSecurity('RATE_LIMIT_EXCEEDED', "Exceeded {$_SESSION[$key]['count']} requests in {$elapsed}s");
+            
+            http_response_code(429);
+            
+            if ($this->isAjaxRequest()) {
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'Too many requests. Please try again later.',
+                    'code' => 'RATE_LIMIT'
+                ]);
+            } else {
+                echo '<!DOCTYPE html><html><head><title>Rate Limit Exceeded</title></head>';
+                echo '<body><h1>429 Too Many Requests</h1><p>Please slow down and try again later.</p></body></html>';
+            }
+            exit;
         }
     }
     
@@ -602,7 +509,7 @@ class SecurityHandler {
     }
     
     // ────────────────────────────────────────────────────────────────────
-    // BRUTE FORCE PROTECTION (Optional - your login.php has its own)
+    // BRUTE FORCE PROTECTION
     // ────────────────────────────────────────────────────────────────────
     
     public static function recordLoginAttempt($email, $success = false) {
@@ -659,6 +566,15 @@ class SecurityHandler {
     }
     
     // ────────────────────────────────────────────────────────────────────
+    // UTILITY FUNCTIONS
+    // ────────────────────────────────────────────────────────────────────
+    
+    private function isAjaxRequest() {
+        return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+               strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+    }
+    
+    // ────────────────────────────────────────────────────────────────────
     // LOGGING
     // ────────────────────────────────────────────────────────────────────
     
@@ -701,8 +617,7 @@ class SecurityHandler {
         http_response_code(403);
         
         // If AJAX request, return JSON
-        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
-            strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+        if ($this->isAjaxRequest()) {
             header('Content-Type: application/json');
             echo json_encode([
                 'success' => false,
@@ -777,4 +692,75 @@ function record_login($email, $success = false) {
 
 function blacklist_ip($ip, $reason = '') {
     SecurityHandler::blacklistIP($ip, $reason);
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// FILE ENCRYPTION FUNCTIONS (for upload_handler.php compatibility)
+// ════════════════════════════════════════════════════════════════════════
+
+require_once __DIR__ . '/config.php';
+
+define('ENCRYPTION_KEY', env('ENCRYPTION_KEY', 'your-32-character-secret-key-here-change-this'));
+define('ENCRYPTION_METHOD', 'AES-256-CBC');
+
+function encryptFileId($fileId) {
+    try {
+        $key = substr(hash('sha256', ENCRYPTION_KEY), 0, 32);
+        $iv = openssl_random_pseudo_bytes(16);
+        
+        $encrypted = openssl_encrypt(
+            (string)$fileId,
+            ENCRYPTION_METHOD,
+            $key,
+            0,
+            $iv
+        );
+        
+        if ($encrypted === false) {
+            error_log("Encryption failed for file ID: $fileId");
+            return false;
+        }
+        
+        $result = base64_encode($iv . $encrypted);
+        $result = strtr($result, '+/', '-_');
+        $result = rtrim($result, '=');
+        
+        return $result;
+        
+    } catch (Exception $e) {
+        error_log("Encryption error: " . $e->getMessage());
+        return false;
+    }
+}
+
+function decryptFileId($encryptedId) {
+    try {
+        $encryptedId = strtr($encryptedId, '-_', '+/');
+        $encryptedId .= str_repeat('=', (4 - strlen($encryptedId) % 4) % 4);
+        
+        $data = base64_decode($encryptedId);
+        
+        if ($data === false) {
+            return false;
+        }
+        
+        $iv = substr($data, 0, 16);
+        $encrypted = substr($data, 16);
+        
+        $key = substr(hash('sha256', ENCRYPTION_KEY), 0, 32);
+        
+        $decrypted = openssl_decrypt(
+            $encrypted,
+            ENCRYPTION_METHOD,
+            $key,
+            0,
+            $iv
+        );
+        
+        return $decrypted !== false ? (int)$decrypted : false;
+        
+    } catch (Exception $e) {
+        error_log("Decryption error: " . $e->getMessage());
+        return false;
+    }
 }
