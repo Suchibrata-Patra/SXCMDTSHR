@@ -392,9 +392,9 @@ $isLocked = isset($s['settings_locked']) &&
             background: var(--apple-blue);
             color: white;
             border: none;
-            padding: 8px 24px;
+            padding: 12px 30px;
             border-radius: 8px;
-            font-weight: 500;
+            font-weight: 600;
             font-size: 15px;
             /* box-shadow: 0 4px 16px rgba(0,122,255,0.3); */
             cursor: pointer;
