@@ -560,7 +560,7 @@ function authenticateWithSMTP($email, $password) {
                 <br>
                 <span style="font-size:18px;color:#a3abc3;">Made with ♥︎ by MDTS Students</span>
                 <br>
-                <span style="font-size:15px;color: #ff0b0b;">Currently Disabled for the Developmend Purpose</span>
+                <span style="font-size:15px;font-weight:600;color:#ff0b0b;">Currently Disabled for the Development Purpose</span>
             </footer>
         </div>
     </div>
