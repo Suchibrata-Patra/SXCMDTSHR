@@ -615,13 +615,13 @@ $isLocked = isset($s['settings_locked']) &&
                     </div>
                     <input type="text" name="room_no" value="<?= htmlspecialchars($s['room_no']) ?>" placeholder="A-201">
                 </div>
-                <div class="setting-row">
+                <!-- <div class="setting-row">
                     <div class="setting-info">
                         <span class="setting-title">Extension Number</span>
                         <span class="setting-desc">Internal phone extension</span>
                     </div>
-                    <input type="text" name="ext_no" value="<?= htmlspecialchars($s['ext_no']) ?>" placeholder="1234">
-                </div>
+                    <input type="text" name="ext_no" value="<?= htmlspecialchars($s['ext_no']) ?>" placeholder="+91">
+                </div> -->
             </div>
 
             <!-- COMPLIANCE SECTION -->
@@ -693,7 +693,7 @@ $isLocked = isset($s['settings_locked']) &&
                         <span class="setting-title">Attachment Size Limit</span>
                         <span class="setting-desc">Maximum file size in MB per email</span>
                     </div>
-                    <input type="number" name="attach_size_limit" value="<?= htmlspecialchars($s['attach_size_limit'])?>MB" min="1" max="100" disabled>
+                    <input type="number" name="attach_size_limit" value="<?= htmlspecialchars($s['attach_size_limit'])?>" min="1" max="100" disabled>
                 </div>
             </div>
 
