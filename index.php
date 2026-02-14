@@ -11,25 +11,38 @@ if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
 // Clear temp attachments on page load (fresh start)
 $_SESSION['temp_attachments'] = [];
 
-// Load settings from JSON file
-$settingsFile = 'settings.json';
-$settings = [];
+// Load settings from database
+require_once 'settings_helper.php';
+$userEmail = $_SESSION['smtp_user'];
+$settings = getSettingsWithDefaults($userEmail);
 
-if (file_exists($settingsFile)) {
-    $jsonContent = file_get_contents($settingsFile);
-    $allSettings = json_decode($jsonContent, true) ?? [];
-    // Get settings for current user
-    $settings = $allSettings[$_SESSION['smtp_user']] ?? [];
-}
+// --- Signature field defaults derived from user_settings ---
 
-// Set defaults if not found
+// Closing wish: use the stored 'signature' key as the wish line, or fall back to empty
+$sig_wish        = htmlspecialchars($settings['signature'] ?? '', ENT_QUOTES, 'UTF-8');
+
+// Full name from display_name
+$sig_name        = htmlspecialchars($settings['display_name'] ?? '', ENT_QUOTES, 'UTF-8');
+
+// Designation / title
+$sig_designation = htmlspecialchars($settings['designation'] ?? '', ENT_QUOTES, 'UTF-8');
+
+// Build extra info from available identity fields (dept, room_no, ext_no, staff_id)
+$extraParts = [];
+if (!empty($settings['dept']))     $extraParts[] = htmlspecialchars($settings['dept'],     ENT_QUOTES, 'UTF-8');
+if (!empty($settings['room_no'])) $extraParts[] = 'Room ' . htmlspecialchars($settings['room_no'], ENT_QUOTES, 'UTF-8');
+if (!empty($settings['ext_no']))  $extraParts[] = 'Ext. ' . htmlspecialchars($settings['ext_no'],  ENT_QUOTES, 'UTF-8');
+if (!empty($settings['staff_id'])) $extraParts[] = 'ID: '  . htmlspecialchars($settings['staff_id'], ENT_QUOTES, 'UTF-8');
+$sig_extra = implode("\n", $extraParts);
+
+// Merge with legacy defaults for any code that still reads $settings
 $settings = array_merge([
-    'signature' => '',
+    'signature'              => '',
     'default_subject_prefix' => '',
-    'cc_yourself' => false,
-    'smtp_host' => 'smtp.gmail.com',
-    'smtp_port' => '587',
-    'display_name' => ''
+    'cc_yourself'            => false,
+    'smtp_host'              => 'smtp.gmail.com',
+    'smtp_port'              => '587',
+    'display_name'           => ''
 ], $settings);
 
 // Update session settings for immediate use
@@ -585,14 +598,16 @@ $_SESSION['user_settings'] = $settings;
                             <div class="form-group">
                                 <label for="signatureWish">Closing Wish</label>
                                 <input type="text" id="signatureWish" name="signatureWish"
-                                    placeholder="e.g., Best Regards, Warm Wishes">
+                                    placeholder="e.g., Best Regards, Warm Wishes"
+                                    value="<?= $sig_wish ?>">
                                 <p class="field-description">Your closing greeting</p>
                             </div>
 
                             <div class="form-group">
                                 <label for="signatureName">Name</label>
                                 <input type="text" id="signatureName" name="signatureName"
-                                    placeholder="e.g., Durba Bhattacharya">
+                                    placeholder="e.g., Durba Bhattacharya"
+                                    value="<?= $sig_name ?>">
                                 <p class="field-description">Your full name</p>
                             </div>
                         </div>
@@ -600,14 +615,15 @@ $_SESSION['user_settings'] = $settings;
                         <div class="form-group">
                             <label for="signatureDesignation">Designation</label>
                             <input type="text" id="signatureDesignation" name="signatureDesignation"
-                                placeholder="e.g., H.O.D of SXC MDTS">
+                                placeholder="e.g., H.O.D of SXC MDTS"
+                                value="<?= $sig_designation ?>">
                             <p class="field-description">Your title or position</p>
                         </div>
 
                         <div class="form-group">
                             <label for="signatureExtra">Additional Information <span class="label-optional">(optional)</span></label>
                             <textarea id="signatureExtra" name="signatureExtra" rows="3"
-                                placeholder="Any extra details like contact info, department, etc."></textarea>
+                                placeholder="Any extra details like contact info, department, etc."><?= $sig_extra ?></textarea>
                             <p class="field-description">Additional text that will appear in your signature</p>
                         </div>
                     </div>
