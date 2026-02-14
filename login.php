@@ -240,7 +240,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         .login-card:hover::before {
-            opacity: 1;
+            /* opacity: 1; */
         }
 
         /* Brand Header */
