@@ -482,17 +482,17 @@ function recordLoginActivity($email, $userId, $status = 'success', $failureReaso
 /**
  * Get user ID by email
  */
-function getUserId($pdo, $email) {
-    try {
-        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = :email");
-        $stmt->execute([':email' => $email]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $result ? $result['id'] : null;
-    } catch (PDOException $e) {
-        error_log("Failed to get user ID: " . $e->getMessage());
-        return null;
-    }
-}
+// function getUserId($pdo, $email) {
+//     try {
+//         $stmt = $pdo->prepare("SELECT id FROM users WHERE email = :email");
+//         $stmt->execute([':email' => $email]);
+//         $result = $stmt->fetch(PDO::FETCH_ASSOC);
+//         return $result ? $result['id'] : null;
+//     } catch (PDOException $e) {
+//         error_log("Failed to get user ID: " . $e->getMessage());
+//         return null;
+//     }
+// }
 
 /**
  * Record logout activity
