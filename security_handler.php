@@ -698,7 +698,7 @@ function blacklist_ip($ip, $reason = '') {
 // FILE ENCRYPTION FUNCTIONS (for upload_handler.php compatibility)
 // ════════════════════════════════════════════════════════════════════════
 
-require_once __DIR__ . '/config.php';
+// require_once __DIR__ . '/config.php';
 
 define('ENCRYPTION_KEY', env('ENCRYPTION_KEY', 'your-32-character-secret-key-here-change-this'));
 define('ENCRYPTION_METHOD', 'AES-256-CBC');
