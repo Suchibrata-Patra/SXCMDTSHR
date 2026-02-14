@@ -52,7 +52,7 @@ $defaults = [
     'archive_sent' => true,
     'read_receipts' => false,
     'delayed_send' => '0',
-    'attach_size_limit' => '25 MB',
+    'attach_size_limit' => '25',
     'auto_label_sent' => true,
     'priority_level' => 'normal',
     'mandatory_subject' => true,
@@ -693,7 +693,7 @@ $isLocked = isset($s['settings_locked']) &&
                         <span class="setting-title">Attachment Size Limit</span>
                         <span class="setting-desc">Maximum file size in MB per email</span>
                     </div>
-                    <input type="number" name="attach_size_limit" value="<?= htmlspecialchars($s['attach_size_limit']) ?>" min="1" max="100" disabled>
+                    <input type="number" name="attach_size_limit" value="<?= htmlspecialchars($s['attach_size_limit']) MB?>" min="1" max="100" disabled>
                 </div>
             </div>
 
