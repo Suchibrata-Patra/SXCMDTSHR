@@ -227,6 +227,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             margin-bottom: 28px;
             padding-bottom: 20px;
             border-bottom: 1px solid #f0f0f0;
+            display:flex;
         }
 
         .brand-logo {
