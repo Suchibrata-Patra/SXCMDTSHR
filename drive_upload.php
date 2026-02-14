@@ -292,7 +292,7 @@ if (isset($_GET['preview'])) {
         .main-col   { flex:1; display:flex; flex-direction:column; overflow:hidden; }
         
         a{
-            text-decoration: none;
+            text-decoration: none !important;
         }
 
         /* ── TOP BAR ─────────────────────────────────────────── */
