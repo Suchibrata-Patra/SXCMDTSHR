@@ -1,5 +1,5 @@
 <?php
-// deleted_items.php - Shows ALL deleted emails (BOTH sent from sent_emails AND received from inbox_messages)
+require_once __DIR__ . '/security_handler.php';
 session_start();
 
 // Enable error reporting for debugging
