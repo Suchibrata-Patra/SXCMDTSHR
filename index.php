@@ -458,7 +458,6 @@ $_SESSION['user_settings'] = $settings;
             gap: 3px;
             margin-bottom: 14px;
         }
-
         .attach-seg-btn {
             flex: 1;
             padding: 7px 10px;
@@ -474,9 +473,7 @@ $_SESSION['user_settings'] = $settings;
             gap: 5px;
             font-family: 'DM Sans', sans-serif;
         }
-
         .attach-seg-btn .material-icons-round { font-size: 15px; }
-
         .attach-seg-btn.active {
             background: var(--surface);
             color: var(--blue);
@@ -484,7 +481,6 @@ $_SESSION['user_settings'] = $settings;
             font-weight: 700;
             border: 1px solid var(--border-2);
         }
-
         .attach-tab-content { display: none; }
         .attach-tab-content.active { display: block; animation: rowFadeIn .18s var(--ease) both; }
 
@@ -500,10 +496,8 @@ $_SESSION['user_settings'] = $settings;
             padding: 6px;
             background: var(--surface-2);
         }
-
         .drive-file-list::-webkit-scrollbar { width: 4px; }
         .drive-file-list::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 10px; }
-
         .drive-file-item {
             display: flex;
             align-items: center;
@@ -515,18 +509,13 @@ $_SESSION['user_settings'] = $settings;
             border: 1.5px solid transparent;
             background: var(--surface);
         }
-
         .drive-file-item:hover { background: var(--surface-2); border-color: var(--border-2); }
-
         .drive-file-item.selected {
             background: rgba(72,117,193,.07);
             border-color: rgba(72,117,193,.3);
         }
-
         .drive-file-emoji { font-size: 18px; line-height: 1; flex-shrink: 0; }
-
         .drive-file-info { flex: 1; min-width: 0; }
-
         .drive-file-name {
             font-size: 12.5px;
             font-weight: 600;
@@ -535,9 +524,7 @@ $_SESSION['user_settings'] = $settings;
             overflow: hidden;
             text-overflow: ellipsis;
         }
-
         .drive-file-size { font-size: 11px; color: var(--ink-4); margin-top: 1px; }
-
         .drive-file-check {
             width: 18px; height: 18px;
             border-radius: 50%;
@@ -546,12 +533,10 @@ $_SESSION['user_settings'] = $settings;
             flex-shrink: 0;
             transition: all .15s;
         }
-
         .drive-file-item.selected .drive-file-check {
             background: var(--blue);
             border-color: var(--blue);
         }
-
         .drive-file-check .chk-icon { display: none; font-size: 11px; color: white; }
         .drive-file-item.selected .drive-file-check .chk-icon { display: block; }
 
@@ -561,7 +546,6 @@ $_SESSION['user_settings'] = $settings;
             font-size: 12.5px;
             color: var(--ink-4);
         }
-
         .drive-loading-msg .spinner-inline {
             display: inline-block;
             width: 18px; height: 18px;
@@ -571,10 +555,9 @@ $_SESSION['user_settings'] = $settings;
             animation: spin360 .7s linear infinite;
             margin-bottom: 8px;
         }
-
         @keyframes spin360 { to { transform: rotate(360deg); } }
 
-        /* Drive chip — shown when a drive file is selected */
+        /* Drive chip — confirms a drive file is queued for send */
         .drive-attach-chip {
             display: none;
             align-items: center;
@@ -586,11 +569,9 @@ $_SESSION['user_settings'] = $settings;
             margin-top: 10px;
             animation: rowFadeIn .18s var(--ease) both;
         }
-
         .drive-attach-chip.visible { display: flex; }
         .drive-attach-chip-icon { font-size: 16px; }
         .drive-attach-chip-info { flex: 1; min-width: 0; }
-
         .drive-attach-chip-name {
             font-size: 12.5px;
             font-weight: 600;
@@ -599,9 +580,7 @@ $_SESSION['user_settings'] = $settings;
             overflow: hidden;
             text-overflow: ellipsis;
         }
-
         .drive-attach-chip-size { font-size: 11px; color: var(--ink-4); }
-
         .drive-attach-chip-remove {
             background: none; border: none;
             cursor: pointer; color: var(--ink-4);
@@ -609,7 +588,6 @@ $_SESSION['user_settings'] = $settings;
             border-radius: 4px; padding: 2px;
             transition: color .15s, background .15s;
         }
-
         .drive-attach-chip-remove:hover { color: var(--red); background: rgba(239,68,68,.08); }
         .drive-attach-chip-remove .material-icons-round { font-size: 15px; }
 
@@ -842,7 +820,7 @@ $_SESSION['user_settings'] = $settings;
                             Attachments
                         </h3>
 
-                        <!-- Source selector: Drive or Upload -->
+                        <!-- Source selector -->
                         <div class="attach-segmented">
                             <button type="button" class="attach-seg-btn active" id="segBtnDrive" onclick="switchAttachTab('drive')">
                                 <span class="material-icons-round">add_to_drive</span>
@@ -862,7 +840,7 @@ $_SESSION['user_settings'] = $settings;
                                     <br>Loading drive files…
                                 </div>
                             </div>
-                            <!-- Chip shown when a drive file is queued -->
+                            <!-- Chip: shown after a drive file is registered -->
                             <div class="drive-attach-chip" id="driveChip">
                                 <span class="drive-attach-chip-icon" id="driveChipIcon">📎</span>
                                 <div class="drive-attach-chip-info">
@@ -884,7 +862,7 @@ $_SESSION['user_settings'] = $settings;
                                 <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.zip,.txt,.csv">
                             </div>
 
-                            <!-- Individual Upload Progress -->
+                            <!-- Upload Progress -->
                             <div class="upload-item" id="uploadItem">
                                 <div class="upload-item-header">
                                     <span class="upload-filename" id="uploadFilename"></span>
@@ -902,12 +880,11 @@ $_SESSION['user_settings'] = $settings;
                             </div>
                         </div>
 
-                        <!-- File Preview Cards (shared – shows both drive-queued & uploaded) -->
+                        <!-- File Preview Cards (shared for both tabs) -->
                         <div class="file-cards-container" id="fileCardsContainer"></div>
 
-                        <!-- Hidden inputs -->
+                        <!-- Hidden input: comma-separated IDs of ALL attachments (uploaded + drive-registered) -->
                         <input type="hidden" name="attachment_ids" id="attachmentIds" value="">
-                        <input type="hidden" name="drive_attachment_path" id="driveAttachmentPath" value="">
                     </div>
 
                     <!-- Action Buttons -->
@@ -958,21 +935,15 @@ $_SESSION['user_settings'] = $settings;
         async function loadDriveFiles() {
             const list    = document.getElementById('driveFileList');
             const loading = document.getElementById('driveLoadingMsg');
-
             try {
                 const fd = new FormData();
                 fd.append('action', 'list_drive_files');
-
                 const resp = await fetch('bulk_mail_backend.php', { method: 'POST', body: fd });
                 const data = await resp.json();
 
                 if (data.success && data.files && data.files.length > 0) {
-                    // Remove loading spinner
                     loading.remove();
-
                     data.files.forEach(f => {
-                        const safePath = f.path.replace(/'/g, "\\'");
-                        const safeName = f.name.replace(/'/g, "\\'");
                         const item = document.createElement('div');
                         item.className = 'drive-file-item';
                         item.dataset.path = f.path;
@@ -1001,11 +972,16 @@ $_SESSION['user_settings'] = $settings;
             }
         }
 
-        function selectDriveFile(itemEl) {
-            // Toggle selection
+        // ========== DRIVE FILE SELECTION ==========
+        // Registers the drive file via upload_handler.php so it gets a real attachment_id
+        // that send.php can handle identically to a manually uploaded file.
+        async function selectDriveFile(itemEl) {
             const wasSelected = itemEl.classList.contains('selected');
+
+            // Deselect all
             document.querySelectorAll('.drive-file-item').forEach(el => el.classList.remove('selected'));
 
+            // If already selected, just clear and bail
             if (wasSelected) {
                 clearDriveSelection();
                 return;
@@ -1018,18 +994,43 @@ $_SESSION['user_settings'] = $settings;
             const size = itemEl.dataset.size;
             const ext  = itemEl.dataset.ext;
 
-            // Store in hidden input
-            document.getElementById('driveAttachmentPath').value = path;
-
-            // Show chip
-            document.getElementById('driveChipIcon').textContent = getDriveFileIcon(ext);
-            document.getElementById('driveChipName').textContent = name;
-            document.getElementById('driveChipSize').textContent = size;
+            // Show chip with loading state
+            document.getElementById('driveChipIcon').textContent = '⏳';
+            document.getElementById('driveChipName').textContent  = name;
+            document.getElementById('driveChipSize').textContent  = 'Registering…';
             document.getElementById('driveChip').classList.add('visible');
+
+            try {
+                // POST the drive path to index_drive_attach_handler.php which registers it
+                // in the DB and returns the same JSON shape as upload_handler.php —
+                // so send.php handles drive files identically to manual uploads.
+                const fd = new FormData();
+                fd.append('drive_path', path);
+
+                const resp = await fetch('index_drive_attach_handler.php', { method: 'POST', body: fd });
+                const data = await resp.json();
+
+                if (data.success) {
+                    // Add to uploadedFiles array and attachment_ids — same as a normal upload
+                    uploadedFiles.push(data);
+                    totalSize += data.file_size || 0;
+                    addFileCard(data);
+                    updateAttachmentIds();
+
+                    // Update chip to confirmed state
+                    document.getElementById('driveChipIcon').textContent = getDriveFileIcon(ext);
+                    document.getElementById('driveChipSize').textContent  = size;
+                } else {
+                    alert('Could not attach drive file: ' + (data.error || 'Unknown error'));
+                    clearDriveSelection();
+                }
+            } catch (err) {
+                alert('Failed to attach drive file: ' + err.message);
+                clearDriveSelection();
+            }
         }
 
         function clearDriveSelection() {
-            document.getElementById('driveAttachmentPath').value = '';
             document.getElementById('driveChip').classList.remove('visible');
             document.querySelectorAll('.drive-file-item').forEach(el => el.classList.remove('selected'));
         }
@@ -1045,7 +1046,7 @@ $_SESSION['user_settings'] = $settings;
             return map[ext] || '📎';
         }
 
-        // Load drive files on page load
+        // Load drive files when page is ready
         loadDriveFiles();
 
         // ========== FILE UPLOAD FUNCTIONALITY ==========
