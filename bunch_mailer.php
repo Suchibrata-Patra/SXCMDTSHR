@@ -18,8 +18,8 @@ if (!$hasSessionAuth && !$hasEnvAuth) {
 if (!$hasSessionAuth && $hasEnvAuth) {
     $_SESSION['smtp_user'] = env('SMTP_USERNAME');
     $_SESSION['smtp_pass'] = env('SMTP_PASSWORD');
-    $_SESSION['smtp_host'] = env('SMTP_HOST', 'smtp.hostinger.com');
-    $_SESSION['smtp_port'] = env('SMTP_PORT', 465);
+    $_SESSION['smtp_host'] = env('SMTP_HOST');
+    $_SESSION['smtp_port'] = env('SMTP_PORT');
 }
 ?>
 <!DOCTYPE html>
