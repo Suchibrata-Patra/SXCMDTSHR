@@ -11,7 +11,10 @@
  * - SMTP credentials from ENV for email sending only
  * ============================================================
  */
-require_once __DIR__ . '/security_handler.php';
+
+// DON'T load security_handler.php on login page - it causes conflicts
+// The login page has its own security measures
+
 require_once 'vendor/autoload.php';
 require_once 'config.php';
 require_once 'db_config.php';
@@ -24,7 +27,24 @@ if (file_exists(__DIR__ . '/.env')) {
 }
 
 // Initialize secure session
-initializeSecureSession();
+if (function_exists('initializeSecureSession')) {
+    initializeSecureSession();
+} else {
+    // Fallback session initialization if helper function doesn't exist
+    if (session_status() === PHP_SESSION_NONE) {
+        ini_set('session.cookie_httponly', '1');
+        ini_set('session.cookie_secure', '0'); // Set to '1' if using HTTPS
+        ini_set('session.use_strict_mode', '1');
+        ini_set('session.use_only_cookies', '1');
+        session_name('SECURE_SESSION_ID');
+        session_start();
+        
+        // Generate CSRF token for forms
+        if (!isset($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+    }
+}
 
 // Redirect if already logged in
 if (isset($_SESSION['authenticated']) && $_SESSION['authenticated'] === true) {
