@@ -939,6 +939,9 @@ $_SESSION['user_settings'] = $settings;
             try {
                 const fd = new FormData();
                 fd.append('action', 'list_drive_files');
+                // Add CSRF token for security
+                const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+                fd.append('csrf_token', csrfToken);
                 const resp = await fetch('bulk_mail_backend.php', { method: 'POST', body: fd });
                 const data = await resp.json();
 

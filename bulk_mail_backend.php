@@ -4,7 +4,7 @@ session_start();
 require_once 'config.php';
 require_once 'db_config.php';
 header('Content-Type: application/json'); // For Setting the JSON header
-$driveDir = env('DRIVE_DIR'); // Fetching the Drive directory from environment
+$driveDir = env('DRIVE_DIR', __DIR__ . '/drive_files'); // Fetching the Drive directory from environment with default
 $action = ''; // Get action from request [ support both GET, POST FormData, and POST JSON ]
 
 if (isset($_POST['action'])) {
@@ -45,8 +45,13 @@ try {
     switch ($action) {
         case 'list_drive_files':
             // List files from File_Drive directory
+            // Create directory if it doesn't exist
             if (!is_dir($driveDir)) {
-                throw new Exception('Drive directory not found: ' . $driveDir);
+                @mkdir($driveDir, 0755, true);
+            }
+            
+            if (!is_dir($driveDir)) {
+                throw new Exception('Drive directory could not be created: ' . $driveDir);
             }
             
             $files = [];
