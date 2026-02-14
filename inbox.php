@@ -113,54 +113,31 @@ $lastSync = getLastSyncDate($userEmail);
         define('PAGE_TITLE', 'SXC MDTS | Dashboard');
         include 'header.php';
     ?>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --ink:       #1a1a2e;
-            --ink-2:     #2d2d44;
-            --ink-3:     #6b6b8a;
-            --ink-4:     #a8a8c0;
-            --bg:        #f0f0f7;
-            --surface:   #ffffff;
-            --surface-2: #f7f7fc;
-            --border:    rgba(100,100,160,0.12);
-            --border-2:  rgba(100,100,160,0.22);
-            --blue:      #5781a9;
-            --blue-2:    #c6d3ea;
-            --blue-glow: rgba(79,70,229,0.15);
-            --red:       #ef4444;
-            --green:     #10b981;
-            --amber:     #f59e0b;
-            --r:         10px;
-            --r-lg:      14px;
-            --shadow:    0 1px 3px rgba(79,70,229,0.08), 0 4px 16px rgba(79,70,229,0.06);
-            --shadow-lg: 0 8px 32px rgba(79,70,229,0.14), 0 2px 8px rgba(0,0,0,0.06);
-            --ease:      cubic-bezier(.4,0,.2,1);
-            
-            /* Legacy mapping */
-            --apple-blue: var(--blue);
-            --apple-gray: var(--ink-3);
-            --apple-light-gray: var(--ink-4);
-            --apple-bg: var(--bg);
-            --card-shadow: var(--shadow);
-            --hover-shadow: var(--shadow-lg);
-            --success-green: var(--green);
-            --warning-orange: var(--amber);
-            --danger-red: var(--red);
+            --apple-blue: #007AFF;
+            --apple-gray: #8E8E93;
+            --apple-light-gray: #C7C7CC;
+            --apple-bg: #F2F2F7;
+            --glass: rgba(255, 255, 255, 0.7);
+            --border: #E5E5EA;
+            --success-green: #34C759;
+            --warning-orange: #FF9500;
+            --danger-red: #FF3B30;
+            --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --hover-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
         }
 
-        *,*::before,*::after {
+        * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
         body {
-            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg);
-            color: var(--ink);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--apple-bg);
+            color: #1c1c1e;
             display: flex;
             height: 100vh;
             overflow: hidden;
@@ -178,7 +155,7 @@ $lastSync = getLastSyncDate($userEmail);
 
         /* ========== HEADER ========== */
         .page-header {
-            background: var(--surface);
+            background: white;
             border-bottom: 1px solid var(--border);
             padding: 16px 24px;
             display: flex;
@@ -193,7 +170,7 @@ $lastSync = getLastSyncDate($userEmail);
         .page-title {
             font-size: 24px;
             font-weight: 700;
-            color: var(--ink);
+            color: #1c1c1e;
             letter-spacing: -0.5px;
             margin-bottom: 2px;
         }
@@ -213,7 +190,7 @@ $lastSync = getLastSyncDate($userEmail);
         .btn {
             padding: 8px 14px;
             border: none;
-            border-radius: var(--r);
+            border-radius: 8px;
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
@@ -241,9 +218,9 @@ $lastSync = getLastSyncDate($userEmail);
 
         .btn-icon {
             padding: 8px;
-            background: var(--surface);
+            background: white;
             border: 1px solid var(--border);
-            border-radius: var(--r);
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s;
             display: flex;
@@ -277,7 +254,7 @@ $lastSync = getLastSyncDate($userEmail);
 
         /* ========== STATS BAR ========== */
         .stats-bar {
-            background: var(--surface);
+            background: white;
             padding: 12px 24px;
             border-bottom: 1px solid var(--border);
             display: flex;
@@ -294,7 +271,7 @@ $lastSync = getLastSyncDate($userEmail);
         .stat-icon {
             width: 32px;
             height: 32px;
-            border-radius: var(--r);
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -324,7 +301,7 @@ $lastSync = getLastSyncDate($userEmail);
         .stat-number {
             font-size: 18px;
             font-weight: 700;
-            color: var(--ink);
+            color: #1c1c1e;
             line-height: 1;
         }
 
@@ -359,7 +336,7 @@ $lastSync = getLastSyncDate($userEmail);
             display: flex;
             flex-direction: column;
             border-right: 1px solid var(--border);
-            background: var(--surface);
+            background: white;
         }
 
         .message-view-pane {
@@ -371,7 +348,7 @@ $lastSync = getLastSyncDate($userEmail);
 
         /* ========== TOOLBAR ========== */
         .toolbar {
-            background: var(--surface);
+            background: white;
             padding: 12px 20px;
             border-bottom: 1px solid var(--border);
             display: flex;
@@ -388,7 +365,7 @@ $lastSync = getLastSyncDate($userEmail);
             width: 100%;
             padding: 8px 12px 8px 36px;
             border: 1px solid var(--border);
-            border-radius: var(--r);
+            border-radius: 8px;
             font-size: 13px;
             font-family: 'Inter', sans-serif;
             background: var(--apple-bg);
@@ -397,7 +374,7 @@ $lastSync = getLastSyncDate($userEmail);
 
         .search-box input:focus {
             outline: none;
-            background: var(--surface);
+            background: white;
             border-color: var(--apple-blue);
             box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
         }
@@ -418,16 +395,16 @@ $lastSync = getLastSyncDate($userEmail);
 
         .filter-btn {
             padding: 6px 12px;
-            background: var(--surface);
+            background: white;
             border: 1px solid var(--border);
-            border-radius: var(--r);
+            border-radius: 8px;
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 4px;
             font-size: 12px;
             font-weight: 500;
-            color: var(--ink);
+            color: #1c1c1e;
             transition: all 0.2s;
             font-family: 'Inter', sans-serif;
         }
@@ -454,7 +431,7 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .messages-container {
-            background: var(--surface);
+            background: white;
         }
 
         .message-item {
@@ -537,7 +514,7 @@ $lastSync = getLastSyncDate($userEmail);
 
         .message-sender {
             font-weight: 500;
-            color: var(--ink);
+            color: #1c1c1e;
             font-size: 13px;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -568,7 +545,7 @@ $lastSync = getLastSyncDate($userEmail);
 
         .message-subject {
             font-size: 13px;
-            color: var(--ink);
+            color: #1c1c1e;
             font-weight: 500;
             white-space: nowrap;
             overflow: hidden;
@@ -651,7 +628,7 @@ $lastSync = getLastSyncDate($userEmail);
 
         /* ========== MESSAGE VIEW PANE ========== */
         .message-view-header {
-            background: var(--surface);
+            background: white;
             border-bottom: 1px solid var(--border);
             padding: 16px 20px;
         }
@@ -659,7 +636,7 @@ $lastSync = getLastSyncDate($userEmail);
         .message-view-title {
             font-size: 18px;
             font-weight: 600;
-            color: var(--ink);
+            color: #1c1c1e;
             margin-bottom: 8px;
             line-height: 1.4;
         }
@@ -685,7 +662,7 @@ $lastSync = getLastSyncDate($userEmail);
 
         .message-view-meta-label {
             font-weight: 600;
-            color: var(--ink);
+            color: #1c1c1e;
         }
 
         .message-view-actions {
@@ -742,12 +719,12 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .message-detail {
-            background: var(--surface);
+            background: white;
             border-radius: 10px;
             padding: 20px;
             font-size: 14px;
             line-height: 1.7;
-            color: var(--ink);
+            color: #1c1c1e;
             box-shadow: var(--card-shadow);
             white-space: pre-wrap;
             word-wrap: break-word;
@@ -776,7 +753,7 @@ $lastSync = getLastSyncDate($userEmail);
         .attachments-title {
             font-size: 13px;
             font-weight: 600;
-            color: var(--ink);
+            color: #1c1c1e;
             margin-bottom: 10px;
             display: flex;
             align-items: center;
@@ -790,9 +767,9 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .attachment-card {
-            background: var(--surface);
+            background: white;
             border: 1px solid var(--border);
-            border-radius: var(--r);
+            border-radius: 8px;
             padding: 12px;
             display: flex;
             flex-direction: column;
@@ -816,7 +793,7 @@ $lastSync = getLastSyncDate($userEmail);
         .attachment-name {
             font-size: 11px;
             font-weight: 500;
-            color: var(--ink);
+            color: #1c1c1e;
             margin-bottom: 3px;
             word-break: break-word;
         }
@@ -841,7 +818,7 @@ $lastSync = getLastSyncDate($userEmail);
         .empty-title {
             font-size: 18px;
             font-weight: 600;
-            color: var(--ink);
+            color: #1c1c1e;
             margin-bottom: 6px;
         }
 
@@ -1218,7 +1195,7 @@ $lastSync = getLastSyncDate($userEmail);
                     }
 
                     // Build body HTML
-                    let bodyHtml = `<div class="message-detail">${escapeHtml(msg.body || 'No content')}</div>`;
+                    let bodyHtml = `<div class="message-detail">${escapeHtml(msg.body)}</div>`;
 
                     // Add attachments section
                     if (attachments.length > 0) {
@@ -1437,10 +1414,7 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         function formatDate(dateStr) {
-            if (!dateStr) return 'Unknown';
             const date = new Date(dateStr);
-            if (isNaN(date.getTime())) return 'Invalid date';
-            
             const now = new Date();
             const diffMs = now - date;
             const diffMins = Math.floor(diffMs / 60000);
@@ -1456,10 +1430,7 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         function formatDateLong(dateStr) {
-            if (!dateStr) return 'Unknown';
             const date = new Date(dateStr);
-            if (isNaN(date.getTime())) return 'Invalid date';
-            
             return date.toLocaleString('en-US', {
                 month: 'short',
                 day: 'numeric',
@@ -1657,7 +1628,7 @@ $lastSync = getLastSyncDate($userEmail);
                     noResultsDiv.style.cssText = 'text-align: center; padding: 60px 20px; color: #8E8E93;';
                     noResultsDiv.innerHTML = `
                         <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
-                        <div style="font-size: 18px; font-weight: 600; color: var(--ink); margin-bottom: 8px;">No results found</div>
+                        <div style="font-size: 18px; font-weight: 600; color: #1c1c1e; margin-bottom: 8px;">No results found</div>
                         <div style="font-size: 14px;">Try adjusting your search terms</div>
                     `;
                     messageList.appendChild(noResultsDiv);
