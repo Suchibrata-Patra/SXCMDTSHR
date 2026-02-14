@@ -698,7 +698,7 @@ $isLocked = isset($s['settings_locked']) &&
             </div>
 
             <!-- IMAP / SMTP SERVER INFO SECTION (read-only — sourced from server env) -->
-            <h2 id="imap">📧 Mail Server Configuration</h2>
+            <h2 id="imap">Mail Server Configuration</h2>
             <div class="section-card">
                 <?php
                 // Pull directly from environment — never from user input
