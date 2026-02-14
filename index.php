@@ -49,7 +49,7 @@ $settings = array_merge([
 // Update session settings for immediate use
 $_SESSION['user_settings'] = $settings;
 ?>
-<!DOCTYPE html>
+<html>
 <html lang="en">
 
 <head>
