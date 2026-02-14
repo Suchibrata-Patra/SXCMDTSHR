@@ -742,7 +742,7 @@ $isLocked = isset($s['settings_locked']) &&
                 </div>
 
                 <!-- Divider -->
-                <div style="height: 1px; background: var(--border); margin: 8px 0 16px;"></div>
+                <div style="height: 0px; background: var(--border); margin: 8px 0 16px;"></div>
 
                 <!-- IMAP Info -->
                 <div style="margin-bottom: 8px; font-size: 11px; font-weight: 700; color: var(--apple-gray); text-transform: uppercase; letter-spacing: 0.5px; padding: 0 4px;">
