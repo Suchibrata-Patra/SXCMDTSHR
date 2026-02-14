@@ -406,9 +406,9 @@ $isLocked = isset($s['settings_locked']) &&
         }
 
         .btn-deploy:hover {
-            background: #0051D5;
+            /* background: #0051D5; */
             box-shadow: 0 6px 20px rgba(0,122,255,0.4);
-            transform: translateY(-1px);
+            transform: translateY(-0.5px);
         }
 
         .btn-deploy:active {
