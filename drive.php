@@ -286,8 +286,8 @@ if (isset($_GET['preview'])) {
             --surface-2: #f7f7fc;
             --border:    rgba(100,100,160,0.12);
             --border-2:  rgba(100,100,160,0.22);
-            --blue:      #4f46e5;
-            --blue-2:    #6366f1;
+            --blue:      #4875c1;
+            --blue-2:    #5d86cd;
             --blue-glow: rgba(79,70,229,0.15);
             --red:       #ef4444;
             --green:     #10b981;
