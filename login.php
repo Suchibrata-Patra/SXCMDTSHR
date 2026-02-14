@@ -503,11 +503,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </button>
             </form>
 
-            <div class="security-info">
-                <strong>🔐 Database Authentication</strong><br>
-                Login credentials are verified against the database. SMTP credentials for email sending are configured in the system environment.
-            </div>
-
             <footer>
                 St. Xavier's College (Autonomous), Kolkata<br>
                 Mail Delivery & Tracking System v2.0
