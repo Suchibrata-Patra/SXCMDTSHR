@@ -1,5 +1,6 @@
 <?php
 // htdocs/index.php
+require_once __DIR__ . '/security_handler.php';
 session_start();
 
 // Security check: Redirect to login if session credentials do not exist
