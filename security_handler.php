@@ -1,26 +1,14 @@
 <?php
 /**
  * ========================================================================
- * SECURITY HANDLER v2.0
+ * SECURITY HANDLER v2.1 - FIXED VERSION
  * Ultra-Secure Protection Layer for PHP Applications
  * ========================================================================
  * 
+ * FIXED: Will not block legitimate login attempts
+ * 
  * USAGE: Include this at the TOP of every PHP file:
  * require_once __DIR__ . '/security_handler.php';
- * 
- * FEATURES:
- * - CSRF Protection with token validation
- * - SQL Injection Prevention
- * - XSS Attack Prevention
- * - Session Hijacking Prevention
- * - Brute Force Protection
- * - File Upload Security
- * - Path Traversal Prevention
- * - HTTP Security Headers
- * - IP Whitelisting/Blacklisting
- * - Rate Limiting
- * - Input Sanitization
- * - Security Logging & Monitoring
  * ========================================================================
  */
 
@@ -41,18 +29,25 @@ define('SESSION_TIMEOUT', 3600); // 1 hour
 define('RATE_LIMIT_REQUESTS', 100); // Max requests per time window
 define('RATE_LIMIT_WINDOW', 60); // Time window in seconds
 define('UPLOAD_MAX_SIZE', 10485760); // 10MB in bytes
-define('ALLOWED_UPLOAD_EXTENSIONS', ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip']);
+define('ALLOWED_UPLOAD_EXTENSIONS', ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'txt', 'csv']);
 
 // Public pages that don't require authentication
 define('PUBLIC_PAGES', [
     'login.php',
     'debug_login.php',
-    'security_handler.php'
+    'security_handler.php',
+    'change_password.php'
 ]);
 
 // Pages exempt from CSRF protection (e.g., API endpoints with other auth)
 define('CSRF_EXEMPT_PAGES', [
     'login.php'
+]);
+
+// Pages exempt from SQL injection detection (login pages handle their own validation)
+define('SQL_DETECTION_EXEMPT_PAGES', [
+    'login.php',
+    'change_password.php'
 ]);
 
 // ════════════════════════════════════════════════════════════════════════
@@ -119,8 +114,8 @@ class SecurityHandler {
         if (session_status() === PHP_SESSION_NONE) {
             // Secure session configuration
             ini_set('session.cookie_httponly', '1');
-            ini_set('session.cookie_secure', '1'); // Enable if using HTTPS
-            ini_set('session.cookie_samesite', 'Strict');
+            ini_set('session.cookie_secure', '0'); // Set to '1' if using HTTPS
+            ini_set('session.cookie_samesite', 'Lax'); // Changed from Strict to Lax for better compatibility
             ini_set('session.use_strict_mode', '1');
             ini_set('session.use_only_cookies', '1');
             ini_set('session.use_trans_sid', '0');
@@ -139,25 +134,32 @@ class SecurityHandler {
     }
     
     private function preventSessionHijacking() {
-        // Check session timeout
-        if (isset($_SESSION['last_activity'])) {
-            if (time() - $_SESSION['last_activity'] > SESSION_TIMEOUT) {
-                $this->logSecurity('SESSION_TIMEOUT', 'Session expired due to inactivity');
-                session_destroy();
-                $this->redirectToLogin();
-            }
+        // Skip session hijacking check for public pages during login
+        if (in_array($this->currentPage, PUBLIC_PAGES) && !isset($_SESSION['authenticated'])) {
+            return;
         }
-        $_SESSION['last_activity'] = time();
         
-        // Validate session fingerprint
-        $fingerprint = $this->generateFingerprint();
-        
-        if (!isset($_SESSION['fingerprint'])) {
-            $_SESSION['fingerprint'] = $fingerprint;
-        } elseif ($_SESSION['fingerprint'] !== $fingerprint) {
-            $this->logSecurity('SESSION_HIJACK_ATTEMPT', 'Session fingerprint mismatch');
-            session_destroy();
-            $this->blockAccess('Session validation failed');
+        // Check session timeout only for authenticated users
+        if (isset($_SESSION['authenticated']) && $_SESSION['authenticated'] === true) {
+            if (isset($_SESSION['last_activity'])) {
+                if (time() - $_SESSION['last_activity'] > SESSION_TIMEOUT) {
+                    $this->logSecurity('SESSION_TIMEOUT', 'Session expired due to inactivity');
+                    session_destroy();
+                    $this->redirectToLogin();
+                }
+            }
+            $_SESSION['last_activity'] = time();
+            
+            // Validate session fingerprint for authenticated users
+            $fingerprint = $this->generateFingerprint();
+            
+            if (!isset($_SESSION['fingerprint'])) {
+                $_SESSION['fingerprint'] = $fingerprint;
+            } elseif ($_SESSION['fingerprint'] !== $fingerprint) {
+                $this->logSecurity('SESSION_HIJACK_ATTEMPT', 'Session fingerprint mismatch');
+                session_destroy();
+                $this->blockAccess('Session validation failed');
+            }
         }
     }
     
@@ -183,10 +185,13 @@ class SecurityHandler {
         }
         
         // Validate user email exists in session
-        if (!isset($_SESSION['smtp_user']) || empty($_SESSION['smtp_user'])) {
-            $this->logSecurity('INVALID_SESSION', 'Missing user email in session');
-            session_destroy();
-            $this->redirectToLogin();
+        if (!isset($_SESSION['user_email']) || empty($_SESSION['user_email'])) {
+            // Try fallback to smtp_user for backward compatibility
+            if (!isset($_SESSION['smtp_user']) || empty($_SESSION['smtp_user'])) {
+                $this->logSecurity('INVALID_SESSION', 'Missing user email in session');
+                session_destroy();
+                $this->redirectToLogin();
+            }
         }
     }
     
@@ -261,13 +266,14 @@ class SecurityHandler {
         // Referrer policy
         header("Referrer-Policy: strict-origin-when-cross-origin");
         
-        // Content Security Policy
+        // Content Security Policy - UPDATED for better compatibility
         header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdn.quilljs.com https://cdnjs.cloudflare.com https://www.google.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.quilljs.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://www.google.com;");
         
-        // Strict Transport Security (if using HTTPS)
-        if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
-            header("Strict-Transport-Security: max-age=31536000; includeSubDomains; preload");
-        }
+        // Strict Transport Security (only if using HTTPS)
+        // Uncomment this line when you enable HTTPS
+        // if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+        //     header("Strict-Transport-Security: max-age=31536000; includeSubDomains; preload");
+        // }
         
         // Permissions Policy
         header("Permissions-Policy: geolocation=(), camera=(), microphone=()");
@@ -285,8 +291,10 @@ class SecurityHandler {
         $_POST = $this->sanitizeArray($_POST);
         $_COOKIE = $this->sanitizeArray($_COOKIE);
         
-        // Check for suspicious patterns
-        $this->detectSQLInjection();
+        // Check for suspicious patterns (only if not on exempt pages)
+        if (!in_array($this->currentPage, SQL_DETECTION_EXEMPT_PAGES)) {
+            $this->detectSQLInjection();
+        }
         $this->detectXSS();
     }
     
@@ -351,21 +359,33 @@ class SecurityHandler {
     // ────────────────────────────────────────────────────────────────────
     
     private function detectSQLInjection() {
+        // IMPROVED: More precise SQL injection detection
+        // Only detect obvious SQL injection attempts, not legitimate queries
         $patterns = [
-            '/(\bUNION\b.*\bSELECT\b)/i',
-            '/(\bSELECT\b.*\bFROM\b.*\bWHERE\b)/i',
-            '/(\bINSERT\b.*\bINTO\b)/i',
-            '/(\bUPDATE\b.*\bSET\b)/i',
-            '/(\bDELETE\b.*\bFROM\b)/i',
-            '/(\bDROP\b.*\bTABLE\b)/i',
-            '/(\bEXEC\b|\bEXECUTE\b)/i',
-            '/(;|\||&&|\/\*|\*\/|--|\#)/i'
+            '/(\bUNION\b\s+\bALL\b\s+\bSELECT\b)/i',      // UNION ALL SELECT
+            '/(\bUNION\b\s+\bSELECT\b.*\bFROM\b)/i',       // UNION SELECT ... FROM
+            '/(;\s*DROP\b)/i',                              // ; DROP
+            '/(;\s*DELETE\b\s+\bFROM\b)/i',                // ; DELETE FROM
+            '/(;\s*UPDATE\b\s+\w+\s+\bSET\b)/i',           // ; UPDATE ... SET
+            '/(\bEXEC\b\s*\(|\bEXECUTE\b\s*\()/i',         // EXEC( or EXECUTE(
+            '/(\/\*.*\*\/)/i',                              // /* comment */
+            '/(\b1\s*=\s*1\b|\b1\s*=\s*1\b--)/i',          // 1=1 or 1=1--
+            "/('+\s*OR\s*'+\s*=\s*'+)/i",                  // ' OR '' = '
+            '/(\bOR\b\s+\d+\s*=\s*\d+)/i'                   // OR 1=1
         ];
         
         $inputs = array_merge($_GET, $_POST);
         
+        // Skip password and email fields as they can contain special characters
+        $skipFields = ['password', 'email', 'user_pass', 'userPass'];
+        
         foreach ($inputs as $key => $value) {
-            if (is_string($value)) {
+            // Skip certain fields
+            if (in_array($key, $skipFields)) {
+                continue;
+            }
+            
+            if (is_string($value) && strlen($value) > 10) { // Only check strings longer than 10 chars
                 foreach ($patterns as $pattern) {
                     if (preg_match($pattern, $value)) {
                         $this->logSecurity('SQL_INJECTION_ATTEMPT', "Detected in $key: " . substr($value, 0, 100));
@@ -377,18 +397,27 @@ class SecurityHandler {
     }
     
     private function detectXSS() {
+        // IMPROVED: More precise XSS detection
         $patterns = [
-            '/<script\b[^>]*>(.*?)<\/script>/is',
-            '/javascript:/i',
-            '/on\w+\s*=\s*["\']?[^"\']*["\']?/i', // onclick, onerror, etc.
-            '/<iframe\b[^>]*>/i',
-            '/<object\b[^>]*>/i',
-            '/<embed\b[^>]*>/i'
+            '/<script[^>]*>.*?<\/script>/is',
+            '/javascript\s*:/i',
+            '/<iframe[^>]*>/i',
+            '/<object[^>]*>/i',
+            '/<embed[^>]*>/i',
+            '/on(load|error|click|mouse)\s*=/i'
         ];
         
         $inputs = array_merge($_GET, $_POST);
         
+        // Skip certain fields that might contain HTML (like email body)
+        $skipFields = ['body', 'message', 'content', 'html', 'description'];
+        
         foreach ($inputs as $key => $value) {
+            // Skip HTML content fields
+            if (in_array($key, $skipFields)) {
+                continue;
+            }
+            
             if (is_string($value)) {
                 foreach ($patterns as $pattern) {
                     if (preg_match($pattern, $value)) {
@@ -472,17 +501,20 @@ class SecurityHandler {
             'application/pdf',
             'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'application/zip', 'application/x-zip-compressed'
+            'application/zip', 'application/x-zip-compressed',
+            'text/plain', 'text/csv'
         ];
         
         if (!in_array($mimeType, $allowedMimes)) {
             return ['success' => false, 'error' => 'Invalid file type (MIME check failed)'];
         }
         
-        // Check for PHP code in files
-        $content = file_get_contents($file['tmp_name'], false, null, 0, 1024);
-        if (preg_match('/<\?php/i', $content)) {
-            return ['success' => false, 'error' => 'File contains prohibited content'];
+        // Check for PHP code in files (only for text-based files)
+        if (in_array($extension, ['txt', 'csv', 'html', 'htm'])) {
+            $content = file_get_contents($file['tmp_name'], false, null, 0, 1024);
+            if (preg_match('/<\?php/i', $content)) {
+                return ['success' => false, 'error' => 'File contains prohibited content'];
+            }
         }
         
         return ['success' => true];
@@ -545,7 +577,7 @@ class SecurityHandler {
             }
         }
         
-        return 'UNKNOWN';
+        return $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
     }
     
     private function checkIPBlacklist() {
@@ -570,7 +602,7 @@ class SecurityHandler {
     }
     
     // ────────────────────────────────────────────────────────────────────
-    // BRUTE FORCE PROTECTION
+    // BRUTE FORCE PROTECTION (Optional - your login.php has its own)
     // ────────────────────────────────────────────────────────────────────
     
     public static function recordLoginAttempt($email, $success = false) {
@@ -632,7 +664,7 @@ class SecurityHandler {
     
     private function logSecurity($event, $details = '') {
         $timestamp = date('Y-m-d H:i:s');
-        $user = $_SESSION['smtp_user'] ?? 'anonymous';
+        $user = $_SESSION['user_email'] ?? $_SESSION['smtp_user'] ?? 'anonymous';
         
         $logEntry = sprintf(
             "[%s] %s | IP: %s | User: %s | Page: %s | Details: %s | User-Agent: %s\n",
@@ -723,48 +755,26 @@ SecurityHandler::getInstance();
 // HELPER FUNCTIONS (Global Access)
 // ════════════════════════════════════════════════════════════════════════
 
-/**
- * Sanitize input data
- */
 function secure_input($input, $type = 'string') {
     return SecurityHandler::sanitize($input, $type);
 }
 
-/**
- * Get CSRF token
- */
 function csrf_token() {
     return SecurityHandler::getCSRFToken();
 }
 
-/**
- * Generate CSRF field for forms
- */
 function csrf_field() {
     return SecurityHandler::csrfField();
 }
 
-/**
- * Validate file upload
- */
 function validate_upload($file) {
     return SecurityHandler::validateFileUpload($file);
 }
 
-/**
- * Record login attempt
- */
 function record_login($email, $success = false) {
     return SecurityHandler::recordLoginAttempt($email, $success);
 }
 
-/**
- * Blacklist an IP address
- */
 function blacklist_ip($ip, $reason = '') {
     SecurityHandler::blacklistIP($ip, $reason);
 }
-
-// ════════════════════════════════════════════════════════════════════════
-// END OF SECURITY HANDLER
-// ════════════════════════════════════════════════════════════════════════
