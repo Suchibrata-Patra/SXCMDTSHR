@@ -374,7 +374,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
     <!-- ========== HEADER / LOGO ========== -->
     <div class="sidebar-header">
         <a href="index.php" class="logo">
-            <img src="https://logos-world.net/wp-content/uploads/2020/04/Apple-Logo.png"
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSL_QbGVO3tHHdoVIJLeFTDoyK2M9mlRxQ1XA&s"
                 alt="SXC Logo"
                 class="logo-image">
             <div class="logo-text">
