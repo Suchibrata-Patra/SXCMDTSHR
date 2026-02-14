@@ -48,7 +48,7 @@ $settings = array_merge([
 // Update session settings for immediate use
 $_SESSION['user_settings'] = $settings;
 ?>
-<html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -56,181 +56,143 @@ $_SESSION['user_settings'] = $settings;
         define('PAGE_TITLE', 'SXC MDTS | Dashboard');
         include 'header.php';
     ?>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
         :root {
-            --ink:        #1a1a2e;
-            --ink-2:      #2d2d44;
-            --ink-3:      #6b6b8a;
-            --ink-4:      #a8a8c0;
-            --bg:         #f0f0f7;
-            --surface:    #ffffff;
-            --surface-2:  #f7f7fc;
-            --border:     rgba(100,100,160,0.12);
-            --border-2:   rgba(100,100,160,0.22);
-            --blue:       #4875c1;
-            --blue-2:     #c6d3ea;
-            --blue-glow:  rgba(79,70,229,0.15);
-            --red:        #ef4444;
-            --green:      #10b981;
-            --amber:      #f59e0b;
-            --r:          10px;
-            --r-lg:       16px;
-            --shadow:     0 1px 3px rgba(79,70,229,0.08), 0 4px 16px rgba(79,70,229,0.06);
-            --shadow-lg:  0 8px 32px rgba(79,70,229,0.14), 0 2px 8px rgba(0,0,0,0.06);
-            --ease:       cubic-bezier(.4,0,.2,1);
-            --ease-spring:cubic-bezier(.34,1.56,.64,1);
+            --apple-blue: #007AFF;
+            --apple-gray: #8E8E93;
+            --apple-bg: #F2F2F7;
+            --glass: rgba(255, 255, 255, 0.7);
+            --border: #E5E5EA;
+            --success-green: #34C759;
+            --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
-        *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
-            font-family: 'DM Sans', -apple-system, sans-serif;
-            background: var(--bg);
-            color: var(--ink);
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--apple-bg);
+            color: #1c1c1e;
             display: flex;
             height: 100vh;
             overflow: hidden;
             -webkit-font-smoothing: antialiased;
         }
 
-        /* ── LAYOUT ── */
+        /* ========== MAIN LAYOUT ========== */
         .main-content {
             flex: 1;
             display: flex;
-            flex-direction: column;
             overflow: hidden;
         }
 
         .content-area {
             flex: 1;
             overflow-y: auto;
-            background: var(--bg);
+            background: var(--apple-bg);
         }
-        .content-area::-webkit-scrollbar { width: 5px; }
-        .content-area::-webkit-scrollbar-track { background: transparent; }
-        .content-area::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 10px; }
 
-        /* ── TOP BAR ── */
+        /* ========== HEADER ========== */
         .page-header {
-            height: 60px;
-            background: var(--surface);
+            background: white;
             border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 0 24px;
-            flex-shrink: 0;
-            position: relative;
-            z-index: 10;
+            padding: 24px 40px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
         .header-container {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex: 1;
+            max-width: 900px;
+            margin: 0 auto;
         }
 
         .page-title {
-            font-size: 17px;
-            font-weight: 700;
-            color: var(--ink);
-            letter-spacing: -0.4px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            font-size: 28px;
+            font-weight: 600;
+            color: #1c1c1e;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
         }
-        .page-title .material-icons-round { font-size: 20px; color: var(--blue); }
 
         .page-subtitle {
-            font-size: 13px;
-            color: var(--ink-4);
+            font-size: 15px;
+            color: var(--apple-gray);
             font-weight: 400;
-            padding-left: 8px;
-            border-left: 1px solid var(--border-2);
-            margin-left: 4px;
         }
 
-        /* ── COMPOSE CONTAINER ── */
+        /* ========== COMPOSE CONTAINER ========== */
         .compose-container {
-            max-width: 860px;
+            max-width: 900px;
             margin: 0 auto;
-            padding: 28px 28px 48px;
+            padding: 40px;
         }
 
-        /* ── FORM SECTIONS ── */
+        /* ========== FORM SECTIONS ========== */
         .form-section {
-            background: var(--surface);
-            border-radius: var(--r-lg);
-            padding: 22px 24px;
-            margin-bottom: 16px;
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
             border: 1px solid var(--border);
-            box-shadow: var(--shadow);
-            transition: box-shadow .2s;
-        }
-        .form-section:focus-within {
-            box-shadow: var(--shadow-lg);
         }
 
         .section-title {
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--ink-3);
-            text-transform: uppercase;
-            letter-spacing: .7px;
-            margin-bottom: 18px;
-            display: flex;
-            align-items: center;
-            gap: 7px;
+            font-size: 17px;
+            font-weight: 600;
+            color: #1c1c1e;
+            margin-bottom: 20px;
+            letter-spacing: -0.3px;
         }
-        .section-title .material-icons-round { font-size: 15px; color: var(--blue); }
 
-        /* ── FORM GROUPS ── */
+        /* ========== FORM GROUPS ========== */
         .form-group {
-            margin-bottom: 18px;
+            margin-bottom: 20px;
         }
-        .form-group:last-child { margin-bottom: 0; }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
 
         .form-group label {
             display: block;
-            margin-bottom: 6px;
-            font-weight: 600;
-            color: var(--ink-2);
-            font-size: 13px;
-            letter-spacing: -.1px;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #1c1c1e;
+            font-size: 14px;
         }
 
         .label-optional {
-            font-size: 12px;
-            color: var(--ink-4);
+            font-size: 13px;
+            color: var(--apple-gray);
             font-weight: 400;
             margin-left: 4px;
         }
 
         .field-description {
-            font-size: 12px;
-            color: var(--ink-4);
-            margin-top: 5px;
+            font-size: 13px;
+            color: var(--apple-gray);
+            margin-top: 6px;
         }
 
-        /* ── INPUT FIELDS ── */
+        /* ========== INPUT FIELDS ========== */
         input[type="email"],
         input[type="text"],
         textarea,
         select {
             width: 100%;
-            padding: 9px 12px;
-            border: 1.5px solid var(--border-2);
-            border-radius: var(--r);
-            font-size: 14px;
-            font-family: 'DM Sans', sans-serif;
-            background: var(--surface-2);
-            color: var(--ink);
-            transition: border-color .2s, box-shadow .2s, background .2s;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: 'Inter', sans-serif;
+            background: white;
+            color: #1c1c1e;
+            transition: all 0.2s;
         }
 
         textarea {
@@ -243,69 +205,74 @@ $_SESSION['user_settings'] = $settings;
         textarea:focus,
         select:focus {
             outline: none;
-            border-color: var(--blue);
-            box-shadow: 0 0 0 3px var(--blue-glow);
-            background: var(--surface);
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
         }
 
         input::placeholder,
-        textarea::placeholder { color: var(--ink-4); }
+        textarea::placeholder {
+            color: var(--apple-gray);
+        }
 
         /* Two-column grid */
         .form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 14px;
+            gap: 16px;
         }
 
-        /* ── FILE UPLOAD AREA ── */
+        /* ========== FILE UPLOAD AREA ========== */
         .file-upload-area {
-            border: 2px dashed var(--border-2);
-            border-radius: var(--r-lg);
-            padding: 32px;
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 30px;
             text-align: center;
-            background: var(--surface-2);
-            transition: all .2s var(--ease);
+            background: #FAFAFA;
+            transition: all 0.2s;
             cursor: pointer;
         }
 
         .file-upload-area:hover,
         .file-upload-area.drag-over {
-            border-color: var(--blue);
-            background: var(--blue-glow);
+            border-color: var(--apple-blue);
+            background: #F5F9FF;
         }
 
         .file-upload-icon {
-            font-size: 44px;
-            color: var(--blue);
-            margin-bottom: 10px;
+            font-size: 48px;
+            color: var(--apple-blue);
+            margin-bottom: 12px;
         }
 
         .file-upload-text {
-            font-size: 14px;
-            color: var(--ink-2);
-            font-weight: 600;
+            font-size: 15px;
+            color: #1c1c1e;
+            font-weight: 500;
             margin-bottom: 4px;
         }
 
         .file-upload-hint {
-            font-size: 12px;
-            color: var(--ink-4);
+            font-size: 13px;
+            color: var(--apple-gray);
         }
 
-        input[type="file"] { display: none; }
+        input[type="file"] {
+            display: none;
+        }
 
-        /* ── UPLOAD PROGRESS ── */
+        /* ========== UPLOAD PROGRESS (Individual file) ========== */
         .upload-item {
-            background: var(--surface);
-            border: 1.5px solid var(--border-2);
-            border-radius: var(--r);
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
             padding: 12px 16px;
             margin-top: 12px;
             display: none;
-            animation: rowFadeIn .2s var(--ease) both;
         }
-        .upload-item.active { display: block; }
+
+        .upload-item.active {
+            display: block;
+        }
 
         .upload-item-header {
             display: flex;
@@ -315,71 +282,64 @@ $_SESSION['user_settings'] = $settings;
         }
 
         .upload-filename {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--ink);
+            font-size: 14px;
+            font-weight: 500;
+            color: #1c1c1e;
         }
 
         .upload-percentage {
-            font-size: 12px;
-            color: var(--ink-3);
-            font-family: 'DM Mono', monospace;
+            font-size: 13px;
+            color: var(--apple-gray);
         }
 
         .upload-progress-bar-container {
-            height: 5px;
-            background: var(--surface-2);
-            border-radius: 3px;
+            height: 4px;
+            background: #f0f0f0;
+            border-radius: 2px;
             overflow: hidden;
         }
 
         .upload-progress-bar {
             height: 100%;
-            background: linear-gradient(90deg, var(--blue), var(--blue-2));
-            transition: width 0.3s var(--ease);
+            background: var(--apple-blue);
+            transition: width 0.3s;
             width: 0%;
-            border-radius: 3px;
         }
 
-        /* ── FILE PREVIEW CARDS ── */
+        /* ========== FILE PREVIEW CARDS ========== */
         .file-cards-container {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
-            gap: 14px;
-            margin-top: 18px;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
         }
 
         .file-card {
-            background: var(--surface);
-            border: 1.5px solid var(--border);
-            border-radius: var(--r-lg);
-            padding: 16px 14px 14px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
             position: relative;
-            transition: all .18s var(--ease);
+            transition: all 0.2s;
             cursor: pointer;
             text-align: center;
-            animation: rowFadeIn .2s var(--ease) both;
         }
-        .file-card::before {
-            content: '';
-            position: absolute; inset: 0;
-            border-radius: var(--r-lg);
-            background: linear-gradient(135deg, rgba(79,70,229,.04), transparent);
-            opacity: 0; transition: opacity .2s;
+
+        .file-card:hover {
+            box-shadow: var(--card-shadow);
+            transform: translateY(-2px);
         }
-        .file-card:hover { border-color: var(--blue); box-shadow: var(--shadow-lg); transform: translateY(-2px); }
-        .file-card:hover::before { opacity: 1; }
 
         .file-card-icon {
-            font-size: 44px;
-            color: var(--blue);
-            margin-bottom: 10px;
+            font-size: 48px;
+            color: var(--apple-blue);
+            margin-bottom: 12px;
         }
 
         .file-card-name {
-            font-size: 12px;
-            color: var(--ink);
-            font-weight: 600;
+            font-size: 13px;
+            color: #1c1c1e;
+            font-weight: 500;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -387,288 +347,158 @@ $_SESSION['user_settings'] = $settings;
         }
 
         .file-card-size {
-            font-size: 11px;
-            color: var(--ink-4);
+            font-size: 12px;
+            color: var(--apple-gray);
             margin-bottom: 8px;
-            font-family: 'DM Mono', monospace;
         }
 
         .file-card-badge {
             display: inline-block;
-            font-size: 10px;
-            padding: 3px 8px;
-            background: rgba(16,185,129,.1);
-            color: var(--green);
-            border-radius: 20px;
-            font-weight: 700;
-            letter-spacing: .3px;
-            border: 1px solid rgba(16,185,129,.2);
+            font-size: 11px;
+            padding: 4px 8px;
+            background: #E8F5E9;
+            color: var(--success-green);
+            border-radius: 4px;
+            font-weight: 500;
         }
 
         .file-card-remove {
             position: absolute;
-            top: 7px; right: 7px;
-            width: 22px; height: 22px;
-            background: rgba(239,68,68,.9);
+            top: 8px;
+            right: 8px;
+            width: 24px;
+            height: 24px;
+            background: rgba(255, 59, 48, 0.95);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             opacity: 0;
-            transition: opacity .18s;
+            transition: opacity 0.2s;
         }
-        .file-card:hover .file-card-remove { opacity: 1; }
-        .file-card-remove .material-icons { font-size: 14px; color: white; }
+
+        .file-card:hover .file-card-remove {
+            opacity: 1;
+        }
+
+        .file-card-remove .material-icons {
+            font-size: 16px;
+            color: white;
+        }
 
         .file-card-download {
             margin-top: 8px;
-            font-size: 11px;
-            color: var(--blue);
+            font-size: 12px;
+            color: var(--apple-blue);
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 4px;
-            font-weight: 600;
         }
-        .file-card-download .material-icons { font-size: 14px; }
+
+        .file-card-download .material-icons {
+            font-size: 16px;
+        }
 
         .size-warning {
-            background: rgba(245,158,11,.08);
-            border: 1.5px solid rgba(245,158,11,.3);
-            border-radius: var(--r);
-            padding: 11px 14px;
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 12px;
             margin-top: 12px;
             font-size: 13px;
-            color: #92400e;
+            color: #856404;
             display: none;
-            align-items: center;
-            gap: 8px;
         }
-        .size-warning.active { display: flex; }
-        .size-warning .material-icons { font-size: 18px; color: var(--amber); flex-shrink: 0; }
 
-        /* ── ATTACHMENT SOURCE SEGMENTED CONTROL ── */
-        .attach-segmented {
-            display: flex;
-            background: var(--surface-2);
-            border: 1.5px solid var(--border-2);
-            border-radius: var(--r);
-            padding: 3px;
-            gap: 3px;
-            margin-bottom: 14px;
+        .size-warning.active {
+            display: block;
         }
-        .attach-seg-btn {
-            flex: 1;
-            padding: 7px 10px;
-            border: none;
-            border-radius: 7px;
-            font-size: 12.5px;
-            font-weight: 500;
-            color: var(--ink-3);
-            background: none;
-            cursor: pointer;
-            transition: all .15s var(--ease);
-            display: flex; align-items: center; justify-content: center;
-            gap: 5px;
-            font-family: 'DM Sans', sans-serif;
-        }
-        .attach-seg-btn .material-icons-round { font-size: 15px; }
-        .attach-seg-btn.active {
-            background: var(--surface);
-            color: var(--blue);
-            box-shadow: var(--shadow);
-            font-weight: 700;
-            border: 1px solid var(--border-2);
-        }
-        .attach-tab-content { display: none; }
-        .attach-tab-content.active { display: block; animation: rowFadeIn .18s var(--ease) both; }
 
-        /* ── DRIVE FILE LIST ── */
-        .drive-file-list {
-            max-height: 240px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            border: 1.5px solid var(--border-2);
-            border-radius: var(--r);
-            padding: 6px;
-            background: var(--surface-2);
-        }
-        .drive-file-list::-webkit-scrollbar { width: 4px; }
-        .drive-file-list::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 10px; }
-        .drive-file-item {
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            padding: 8px 10px;
-            border-radius: var(--r);
-            cursor: pointer;
-            transition: background .12s, border-color .12s;
-            border: 1.5px solid transparent;
-            background: var(--surface);
-        }
-        .drive-file-item:hover { background: var(--surface-2); border-color: var(--border-2); }
-        .drive-file-item.selected {
-            background: rgba(72,117,193,.07);
-            border-color: rgba(72,117,193,.3);
-        }
-        .drive-file-emoji { font-size: 18px; line-height: 1; flex-shrink: 0; }
-        .drive-file-info { flex: 1; min-width: 0; }
-        .drive-file-name {
-            font-size: 12.5px;
-            font-weight: 600;
-            color: var(--ink);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .drive-file-size { font-size: 11px; color: var(--ink-4); margin-top: 1px; }
-        .drive-file-check {
-            width: 18px; height: 18px;
-            border-radius: 50%;
-            border: 1.5px solid var(--border-2);
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0;
-            transition: all .15s;
-        }
-        .drive-file-item.selected .drive-file-check {
-            background: var(--blue);
-            border-color: var(--blue);
-        }
-        .drive-file-check .chk-icon { display: none; font-size: 11px; color: white; }
-        .drive-file-item.selected .drive-file-check .chk-icon { display: block; }
-
-        .drive-loading-msg {
-            padding: 20px;
-            text-align: center;
-            font-size: 12.5px;
-            color: var(--ink-4);
-        }
-        .drive-loading-msg .spinner-inline {
-            display: inline-block;
-            width: 18px; height: 18px;
-            border: 2px solid var(--border-2);
-            border-top-color: var(--blue);
-            border-radius: 50%;
-            animation: spin360 .7s linear infinite;
-            margin-bottom: 8px;
-        }
-        @keyframes spin360 { to { transform: rotate(360deg); } }
-
-        /* Drive chip — confirms a drive file is queued for send */
-        .drive-attach-chip {
-            display: none;
-            align-items: center;
-            gap: 8px;
-            padding: 9px 12px;
-            background: rgba(72,117,193,.07);
-            border: 1.5px solid rgba(72,117,193,.25);
-            border-radius: var(--r);
-            margin-top: 10px;
-            animation: rowFadeIn .18s var(--ease) both;
-        }
-        .drive-attach-chip.visible { display: flex; }
-        .drive-attach-chip-icon { font-size: 16px; }
-        .drive-attach-chip-info { flex: 1; min-width: 0; }
-        .drive-attach-chip-name {
-            font-size: 12.5px;
-            font-weight: 600;
-            color: var(--ink);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .drive-attach-chip-size { font-size: 11px; color: var(--ink-4); }
-        .drive-attach-chip-remove {
-            background: none; border: none;
-            cursor: pointer; color: var(--ink-4);
-            display: flex; align-items: center;
-            border-radius: 4px; padding: 2px;
-            transition: color .15s, background .15s;
-        }
-        .drive-attach-chip-remove:hover { color: var(--red); background: rgba(239,68,68,.08); }
-        .drive-attach-chip-remove .material-icons-round { font-size: 15px; }
-
-        /* ── RICH TEXT EDITOR ── */
+        /* ========== RICH TEXT EDITOR ========== */
         .editor-wrapper {
-            border: 1.5px solid var(--border-2);
-            border-radius: var(--r);
+            border: 1px solid var(--border);
+            border-radius: 8px;
             overflow: hidden;
-            background: var(--surface);
-            transition: border-color .2s, box-shadow .2s;
-        }
-        .editor-wrapper:focus-within {
-            border-color: var(--blue);
-            box-shadow: 0 0 0 3px var(--blue-glow);
+            background: white;
         }
 
         .ql-toolbar {
-            border: none !important;
-            border-bottom: 1px solid var(--border) !important;
-            background: var(--surface-2);
+            border: none;
+            border-bottom: 1px solid var(--border);
+            background: #FAFAFA;
         }
 
         .ql-container {
-            border: none !important;
-            font-family: 'DM Sans', sans-serif;
-            font-size: 14px;
+            border: none;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
             min-height: 200px;
         }
 
-        /* ── ACTION BUTTONS ── */
+        /* ========== ACTION BUTTONS ========== */
         .action-buttons {
             display: flex;
-            gap: 10px;
-            margin-top: 24px;
+            gap: 12px;
+            margin-top: 30px;
         }
 
         .btn {
             flex: 1;
-            height: 42px;
-            padding: 0 22px;
+            padding: 14px 28px;
             border: none;
-            border-radius: var(--r);
-            font-size: 14px;
-            font-weight: 700;
-            font-family: 'DM Sans', sans-serif;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
             cursor: pointer;
-            transition: all .18s var(--ease);
-            display: inline-flex;
+            transition: all 0.2s;
+            display: flex;
             align-items: center;
             justify-content: center;
-            gap: 7px;
+            gap: 8px;
         }
 
         .btn-primary {
-            background: var(--blue);
+            background: var(--apple-blue);
             color: white;
-            box-shadow: 0 2px 8px var(--blue-glow);
         }
-        .btn-primary:hover { background: #3a62a8; box-shadow: 0 4px 16px var(--blue-glow); transform: translateY(-1px); }
-        .btn-primary:active { transform: scale(.97); }
+
+        .btn-primary:hover {
+            background: #0066CC;
+        }
 
         .btn-secondary {
-            background: var(--surface-2);
-            color: var(--ink-2);
-            border: 1.5px solid var(--border-2);
+            background: #F2F2F7;
+            color: #1c1c1e;
         }
-        .btn-secondary:hover { background: var(--bg); border-color: var(--blue); color: var(--blue); }
 
-        .btn .material-icons { font-size: 17px; }
-        .btn .material-icons-round { font-size: 17px; }
+        .btn-secondary:hover {
+            background: #E5E5EA;
+        }
 
-        /* ── ANIMATIONS ── */
-        @keyframes rowFadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+        .btn .material-icons {
+            font-size: 18px;
+        }
 
-        /* ── RESPONSIVE ── */
+        /* ========== RESPONSIVE ========== */
         @media (max-width: 768px) {
-            .compose-container { padding: 16px; }
-            .form-grid { grid-template-columns: 1fr; }
-            .action-buttons { flex-direction: column; }
-            .file-cards-container { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
-            .page-subtitle { display: none; }
+            .compose-container {
+                padding: 20px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .file-cards-container {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            }
         }
     </style>
 </head>
@@ -676,27 +506,22 @@ $_SESSION['user_settings'] = $settings;
 <body>
     <?php include 'sidebar.php'; ?>
     <div class="main-content">
-        <!-- TOP BAR -->
-        <div class="page-header">
-            <div class="header-container">
-                <h1 class="page-title">
-                    <span class="material-icons-round">edit_note</span>
-                    Compose Email
-                </h1>
-                <span class="page-subtitle">Send professional emails with templates and signatures</span>
-            </div>
-        </div>
-
         <div class="content-area">
+            <!-- Header -->
+            <div class="page-header">
+                <div class="header-container">
+                    <h1 class="page-title">Compose New Email</h1>
+                    <p class="page-subtitle">Send professional emails with templates and signatures</p>
+                </div>
+            </div>
+
             <!-- Compose Form -->
             <div class="compose-container">
                 <form id="composeForm" method="POST" action="send.php" enctype="multipart/form-data">
+                    
                     <!-- Recipients Section -->
                     <div class="form-section">
-                        <h3 class="section-title">
-                            <span class="material-icons-round">group</span>
-                            Recipients
-                        </h3>
+                        <h3 class="section-title">Recipients</h3>
                         
                         <div class="form-group">
                             <label for="email">
@@ -731,10 +556,7 @@ $_SESSION['user_settings'] = $settings;
 
                     <!-- Email Details Section -->
                     <div class="form-section">
-                        <h3 class="section-title">
-                            <span class="material-icons-round">subject</span>
-                            Email Details
-                        </h3>
+                        <h3 class="section-title">Email Details</h3>
                         
                         <div class="form-group">
                             <label for="subject">
@@ -757,10 +579,7 @@ $_SESSION['user_settings'] = $settings;
 
                     <!-- Message Section -->
                     <div class="form-section">
-                        <h3 class="section-title">
-                            <span class="material-icons-round">chat_bubble_outline</span>
-                            Message
-                        </h3>
+                        <h3 class="section-title">Message</h3>
                         
                         <div class="form-group">
                             <label>Email Body</label>
@@ -773,10 +592,7 @@ $_SESSION['user_settings'] = $settings;
 
                     <!-- Signature Section -->
                     <div class="form-section">
-                        <h3 class="section-title">
-                            <span class="material-icons-round">draw</span>
-                            Email Signature
-                        </h3>
+                        <h3 class="section-title">Email Signature</h3>
                         
                         <div class="form-grid">
                             <div class="form-group">
@@ -814,93 +630,54 @@ $_SESSION['user_settings'] = $settings;
 
                     <!-- Attachments Section -->
                     <div class="form-section">
-                        <h3 class="section-title">
-                            <span class="material-icons-round">attach_file</span>
-                            Attachments
-                        </h3>
-
-                        <!-- Source selector -->
-                        <div class="attach-segmented">
-                            <button type="button" class="attach-seg-btn active" id="segBtnDrive" onclick="switchAttachTab('drive')">
-                                <span class="material-icons-round">add_to_drive</span>
-                                My Drive
-                            </button>
-                            <button type="button" class="attach-seg-btn" id="segBtnUpload" onclick="switchAttachTab('upload')">
-                                <span class="material-icons-round">upload</span>
-                                Upload File
-                            </button>
+                        <h3 class="section-title">Attachments</h3>
+                        
+                        <div class="file-upload-area" id="fileUploadArea">
+                            <div class="material-icons file-upload-icon">cloud_upload</div>
+                            <p class="file-upload-text">Click to upload or drag and drop</p>
+                            <p class="file-upload-hint">Maximum 20MB per file, 25MB total</p>
+                            <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.zip,.txt,.csv">
                         </div>
 
-                        <!-- ── DRIVE TAB ── -->
-                        <div id="attachTabDrive" class="attach-tab-content active">
-                            <div class="drive-file-list" id="driveFileList">
-                                <div class="drive-loading-msg" id="driveLoadingMsg">
-                                    <div class="spinner-inline"></div>
-                                    <br>Loading drive files…
-                                </div>
+                        <!-- Individual Upload Progress -->
+                        <div class="upload-item" id="uploadItem">
+                            <div class="upload-item-header">
+                                <span class="upload-filename" id="uploadFilename"></span>
+                                <span class="upload-percentage" id="uploadPercentage">0%</span>
                             </div>
-                            <!-- Chip: shown after a drive file is registered -->
-                            <div class="drive-attach-chip" id="driveChip">
-                                <span class="drive-attach-chip-icon" id="driveChipIcon">📎</span>
-                                <div class="drive-attach-chip-info">
-                                    <div class="drive-attach-chip-name" id="driveChipName">—</div>
-                                    <div class="drive-attach-chip-size" id="driveChipSize">—</div>
-                                </div>
-                                <button type="button" class="drive-attach-chip-remove" onclick="clearDriveSelection()" title="Remove">
-                                    <span class="material-icons-round">close</span>
-                                </button>
+                            <div class="upload-progress-bar-container">
+                                <div class="upload-progress-bar" id="uploadProgressBar"></div>
                             </div>
                         </div>
-
-                        <!-- ── UPLOAD TAB ── -->
-                        <div id="attachTabUpload" class="attach-tab-content">
-                            <div class="file-upload-area" id="fileUploadArea">
-                                <span class="material-icons-round file-upload-icon">cloud_upload</span>
-                                <p class="file-upload-text">Drop files here or click to upload</p>
-                                <p class="file-upload-hint">Maximum 20MB per file · 25MB total</p>
-                                <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.zip,.txt,.csv">
-                            </div>
-
-                            <!-- Upload Progress -->
-                            <div class="upload-item" id="uploadItem">
-                                <div class="upload-item-header">
-                                    <span class="upload-filename" id="uploadFilename"></span>
-                                    <span class="upload-percentage" id="uploadPercentage">0%</span>
-                                </div>
-                                <div class="upload-progress-bar-container">
-                                    <div class="upload-progress-bar" id="uploadProgressBar"></div>
-                                </div>
-                            </div>
-
-                            <!-- Size Warning -->
-                            <div class="size-warning" id="sizeWarning">
-                                <span class="material-icons-round">warning_amber</span>
-                                <span id="sizeWarningText"></span>
-                            </div>
+                        
+                        <!-- Size Warning -->
+                        <div class="size-warning" id="sizeWarning">
+                            <span class="material-icons" style="vertical-align: middle; font-size: 18px;">warning</span>
+                            <span id="sizeWarningText"></span>
                         </div>
 
-                        <!-- File Preview Cards (shared for both tabs) -->
+                        <!-- File Preview Cards -->
                         <div class="file-cards-container" id="fileCardsContainer"></div>
-
-                        <!-- Hidden input: comma-separated IDs of ALL attachments (uploaded + drive-registered) -->
+                        
+                        <!-- Hidden input for attachment IDs -->
                         <input type="hidden" name="attachment_ids" id="attachmentIds" value="">
                     </div>
 
                     <!-- Action Buttons -->
                     <div class="action-buttons">
                         <button type="button" class="btn btn-secondary" id="previewBtn">
-                            <span class="material-icons-round">preview</span>
+                            <span class="material-icons">preview</span>
                             Preview Email
                         </button>
                         <button type="submit" class="btn btn-primary">
-                            <span class="material-icons-round">send</span>
+                            <span class="material-icons">send</span>
                             Send Email
                         </button>
                     </div>
                 </form>
             </div>
-        </div><!-- /.content-area -->
-    </div><!-- /.main-content -->
+        </div>
+    </div>
 
     <!-- Quill Rich Text Editor JS -->
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
@@ -921,135 +698,6 @@ $_SESSION['user_settings'] = $settings;
             },
             placeholder: 'Type your message here...'
         });
-
-        // ========== ATTACHMENT SOURCE TABS ==========
-        function switchAttachTab(tab) {
-            document.getElementById('segBtnDrive').classList.toggle('active', tab === 'drive');
-            document.getElementById('segBtnUpload').classList.toggle('active', tab === 'upload');
-            document.getElementById('attachTabDrive').classList.toggle('active', tab === 'drive');
-            document.getElementById('attachTabUpload').classList.toggle('active', tab === 'upload');
-        }
-
-        // ========== DRIVE FILE LOADER ==========
-        async function loadDriveFiles() {
-            const list    = document.getElementById('driveFileList');
-            const loading = document.getElementById('driveLoadingMsg');
-            try {
-                const fd = new FormData();
-                fd.append('action', 'list_drive_files');
-                // Add CSRF token for security
-                const csrfToken = document.querySelector('input[name="csrf_token"]').value;
-                fd.append('csrf_token', csrfToken);
-                const resp = await fetch('bulk_mail_backend.php', { method: 'POST', body: fd });
-                const data = await resp.json();
-
-                if (data.success && data.files && data.files.length > 0) {
-                    loading.remove();
-                    data.files.forEach(f => {
-                        const item = document.createElement('div');
-                        item.className = 'drive-file-item';
-                        item.dataset.path = f.path;
-                        item.dataset.name = f.name;
-                        item.dataset.size = f.formatted_size;
-                        item.dataset.ext  = f.extension;
-                        item.innerHTML = `
-                            <span class="drive-file-emoji">${getDriveFileIcon(f.extension)}</span>
-                            <div class="drive-file-info">
-                                <div class="drive-file-name" title="${f.name}">${f.name}</div>
-                                <div class="drive-file-size">${f.formatted_size}</div>
-                            </div>
-                            <div class="drive-file-check">
-                                <span class="material-icons-round chk-icon">check</span>
-                            </div>`;
-                        item.addEventListener('click', () => selectDriveFile(item));
-                        list.appendChild(item);
-                    });
-                } else if (data.success) {
-                    loading.innerHTML = '<div style="padding:12px;text-align:center">📁<br><span style="font-size:12px;color:var(--ink-4)">No files in Drive yet</span></div>';
-                } else {
-                    loading.innerHTML = `<div style="padding:12px;text-align:center">⚠️<br><span style="font-size:12px;color:var(--ink-4)">${data.error || 'Could not load files'}</span></div>`;
-                }
-            } catch (err) {
-                loading.innerHTML = `<div style="padding:12px;text-align:center">⚠️<br><span style="font-size:12px;color:var(--ink-4)">Load failed: ${err.message}</span></div>`;
-            }
-        }
-
-        // ========== DRIVE FILE SELECTION ==========
-        // Registers the drive file via upload_handler.php so it gets a real attachment_id
-        // that send.php can handle identically to a manually uploaded file.
-        async function selectDriveFile(itemEl) {
-            const wasSelected = itemEl.classList.contains('selected');
-
-            // Deselect all
-            document.querySelectorAll('.drive-file-item').forEach(el => el.classList.remove('selected'));
-
-            // If already selected, just clear and bail
-            if (wasSelected) {
-                clearDriveSelection();
-                return;
-            }
-
-            itemEl.classList.add('selected');
-
-            const path = itemEl.dataset.path;
-            const name = itemEl.dataset.name;
-            const size = itemEl.dataset.size;
-            const ext  = itemEl.dataset.ext;
-
-            // Show chip with loading state
-            document.getElementById('driveChipIcon').textContent = '⏳';
-            document.getElementById('driveChipName').textContent  = name;
-            document.getElementById('driveChipSize').textContent  = 'Registering…';
-            document.getElementById('driveChip').classList.add('visible');
-
-            try {
-                // POST the drive path to index_drive_attach_handler.php which registers it
-                // in the DB and returns the same JSON shape as upload_handler.php —
-                // so send.php handles drive files identically to manual uploads.
-                const fd = new FormData();
-                fd.append('drive_path', path);
-
-                const resp = await fetch('index_drive_attach_handler.php', { method: 'POST', body: fd });
-                const data = await resp.json();
-
-                if (data.success) {
-                    // Add to uploadedFiles array and attachment_ids — same as a normal upload
-                    uploadedFiles.push(data);
-                    totalSize += data.file_size || 0;
-                    addFileCard(data);
-                    updateAttachmentIds();
-
-                    // Update chip to confirmed state
-                    document.getElementById('driveChipIcon').textContent = getDriveFileIcon(ext);
-                    document.getElementById('driveChipSize').textContent  = size;
-                } else {
-                    alert('Could not attach drive file: ' + (data.error || 'Unknown error'));
-                    clearDriveSelection();
-                }
-            } catch (err) {
-                alert('Failed to attach drive file: ' + err.message);
-                clearDriveSelection();
-            }
-        }
-
-        function clearDriveSelection() {
-            document.getElementById('driveChip').classList.remove('visible');
-            document.querySelectorAll('.drive-file-item').forEach(el => el.classList.remove('selected'));
-        }
-
-        function getDriveFileIcon(ext) {
-            const map = {
-                pdf:'📄', doc:'📝', docx:'📝', txt:'📝',
-                xls:'📊', xlsx:'📊', csv:'📊',
-                ppt:'📽️', pptx:'📽️',
-                jpg:'🖼️', jpeg:'🖼️', png:'🖼️', gif:'🖼️',
-                zip:'🗜️', rar:'🗜️'
-            };
-            return map[ext] || '📎';
-        }
-
-        // Load drive files when page is ready
-        loadDriveFiles();
 
         // ========== FILE UPLOAD FUNCTIONALITY ==========
         const fileInput = document.getElementById('fileInput');
@@ -1182,16 +830,16 @@ $_SESSION['user_settings'] = $settings;
             const icon = getFileIcon(fileData.extension);
             
             card.innerHTML = `
-                <span class="material-icons-round file-card-icon">${icon}</span>
+                <div class="material-icons file-card-icon">${icon}</div>
                 <div class="file-card-name" title="${fileData.original_name}">${fileData.original_name}</div>
                 <div class="file-card-size">${fileData.formatted_size}</div>
                 ${fileData.deduplicated ? '<div class="file-card-badge">✓ Reused</div>' : ''}
                 <div class="file-card-download">
-                    <span class="material-icons-round">download</span>
-                    <span>Download</span>
+                    <span class="material-icons">download</span>
+                    <span>Click to download</span>
                 </div>
                 <div class="file-card-remove">
-                    <span class="material-icons-round" style="font-size:14px;color:white">close</span>
+                    <span class="material-icons">close</span>
                 </div>
             `;
 
