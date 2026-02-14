@@ -767,45 +767,45 @@ function initializeSecureSession() {
 /**
  * Create user if not exists
  */
-function createUserIfNotExists($pdo, $email, $fullName = null) {
-    try {
-        // Check if user exists
-        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = :email");
-        $stmt->execute([':email' => $email]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+// function createUserIfNotExists($pdo, $email, $fullName = null) {
+//     try {
+//         // Check if user exists
+//         $stmt = $pdo->prepare("SELECT id FROM users WHERE email = :email");
+//         $stmt->execute([':email' => $email]);
+//         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        if ($user) {
-            return $user['id'];
-        }
+//         if ($user) {
+//             return $user['id'];
+//         }
         
-        // Create new user
-        $uuid = sprintf(
-            '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-            mt_rand(0, 0xffff), mt_rand(0, 0xffff),
-            mt_rand(0, 0xffff),
-            mt_rand(0, 0x0fff) | 0x4000,
-            mt_rand(0, 0x3fff) | 0x8000,
-            mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
-        );
+//         // Create new user
+//         $uuid = sprintf(
+//             '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+//             mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+//             mt_rand(0, 0xffff),
+//             mt_rand(0, 0x0fff) | 0x4000,
+//             mt_rand(0, 0x3fff) | 0x8000,
+//             mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+//         );
         
-        $stmt = $pdo->prepare("
-            INSERT INTO users (user_uuid, email, full_name, is_active, created_at, updated_at)
-            VALUES (:uuid, :email, :name, 1, NOW(), NOW())
-        ");
+//         $stmt = $pdo->prepare("
+//             INSERT INTO users (user_uuid, email, full_name, is_active, created_at, updated_at)
+//             VALUES (:uuid, :email, :name, 1, NOW(), NOW())
+//         ");
         
-        $stmt->execute([
-            ':uuid' => $uuid,
-            ':email' => $email,
-            ':name' => $fullName
-        ]);
+//         $stmt->execute([
+//             ':uuid' => $uuid,
+//             ':email' => $email,
+//             ':name' => $fullName
+//         ]);
         
-        return $pdo->lastInsertId();
+//         return $pdo->lastInsertId();
         
-    } catch (PDOException $e) {
-        error_log("Failed to create user: " . $e->getMessage());
-        return null;
-    }
-}
+//     } catch (PDOException $e) {
+//         error_log("Failed to create user: " . $e->getMessage());
+//         return null;
+//     }
+// }
 
 /**
  * Clean up expired sessions (run via cron)
