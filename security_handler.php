@@ -1,11 +1,11 @@
 <?php
 /**
  * ========================================================================
- * SECURITY HANDLER v2.2 - FIXED FOR AJAX UPLOADS
+ * SECURITY HANDLER v2.3 - FIXED HTTP 500 ERROR
  * Ultra-Secure Protection Layer for PHP Applications
  * ========================================================================
  * 
- * FIXED: Will not block legitimate AJAX file uploads from Google Drive
+ * FIXED: Gracefully handles missing config.php to prevent HTTP 500 errors
  * 
  * USAGE: Include this at the TOP of every PHP file:
  * require_once __DIR__ . '/security_handler.php';
@@ -62,6 +62,47 @@ if (!is_dir(SECURITY_LOG_DIR)) {
 if (!file_exists(SECURITY_LOG_FILE)) {
     @file_put_contents(SECURITY_LOG_FILE, "");
     @chmod(SECURITY_LOG_FILE, 0640);
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// LOAD CONFIG.PHP IF EXISTS (Graceful Fallback)
+// ════════════════════════════════════════════════════════════════════════
+
+// Define env() function if not already defined
+if (!function_exists('env')) {
+    function env($key, $default = null) {
+        // Try $_ENV first
+        if (isset($_ENV[$key])) {
+            return $_ENV[$key];
+        }
+        
+        // Try getenv
+        $value = getenv($key);
+        if ($value !== false) {
+            return $value;
+        }
+        
+        // Return default
+        return $default;
+    }
+}
+
+// Try to include config.php if it exists
+if (file_exists(__DIR__ . '/config.php')) {
+    try {
+        require_once __DIR__ . '/config.php';
+    } catch (Exception $e) {
+        // Log error but continue - don't crash the application
+        error_log("Warning: config.php could not be loaded: " . $e->getMessage());
+    }
+}
+
+// Define encryption constants with fallback values
+if (!defined('ENCRYPTION_KEY')) {
+    define('ENCRYPTION_KEY', env('ENCRYPTION_KEY', 'default-key-change-in-production-' . substr(md5(__DIR__), 0, 16)));
+}
+if (!defined('ENCRYPTION_METHOD')) {
+    define('ENCRYPTION_METHOD', 'AES-256-CBC');
 }
 
 // ════════════════════════════════════════════════════════════════════════
@@ -225,20 +266,7 @@ class SecurityHandler {
             
             if (!$token || !hash_equals($_SESSION['csrf_token'], $token)) {
                 $this->logSecurity('CSRF_ATTACK', 'Invalid or missing CSRF token');
-                
-                // For AJAX requests, return JSON error instead of blocking
-                if ($this->isAjaxRequest()) {
-                    header('Content-Type: application/json');
-                    http_response_code(403);
-                    echo json_encode([
-                        'success' => false,
-                        'error' => 'CSRF validation failed. Please refresh the page.',
-                        'code' => 'CSRF_ERROR'
-                    ]);
-                    exit;
-                }
-                
-                $this->blockAccess('CSRF validation failed');
+                $this->blockAccess('Invalid request token');
             }
         }
     }
@@ -265,152 +293,16 @@ class SecurityHandler {
     // ────────────────────────────────────────────────────────────────────
     
     private function setSecurityHeaders() {
-        if (headers_sent()) {
-            return;
-        }
-        
-        // Prevent content type sniffing
-        header('X-Content-Type-Options: nosniff');
-        
-        // Enable XSS protection
-        header('X-XSS-Protection: 1; mode=block');
-        
-        // Prevent clickjacking
-        header('X-Frame-Options: SAMEORIGIN');
-        
-        // Referrer policy
-        header('Referrer-Policy: strict-origin-when-cross-origin');
-        
-        // Content Security Policy (adjust as needed)
-        // header('Content-Security-Policy: default-src \'self\'; script-src \'self\' \'unsafe-inline\'; style-src \'self\' \'unsafe-inline\';');
-    }
-    
-    // ────────────────────────────────────────────────────────────────────
-    // INPUT SANITIZATION
-    // ────────────────────────────────────────────────────────────────────
-    
-    private function sanitizeInputs() {
-        // Skip for exempt pages
-        if (in_array($this->currentPage, SQL_DETECTION_EXEMPT_PAGES)) {
-            return;
-        }
-        
-        // Check for SQL injection patterns
-        $dangerousPatterns = [
-            '/(\bUNION\b.*\bSELECT\b)/i',
-            '/(\bDROP\b.*\bTABLE\b)/i',
-            '/(\bINSERT\b.*\bINTO\b)/i',
-            '/(\bDELETE\b.*\bFROM\b)/i',
-            '/(--|\#|\/\*|\*\/)/i',
-            '/(\bEXEC\b|\bEXECUTE\b)/i',
-            '/(\bSCRIPT\b)/i'
-        ];
-        
-        $inputData = array_merge($_GET, $_POST, $_COOKIE);
-        
-        foreach ($inputData as $key => $value) {
-            if (is_string($value)) {
-                foreach ($dangerousPatterns as $pattern) {
-                    if (preg_match($pattern, $value)) {
-                        $this->logSecurity('SQL_INJECTION_ATTEMPT', "Detected pattern in $key: $value");
-                        // Log but don't block - let PDO handle it
-                    }
-                }
-            }
-        }
-    }
-    
-    public static function sanitize($input, $type = 'string') {
-        if (is_array($input)) {
-            return array_map([self::class, 'sanitize'], $input);
-        }
-        
-        switch ($type) {
-            case 'email':
-                return filter_var($input, FILTER_SANITIZE_EMAIL);
-            case 'int':
-                return filter_var($input, FILTER_SANITIZE_NUMBER_INT);
-            case 'float':
-                return filter_var($input, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-            case 'url':
-                return filter_var($input, FILTER_SANITIZE_URL);
-            case 'string':
-            default:
-                return htmlspecialchars(strip_tags($input), ENT_QUOTES, 'UTF-8');
-        }
-    }
-    
-    // ────────────────────────────────────────────────────────────────────
-    // FILE UPLOAD VALIDATION
-    // ────────────────────────────────────────────────────────────────────
-    
-    public static function validateFileUpload($file) {
-        $errors = [];
-        
-        // Check if file was uploaded
-        if (!isset($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
-            $errors[] = 'Invalid file upload';
-            return ['success' => false, 'errors' => $errors];
-        }
-        
-        // Check file size
-        if ($file['size'] > UPLOAD_MAX_SIZE) {
-            $errors[] = 'File size exceeds maximum allowed (' . (UPLOAD_MAX_SIZE / 1024 / 1024) . 'MB)';
-        }
-        
-        // Check file extension
-        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        if (!in_array($extension, ALLOWED_UPLOAD_EXTENSIONS)) {
-            $errors[] = 'File type not allowed: .' . $extension;
-        }
-        
-        // Check MIME type (basic validation)
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mimeType = finfo_file($finfo, $file['tmp_name']);
-        finfo_close($finfo);
-        
-        $allowedMimes = [
-            'image/jpeg', 'image/png', 'image/gif',
-            'application/pdf',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/vnd.ms-excel',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'application/zip',
-            'text/plain',
-            'text/csv'
-        ];
-        
-        if (!in_array($mimeType, $allowedMimes)) {
-            // Log but don't block - MIME type detection can be unreliable
-            error_log("Suspicious MIME type: $mimeType for file: " . $file['name']);
-        }
-        
-        if (!empty($errors)) {
-            return ['success' => false, 'errors' => $errors];
-        }
-        
-        return ['success' => true];
-    }
-    
-    // ────────────────────────────────────────────────────────────────────
-    // PATH TRAVERSAL PROTECTION
-    // ────────────────────────────────────────────────────────────────────
-    
-    private function preventPathTraversal() {
-        $dangerousPatterns = [
-            '../',
-            '..\\',
-            '%2e%2e%2f',
-            '%2e%2e/',
-            '..%2f',
-            '%2e%2e%5c'
-        ];
-        
-        foreach ($dangerousPatterns as $pattern) {
-            if (stripos($this->requestUri, $pattern) !== false) {
-                $this->logSecurity('PATH_TRAVERSAL_ATTEMPT', "Detected in URI: {$this->requestUri}");
-                $this->blockAccess('Invalid request');
+        if (!headers_sent()) {
+            header('X-Content-Type-Options: nosniff');
+            header('X-Frame-Options: SAMEORIGIN');
+            header('X-XSS-Protection: 1; mode=block');
+            header('Referrer-Policy: strict-origin-when-cross-origin');
+            header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
+            
+            // Don't set CSP for public pages as they might need inline scripts for login forms
+            if (!in_array($this->currentPage, PUBLIC_PAGES)) {
+                header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;");
             }
         }
     }
@@ -425,91 +317,269 @@ class SecurityHandler {
         if (!isset($_SESSION[$key])) {
             $_SESSION[$key] = [
                 'count' => 1,
-                'window_start' => time()
+                'start_time' => time()
             ];
             return;
         }
         
-        $elapsed = time() - $_SESSION[$key]['window_start'];
+        $elapsed = time() - $_SESSION[$key]['start_time'];
         
+        // Reset counter if time window has passed
         if ($elapsed > RATE_LIMIT_WINDOW) {
-            // Reset window
             $_SESSION[$key] = [
                 'count' => 1,
-                'window_start' => time()
+                'start_time' => time()
             ];
             return;
         }
         
+        // Increment request count
         $_SESSION[$key]['count']++;
         
+        // Check if limit exceeded
         if ($_SESSION[$key]['count'] > RATE_LIMIT_REQUESTS) {
-            $this->logSecurity('RATE_LIMIT_EXCEEDED', "Exceeded {$_SESSION[$key]['count']} requests in {$elapsed}s");
-            
-            http_response_code(429);
-            
-            if ($this->isAjaxRequest()) {
-                header('Content-Type: application/json');
-                echo json_encode([
-                    'success' => false,
-                    'error' => 'Too many requests. Please try again later.',
-                    'code' => 'RATE_LIMIT'
-                ]);
-            } else {
-                echo '<!DOCTYPE html><html><head><title>Rate Limit Exceeded</title></head>';
-                echo '<body><h1>429 Too Many Requests</h1><p>Please slow down and try again later.</p></body></html>';
-            }
-            exit;
+            $this->logSecurity('RATE_LIMIT_EXCEEDED', "Exceeded {$_SESSION[$key]['count']} requests in {$elapsed} seconds");
+            $this->blockAccess('Rate limit exceeded. Please try again later.');
         }
     }
     
     // ────────────────────────────────────────────────────────────────────
-    // IP MANAGEMENT
+    // IP BLACKLIST
+    // ────────────────────────────────────────────────────────────────────
+    
+    private function checkIPBlacklist() {
+        if (!isset($_SESSION['ip_blacklist'])) {
+            $_SESSION['ip_blacklist'] = [];
+        }
+        
+        foreach ($_SESSION['ip_blacklist'] as $ip => $data) {
+            if ($ip === $this->clientIP) {
+                if (time() < $data['blocked_until']) {
+                    $this->logSecurity('BLACKLISTED_IP_ACCESS', 'Attempt from blacklisted IP');
+                    $this->blockAccess('Your IP has been blocked due to suspicious activity');
+                }
+            }
+        }
+        
+        // Clean up expired blocks
+        foreach ($_SESSION['ip_blacklist'] as $ip => $data) {
+            if (time() >= $data['blocked_until']) {
+                unset($_SESSION['ip_blacklist'][$ip]);
+            }
+        }
+    }
+    
+    public static function blacklistIP($ip, $reason = '', $duration = 3600) {
+        if (!isset($_SESSION['ip_blacklist'])) {
+            $_SESSION['ip_blacklist'] = [];
+        }
+        
+        $_SESSION['ip_blacklist'][$ip] = [
+            'blocked_until' => time() + $duration,
+            'reason' => $reason,
+            'timestamp' => time()
+        ];
+        
+        self::getInstance()->logSecurity('IP_BLACKLISTED', "IP: $ip | Reason: $reason");
+    }
+    
+    // ────────────────────────────────────────────────────────────────────
+    // PATH TRAVERSAL PREVENTION
+    // ────────────────────────────────────────────────────────────────────
+    
+    private function preventPathTraversal() {
+        $dangerous_patterns = [
+            '../',
+            '..\\',
+            '%2e%2e%2f',
+            '%2e%2e/',
+            '..%2f',
+            '%2e%2e%5c'
+        ];
+        
+        $uri = strtolower($this->requestUri);
+        
+        foreach ($dangerous_patterns as $pattern) {
+            if (strpos($uri, $pattern) !== false) {
+                $this->logSecurity('PATH_TRAVERSAL_ATTEMPT', "Detected pattern: $pattern in URI: {$this->requestUri}");
+                $this->blockAccess('Invalid request path');
+            }
+        }
+    }
+    
+    // ────────────────────────────────────────────────────────────────────
+    // INPUT SANITIZATION
+    // ────────────────────────────────────────────────────────────────────
+    
+    private function sanitizeInputs() {
+        // SQL Injection Detection (Skip for exempt pages)
+        if (!in_array($this->currentPage, SQL_DETECTION_EXEMPT_PAGES)) {
+            $this->detectSQLInjection($_GET);
+            $this->detectSQLInjection($_POST);
+        }
+        
+        // XSS Detection
+        $this->detectXSS($_GET);
+        $this->detectXSS($_POST);
+    }
+    
+    private function detectSQLInjection($data) {
+        $sql_patterns = [
+            '/(\bUNION\b.*\bSELECT\b)/i',
+            '/(\bSELECT\b.*\bFROM\b)/i',
+            '/(\bINSERT\b.*\bINTO\b)/i',
+            '/(\bUPDATE\b.*\bSET\b)/i',
+            '/(\bDELETE\b.*\bFROM\b)/i',
+            '/(\bDROP\b.*\bTABLE\b)/i',
+            '/(;|\-\-|\/\*|\*\/)/i',
+            '/(\bOR\b.*=.*)/i',
+            '/(\bAND\b.*=.*)/i'
+        ];
+        
+        foreach ($data as $key => $value) {
+            if (is_array($value)) {
+                $this->detectSQLInjection($value);
+            } else {
+                foreach ($sql_patterns as $pattern) {
+                    if (preg_match($pattern, $value)) {
+                        $this->logSecurity('SQL_INJECTION_ATTEMPT', "Pattern: $pattern | Value: " . substr($value, 0, 100));
+                        $this->blockAccess('Malicious input detected');
+                    }
+                }
+            }
+        }
+    }
+    
+    private function detectXSS($data) {
+        $xss_patterns = [
+            '/<script[^>]*>.*?<\/script>/is',
+            '/<iframe[^>]*>.*?<\/iframe>/is',
+            '/javascript:/i',
+            '/on\w+\s*=/i', // onclick, onload, etc.
+            '/<embed[^>]*>/i',
+            '/<object[^>]*>/i'
+        ];
+        
+        foreach ($data as $key => $value) {
+            if (is_array($value)) {
+                $this->detectXSS($value);
+            } else {
+                foreach ($xss_patterns as $pattern) {
+                    if (preg_match($pattern, $value)) {
+                        $this->logSecurity('XSS_ATTEMPT', "Pattern: $pattern | Value: " . substr($value, 0, 100));
+                        $this->blockAccess('Malicious input detected');
+                    }
+                }
+            }
+        }
+    }
+    
+    public static function sanitize($input, $type = 'string') {
+        if (is_array($input)) {
+            return array_map(function($item) use ($type) {
+                return self::sanitize($item, $type);
+            }, $input);
+        }
+        
+        switch ($type) {
+            case 'email':
+                return filter_var($input, FILTER_SANITIZE_EMAIL);
+            
+            case 'int':
+                return filter_var($input, FILTER_SANITIZE_NUMBER_INT);
+            
+            case 'float':
+                return filter_var($input, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+            
+            case 'url':
+                return filter_var($input, FILTER_SANITIZE_URL);
+            
+            case 'html':
+                return htmlspecialchars($input, ENT_QUOTES, 'UTF-8');
+            
+            case 'string':
+            default:
+                return htmlspecialchars(strip_tags($input), ENT_QUOTES, 'UTF-8');
+        }
+    }
+    
+    // ────────────────────────────────────────────────────────────────────
+    // FILE UPLOAD VALIDATION
+    // ────────────────────────────────────────────────────────────────────
+    
+    public static function validateFileUpload($file) {
+        if (!isset($file['error']) || is_array($file['error'])) {
+            return ['success' => false, 'error' => 'Invalid file upload'];
+        }
+        
+        switch ($file['error']) {
+            case UPLOAD_ERR_OK:
+                break;
+            case UPLOAD_ERR_INI_SIZE:
+            case UPLOAD_ERR_FORM_SIZE:
+                return ['success' => false, 'error' => 'File exceeds maximum size limit'];
+            case UPLOAD_ERR_NO_FILE:
+                return ['success' => false, 'error' => 'No file was uploaded'];
+            default:
+                return ['success' => false, 'error' => 'Unknown upload error'];
+        }
+        
+        // Check file size
+        if ($file['size'] > UPLOAD_MAX_SIZE) {
+            return ['success' => false, 'error' => 'File size exceeds ' . (UPLOAD_MAX_SIZE / 1024 / 1024) . 'MB limit'];
+        }
+        
+        // Check file extension
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, ALLOWED_UPLOAD_EXTENSIONS)) {
+            return ['success' => false, 'error' => 'File type not allowed'];
+        }
+        
+        // Validate MIME type
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+        
+        $allowed_mimes = [
+            'image/jpeg', 'image/png', 'image/gif', 'image/bmp', 'image/webp',
+            'application/pdf',
+            'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'text/plain', 'text/csv',
+            'application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed'
+        ];
+        
+        if (!in_array($mime, $allowed_mimes)) {
+            return ['success' => false, 'error' => 'Invalid file type'];
+        }
+        
+        return ['success' => true];
+    }
+    
+    // ────────────────────────────────────────────────────────────────────
+    // CLIENT IP DETECTION
     // ────────────────────────────────────────────────────────────────────
     
     private function getClientIP() {
-        $ipKeys = [
-            'HTTP_CLIENT_IP',
-            'HTTP_X_FORWARDED_FOR',
-            'HTTP_X_FORWARDED',
-            'HTTP_X_CLUSTER_CLIENT_IP',
-            'HTTP_FORWARDED_FOR',
-            'HTTP_FORWARDED',
-            'REMOTE_ADDR'
-        ];
+        $ip_keys = ['HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_FORWARDED', 'HTTP_FORWARDED_FOR', 'HTTP_FORWARDED', 'REMOTE_ADDR'];
         
-        foreach ($ipKeys as $key) {
-            if (isset($_SERVER[$key]) && filter_var($_SERVER[$key], FILTER_VALIDATE_IP)) {
-                return $_SERVER[$key];
+        foreach ($ip_keys as $key) {
+            if (array_key_exists($key, $_SERVER)) {
+                foreach (explode(',', $_SERVER[$key]) as $ip) {
+                    $ip = trim($ip);
+                    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false) {
+                        return $ip;
+                    }
+                }
             }
         }
         
-        return $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
-    }
-    
-    private function checkIPBlacklist() {
-        $blacklistFile = SECURITY_LOG_DIR . '/ip_blacklist.txt';
-        
-        if (!file_exists($blacklistFile)) {
-            return;
-        }
-        
-        $blacklist = file($blacklistFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        
-        if (in_array($this->clientIP, $blacklist)) {
-            $this->logSecurity('BLOCKED_IP_ACCESS', 'Blacklisted IP attempted access');
-            $this->blockAccess('Access denied');
-        }
-    }
-    
-    public static function blacklistIP($ip, $reason = '') {
-        $blacklistFile = SECURITY_LOG_DIR . '/ip_blacklist.txt';
-        $entry = date('Y-m-d H:i:s') . " | $ip | $reason\n";
-        file_put_contents($blacklistFile, $entry, FILE_APPEND | LOCK_EX);
+        return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
     }
     
     // ────────────────────────────────────────────────────────────────────
-    // BRUTE FORCE PROTECTION
+    // LOGIN ATTEMPT TRACKING
     // ────────────────────────────────────────────────────────────────────
     
     public static function recordLoginAttempt($email, $success = false) {
@@ -524,11 +594,11 @@ class SecurityHandler {
         
         // Check if account is locked
         if ($_SESSION[$key]['locked_until'] > time()) {
-            $minutesLeft = ceil(($_SESSION[$key]['locked_until'] - time()) / 60);
+            $remaining = ceil(($_SESSION[$key]['locked_until'] - time()) / 60);
             return [
                 'success' => false,
                 'locked' => true,
-                'message' => "Account temporarily locked. Try again in $minutesLeft minutes."
+                'message' => "Account is locked. Try again in $remaining minutes."
             ];
         }
         
@@ -538,6 +608,9 @@ class SecurityHandler {
                 'count' => 0,
                 'locked_until' => 0
             ];
+            
+            self::getInstance()->logSecurity('LOGIN_SUCCESS', "User: $email");
+            
             return ['success' => true];
         } else {
             // Increment failed attempts
@@ -593,7 +666,7 @@ class SecurityHandler {
             substr($this->userAgent, 0, 100)
         );
         
-        error_log($logEntry, 3, SECURITY_LOG_FILE);
+        @error_log($logEntry, 3, SECURITY_LOG_FILE);
         
         // Also log to PHP error log for critical events
         $criticalEvents = [
@@ -605,7 +678,7 @@ class SecurityHandler {
         ];
         
         if (in_array($event, $criticalEvents)) {
-            error_log("CRITICAL SECURITY EVENT: $event - $details");
+            @error_log("CRITICAL SECURITY EVENT: $event - $details");
         }
     }
     
@@ -697,11 +770,6 @@ function blacklist_ip($ip, $reason = '') {
 // ════════════════════════════════════════════════════════════════════════
 // FILE ENCRYPTION FUNCTIONS (for upload_handler.php compatibility)
 // ════════════════════════════════════════════════════════════════════════
-
-require_once __DIR__ . '/config.php';
-
-define('ENCRYPTION_KEY', env('ENCRYPTION_KEY', 'your-32-character-secret-key-here-change-this'));
-define('ENCRYPTION_METHOD', 'AES-256-CBC');
 
 function encryptFileId($fileId) {
     try {
