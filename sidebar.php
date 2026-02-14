@@ -10,7 +10,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 <style>
     :root {
-        --apple-blue: #007AFF;
+        --apple-blue: #8E8E93;
         --apple-gray: #8E8E93;
         --apple-bg: #F2F2F7;
         --glass: rgba(255, 255, 255, 0.7);
