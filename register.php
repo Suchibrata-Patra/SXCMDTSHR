@@ -94,6 +94,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Hash the password
                     $passwordHash = password_hash($password, PASSWORD_DEFAULT);
                     
+                    // Debug logging
+                    error_log("=== REGISTRATION DEBUG ===");
+                    error_log("Email: $email");
+                    error_log("Password Length: " . strlen($password));
+                    error_log("Password Hash: $passwordHash");
+                    error_log("Hash Algorithm: " . PASSWORD_DEFAULT);
+                    
                     // Insert new user
                     $stmt = $pdo->prepare("
                         INSERT INTO users 
@@ -109,10 +116,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ]);
                     
                     if ($result) {
+                        $userId = $pdo->lastInsertId();
+                        error_log("✓ User registered successfully with ID: $userId");
+                        error_log("=========================");
+                        
                         $success = true;
                         // Clear form data on success
                         $formData = ['email' => '', 'full_name' => ''];
                     } else {
+                        error_log("✗ Failed to insert user into database");
                         $errors[] = "Registration failed. Please try again.";
                     }
                 }
@@ -139,7 +151,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f5f5f5;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -149,8 +161,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         .register-container {
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             width: 100%;
             max-width: 450px;
             padding: 40px;
@@ -163,7 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         .header h1 {
             color: #333;
-            font-size: 28px;
+            font-size: 24px;
             margin-bottom: 8px;
         }
         
@@ -174,21 +186,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         .alert {
             padding: 12px 16px;
-            border-radius: 6px;
+            border-radius: 4px;
             margin-bottom: 20px;
             font-size: 14px;
         }
         
         .alert-error {
-            background-color: #fee;
-            border: 1px solid #fcc;
-            color: #c33;
+            background-color: #fff3f3;
+            border: 1px solid #ffcdd2;
+            color: #c62828;
         }
         
         .alert-success {
-            background-color: #efe;
-            border: 1px solid #cfc;
-            color: #3c3;
+            background-color: #f1f8f4;
+            border: 1px solid #c8e6c9;
+            color: #2e7d32;
         }
         
         .alert ul {
@@ -213,95 +225,78 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         .form-group input {
             width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
             font-size: 14px;
-            transition: all 0.3s ease;
+            transition: border-color 0.2s;
         }
         
         .form-group input:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: #4285f4;
         }
         
         .password-requirements {
             font-size: 12px;
             color: #666;
             margin-top: 6px;
-            line-height: 1.6;
         }
         
-        .password-requirements ul {
-            margin: 6px 0 0 20px;
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            font-size: 14px;
+            color: #666;
+            cursor: pointer;
+            user-select: none;
         }
         
-        .password-requirements li {
-            margin: 2px 0;
+        .checkbox-container input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
         }
         
         .btn {
             width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 12px;
+            background: #4285f4;
             color: white;
             border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: 600;
+            border-radius: 4px;
+            font-size: 15px;
+            font-weight: 500;
             cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            transition: background 0.2s;
         }
         
         .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+            background: #3367d6;
         }
         
         .btn:active {
-            transform: translateY(0);
+            background: #2b56c4;
         }
         
         .login-link {
             text-align: center;
             margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
             font-size: 14px;
             color: #666;
         }
         
         .login-link a {
-            color: #667eea;
+            color: #4285f4;
             text-decoration: none;
-            font-weight: 600;
+            font-weight: 500;
         }
         
         .login-link a:hover {
             text-decoration: underline;
-        }
-        
-        .divider {
-            text-align: center;
-            margin: 24px 0;
-            position: relative;
-        }
-        
-        .divider::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: #e0e0e0;
-        }
-        
-        .divider span {
-            background: white;
-            padding: 0 12px;
-            position: relative;
-            color: #999;
-            font-size: 13px;
         }
         
         @media (max-width: 480px) {
@@ -310,7 +305,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             .header h1 {
-                font-size: 24px;
+                font-size: 22px;
             }
         }
     </style>
@@ -340,7 +335,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         <?php endif; ?>
         
-        <form method="POST" action="register.php">
+        <form method="POST" action="register.php" id="registerForm">
             <div class="form-group">
                 <label for="full_name">Full Name</label>
                 <input 
@@ -377,14 +372,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     required
                     autocomplete="new-password"
                 >
+                <label class="checkbox-container">
+                    <input type="checkbox" id="showPassword" onclick="togglePassword()">
+                    <span>Show Password</span>
+                </label>
                 <div class="password-requirements">
-                    Password must contain:
-                    <ul>
-                        <li>At least 8 characters</li>
-                        <li>At least one uppercase letter</li>
-                        <li>At least one lowercase letter</li>
-                        <li>At least one number</li>
-                    </ul>
+                    Must be 8+ characters with uppercase, lowercase, and number
                 </div>
             </div>
             
@@ -403,13 +396,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button type="submit" class="btn">Create Account</button>
         </form>
         
-        <div class="divider">
-            <span>OR</span>
-        </div>
-        
         <div class="login-link">
             Already have an account? <a href="login.php">Sign in</a>
         </div>
     </div>
+    
+    <script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const confirmPasswordInput = document.getElementById('confirm_password');
+            const checkbox = document.getElementById('showPassword');
+            
+            const type = checkbox.checked ? 'text' : 'password';
+            passwordInput.type = type;
+            confirmPasswordInput.type = type;
+        }
+        
+        // Log password on form submit for debugging
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            const password = document.getElementById('password').value;
+            console.log('Password being submitted:', password);
+            console.log('Password length:', password.length);
+            console.log('Has uppercase:', /[A-Z]/.test(password));
+            console.log('Has lowercase:', /[a-z]/.test(password));
+            console.log('Has number:', /[0-9]/.test(password));
+        });
+    </script>
 </body>
 </html>
