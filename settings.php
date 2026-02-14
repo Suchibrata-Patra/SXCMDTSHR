@@ -393,7 +393,7 @@ $isLocked = isset($s['settings_locked']) &&
             color: white;
             border: none;
             padding: 12px 30px;
-            border-radius: 8px;
+            border-radius: 50px;
             font-weight: 600;
             font-size: 15px;
             /* box-shadow: 0 4px 16px rgba(0,122,255,0.3); */
@@ -1078,7 +1078,7 @@ Your Title"><?= htmlspecialchars($s['signature']) ?></textarea>
             </div>
 
             <button type="submit" class="btn-deploy">
-                <!-- <span class="material-icons">save</span> -->
+                <span class="material-icons">save</span>
                 Save Settings
             </button>
         </form>
