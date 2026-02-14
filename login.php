@@ -456,7 +456,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             <?php if (isset($_GET['error']) && $_GET['error'] === 'session_expired'): ?>
                 <div class="warning-toast">
-                    ⏱️ Your session has expired. Please login again.
+                    Your session has expired. Please login again.
                 </div>
             <?php endif; ?>
 
