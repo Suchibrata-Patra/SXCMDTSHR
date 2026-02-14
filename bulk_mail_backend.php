@@ -1,26 +1,11 @@
 <?php
-// Prevent any output before JSON
-ob_start();
-
-// Set JSON header IMMEDIATELY
-header('Content-Type: application/json');
-
-// Error handling - convert all errors to exceptions
-set_error_handler(function($errno, $errstr, $errfile, $errline) {
-    throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
-});
-
-try {
-    require_once __DIR__ . '/security_handler.php';
-    session_start();
-    require_once 'config.php';
-    require_once 'db_config.php';
-    
-    // Clear any output that might have been buffered
-    ob_clean();
-    
-    $driveDir = env('DRIVE_DIR', __DIR__ . '/drive_files');
-    $action = '';
+require_once __DIR__ . '/security_handler.php';
+session_start();
+require_once 'config.php';
+require_once 'db_config.php';
+header('Content-Type: application/json'); // For Setting the JSON header
+$driveDir = env('DRIVE_DIR', __DIR__ . '/drive_files'); // Fetching the Drive directory from environment with default
+$action = ''; // Get action from request [ support both GET, POST FormData, and POST JSON ]
 
 if (isset($_POST['action'])) {
     $action = $_POST['action']; // Trying the POST FormData first
@@ -42,43 +27,22 @@ else { // Finally try JSON POST
 error_log("Backend called - Action: '$action', Method: " . $_SERVER['REQUEST_METHOD']);
 
 try {
-    // Only connect to database if needed (not for file operations)
-    $pdo = null;
-    $user_id = null;
-    $user_email = null;
+    $pdo = getDatabaseConnection();
     
-    if ($action !== 'list_drive_files' && $action !== 'test_connection') {
-        $pdo = getDatabaseConnection();
-        
-        if (!$pdo) {
-            throw new Exception('Database connection failed');
-        }
-        
-        // Get current user from session
-        $user_email = $_SESSION['smtp_user'] ?? null;
-        
-        // Get user ID if user is logged in
-        if ($user_email) {
-            $user_id = getUserId($pdo, $user_email);
-        }
+    if (!$pdo) {
+        throw new Exception('Database connection failed');
+    }
+    
+    // Get current user from session
+    $user_email = $_SESSION['smtp_user'] ?? null;
+    
+    // Get user ID if user is logged in
+    $user_id = null;
+    if ($user_email) {
+        $user_id = getUserId($pdo, $user_email);
     }
     
     switch ($action) {
-        case 'test_connection':
-            // Simple test endpoint for diagnostics
-            echo json_encode([
-                'success' => true,
-                'message' => 'Backend is working correctly',
-                'php_version' => PHP_VERSION,
-                'drive_dir' => $driveDir,
-                'drive_exists' => is_dir($driveDir),
-                'drive_writable' => is_dir($driveDir) ? is_writable($driveDir) : false,
-                'session_active' => session_status() === PHP_SESSION_ACTIVE,
-                'user_email' => $_SESSION['smtp_user'] ?? 'not set',
-                'timestamp' => date('Y-m-d H:i:s')
-            ]);
-            break;
-            
         case 'list_drive_files':
             // List files from File_Drive directory
             // Create directory if it doesn't exist
@@ -86,31 +50,12 @@ try {
                 @mkdir($driveDir, 0755, true);
             }
             
-            // If directory still doesn't exist, return empty array gracefully
             if (!is_dir($driveDir)) {
-                echo json_encode([
-                    'success' => true,
-                    'files' => [],
-                    'message' => 'Drive directory will be created when you upload files',
-                    'directory' => $driveDir,
-                    'count' => 0
-                ]);
-                break;
+                throw new Exception('Drive directory could not be created: ' . $driveDir);
             }
             
             $files = [];
-            $items = @scandir($driveDir);
-            
-            if ($items === false) {
-                echo json_encode([
-                    'success' => true,
-                    'files' => [],
-                    'message' => 'Unable to read drive directory (permission issue)',
-                    'directory' => $driveDir,
-                    'count' => 0
-                ]);
-                break;
-            }
+            $items = scandir($driveDir);
             
             foreach ($items as $item) {
                 if ($item === '.' || $item === '..') {
@@ -121,16 +66,14 @@ try {
                 
                 // Only include files, not directories
                 if (is_file($fullPath)) {
-                    $size = @filesize($fullPath);
-                    if ($size !== false) {
-                        $files[] = [
-                            'name' => $item,
-                            'path' => $fullPath,
-                            'size' => $size,
-                            'formatted_size' => formatBytes($size),
-                            'extension' => strtolower(pathinfo($item, PATHINFO_EXTENSION))
-                        ];
-                    }
+                    $size = filesize($fullPath);
+                    $files[] = [
+                        'name' => $item,
+                        'path' => $fullPath,
+                        'size' => $size,
+                        'formatted_size' => formatBytes($size),
+                        'extension' => strtolower(pathinfo($item, PATHINFO_EXTENSION))
+                    ];
                 }
             }
             
@@ -393,24 +336,11 @@ try {
     }
     
 } catch (Exception $e) {
-    // Clear any previous output
-    if (ob_get_level() > 0) {
-        ob_clean();
-    }
-    
     http_response_code(400);
     echo json_encode([
         'success' => false,
-        'error' => $e->getMessage(),
-        'file' => basename($e->getFile()),
-        'line' => $e->getLine(),
-        'trace' => defined('DEBUG_MODE') && DEBUG_MODE ? $e->getTraceAsString() : null
+        'error' => $e->getMessage()
     ]);
-}
-
-// End output buffering and send
-if (ob_get_level() > 0) {
-    ob_end_flush();
 }
 
 /**
