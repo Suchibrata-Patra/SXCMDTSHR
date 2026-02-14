@@ -448,6 +448,149 @@ $_SESSION['user_settings'] = $settings;
         .size-warning.active { display: flex; }
         .size-warning .material-icons { font-size: 18px; color: var(--amber); flex-shrink: 0; }
 
+        /* ── ATTACHMENT SOURCE SEGMENTED CONTROL ── */
+        .attach-segmented {
+            display: flex;
+            background: var(--surface-2);
+            border: 1.5px solid var(--border-2);
+            border-radius: var(--r);
+            padding: 3px;
+            gap: 3px;
+            margin-bottom: 14px;
+        }
+        .attach-seg-btn {
+            flex: 1;
+            padding: 7px 10px;
+            border: none;
+            border-radius: 7px;
+            font-size: 12.5px;
+            font-weight: 500;
+            color: var(--ink-3);
+            background: none;
+            cursor: pointer;
+            transition: all .15s var(--ease);
+            display: flex; align-items: center; justify-content: center;
+            gap: 5px;
+            font-family: 'DM Sans', sans-serif;
+        }
+        .attach-seg-btn .material-icons-round { font-size: 15px; }
+        .attach-seg-btn.active {
+            background: var(--surface);
+            color: var(--blue);
+            box-shadow: var(--shadow);
+            font-weight: 700;
+            border: 1px solid var(--border-2);
+        }
+        .attach-tab-content { display: none; }
+        .attach-tab-content.active { display: block; animation: rowFadeIn .18s var(--ease) both; }
+
+        /* ── DRIVE FILE LIST ── */
+        .drive-file-list {
+            max-height: 240px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            border: 1.5px solid var(--border-2);
+            border-radius: var(--r);
+            padding: 6px;
+            background: var(--surface-2);
+        }
+        .drive-file-list::-webkit-scrollbar { width: 4px; }
+        .drive-file-list::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 10px; }
+        .drive-file-item {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 8px 10px;
+            border-radius: var(--r);
+            cursor: pointer;
+            transition: background .12s, border-color .12s;
+            border: 1.5px solid transparent;
+            background: var(--surface);
+        }
+        .drive-file-item:hover { background: var(--surface-2); border-color: var(--border-2); }
+        .drive-file-item.selected {
+            background: rgba(72,117,193,.07);
+            border-color: rgba(72,117,193,.3);
+        }
+        .drive-file-emoji { font-size: 18px; line-height: 1; flex-shrink: 0; }
+        .drive-file-info { flex: 1; min-width: 0; }
+        .drive-file-name {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--ink);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .drive-file-size { font-size: 11px; color: var(--ink-4); margin-top: 1px; }
+        .drive-file-check {
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            border: 1.5px solid var(--border-2);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            transition: all .15s;
+        }
+        .drive-file-item.selected .drive-file-check {
+            background: var(--blue);
+            border-color: var(--blue);
+        }
+        .drive-file-check .chk-icon { display: none; font-size: 11px; color: white; }
+        .drive-file-item.selected .drive-file-check .chk-icon { display: block; }
+
+        .drive-loading-msg {
+            padding: 20px;
+            text-align: center;
+            font-size: 12.5px;
+            color: var(--ink-4);
+        }
+        .drive-loading-msg .spinner-inline {
+            display: inline-block;
+            width: 18px; height: 18px;
+            border: 2px solid var(--border-2);
+            border-top-color: var(--blue);
+            border-radius: 50%;
+            animation: spin360 .7s linear infinite;
+            margin-bottom: 8px;
+        }
+        @keyframes spin360 { to { transform: rotate(360deg); } }
+
+        /* Drive chip — confirms a drive file is queued for send */
+        .drive-attach-chip {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 12px;
+            background: rgba(72,117,193,.07);
+            border: 1.5px solid rgba(72,117,193,.25);
+            border-radius: var(--r);
+            margin-top: 10px;
+            animation: rowFadeIn .18s var(--ease) both;
+        }
+        .drive-attach-chip.visible { display: flex; }
+        .drive-attach-chip-icon { font-size: 16px; }
+        .drive-attach-chip-info { flex: 1; min-width: 0; }
+        .drive-attach-chip-name {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--ink);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .drive-attach-chip-size { font-size: 11px; color: var(--ink-4); }
+        .drive-attach-chip-remove {
+            background: none; border: none;
+            cursor: pointer; color: var(--ink-4);
+            display: flex; align-items: center;
+            border-radius: 4px; padding: 2px;
+            transition: color .15s, background .15s;
+        }
+        .drive-attach-chip-remove:hover { color: var(--red); background: rgba(239,68,68,.08); }
+        .drive-attach-chip-remove .material-icons-round { font-size: 15px; }
+
         /* ── RICH TEXT EDITOR ── */
         .editor-wrapper {
             border: 1.5px solid var(--border-2);
@@ -676,35 +819,71 @@ $_SESSION['user_settings'] = $settings;
                             <span class="material-icons-round">attach_file</span>
                             Attachments
                         </h3>
-                        
-                        <div class="file-upload-area" id="fileUploadArea">
-                            <span class="material-icons-round file-upload-icon">cloud_upload</span>
-                            <p class="file-upload-text">Drop files here or click to upload</p>
-                            <p class="file-upload-hint">Maximum 20MB per file · 25MB total</p>
-                            <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.zip,.txt,.csv">
+
+                        <!-- Source selector -->
+                        <div class="attach-segmented">
+                            <button type="button" class="attach-seg-btn active" id="segBtnDrive" onclick="switchAttachTab('drive')">
+                                <span class="material-icons-round">add_to_drive</span>
+                                My Drive
+                            </button>
+                            <button type="button" class="attach-seg-btn" id="segBtnUpload" onclick="switchAttachTab('upload')">
+                                <span class="material-icons-round">upload</span>
+                                Upload File
+                            </button>
                         </div>
 
-                        <!-- Individual Upload Progress -->
-                        <div class="upload-item" id="uploadItem">
-                            <div class="upload-item-header">
-                                <span class="upload-filename" id="uploadFilename"></span>
-                                <span class="upload-percentage" id="uploadPercentage">0%</span>
+                        <!-- ── DRIVE TAB ── -->
+                        <div id="attachTabDrive" class="attach-tab-content active">
+                            <div class="drive-file-list" id="driveFileList">
+                                <div class="drive-loading-msg" id="driveLoadingMsg">
+                                    <div class="spinner-inline"></div>
+                                    <br>Loading drive files…
+                                </div>
                             </div>
-                            <div class="upload-progress-bar-container">
-                                <div class="upload-progress-bar" id="uploadProgressBar"></div>
+                            <!-- Chip: shown after a drive file is registered -->
+                            <div class="drive-attach-chip" id="driveChip">
+                                <span class="drive-attach-chip-icon" id="driveChipIcon">📎</span>
+                                <div class="drive-attach-chip-info">
+                                    <div class="drive-attach-chip-name" id="driveChipName">—</div>
+                                    <div class="drive-attach-chip-size" id="driveChipSize">—</div>
+                                </div>
+                                <button type="button" class="drive-attach-chip-remove" onclick="clearDriveSelection()" title="Remove">
+                                    <span class="material-icons-round">close</span>
+                                </button>
                             </div>
-                        </div>
-                        
-                        <!-- Size Warning -->
-                        <div class="size-warning" id="sizeWarning">
-                            <span class="material-icons-round">warning_amber</span>
-                            <span id="sizeWarningText"></span>
                         </div>
 
-                        <!-- File Preview Cards -->
+                        <!-- ── UPLOAD TAB ── -->
+                        <div id="attachTabUpload" class="attach-tab-content">
+                            <div class="file-upload-area" id="fileUploadArea">
+                                <span class="material-icons-round file-upload-icon">cloud_upload</span>
+                                <p class="file-upload-text">Drop files here or click to upload</p>
+                                <p class="file-upload-hint">Maximum 20MB per file · 25MB total</p>
+                                <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.zip,.txt,.csv">
+                            </div>
+
+                            <!-- Upload Progress -->
+                            <div class="upload-item" id="uploadItem">
+                                <div class="upload-item-header">
+                                    <span class="upload-filename" id="uploadFilename"></span>
+                                    <span class="upload-percentage" id="uploadPercentage">0%</span>
+                                </div>
+                                <div class="upload-progress-bar-container">
+                                    <div class="upload-progress-bar" id="uploadProgressBar"></div>
+                                </div>
+                            </div>
+
+                            <!-- Size Warning -->
+                            <div class="size-warning" id="sizeWarning">
+                                <span class="material-icons-round">warning_amber</span>
+                                <span id="sizeWarningText"></span>
+                            </div>
+                        </div>
+
+                        <!-- File Preview Cards (shared for both tabs) -->
                         <div class="file-cards-container" id="fileCardsContainer"></div>
-                        
-                        <!-- Hidden input for attachment IDs -->
+
+                        <!-- Hidden input: comma-separated IDs of ALL attachments (uploaded + drive-registered) -->
                         <input type="hidden" name="attachment_ids" id="attachmentIds" value="">
                     </div>
 
@@ -743,6 +922,132 @@ $_SESSION['user_settings'] = $settings;
             },
             placeholder: 'Type your message here...'
         });
+
+        // ========== ATTACHMENT SOURCE TABS ==========
+        function switchAttachTab(tab) {
+            document.getElementById('segBtnDrive').classList.toggle('active', tab === 'drive');
+            document.getElementById('segBtnUpload').classList.toggle('active', tab === 'upload');
+            document.getElementById('attachTabDrive').classList.toggle('active', tab === 'drive');
+            document.getElementById('attachTabUpload').classList.toggle('active', tab === 'upload');
+        }
+
+        // ========== DRIVE FILE LOADER ==========
+        async function loadDriveFiles() {
+            const list    = document.getElementById('driveFileList');
+            const loading = document.getElementById('driveLoadingMsg');
+            try {
+                const fd = new FormData();
+                fd.append('action', 'list_drive_files');
+                const resp = await fetch('bulk_mail_backend.php', { method: 'POST', body: fd });
+                const data = await resp.json();
+
+                if (data.success && data.files && data.files.length > 0) {
+                    loading.remove();
+                    data.files.forEach(f => {
+                        const item = document.createElement('div');
+                        item.className = 'drive-file-item';
+                        item.dataset.path = f.path;
+                        item.dataset.name = f.name;
+                        item.dataset.size = f.formatted_size;
+                        item.dataset.ext  = f.extension;
+                        item.innerHTML = `
+                            <span class="drive-file-emoji">${getDriveFileIcon(f.extension)}</span>
+                            <div class="drive-file-info">
+                                <div class="drive-file-name" title="${f.name}">${f.name}</div>
+                                <div class="drive-file-size">${f.formatted_size}</div>
+                            </div>
+                            <div class="drive-file-check">
+                                <span class="material-icons-round chk-icon">check</span>
+                            </div>`;
+                        item.addEventListener('click', () => selectDriveFile(item));
+                        list.appendChild(item);
+                    });
+                } else if (data.success) {
+                    loading.innerHTML = '<div style="padding:12px;text-align:center">📁<br><span style="font-size:12px;color:var(--ink-4)">No files in Drive yet</span></div>';
+                } else {
+                    loading.innerHTML = `<div style="padding:12px;text-align:center">⚠️<br><span style="font-size:12px;color:var(--ink-4)">${data.error || 'Could not load files'}</span></div>`;
+                }
+            } catch (err) {
+                loading.innerHTML = `<div style="padding:12px;text-align:center">⚠️<br><span style="font-size:12px;color:var(--ink-4)">Load failed: ${err.message}</span></div>`;
+            }
+        }
+
+        // ========== DRIVE FILE SELECTION ==========
+        // Registers the drive file via upload_handler.php so it gets a real attachment_id
+        // that send.php can handle identically to a manually uploaded file.
+        async function selectDriveFile(itemEl) {
+            const wasSelected = itemEl.classList.contains('selected');
+
+            // Deselect all
+            document.querySelectorAll('.drive-file-item').forEach(el => el.classList.remove('selected'));
+
+            // If already selected, just clear and bail
+            if (wasSelected) {
+                clearDriveSelection();
+                return;
+            }
+
+            itemEl.classList.add('selected');
+
+            const path = itemEl.dataset.path;
+            const name = itemEl.dataset.name;
+            const size = itemEl.dataset.size;
+            const ext  = itemEl.dataset.ext;
+
+            // Show chip with loading state
+            document.getElementById('driveChipIcon').textContent = '⏳';
+            document.getElementById('driveChipName').textContent  = name;
+            document.getElementById('driveChipSize').textContent  = 'Registering…';
+            document.getElementById('driveChip').classList.add('visible');
+
+            try {
+                // POST the drive path to index_drive_attach_handler.php which registers it
+                // in the DB and returns the same JSON shape as upload_handler.php —
+                // so send.php handles drive files identically to manual uploads.
+                const fd = new FormData();
+                fd.append('drive_path', path);
+
+                const resp = await fetch('index_drive_attach_handler.php', { method: 'POST', body: fd });
+                const data = await resp.json();
+
+                if (data.success) {
+                    // Add to uploadedFiles array and attachment_ids — same as a normal upload
+                    uploadedFiles.push(data);
+                    totalSize += data.file_size || 0;
+                    addFileCard(data);
+                    updateAttachmentIds();
+
+                    // Update chip to confirmed state
+                    document.getElementById('driveChipIcon').textContent = getDriveFileIcon(ext);
+                    document.getElementById('driveChipSize').textContent  = size;
+                } else {
+                    alert('Could not attach drive file: ' + (data.error || 'Unknown error'));
+                    clearDriveSelection();
+                }
+            } catch (err) {
+                alert('Failed to attach drive file: ' + err.message);
+                clearDriveSelection();
+            }
+        }
+
+        function clearDriveSelection() {
+            document.getElementById('driveChip').classList.remove('visible');
+            document.querySelectorAll('.drive-file-item').forEach(el => el.classList.remove('selected'));
+        }
+
+        function getDriveFileIcon(ext) {
+            const map = {
+                pdf:'📄', doc:'📝', docx:'📝', txt:'📝',
+                xls:'📊', xlsx:'📊', csv:'📊',
+                ppt:'📽️', pptx:'📽️',
+                jpg:'🖼️', jpeg:'🖼️', png:'🖼️', gif:'🖼️',
+                zip:'🗜️', rar:'🗜️'
+            };
+            return map[ext] || '📎';
+        }
+
+        // Load drive files when page is ready
+        loadDriveFiles();
 
         // ========== FILE UPLOAD FUNCTIONALITY ==========
         const fileInput = document.getElementById('fileInput');
