@@ -164,22 +164,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         define('PAGE_TITLE', 'SXC MDTS | Dashboard');
         include 'header.php';
     ?>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
         :root {
-            --primary-gradient: linear-gradient(135deg, #1a0b2e 0%, #0d0d1a 50%, #1a1a2e 100%);
-            --card-bg: rgba(26, 11, 46, 0.7);
-            --card-border: rgba(129, 140, 248, 0.2);
-            --input-bg: rgba(15, 23, 42, 0.6);
-            --input-border: rgba(148, 163, 184, 0.3);
-            --input-focus: #818cf8;
-            --text-primary: #e2e8f0;
-            --text-secondary: #94a3b8;
-            --accent-purple: #818cf8;
-            --accent-light: #a5b4fc;
-            --error-red: #ef4444;
-            --warning-orange: #f59e0b;
-            --success-green: #10b981;
+            --primary-accent: #000000;
+            --nature-green: #2d5a27;
+            --soft-white: #f8f9fa;
+            --error-red: #dc3545;
+            --warning-orange: #ff9800;
         }
 
         * {
@@ -191,32 +182,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         body, html {
             height: 100%;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #1a0b2e 0%, #0d0d1a 50%, #1a1a2e 100%);
+            background-color: #ebebf0;
+            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+            background-size: 40px 40px;
             position: relative;
-            overflow-x: hidden;
         }
 
-        /* Animated gradient background */
+        /* Subtle radial gradient overlay */
         body::before {
             content: '';
             position: fixed;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: 
-                radial-gradient(circle at 20% 50%, rgba(129, 140, 248, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(165, 180, 252, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 40% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 50%);
-            animation: gradientShift 20s ease infinite;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 30% 50%, rgba(79, 93, 115, 0.03) 0%, transparent 50%);
             pointer-events: none;
             z-index: 0;
-        }
-
-        @keyframes gradientShift {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            33% { transform: translate(5%, 5%) rotate(1deg); }
-            66% { transform: translate(-5%, 5%) rotate(-1deg); }
         }
 
         .page-wrapper {
@@ -230,133 +212,84 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         .login-card {
-            background: rgba(26, 11, 46, 0.7);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(129, 140, 248, 0.2);
-            padding: 45px 40px;
-            border-radius: 24px;
-            box-shadow: 
-                0 8px 32px rgba(0, 0, 0, 0.4),
-                0 0 80px rgba(129, 140, 248, 0.1);
+            background: white;
+            padding: 40px 35px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             width: 100%;
-            max-width: 440px;
+            max-width: 420px;
             position: relative;
-            animation: cardFloat 6s ease-in-out infinite;
-        }
-
-        @keyframes cardFloat {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-8px); }
-        }
-
-        /* Glow effect on hover */
-        .login-card::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: linear-gradient(135deg, rgba(129, 140, 248, 0.3), rgba(165, 180, 252, 0.2));
-            border-radius: 24px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            z-index: -1;
-        }
-
-        .login-card:hover::before {
-            opacity: 1;
         }
 
         /* Brand Header */
         .brand-header {
             text-align: center;
-            margin-bottom: 32px;
-            padding-bottom: 24px;
-            border-bottom: 1px solid rgba(129, 140, 248, 0.2);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            margin-bottom: 28px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #f0f0f0;
+            display:flex;
         }
 
         .brand-logo {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 16px;
-            filter: drop-shadow(0 4px 12px rgba(129, 140, 248, 0.3));
-            animation: logoGlow 3s ease-in-out infinite;
+            width: 70px;
+            height: 70px;
+            margin-bottom: 12px;
             object-fit: contain;
         }
 
-        @keyframes logoGlow {
-            0%, 100% { filter: drop-shadow(0 4px 12px rgba(129, 140, 248, 0.3)); }
-            50% { filter: drop-shadow(0 4px 20px rgba(165, 180, 252, 0.5)); }
-        }
-
         .brand-details {
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            line-height: 1.6;
-            letter-spacing: 0.3px;
-            max-width: 350px;
-        }
+    font-size: 0.68rem;
+    color: #888;
+    line-height: 1.5;
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;      vertical center
+    justify-content: flex-start; /* horizontal left */
+}
 
 
         /* Title */
         h2 {
-            font-size: 1.85rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            text-align: center;
-            margin-bottom: 10px;
+            font-size: 1.75rem;
+            margin-bottom: 8px;
+            color: rgb(79, 93, 115);
+            font-weight: 600;
+            text-align: left !important;
             letter-spacing: -0.5px;
-            text-shadow: 0 0 30px rgba(129, 140, 248, 0.3);
         }
 
         .subtitle {
-            text-align: center;
-            color: var(--text-secondary);
             font-size: 0.9rem;
-            margin-bottom: 28px;
+            color: #888;
+            text-align: center;
+            margin-bottom: 25px;
+            font-weight: 400;
         }
 
-        /* Error & Warning Toasts */
-        .error-toast, .warning-toast {
-            padding: 14px 16px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            font-size: 0.875rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            animation: slideIn 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-
+        /* Error/Warning Messages */
         .error-toast {
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #fca5a5;
-        }
-
-        .error-toast::before {
-            content: '⚠';
-            font-size: 1.2rem;
+            background: linear-gradient(135deg, #fee 0%, #fdd 100%);
+            color: #c33;
+            padding: 14px 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            border-left: 3px solid #c33;
+            animation: slideDown 0.3s ease;
         }
 
         .warning-toast {
-            background: rgba(245, 158, 11, 0.15);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            color: #fcd34d;
+            background: linear-gradient(135deg, #fff4e5 0%, #ffe8cc 100%);
+            color: #d68000;
+            padding: 14px 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            border-left: 3px solid #ff9800;
+            animation: slideDown 0.3s ease;
         }
 
-        .warning-toast::before {
-            content: '⚡';
-            font-size: 1.2rem;
-        }
-
-        @keyframes slideIn {
+        @keyframes slideDown {
             from {
                 opacity: 0;
                 transform: translateY(-10px);
@@ -371,55 +304,43 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         form {
             display: flex;
             flex-direction: column;
-            gap: 24px;
+            gap: 20px;
         }
 
         .input-group {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
         }
 
         label {
             font-size: 0.8rem;
-            color: var(--accent-light);
+            color: #555;
             font-weight: 500;
             text-transform: uppercase;
-            letter-spacing: 1.2px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            letter-spacing: 1px;
         }
 
         input[type="email"],
         input[type="password"] {
             width: 100%;
-            padding: 14px 16px;
-            border: 1px solid var(--input-border);
-            border-radius: 12px;
-            background: var(--input-bg);
-            backdrop-filter: blur(10px);
-            color: var(--text-primary);
+            padding: 12px 5px;
+            border: none;
+            border-bottom: 2px solid #a0a8b6;
+            background: transparent;
             font-size: 1rem;
-            transition: all 0.3s ease;
+            transition: border-color 180ms ease, transform 150ms ease;
             outline: none;
         }
 
-        input[type="email"]::placeholder,
-        input[type="password"]::placeholder {
-            color: var(--text-secondary);
-        }
-
         input:focus {
-            border-color: var(--input-focus);
-            background: rgba(15, 23, 42, 0.8);
-            box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.1);
-            transform: translateY(-2px);
+            border-bottom-color: #4f5d73;
+            transform: scaleY(1.02);
+            transform-origin: bottom;
         }
-
 
         input:disabled {
-            opacity: 0.5;
+            opacity: 0.6;
             cursor: not-allowed;
         }
 
@@ -427,9 +348,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-top: 8px;
+            margin-top: 12px;
             font-size: 0.85rem;
-            color: var(--text-secondary);
+            color: #666;
             cursor: pointer;
             user-select: none;
         }
@@ -437,47 +358,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         .checkbox-container input[type="checkbox"] {
             width: auto;
             cursor: pointer;
-            accent-color: var(--accent-purple);
         }
 
         /* Button */
         button {
             width: 100%;
             padding: 16px;
-            background: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-light) 100%);
+            background: rgb(79, 93, 115);
             color: white;
             border: none;
-            border-radius: 12px;
-            font-weight: 600;
+            border-radius: 6px;
+            font-weight: 500;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 2.5px;
             cursor: pointer;
-            margin-top: 10px;
-            transition: all 0.3s ease;
-            font-size: 0.95rem;
-            box-shadow: 0 4px 20px rgba(129, 140, 248, 0.3);
-            position: relative;
-            overflow: hidden;
-        }
-
-        button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
+            margin-top: 25px;
+            transition: all 180ms ease;
+            font-size: 0.9rem;
         }
 
         button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 30px rgba(129, 140, 248, 0.5);
-        }
-
-        button:hover:not(:disabled)::before {
-            left: 100%;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
         }
 
         button:active:not(:disabled) {
@@ -485,65 +386,49 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         button:disabled {
-            background: rgba(71, 85, 105, 0.5);
+            background: #ccc;
             cursor: not-allowed;
             transform: none;
-            box-shadow: none;
         }
 
         /* Security Info */
         .security-info {
-            margin-top: 24px;
-            padding: 14px;
-            background: rgba(99, 102, 241, 0.1);
-            border-left: 3px solid var(--accent-purple);
-            border-radius: 8px;
+            margin-top: 20px;
+            padding: 12px;
+            background: #f0f7ff;
+            border-left: 3px solid #2196f3;
+            border-radius: 4px;
             font-size: 0.75rem;
-            color: var(--text-secondary);
-            backdrop-filter: blur(10px);
+            color: #555;
         }
 
         .security-info strong {
-            color: var(--accent-light);
+            color: #2196f3;
         }
 
         /* Footer */
         footer {
-            margin-top: 28px;
-            padding-top: 24px;
-            border-top: 1px solid rgba(129, 140, 248, 0.2);
-            font-size: 0.7rem;
-            color: var(--text-secondary);
+            margin-top: 22px;
+            padding-top: 20px;
+            border-top: 1px solid #f0f0f0;
+            font-size: 0.65rem;
+            color: #bbb;
+            opacity: 0.6;
             text-align: center;
-            line-height: 1.6;
         }
 
         footer span {
-            font-size: 0.85rem;
-            color: var(--accent-light);
-            display: block;
-            margin-top: 8px;
+            font-size: 0.95rem;
         }
 
         /* Responsive */
         @media (max-width: 480px) {
             .login-card {
-                padding: 35px 25px;
-                border-radius: 20px;
+                padding: 30px 20px;
             }
             
             h2 {
-                font-size: 1.6rem;
-            }
-
-            .brand-logo {
-                width: 70px;
-                height: 70px;
-            }
-
-            button {
-                padding: 14px;
-                font-size: 0.85rem;
+                font-size: 1.5rem;
             }
         }
     </style>
@@ -627,7 +512,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 St. Xavier's College (Autonomous), Kolkata<br>
                 Mail Delivery & Tracking System v2.0
                 <br><br>
-                <span>Secure Database Authentication</span>
+                <span style="font-size:15px;font-weight:600;color:#4f5d73;">Secure Database Authentication</span>
             </footer>
         </div>
     </div>
