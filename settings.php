@@ -568,6 +568,10 @@ $isLocked = isset($s['settings_locked']) &&
         <form id="appleSettingsForm" method="post" action="save_settings.php">
             <!-- IDENTITY SECTION -->
             <h2 id="identity">Official Identity</h2>
+            <button type="submit" class="btn-deploy">
+                <span class="material-icons">save</span>
+                Save Settings
+            </button>
             <div class="section-card">
                 <div class="setting-row">
                     <div class="setting-info">
@@ -1080,10 +1084,10 @@ Your Title"><?= htmlspecialchars($s['signature']) ?></textarea>
                 </div>
             </div>
 
-            <button type="submit" class="btn-deploy">
+            <!-- <button type="submit" class="btn-deploy">
                 <span class="material-icons">save</span>
                 Save Settings
-            </button>
+            </button> -->
         </form>
     </main>
 
