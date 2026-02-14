@@ -39,10 +39,9 @@ $validSettings = [
     
     // Notifications & Security
     'push_notif', 'sound_alerts', 'browser_notif', 'two_factor', 'session_timeout',
-    'ip_lock', 'debug_logs', 'activity_report',
-    
-    // IMAP Settings - NOW ALLOWED!
-    'imap_server', 'imap_port', 'imap_encryption', 'imap_username'
+    'ip_lock', 'debug_logs', 'activity_report'
+    // NOTE: imap_server / imap_port / imap_encryption / imap_username are now
+    // sourced exclusively from env() and are NOT user-editable.
 ];
 
 try {
@@ -91,18 +90,12 @@ try {
     ");
     
     $savedCount = 0;
-    $imapUpdated = false;
     
     // Process each POST parameter
     foreach ($_POST as $key => $value) {
         // Check if it's a valid setting
         if (!in_array($key, $validSettings)) {
             continue;
-        }
-        
-        // Track if IMAP settings were updated
-        if (in_array($key, ['imap_server', 'imap_port', 'imap_encryption', 'imap_username'])) {
-            $imapUpdated = true;
         }
         
         // Convert boolean values
@@ -165,19 +158,13 @@ try {
     // Commit transaction
     $pdo->commit();
     
-    // Update session IMAP config if IMAP settings were changed
-    if ($imapUpdated) {
-        updateImapSessionConfig($userEmail, $_SESSION['smtp_pass']);
-    }
-    
     // Log the activity
     error_log("Settings saved for user: $userEmail ($savedCount settings updated)");
     
     echo json_encode([
         'success' => true,
         'message' => 'Settings saved successfully',
-        'count' => $savedCount,
-        'imap_updated' => $imapUpdated
+        'count' => $savedCount
     ]);
     
 } catch (PDOException $e) {
@@ -200,20 +187,5 @@ try {
     ]);
 }
 
-/**
- * Update IMAP configuration in session
- */
-function updateImapSessionConfig($email, $password) {
-    $settings = getSettingsWithDefaults($email);
-    
-    $_SESSION['imap_config'] = [
-        'imap_server' => $settings['imap_server'] ?? 'imap.hostinger.com',
-        'imap_port' => $settings['imap_port'] ?? '993',
-        'imap_encryption' => $settings['imap_encryption'] ?? 'ssl',
-        'imap_username' => $settings['imap_username'] ?? $email,
-        'imap_password' => $password
-    ];
-    
-    error_log("IMAP session config updated for: $email");
-}
+
 ?>
