@@ -1,9 +1,25 @@
 <?php
 session_start();
-// Security check: Redirect to login if session credentials do not exist
-if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
+
+// Load environment configuration
+require_once 'config.php';
+
+// Security check: Verify credentials from session OR environment
+$hasSessionAuth = isset($_SESSION['smtp_user']) && isset($_SESSION['smtp_pass']);
+$hasEnvAuth = !empty(env('SMTP_USERNAME')) && !empty(env('SMTP_PASSWORD'));
+
+if (!$hasSessionAuth && !$hasEnvAuth) {
+    // No credentials available - redirect to login
     header("Location: login.php");
     exit();
+}
+
+// If only ENV credentials are available, populate session for this page
+if (!$hasSessionAuth && $hasEnvAuth) {
+    $_SESSION['smtp_user'] = env('SMTP_USERNAME');
+    $_SESSION['smtp_pass'] = env('SMTP_PASSWORD');
+    $_SESSION['smtp_host'] = env('SMTP_HOST', 'smtp.hostinger.com');
+    $_SESSION['smtp_port'] = env('SMTP_PORT', 465);
 }
 ?>
 <!DOCTYPE html>
