@@ -711,7 +711,7 @@ $isLocked = isset($s['settings_locked']) &&
 
                 <!-- Info banner -->
                 <div style="background: #f0f9ff; border-left: 4px solid #0284c7; padding: 16px; border-radius: 8px; margin-bottom: 24px; display: flex; gap: 12px; align-items: flex-start;">
-                    <span class="material-icons" style="color: #0284c7; font-size: 20px; margin-top: 1px;">info</span>
+                    <!-- <span class="material-icons" style="color: #0284c7; font-size: 20px; margin-top: 1px;">info</span> -->
                     <div>
                         <div style="font-weight: 600; color: #0c4a6e; margin-bottom: 4px;">Server-managed configuration</div>
                         <p style="font-size: 13px; color: #0369a1; line-height: 1.6; margin: 0;">
