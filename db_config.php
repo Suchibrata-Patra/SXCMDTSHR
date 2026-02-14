@@ -573,85 +573,85 @@ function generateUuidV4() {
     
 //     $_SESSION['imap_configured'] = true;
 // }
-function loadImapConfigToSession($email, $password) {
-    // Detect mail provider from email domain
-    $domain = substr(strrchr($email, "@"), 1);
+// function loadImapConfigToSession($email, $password) {
+//     // Detect mail provider from email domain
+//     $domain = substr(strrchr($email, "@"), 1);
     
-    // Default IMAP settings based on common providers
-    $imapSettings = [
-        'gmail.com' => [
-            'server' => 'imap.gmail.com',
-            'port' => 993,
-            'encryption' => 'ssl'
-        ],
-        'outlook.com' => [
-            'server' => 'outlook.office365.com',
-            'port' => 993,
-            'encryption' => 'ssl'
-        ],
-        'hotmail.com' => [
-            'server' => 'outlook.office365.com',
-            'port' => 993,
-            'encryption' => 'ssl'
-        ],
-        'yahoo.com' => [
-            'server' => 'imap.mail.yahoo.com',
-            'port' => 993,
-            'encryption' => 'ssl'
-        ],
-        'aol.com' => [
-            'server' => 'imap.aol.com',
-            'port' => 993,
-            'encryption' => 'ssl'
-        ],
-        'icloud.com' => [
-            'server' => 'imap.mail.me.com',
-            'port' => 993,
-            'encryption' => 'ssl'
-        ],
-        'zoho.com' => [
-            'server' => 'imap.zoho.com',
-            'port' => 993,
-            'encryption' => 'ssl'
-        ],
-        'mail.com' => [
-            'server' => 'imap.mail.com',
-            'port' => 993,
-            'encryption' => 'ssl'
-        ],
-        'sxccal.edu' => [
-            'server' => env('IMAP_HOST', 'imap.gmail.com'), // Assuming Gmail for Workspace
-            'port' => env('IMAP_PORT', 993),
-            'encryption' => 'ssl'
-        ],
-        'holidayseva.com' => [
-            'server' => env('IMAP_HOST', 'imap.hostinger.com'),
-            'port' => env('IMAP_PORT', 993),
-            'encryption' => 'ssl'
-        ]
-    ];
+//     // Default IMAP settings based on common providers
+//     $imapSettings = [
+//         'gmail.com' => [
+//             'server' => 'imap.gmail.com',
+//             'port' => 993,
+//             'encryption' => 'ssl'
+//         ],
+//         'outlook.com' => [
+//             'server' => 'outlook.office365.com',
+//             'port' => 993,
+//             'encryption' => 'ssl'
+//         ],
+//         'hotmail.com' => [
+//             'server' => 'outlook.office365.com',
+//             'port' => 993,
+//             'encryption' => 'ssl'
+//         ],
+//         'yahoo.com' => [
+//             'server' => 'imap.mail.yahoo.com',
+//             'port' => 993,
+//             'encryption' => 'ssl'
+//         ],
+//         'aol.com' => [
+//             'server' => 'imap.aol.com',
+//             'port' => 993,
+//             'encryption' => 'ssl'
+//         ],
+//         'icloud.com' => [
+//             'server' => 'imap.mail.me.com',
+//             'port' => 993,
+//             'encryption' => 'ssl'
+//         ],
+//         'zoho.com' => [
+//             'server' => 'imap.zoho.com',
+//             'port' => 993,
+//             'encryption' => 'ssl'
+//         ],
+//         'mail.com' => [
+//             'server' => 'imap.mail.com',
+//             'port' => 993,
+//             'encryption' => 'ssl'
+//         ],
+//         'sxccal.edu' => [
+//             'server' => env('IMAP_HOST', 'imap.gmail.com'), // Assuming Gmail for Workspace
+//             'port' => env('IMAP_PORT', 993),
+//             'encryption' => 'ssl'
+//         ],
+//         'holidayseva.com' => [
+//             'server' => env('IMAP_HOST', 'imap.hostinger.com'),
+//             'port' => env('IMAP_PORT', 993),
+//             'encryption' => 'ssl'
+//         ]
+//     ];
     
-    // Get settings for this domain or use defaults
-    $config = $imapSettings[$domain] ?? [
-        'server' => env('IMAP_HOST', 'imap.gmail.com'),
-        'port' => env('IMAP_PORT', 993),
-        'encryption' => 'ssl'
-    ];
+//     // Get settings for this domain or use defaults
+//     $config = $imapSettings[$domain] ?? [
+//         'server' => env('IMAP_HOST', 'imap.gmail.com'),
+//         'port' => env('IMAP_PORT', 993),
+//         'encryption' => 'ssl'
+//     ];
     
-    // Store in session
-    $_SESSION['imap_config'] = [
-        'imap_server' => $config['server'],
-        'imap_port' => $config['port'],
-        'imap_username' => $email,
-        'imap_password' => $password,
-        'imap_encryption' => $config['encryption'],
-        'imap_configured' => true
-    ];
+//     // Store in session
+//     $_SESSION['imap_config'] = [
+//         'imap_server' => $config['server'],
+//         'imap_port' => $config['port'],
+//         'imap_username' => $email,
+//         'imap_password' => $password,
+//         'imap_encryption' => $config['encryption'],
+//         'imap_configured' => true
+//     ];
     
-    error_log("IMAP config loaded for: $email (Server: {$config['server']}:{$config['port']})");
+//     error_log("IMAP config loaded for: $email (Server: {$config['server']}:{$config['port']})");
     
-    return true;
-}
+//     return true;
+// }
 
 /**
  * Parse email list from comma/semicolon separated string
