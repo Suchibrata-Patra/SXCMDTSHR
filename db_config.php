@@ -58,17 +58,17 @@ function getDatabaseConnection() {
 /**
  * Get user ID by email address
  */
-function getUserId($pdo, $email) {
-    try {
-        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
-        $stmt->execute([$email]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $user ? $user['id'] : null;
-    } catch (PDOException $e) {
-        error_log("Error getting user ID: " . $e->getMessage());
-        return null;
-    }
-}
+// function getUserId($pdo, $email) {
+//     try {
+//         $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
+//         $stmt->execute([$email]);
+//         $user = $stmt->fetch(PDO::FETCH_ASSOC);
+//         return $user ? $user['id'] : null;
+//     } catch (PDOException $e) {
+//         error_log("Error getting user ID: " . $e->getMessage());
+//         return null;
+//     }
+// }
 
 /**
  * Get user ID by email - alias for consistency
