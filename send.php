@@ -94,13 +94,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         $settings = $_SESSION['user_settings'] ?? [];
 
-        // Get SMTP configuration from environment (most secure)
-        $mail->Host = env('SMTP_HOST', 'smtp.hostinger.com');
+        // Get SMTP configuration from environment - NO DEFAULTS
+        $mail->Host = env('SMTP_HOST');
         $mail->SMTPAuth = true;
         $mail->Username = $smtpUser;
         $mail->Password = $smtpPass;
-        $mail->Port = (int)env('SMTP_PORT', 465);
-        $mail->SMTPSecure = env('SMTP_ENCRYPTION', 'ssl') === 'tls' 
+        $mail->Port = (int)env('SMTP_PORT');
+        
+        $encryption = env('SMTP_ENCRYPTION');
+        $mail->SMTPSecure = ($encryption === 'tls') 
             ? PHPMailer::ENCRYPTION_STARTTLS 
             : PHPMailer::ENCRYPTION_SMTPS;
         
@@ -113,12 +115,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             ]
         ];
         
-        // Get FROM name and email from environment
+        // Get FROM name and email from environment - NO DEFAULTS
         $displayName = !empty($settings['display_name']) 
             ? $settings['display_name'] 
-            : env('FROM_NAME', "St. Xavier's College");
+            : env('FROM_NAME');
         
-        $fromEmail = env('FROM_EMAIL', $smtpUser);
+        $fromEmail = env('FROM_EMAIL') ?: $smtpUser;
         
         $mail->setFrom($fromEmail, $displayName);
         
@@ -131,10 +133,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $ccEmails = !empty($_POST['ccEmails']) ? array_map('trim', explode(',', $_POST['ccEmails'])) : [];
         $bccEmails = !empty($_POST['bccEmails']) ? array_map('trim', explode(',', $_POST['bccEmails'])) : [];
         
-        $signatureWish = trim($_POST['signatureWish'] ?? 'Best Regards,');
-        $signatureName = trim($_POST['signatureName'] ?? 'Dr. Durba Bhattacharya');
-        $signatureDesignation = trim($_POST['signatureDesignation'] ?? 'Head of Department, Data Science');
-        $signatureExtra = trim($_POST['signatureExtra'] ?? 'St. Xavier\'s College (Autonomous), Kolkata');
+        $signatureWish = trim($_POST['signatureWish'] ?? env('DEFAULT_SIGNATURE_WISH', 'Best Regards,'));
+        $signatureName = trim($_POST['signatureName'] ?? env('DEFAULT_SIGNATURE_NAME', ''));
+        $signatureDesignation = trim($_POST['signatureDesignation'] ?? env('DEFAULT_SIGNATURE_DESIGNATION', ''));
+        $signatureExtra = trim($_POST['signatureExtra'] ?? env('DEFAULT_SIGNATURE_EXTRA', ''));
         
         // Label information (optional)
         $labelId = !empty($_POST['label_id']) ? intval($_POST['label_id']) : null;
@@ -184,7 +186,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // ==================== Attachment Handling ====================
         $attachments = [];
         $attachmentIdsForDB = [];
-        $uploadDir = 'uploads/attachments/';
+        $uploadDir = env('UPLOAD_ATTACHMENTS_DIR', 'uploads/attachments/');
         
         error_log("Processing attachments - IDs received: " . implode(',', $attachmentIds));
         
