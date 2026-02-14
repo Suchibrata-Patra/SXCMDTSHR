@@ -242,6 +242,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             color: #888;
             line-height: 1.5;
             letter-spacing: 0.3px;
+            text-align:left;
         }
 
         /* Title */
