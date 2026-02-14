@@ -104,11 +104,11 @@ define('ALLOWED_ATTACHMENT_DIRS', [
 // ═══════════════════════════════════════════════════════════════════════════
 
 // Check if user is authenticated
-// Priority: Session credentials > ENV credentials
-$useSessionAuth = isset($_SESSION['smtp_user'], $_SESSION['smtp_pass']);
+// Priority: ENV credentials > Session credentials (ENV is more secure)
 $useEnvAuth = !empty(env('SMTP_USERNAME')) && !empty(env('SMTP_PASSWORD'));
+$useSessionAuth = isset($_SESSION['smtp_user'], $_SESSION['smtp_pass']);
 
-if (!$useSessionAuth && !$useEnvAuth) {
+if (!$useEnvAuth && !$useSessionAuth) {
     logEvent('WARN', 'Unauthorized access attempt - no credentials available', [
         'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
         'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown'
@@ -128,14 +128,14 @@ header('Content-Type: application/json');
 
 $action     = trim((string)($_GET['action'] ?? $_POST['action'] ?? ''));
 
-// Get SMTP credentials from session or fallback to ENV
-$smtpUser   = $_SESSION['smtp_user'] ?? env('SMTP_USERNAME');
-$smtpPass   = $_SESSION['smtp_pass'] ?? env('SMTP_PASSWORD');
+// Get SMTP credentials - PREFER ENV over session for maximum security
+$smtpUser   = env('SMTP_USERNAME') ?: ($_SESSION['smtp_user'] ?? '');
+$smtpPass   = env('SMTP_PASSWORD') ?: ($_SESSION['smtp_pass'] ?? '');
 $settings   = $_SESSION['user_settings'] ?? [];
 
 logEvent('INFO', "Action requested: '$action'", [
     'smtp_user' => $smtpUser,
-    'auth_source' => isset($_SESSION['smtp_user']) ? 'session' : 'env'
+    'auth_source' => env('SMTP_USERNAME') ? 'env' : 'session'
 ]);
 
 try {
@@ -261,7 +261,7 @@ try {
                     'success'    => $connected,
                     'connected'  => $connected,
                     'smtp_user'  => $smtpUser,
-                    'host'       => SMTP_HOST . ':' . SMTP_PORT,
+                    'host'       => env('SMTP_HOST', 'smtp.hostinger.com') . ':' . env('SMTP_PORT', 465),
                     'log'        => $debugLog,
                     'message'    => $connected
                         ? 'SMTP connection and authentication successful.'
