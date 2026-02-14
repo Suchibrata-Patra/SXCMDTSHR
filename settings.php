@@ -714,9 +714,7 @@ $isLocked = isset($s['settings_locked']) &&
                     <!-- <span class="material-icons" style="color: #0284c7; font-size: 20px; margin-top: 1px;">info</span> -->
                     <div>
                         <div style="font-weight: 600; color: #0c4a6e; margin-bottom: 4px;">Server-managed configuration</div>
-                        <p style="font-size: 13px; color: #0369a1; line-height: 1.6; margin: 0;">
-                           These values are configured at the server level by the email client/sender infrastructure. To help ensure optimal deliverability and reduce the risk of messages being marked as spam, we recommend using a reputable and trusted sender IP provider. Please note that these settings are secured at the root code level and are not editable from the application interface. Your login ID and password are used exclusively for cloud-based home authentication. They are not related to SMTP or IMAP configurations, which are fixed and can only be modified with developer authorization.
-                        </p>
+                        <p style="font-size: 13px; color: #0369a1; line-height: 1.6; margin: 0;"> These values are configured at the server level by the sender infrastructure. To ensure better deliverability and avoid spam issues, please use a reputable sender IP provider. These settings are locked at the root code level and cannot be modified from the application. Your login credentials are used only for cloud authentication and are not related to SMTP or IMAP settings, which require developer authorization to change.                        </p>
                     </div>
                 </div>
 
