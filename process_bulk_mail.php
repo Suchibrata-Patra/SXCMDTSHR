@@ -57,6 +57,7 @@ logEvent('INFO', 'Bulk mail processor started', [
 
 session_start();
 
+require_once 'config.php';  // Load config.php which loads .env file
 require_once 'db_config.php';
 
 if (file_exists(__DIR__ . '/vendor/autoload.php')) {
@@ -98,24 +99,24 @@ define('ALLOWED_ATTACHMENT_DIRS', [
     __DIR__ . '/uploads/attachments',
 ]);
 
-/** SMTP Configuration */
-define('SMTP_HOST', 'smtp.hostinger.com');
-define('SMTP_PORT', 465);
-define('DEFAULT_DISPLAY_NAME', "St. Xavier's College");
-
 // ═══════════════════════════════════════════════════════════════════════════
 //  AUTHENTICATION GUARD
 // ═══════════════════════════════════════════════════════════════════════════
 
-if (!isset($_SESSION['smtp_user'], $_SESSION['smtp_pass'])) {
-    logEvent('WARN', 'Unauthorized access attempt', [
+// Check if user is authenticated
+// Priority: Session credentials > ENV credentials
+$useSessionAuth = isset($_SESSION['smtp_user'], $_SESSION['smtp_pass']);
+$useEnvAuth = !empty(env('SMTP_USERNAME')) && !empty(env('SMTP_PASSWORD'));
+
+if (!$useSessionAuth && !$useEnvAuth) {
+    logEvent('WARN', 'Unauthorized access attempt - no credentials available', [
         'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
         'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown'
     ]);
     
     http_response_code(401);
     header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'error' => 'Unauthorized — please log in.']);
+    echo json_encode(['success' => false, 'error' => 'Unauthorized — please log in or configure SMTP credentials.']);
     exit();
 }
 
@@ -126,11 +127,16 @@ header('Content-Type: application/json');
 // ═══════════════════════════════════════════════════════════════════════════
 
 $action     = trim((string)($_GET['action'] ?? $_POST['action'] ?? ''));
-$smtpUser   = $_SESSION['smtp_user'];
-$smtpPass   = $_SESSION['smtp_pass'];
+
+// Get SMTP credentials from session or fallback to ENV
+$smtpUser   = $_SESSION['smtp_user'] ?? env('SMTP_USERNAME');
+$smtpPass   = $_SESSION['smtp_pass'] ?? env('SMTP_PASSWORD');
 $settings   = $_SESSION['user_settings'] ?? [];
 
-logEvent('INFO', "Action requested: '$action'", ['smtp_user' => $smtpUser]);
+logEvent('INFO', "Action requested: '$action'", [
+    'smtp_user' => $smtpUser,
+    'auth_source' => isset($_SESSION['smtp_user']) ? 'session' : 'env'
+]);
 
 try {
     $pdo = getDatabaseConnection();
@@ -617,10 +623,15 @@ function sendBulkEmail(
     $mail->clearCustomHeaders();
 
     try {
-        // Sender
-        $displayName = !empty($settings['display_name']) ? $settings['display_name'] : DEFAULT_DISPLAY_NAME;
-        $mail->setFrom($smtpUser, $displayName);
-        $mail->addReplyTo($smtpUser, $displayName);
+        // Sender - use FROM_NAME and FROM_EMAIL from env, with fallbacks
+        $displayName = !empty($settings['display_name']) 
+            ? $settings['display_name'] 
+            : env('FROM_NAME', "St. Xavier's College");
+        
+        $fromEmail = env('FROM_EMAIL', $smtpUser);
+        
+        $mail->setFrom($fromEmail, $displayName);
+        $mail->addReplyTo($fromEmail, $displayName);
 
         // Recipient
         $recipientEmail = filter_var(trim((string)($queueItem['recipient_email'] ?? '')), FILTER_SANITIZE_EMAIL);
@@ -807,14 +818,14 @@ function buildMailer(string $smtpUser, string $smtpPass, array $settings, bool $
 {
     $mail = new PHPMailer(true);
 
-    // SMTP Configuration
+    // SMTP Configuration from ENV
     $mail->isSMTP();
-    $mail->Host       = SMTP_HOST;
+    $mail->Host       = env('SMTP_HOST', 'smtp.hostinger.com');
     $mail->SMTPAuth   = true;
     $mail->Username   = $smtpUser;
     $mail->Password   = $smtpPass;
-    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-    $mail->Port       = SMTP_PORT;
+    $mail->SMTPSecure = env('SMTP_ENCRYPTION', 'ssl') === 'tls' ? PHPMailer::ENCRYPTION_STARTTLS : PHPMailer::ENCRYPTION_SMTPS;
+    $mail->Port       = (int)env('SMTP_PORT', 465);
 
     // SSL Options (for Hostinger shared hosting)
     $mail->SMTPOptions = [
