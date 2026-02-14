@@ -1081,7 +1081,7 @@ Your Title"><?= htmlspecialchars($s['signature']) ?></textarea>
             </div>
 
             <button type="submit" class="btn-deploy">
-                <span class="material-icons">save</span>
+                <!-- <span class="material-icons">save</span> -->
                 Save Settings
             </button>
         </form>
