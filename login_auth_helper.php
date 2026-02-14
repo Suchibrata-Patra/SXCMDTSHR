@@ -37,7 +37,7 @@ define('REQUIRE_SPECIAL', true);
 define('SECURE_COOKIE', true);             // Use secure cookies (HTTPS only)
 define('HTTPONLY_COOKIE', true);           // Prevent XSS cookie access
 define('SAMESITE_COOKIE', 'Strict');       // CSRF protection
-
+define('ACCOUNT_LOCK_DURATION',10)
 // ============================================================
 // DATABASE AUTHENTICATION
 // ============================================================
