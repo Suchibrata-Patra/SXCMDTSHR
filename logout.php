@@ -6,7 +6,7 @@
  * Properly logs out user and records activity
  * ============================================================
  */
-
+require_once __DIR__ . '/security_handler.php';
 session_start();
 require_once 'db_config.php';
 require_once 'login_auth_helper.php';
