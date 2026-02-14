@@ -691,7 +691,6 @@ $_SESSION['user_settings'] = $settings;
             <!-- Compose Form -->
             <div class="compose-container">
                 <form id="composeForm" method="POST" action="send.php" enctype="multipart/form-data">
-                    <?php echo csrf_field(); ?>
                     <!-- Recipients Section -->
                     <div class="form-section">
                         <h3 class="section-title">
