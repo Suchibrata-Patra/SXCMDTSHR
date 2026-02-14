@@ -35,11 +35,11 @@ if (!headers_sent()) {
 
 define('SECURITY_LOG_FILE', __DIR__ . '/logs/security.log');
 define('SECURITY_LOG_DIR', __DIR__ . '/logs');
-// define('MAX_LOGIN_ATTEMPTS', 5);
+define('MAX_LOGIN_ATTEMPTS', 5);
 define('LOGIN_LOCKOUT_TIME', 900); // 15 minutes in seconds
-// define('SESSION_TIMEOUT', 3600); // 1 hour
+define('SESSION_TIMEOUT', 3600); // 1 hour
 define('RATE_LIMIT_REQUESTS', 100); // Max requests per time window
-// define('RATE_LIMIT_WINDOW', 60); // Time window in seconds
+define('RATE_LIMIT_WINDOW', 60); // Time window in seconds
 define('UPLOAD_MAX_SIZE', 10485760); // 10MB in bytes
 define('ALLOWED_UPLOAD_EXTENSIONS', ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip']);
 
