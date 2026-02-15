@@ -1074,52 +1074,6 @@ $lastSync = getLastSyncDate($userEmail);
             </div>
         </div>
 
-        <!-- Stats Bar -->
-        <div class="stats-bar">
-            <!-- <div class="stat-item">
-                <div class="stat-icon total">
-                    <span class="material-icons-round">mail</span>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-number" id="totalCount"><?= $totalCount ?></div>
-                    <div class="stat-label">Total Received</div>
-                </div>
-            </div>
-
-            <div class="stat-item">
-                <div class="stat-icon unread">
-                    <span class="material-icons-round">mark_email_unread</span>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-number" id="unreadCount"><?= $unreadCount ?></div>
-                    <div class="stat-label">Unread</div>
-                </div>
-            </div>
-
-            <div class="stat-item">
-                <div class="stat-icon new-stat">
-                    <span class="material-icons-round">fiber_new</span>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-number" id="newCount"><?= $newCount ?></div>
-                    <div class="stat-label">New Today</div>
-                </div>
-            </div> -->
-
-            <!-- <div class="sync-info">
-                <div class="sync-text">
-                    <span class="material-icons-round">schedule</span>
-                    <span id="lastSyncText">
-                        <?php if ($lastSync): ?>
-                        Last synced: <?= date('g:i A', strtotime($lastSync)) ?>
-                        <?php else: ?>
-                        Never synced
-                        <?php endif; ?>
-                    </span>
-                </div>
-            </div> -->
-        </div>
-
         <!-- Split Pane Content -->
         <div class="content-wrapper">
             <!-- Left Pane: Messages List -->
