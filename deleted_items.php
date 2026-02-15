@@ -580,7 +580,6 @@ $totalPages = ceil($totalEmails / $limit);
     </style>
 </head>
 <body>
-    <?php include('sidebar.php') ?>
     <div id="main-wrapper">
         <!-- Header -->
         <div class="page-header">
