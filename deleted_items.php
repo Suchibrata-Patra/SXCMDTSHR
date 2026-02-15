@@ -1,171 +1,96 @@
 <?php
+/**
+ * Deleted Items Page - Split Pane UI
+ * Shows deleted inbox messages with preview
+ */
 session_start();
 
-// Enable error reporting for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
-require_once 'config.php';
-require_once 'db_config.php';
-
+// Security check
 if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
     header("Location: login.php");
     exit();
 }
 
+require_once 'config.php';
+require_once 'db_config.php';
+require_once 'inbox_functions.php';
+
 $userEmail = $_SESSION['smtp_user'];
 
-// Get filter parameters
-$filters = [
-    'search' => $_GET['search'] ?? '',
-    'date_from' => $_GET['date_from'] ?? '',
-    'date_to' => $_GET['date_to'] ?? ''
-];
-
-/**
- * Check if sent_emails table exists
- */
-function tableExists($tableName) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) return false;
-        
-        $stmt = $pdo->query("SHOW TABLES LIKE '$tableName'");
-        return $stmt->fetch() !== false;
-    } catch (Exception $e) {
-        error_log("Error checking table existence: " . $e->getMessage());
-        return false;
+// Handle AJAX requests
+if (isset($_GET['action'])) {
+    header('Content-Type: application/json');
+    
+    switch ($_GET['action']) {
+        case 'get_deleted_messages':
+            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
+            $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
+            
+            $filters = ['search' => $_GET['search'] ?? ''];
+            
+            $messages = getDeletedMessages($userEmail, $limit, $offset, $filters);
+            $total = getDeletedMessageCount($userEmail, $filters);
+            
+            echo json_encode([
+                'success' => true,
+                'messages' => $messages,
+                'total' => $total
+            ]);
+            exit();
+            
+        case 'get_message':
+            $messageId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+            $message = getInboxMessageById($messageId, $userEmail);
+            
+            if ($message && $message['is_deleted'] == 1) {
+                echo json_encode(['success' => true, 'message' => $message]);
+            } else {
+                echo json_encode(['success' => false, 'error' => 'Message not found']);
+            }
+            exit();
+            
+        case 'restore':
+            $messageId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+            $success = restoreInboxMessage($messageId, $userEmail);
+            echo json_encode(['success' => $success]);
+            exit();
+            
+        case 'permanent_delete':
+            $messageId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+            $success = permanentDeleteMessage($messageId, $userEmail);
+            echo json_encode(['success' => $success]);
+            exit();
     }
 }
 
 /**
- * Get deleted emails - handles both tables if they exist
+ * Get deleted messages
  */
-function getAllDeletedEmails($userEmail, $limit, $offset, $filters) {
-    $pdo = getDatabaseConnection();
-    if (!$pdo) return [];
-    
+function getDeletedMessages($userEmail, $limit = 50, $offset = 0, $filters = []) {
     try {
-        $hasSentEmails = tableExists('sent_emails');
-        error_log("sent_emails table exists: " . ($hasSentEmails ? "YES" : "NO"));
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return [];
         
-        if ($hasSentEmails) {
-            // Use UNION query for both tables
-            $sentWhere = "se.sender_email = :sender_email AND se.is_deleted = 1";
-            $inboxWhere = "im.user_email = :user_email AND im.is_deleted = 1";
-            $params = [
-                ':sender_email' => $userEmail,
-                ':user_email' => $userEmail
-            ];
-            
-            // Add search filter
-            if (!empty($filters['search'])) {
-                $searchTerm = '%' . $filters['search'] . '%';
-                $sentWhere .= " AND (se.recipient_email LIKE :search1 OR se.subject LIKE :search2 OR se.message_body LIKE :search3)";
-                $inboxWhere .= " AND (im.sender_email LIKE :search4 OR im.subject LIKE :search5 OR im.body LIKE :search6)";
-                $params[':search1'] = $searchTerm;
-                $params[':search2'] = $searchTerm;
-                $params[':search3'] = $searchTerm;
-                $params[':search4'] = $searchTerm;
-                $params[':search5'] = $searchTerm;
-                $params[':search6'] = $searchTerm;
-            }
-            
-            // Add date filters
-            if (!empty($filters['date_from'])) {
-                $sentWhere .= " AND DATE(se.sent_at) >= :date_from_sent";
-                $inboxWhere .= " AND DATE(im.received_date) >= :date_from_inbox";
-                $params[':date_from_sent'] = $filters['date_from'];
-                $params[':date_from_inbox'] = $filters['date_from'];
-            }
-            
-            if (!empty($filters['date_to'])) {
-                $sentWhere .= " AND DATE(se.sent_at) <= :date_to_sent";
-                $inboxWhere .= " AND DATE(im.received_date) <= :date_to_inbox";
-                $params[':date_to_sent'] = $filters['date_to'];
-                $params[':date_to_inbox'] = $filters['date_to'];
-            }
-            
-            // UNION query
-            $sql = "
-                (SELECT 
-                    se.id,
-                    'sent' as email_type,
-                    se.sender_email,
-                    se.recipient_email,
-                    se.subject,
-                    se.message_body as body,
-                    se.sent_at as email_date,
-                    se.sent_at as deleted_at,
-                    CASE WHEN se.attachment_names IS NOT NULL AND se.attachment_names != '' THEN 1 ELSE 0 END as has_attachments
-                FROM sent_emails se
-                WHERE {$sentWhere})
-                
-                UNION ALL
-                
-                (SELECT 
-                    im.id,
-                    'received' as email_type,
-                    im.sender_email,
-                    im.user_email as recipient_email,
-                    im.subject,
-                    im.body,
-                    im.received_date as email_date,
-                    im.deleted_at,
-                    im.has_attachments
-                FROM inbox_messages im
-                WHERE {$inboxWhere})
-                
-                ORDER BY deleted_at DESC, email_date DESC
-                LIMIT :limit OFFSET :offset
-            ";
-        } else {
-            // Only query inbox_messages
-            $inboxWhere = "im.user_email = :user_email AND im.is_deleted = 1";
-            $params = [':user_email' => $userEmail];
-            
-            // Add search filter
-            if (!empty($filters['search'])) {
-                $searchTerm = '%' . $filters['search'] . '%';
-                $inboxWhere .= " AND (im.sender_email LIKE :search OR im.subject LIKE :search2 OR im.body LIKE :search3)";
-                $params[':search'] = $searchTerm;
-                $params[':search2'] = $searchTerm;
-                $params[':search3'] = $searchTerm;
-            }
-            
-            // Add date filters
-            if (!empty($filters['date_from'])) {
-                $inboxWhere .= " AND DATE(im.received_date) >= :date_from";
-                $params[':date_from'] = $filters['date_from'];
-            }
-            
-            if (!empty($filters['date_to'])) {
-                $inboxWhere .= " AND DATE(im.received_date) <= :date_to";
-                $params[':date_to'] = $filters['date_to'];
-            }
-            
-            // Simple query for inbox only
-            $sql = "
-                SELECT 
-                    im.id,
-                    'received' as email_type,
-                    im.sender_email,
-                    im.user_email as recipient_email,
-                    im.subject,
-                    im.body,
-                    im.received_date as email_date,
-                    im.deleted_at,
-                    im.has_attachments
-                FROM inbox_messages im
-                WHERE {$inboxWhere}
-                ORDER BY im.deleted_at DESC, im.received_date DESC
-                LIMIT :limit OFFSET :offset
-            ";
+        $sql = "SELECT 
+                    id, message_id, sender_email, sender_name, 
+                    subject, body_preview, received_date, deleted_at,
+                    has_attachments, attachment_data
+                FROM inbox_messages 
+                WHERE user_email = :email 
+                AND is_deleted = 1";
+        
+        $params = [':email' => $userEmail];
+        
+        // Apply search filter
+        if (!empty($filters['search'])) {
+            $sql .= " AND (subject LIKE :search OR sender_email LIKE :search OR body_preview LIKE :search)";
+            $params[':search'] = '%' . $filters['search'] . '%';
         }
+        
+        $sql .= " ORDER BY deleted_at DESC LIMIT :limit OFFSET :offset";
         
         $stmt = $pdo->prepare($sql);
         
-        // Bind all parameters
         foreach ($params as $key => $value) {
             $stmt->bindValue($key, $value, PDO::PARAM_STR);
         }
@@ -173,414 +98,621 @@ function getAllDeletedEmails($userEmail, $limit, $offset, $filters) {
         $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
         
         $stmt->execute();
-        $results = $stmt->fetchAll();
-        
-        error_log("Deleted emails found: " . count($results));
-        
-        return $results;
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
         
     } catch (PDOException $e) {
-        error_log("Error fetching deleted emails: " . $e->getMessage());
+        error_log("Error getting deleted messages: " . $e->getMessage());
         return [];
     }
 }
 
 /**
- * Get total count of deleted emails
+ * Get deleted message count
  */
-function getAllDeletedEmailCount($userEmail, $filters) {
-    $pdo = getDatabaseConnection();
-    if (!$pdo) return 0;
-    
+function getDeletedMessageCount($userEmail, $filters = []) {
     try {
-        $hasSentEmails = tableExists('sent_emails');
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return 0;
         
-        if ($hasSentEmails) {
-            $sentWhere = "se.sender_email = :sender_email AND se.is_deleted = 1";
-            $inboxWhere = "im.user_email = :user_email AND im.is_deleted = 1";
-            $params = [
-                ':sender_email' => $userEmail,
-                ':user_email' => $userEmail
-            ];
-            
-            // Add search filter
-            if (!empty($filters['search'])) {
-                $searchTerm = '%' . $filters['search'] . '%';
-                $sentWhere .= " AND (se.recipient_email LIKE :search1 OR se.subject LIKE :search2 OR se.message_body LIKE :search3)";
-                $inboxWhere .= " AND (im.sender_email LIKE :search4 OR im.subject LIKE :search5 OR im.body LIKE :search6)";
-                $params[':search1'] = $searchTerm;
-                $params[':search2'] = $searchTerm;
-                $params[':search3'] = $searchTerm;
-                $params[':search4'] = $searchTerm;
-                $params[':search5'] = $searchTerm;
-                $params[':search6'] = $searchTerm;
-            }
-            
-            if (!empty($filters['date_from'])) {
-                $sentWhere .= " AND DATE(se.sent_at) >= :date_from_sent";
-                $inboxWhere .= " AND DATE(im.received_date) >= :date_from_inbox";
-                $params[':date_from_sent'] = $filters['date_from'];
-                $params[':date_from_inbox'] = $filters['date_from'];
-            }
-            
-            if (!empty($filters['date_to'])) {
-                $sentWhere .= " AND DATE(se.sent_at) <= :date_to_sent";
-                $inboxWhere .= " AND DATE(im.received_date) <= :date_to_inbox";
-                $params[':date_to_sent'] = $filters['date_to'];
-                $params[':date_to_inbox'] = $filters['date_to'];
-            }
-            
-            $sql = "
-                SELECT 
-                    (SELECT COUNT(*) FROM sent_emails se WHERE {$sentWhere}) +
-                    (SELECT COUNT(*) FROM inbox_messages im WHERE {$inboxWhere})
-                    as total_count
-            ";
-        } else {
-            $inboxWhere = "im.user_email = :user_email AND im.is_deleted = 1";
-            $params = [':user_email' => $userEmail];
-            
-            if (!empty($filters['search'])) {
-                $searchTerm = '%' . $filters['search'] . '%';
-                $inboxWhere .= " AND (im.sender_email LIKE :search OR im.subject LIKE :search2 OR im.body LIKE :search3)";
-                $params[':search'] = $searchTerm;
-                $params[':search2'] = $searchTerm;
-                $params[':search3'] = $searchTerm;
-            }
-            
-            if (!empty($filters['date_from'])) {
-                $inboxWhere .= " AND DATE(im.received_date) >= :date_from";
-                $params[':date_from'] = $filters['date_from'];
-            }
-            
-            if (!empty($filters['date_to'])) {
-                $inboxWhere .= " AND DATE(im.received_date) <= :date_to";
-                $params[':date_to'] = $filters['date_to'];
-            }
-            
-            $sql = "SELECT COUNT(*) as total_count FROM inbox_messages im WHERE {$inboxWhere}";
+        $sql = "SELECT COUNT(*) as count 
+                FROM inbox_messages 
+                WHERE user_email = :email 
+                AND is_deleted = 1";
+        
+        $params = [':email' => $userEmail];
+        
+        if (!empty($filters['search'])) {
+            $sql .= " AND (subject LIKE :search OR sender_email LIKE :search OR body_preview LIKE :search)";
+            $params[':search'] = '%' . $filters['search'] . '%';
         }
         
         $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
         
-        // Bind parameters
-        foreach ($params as $key => $value) {
-            $stmt->bindValue($key, $value, PDO::PARAM_STR);
-        }
-        
-        $stmt->execute();
-        $result = $stmt->fetch();
-        
-        return $result['total_count'] ?? 0;
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['count'] ?? 0;
         
     } catch (PDOException $e) {
-        error_log("Error counting deleted emails: " . $e->getMessage());
+        error_log("Error getting deleted count: " . $e->getMessage());
         return 0;
     }
 }
 
-// Pagination
-$limit = 20;
-$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
-$offset = ($page - 1) * $limit;
+/**
+ * Restore deleted message
+ */
+function restoreInboxMessage($messageId, $userEmail) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return false;
+        
+        $stmt = $pdo->prepare("
+            UPDATE inbox_messages 
+            SET is_deleted = 0, deleted_at = NULL 
+            WHERE id = :id AND user_email = :email AND is_deleted = 1
+        ");
+        
+        return $stmt->execute([
+            ':id' => $messageId,
+            ':email' => $userEmail
+        ]);
+        
+    } catch (PDOException $e) {
+        error_log("Error restoring message: " . $e->getMessage());
+        return false;
+    }
+}
 
-// Get deleted emails and count
-$deletedEmails = getAllDeletedEmails($userEmail, $limit, $offset, $filters);
-$totalEmails = getAllDeletedEmailCount($userEmail, $filters);
-$totalPages = ceil($totalEmails / $limit);
+/**
+ * Permanently delete message
+ */
+function permanentDeleteMessage($messageId, $userEmail) {
+    try {
+        $pdo = getDatabaseConnection();
+        if (!$pdo) return false;
+        
+        $stmt = $pdo->prepare("
+            DELETE FROM inbox_messages 
+            WHERE id = :id AND user_email = :email AND is_deleted = 1
+        ");
+        
+        return $stmt->execute([
+            ':id' => $messageId,
+            ':email' => $userEmail
+        ]);
+        
+    } catch (PDOException $e) {
+        error_log("Error permanently deleting message: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Initial data load
+$messages = getDeletedMessages($userEmail, 50, 0) ?? [];
+$totalCount = getDeletedMessageCount($userEmail) ?? 0;
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deleted Items - Email System</title>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <?php
+        define('PAGE_TITLE', 'Deleted Items | SXC MDTS');
+        include 'header.php';
+    ?>
     <style>
+        :root {
+            --apple-blue: #007AFF;
+            --apple-gray: #8E8E93;
+            --apple-light-gray: #C7C7CC;
+            --apple-bg: #F2F2F7;
+            --border: #E5E5EA;
+            --danger-red: #FF3B30;
+            --success-green: #34C759;
+            --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        :root {
-            --apple-blue: #007AFF;
-            --apple-gray: #8E8E93;
-            --apple-light-gray: #F2F2F7;
-            --border: #E5E5EA;
-            --text: #1C1C1E;
-        }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: #FFFFFF;
-            color: var(--text);
-        }
-
-        #main-wrapper {
-            margin-left: 280px;
-            padding: 32px;
-            max-width: 1400px;
-        }
-
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 32px;
-            padding-bottom: 24px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .header-left h1 {
-            font-size: 32px;
-            font-weight: 600;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--apple-bg);
             color: #1c1c1e;
             display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 8px;
+            height: 100vh;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
         }
 
-        .header-left h1 .material-icons {
-            font-size: 32px;
-            color: #FF3B30;
+        /* ========== MAIN CONTENT ========== */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* ========== HEADER ========== */
+        .page-header {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            flex: 1;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1c1c1e;
+            letter-spacing: -0.5px;
+            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .page-title .material-icons {
+            color: var(--danger-red);
+            font-size: 28px;
         }
 
         .page-subtitle {
-            font-size: 14px;
-            color: var(--apple-gray);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .email-count-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 12px;
-            background: var(--apple-light-gray);
-            border-radius: 12px;
             font-size: 13px;
-            font-weight: 500;
+            color: var(--apple-gray);
+            font-weight: 400;
         }
 
         .header-actions {
             display: flex;
-            gap: 12px;
+            gap: 8px;
+            align-items: center;
         }
 
         .btn {
-            padding: 10px 20px;
-            border-radius: 10px;
+            padding: 8px 14px;
             border: none;
-            font-size: 14px;
+            border-radius: 8px;
+            font-size: 13px;
             font-weight: 500;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            text-decoration: none;
+            gap: 6px;
             transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+            text-decoration: none;
+        }
+
+        .btn .material-icons {
+            font-size: 18px;
         }
 
         .btn-secondary {
-            background: var(--apple-light-gray);
+            background: white;
             color: #1c1c1e;
+            border: 1px solid var(--border);
         }
 
         .btn-secondary:hover {
-            background: #E5E5EA;
+            background: var(--apple-bg);
+            border-color: var(--apple-blue);
         }
 
-        .content-wrapper {
+        .btn-danger {
+            background: var(--danger-red);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #D32F2F;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
+        }
+
+        .btn-success {
+            background: var(--success-green);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #2CA84B;
+        }
+
+        /* ========== STATS BAR ========== */
+        .stats-bar {
             background: white;
-            border: 1px solid var(--border);
-            border-radius: 12px;
+            padding: 12px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stat-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            background: rgba(255, 59, 48, 0.1);
+            color: var(--danger-red);
+        }
+
+        .stat-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1c1c1e;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--apple-gray);
+            margin-top: 2px;
+        }
+
+        /* ========== SPLIT PANE LAYOUT ========== */
+        .content-wrapper {
+            flex: 1;
+            display: flex;
             overflow: hidden;
         }
 
+        .messages-pane {
+            width: 40%;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border);
+            background: white;
+        }
+
+        .message-view-pane {
+            width: 60%;
+            display: flex;
+            flex-direction: column;
+            background: #FAFAFA;
+        }
+
+        /* ========== TOOLBAR ========== */
         .toolbar {
-            padding: 16px;
+            background: white;
+            padding: 12px 20px;
             border-bottom: 1px solid var(--border);
             display: flex;
-            gap: 12px;
+            gap: 10px;
             align-items: center;
-            background: var(--apple-light-gray);
         }
 
-        .search-bar {
+        .search-box {
             flex: 1;
             position: relative;
-            display: flex;
-            align-items: center;
-            background: white;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 8px 12px 8px 36px;
             border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 8px 12px;
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            background: var(--apple-bg);
+            transition: all 0.2s;
         }
 
-        .search-input {
-            flex: 1;
-            border: none;
+        .search-box input:focus {
             outline: none;
-            font-size: 14px;
-            margin-left: 8px;
+            background: white;
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
         }
 
-        .email-list {
-            max-height: calc(100vh - 350px);
+        .search-box .material-icons {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--apple-gray);
+            font-size: 18px;
+        }
+
+        /* ========== MESSAGES LIST ========== */
+        .messages-area {
+            flex: 1;
             overflow-y: auto;
         }
 
-        .email-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 20px;
+        .message-item {
+            padding: 12px 20px;
             border-bottom: 1px solid var(--border);
             cursor: pointer;
-            transition: background 0.15s;
+            transition: all 0.2s;
+            display: flex;
+            gap: 12px;
+            align-items: start;
         }
 
-        .email-item:hover {
-            background: var(--apple-light-gray);
+        .message-item:hover {
+            background: var(--apple-bg);
         }
 
-        .email-main {
+        .message-item.selected {
+            background: #E3F2FD;
+            border-left: 3px solid var(--apple-blue);
+        }
+
+        .message-content {
             flex: 1;
             min-width: 0;
         }
 
-        .email-header {
+        .message-header {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 6px;
-            flex-wrap: wrap;
-        }
-
-        .email-type-badge {
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .email-type-sent {
-            background: #E3F2FD;
-            color: #1976D2;
-        }
-
-        .email-type-received {
-            background: #F3E5F5;
-            color: #7B1FA2;
+            gap: 8px;
+            margin-bottom: 4px;
         }
 
         .deleted-badge {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            padding: 2px 8px;
-            background: #FFEBEE;
-            color: #C62828;
+            gap: 3px;
+            padding: 2px 6px;
+            background: rgba(255, 59, 48, 0.1);
+            color: var(--danger-red);
             border-radius: 4px;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 600;
+            text-transform: uppercase;
         }
 
-        .email-sender {
+        .deleted-badge .material-icons {
+            font-size: 12px;
+        }
+
+        .message-sender {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1c1c1e;
+        }
+
+        .message-subject {
             font-size: 13px;
-            color: var(--apple-gray);
-        }
-
-        .email-subject {
-            font-size: 15px;
             font-weight: 500;
             color: #1c1c1e;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
-        .email-preview {
-            font-size: 13px;
+        .message-preview {
+            font-size: 12px;
             color: var(--apple-gray);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
-        .email-meta {
+        .message-meta {
             display: flex;
-            align-items: center;
-            gap: 12px;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
             flex-shrink: 0;
         }
 
-        .email-date {
-            font-size: 13px;
+        .message-date {
+            font-size: 11px;
             color: var(--apple-gray);
             white-space: nowrap;
         }
 
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-        }
-
-        .empty-state .material-icons {
-            font-size: 64px;
+        .attachment-indicator {
             color: var(--apple-gray);
-            margin-bottom: 16px;
+            font-size: 16px;
         }
 
-        .empty-state h3 {
-            font-size: 20px;
+        /* ========== MESSAGE VIEW PANE ========== */
+        .message-view-header {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 16px 20px;
+        }
+
+        .message-view-title {
+            font-size: 18px;
+            font-weight: 600;
             color: #1c1c1e;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
+            line-height: 1.4;
         }
 
-        .empty-state p {
-            font-size: 14px;
+        .message-view-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .message-view-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
             color: var(--apple-gray);
         }
 
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            padding: 24px 0;
+        .message-view-meta-item .material-icons {
+            font-size: 14px;
         }
 
-        .page-link {
-            padding: 8px 14px;
+        .message-view-meta-label {
+            font-weight: 600;
+            color: #1c1c1e;
+        }
+
+        .message-view-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .message-view-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .message-detail {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            font-size: 14px;
+            line-height: 1.7;
+            color: #1c1c1e;
+            box-shadow: var(--card-shadow);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        /* ========== ATTACHMENTS ========== */
+        .attachments-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .attachments-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1c1c1e;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .attachments-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+        }
+
+        .attachment-card {
+            background: white;
             border: 1px solid var(--border);
             border-radius: 8px;
-            color: #1c1c1e;
-            text-decoration: none;
-            font-size: 14px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
             transition: all 0.2s;
         }
 
-        .page-link:hover {
-            background: #f9f9f9;
+        .attachment-icon {
+            font-size: 36px;
+            margin-bottom: 6px;
         }
 
-        .page-link.active {
-            background: var(--apple-blue);
+        .attachment-name {
+            font-size: 11px;
+            font-weight: 500;
+            color: #1c1c1e;
+            margin-bottom: 3px;
+            word-break: break-word;
+        }
+
+        /* ========== EMPTY STATE ========== */
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            color: var(--apple-gray);
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1c1c1e;
+            margin-bottom: 6px;
+        }
+
+        .empty-text {
+            font-size: 14px;
+            color: var(--apple-gray);
+        }
+
+        /* ========== TOAST ========== */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #1c1c1e;
             color: white;
-            border-color: var(--apple-blue);
+            padding: 12px 18px;
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            z-index: 2000;
+            animation: toastSlideIn 0.3s ease-out;
+        }
+
+        @keyframes toastSlideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast.success {
+            background: var(--success-green);
+        }
+
+        .toast.error {
+            background: var(--danger-red);
         }
     </style>
 </head>
+
 <body>
-    <div id="main-wrapper">
+    <?php include('sidebar.php'); ?>
+
+    <div class="main-content">
         <!-- Header -->
         <div class="page-header">
             <div class="header-left">
@@ -589,10 +721,7 @@ $totalPages = ceil($totalEmails / $limit);
                     Deleted Items
                 </h1>
                 <p class="page-subtitle">
-                    <span class="email-count-badge">
-                        <span class="material-icons" style="font-size: 16px;">email</span>
-                        <?= number_format($totalEmails) ?> deleted items
-                    </span>
+                    <span id="total-count"><?= number_format($totalCount) ?></span> deleted messages
                 </p>
             </div>
             <div class="header-actions">
@@ -603,123 +732,333 @@ $totalPages = ceil($totalEmails / $limit);
             </div>
         </div>
 
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-icon">
+                    <span class="material-icons">delete</span>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value" id="deleted-count"><?= number_format($totalCount) ?></div>
+                    <div class="stat-label">Deleted Messages</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Split Pane Content -->
         <div class="content-wrapper">
-            <!-- Toolbar -->
-            <div class="toolbar">
-                <div class="search-bar">
-                    <span class="material-icons" style="color: var(--apple-gray);">search</span>
-                    <input 
-                        type="text" 
-                        class="search-input" 
-                        placeholder="Search deleted emails..."
-                        value="<?= htmlspecialchars($filters['search']) ?>"
-                        onchange="handleSearch(this.value)"
-                    >
+            <!-- Messages List Pane -->
+            <div class="messages-pane">
+                <!-- Toolbar -->
+                <div class="toolbar">
+                    <div class="search-box">
+                        <span class="material-icons">search</span>
+                        <input type="text" id="search-input" placeholder="Search deleted messages..." autocomplete="off">
+                    </div>
+                </div>
+
+                <!-- Messages List -->
+                <div class="messages-area" id="messages-area">
+                    <div class="messages-container" id="messages-container">
+                        <?php if (empty($messages)): ?>
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <span class="material-icons">delete_outline</span>
+                                </div>
+                                <div class="empty-title">No Deleted Messages</div>
+                                <div class="empty-text">Your deleted messages will appear here</div>
+                            </div>
+                        <?php else: ?>
+                            <?php foreach ($messages as $msg): ?>
+                                <div class="message-item" data-id="<?= $msg['id'] ?>" onclick="selectMessage(<?= $msg['id'] ?>)">
+                                    <div class="message-content">
+                                        <div class="message-header">
+                                            <span class="deleted-badge">
+                                                <span class="material-icons">delete</span>
+                                                Deleted
+                                            </span>
+                                            <span class="message-sender"><?= htmlspecialchars($msg['sender_name'] ?: $msg['sender_email']) ?></span>
+                                        </div>
+                                        <div class="message-subject"><?= htmlspecialchars($msg['subject'] ?: '(No Subject)') ?></div>
+                                        <div class="message-preview"><?= htmlspecialchars($msg['body_preview'] ?: '') ?></div>
+                                    </div>
+                                    <div class="message-meta">
+                                        <div class="message-date"><?= date('M j', strtotime($msg['deleted_at'])) ?></div>
+                                        <?php if ($msg['has_attachments']): ?>
+                                            <span class="material-icons attachment-indicator">attach_file</span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
 
-            <!-- Email List -->
-            <div class="email-list">
-                <?php if (empty($deletedEmails)): ?>
-                    <div class="empty-state">
-                        <span class="material-icons">delete_outline</span>
-                        <h3>No Deleted Items</h3>
-                        <p>Your deleted emails will appear here</p>
+            <!-- Message View Pane -->
+            <div class="message-view-pane" id="message-view-pane">
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <span class="material-icons">mail_outline</span>
                     </div>
-                <?php else: ?>
-                    <?php foreach ($deletedEmails as $email): ?>
-                        <div class="email-item" onclick="openEmail('<?= $email['email_type'] ?>', <?= $email['id'] ?>)">
-                            <div class="email-main">
-                                <div class="email-header">
-                                    <!-- Email Type Badge -->
-                                    <span class="email-type-badge email-type-<?= $email['email_type'] ?>">
-                                        <?= strtoupper($email['email_type']) ?>
-                                    </span>
-                                    
-                                    <span class="deleted-badge">
-                                        <span class="material-icons" style="font-size: 14px;">delete</span>
-                                        Deleted
-                                    </span>
-                                    
-                                    <?php if ($email['email_type'] === 'sent'): ?>
-                                        <span class="email-sender">To: <?= htmlspecialchars($email['recipient_email']) ?></span>
-                                    <?php else: ?>
-                                        <span class="email-sender">From: <?= htmlspecialchars($email['sender_email']) ?></span>
-                                    <?php endif; ?>
-                                </div>
-                                
-                                <div class="email-subject">
-                                    <?= htmlspecialchars($email['subject']) ?: '(No Subject)' ?>
-                                </div>
-                                
-                                <?php if (!empty($email['body'])): ?>
-                                <div class="email-preview">
-                                    <?= htmlspecialchars(substr(strip_tags($email['body']), 0, 100)) ?>...
-                                </div>
-                                <?php endif; ?>
-                            </div>
-                            
-                            <div class="email-meta">
-                                <?php if ($email['has_attachments']): ?>
-                                    <span class="material-icons" style="color: var(--apple-gray); font-size: 18px;">attach_file</span>
-                                <?php endif; ?>
-                                
-                                <div class="email-date">
-                                    <?= date('M j, Y', strtotime($email['email_date'])) ?>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
+                    <div class="empty-title">Select a message</div>
+                    <div class="empty-text">Choose a message from the list to view its contents</div>
+                </div>
             </div>
         </div>
-
-        <!-- Pagination -->
-        <?php if ($totalPages > 1): ?>
-        <div class="pagination">
-            <?php
-            $currentParams = $_GET;
-            
-            if ($page > 3) {
-                $currentParams['page'] = 1;
-                echo '<a href="?' . http_build_query($currentParams) . '" class="page-link">1</a>';
-                if ($page > 4) {
-                    echo '<span class="page-link" style="border: none;">...</span>';
-                }
-            }
-            
-            for ($i = max(1, $page - 2); $i <= min($totalPages, $page + 2); $i++) {
-                $currentParams['page'] = $i;
-                echo '<a href="?' . http_build_query($currentParams) . '" class="page-link ' . ($i == $page ? 'active' : '') . '">' . $i . '</a>';
-            }
-            
-            if ($page < $totalPages - 2) {
-                if ($page < $totalPages - 3) {
-                    echo '<span class="page-link" style="border: none;">...</span>';
-                }
-                $currentParams['page'] = $totalPages;
-                echo '<a href="?' . http_build_query($currentParams) . '" class="page-link">' . $totalPages . '</a>';
-            }
-            ?>
-        </div>
-        <?php endif; ?>
     </div>
 
     <script>
-        function openEmail(type, emailId) {
-            // Open in new window for viewing
-            window.open('view_message.php?id=' + emailId, '_blank');
+        let selectedMessageId = null;
+
+        // Select and view message
+        function selectMessage(messageId) {
+            selectedMessageId = messageId;
+            
+            // Update selected state in list
+            document.querySelectorAll('.message-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            document.querySelector(`[data-id="${messageId}"]`).classList.add('selected');
+            
+            // Load message content
+            loadMessageView(messageId);
         }
 
-        function handleSearch(value) {
-            const url = new URL(window.location.href);
-            if (value) {
-                url.searchParams.set('search', value);
-            } else {
-                url.searchParams.delete('search');
+        // Load message view
+        function loadMessageView(messageId) {
+            fetch(`?action=get_message&id=${messageId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        displayMessage(data.message);
+                    } else {
+                        showToast('Failed to load message', 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    showToast('Error loading message', 'error');
+                });
+        }
+
+        // Display message in view pane
+        function displayMessage(msg) {
+            const viewPane = document.getElementById('message-view-pane');
+            
+            // Parse attachments
+            let attachments = [];
+            if (msg.attachment_data) {
+                try {
+                    attachments = JSON.parse(msg.attachment_data);
+                } catch (e) {}
             }
-            url.searchParams.delete('page');
-            window.location.href = url.toString();
+            
+            viewPane.innerHTML = `
+                <div class="message-view-header">
+                    <div class="message-view-title">${escapeHtml(msg.subject || '(No Subject)')}</div>
+                    <div class="message-view-meta">
+                        <div class="message-view-meta-item">
+                            <span class="material-icons">person</span>
+                            <span class="message-view-meta-label">From:</span>
+                            ${escapeHtml(msg.sender_name || msg.sender_email)}
+                        </div>
+                        <div class="message-view-meta-item">
+                            <span class="material-icons">schedule</span>
+                            <span class="message-view-meta-label">Received:</span>
+                            ${formatDate(msg.received_date)}
+                        </div>
+                        <div class="message-view-meta-item">
+                            <span class="material-icons">delete</span>
+                            <span class="message-view-meta-label">Deleted:</span>
+                            ${formatDate(msg.deleted_at)}
+                        </div>
+                    </div>
+                    <div class="message-view-actions">
+                        <button class="btn btn-success" onclick="restoreMessage(${msg.id})">
+                            <span class="material-icons">restore</span>
+                            Restore
+                        </button>
+                        <button class="btn btn-danger" onclick="permanentDelete(${msg.id})">
+                            <span class="material-icons">delete_forever</span>
+                            Delete Forever
+                        </button>
+                    </div>
+                </div>
+                <div class="message-view-body">
+                    <div class="message-detail">${escapeHtml(msg.body)}</div>
+                    ${attachments.length > 0 ? `
+                        <div class="attachments-section">
+                            <div class="attachments-title">
+                                <span class="material-icons">attach_file</span>
+                                Attachments (${attachments.length})
+                            </div>
+                            <div class="attachments-grid">
+                                ${attachments.map(att => `
+                                    <div class="attachment-card">
+                                        <div class="attachment-icon">${att.icon || '📄'}</div>
+                                        <div class="attachment-name">${escapeHtml(att.filename)}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        // Restore message
+        function restoreMessage(messageId) {
+            if (!confirm('Restore this message to your inbox?')) return;
+            
+            fetch(`?action=restore&id=${messageId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('Message restored successfully', 'success');
+                        // Remove from list
+                        document.querySelector(`[data-id="${messageId}"]`).remove();
+                        // Clear view
+                        document.getElementById('message-view-pane').innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-icon"><span class="material-icons">mail_outline</span></div>
+                                <div class="empty-title">Select a message</div>
+                            </div>
+                        `;
+                        // Update count
+                        updateCount();
+                    } else {
+                        showToast('Failed to restore message', 'error');
+                    }
+                })
+                .catch(err => {
+                    showToast('Error restoring message', 'error');
+                });
+        }
+
+        // Permanent delete
+        function permanentDelete(messageId) {
+            if (!confirm('Permanently delete this message? This cannot be undone!')) return;
+            
+            fetch(`?action=permanent_delete&id=${messageId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('Message deleted permanently', 'success');
+                        document.querySelector(`[data-id="${messageId}"]`).remove();
+                        document.getElementById('message-view-pane').innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-icon"><span class="material-icons">mail_outline</span></div>
+                                <div class="empty-title">Select a message</div>
+                            </div>
+                        `;
+                        updateCount();
+                    } else {
+                        showToast('Failed to delete message', 'error');
+                    }
+                })
+                .catch(err => {
+                    showToast('Error deleting message', 'error');
+                });
+        }
+
+        // Search
+        let searchTimeout;
+        document.getElementById('search-input').addEventListener('input', function(e) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                performSearch(e.target.value);
+            }, 300);
+        });
+
+        function performSearch(query) {
+            fetch(`?action=get_deleted_messages&search=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        renderMessages(data.messages);
+                    }
+                });
+        }
+
+        function renderMessages(messages) {
+            const container = document.getElementById('messages-container');
+            if (messages.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon"><span class="material-icons">search_off</span></div>
+                        <div class="empty-title">No messages found</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = messages.map(msg => `
+                <div class="message-item" data-id="${msg.id}" onclick="selectMessage(${msg.id})">
+                    <div class="message-content">
+                        <div class="message-header">
+                            <span class="deleted-badge">
+                                <span class="material-icons">delete</span>
+                                Deleted
+                            </span>
+                            <span class="message-sender">${escapeHtml(msg.sender_name || msg.sender_email)}</span>
+                        </div>
+                        <div class="message-subject">${escapeHtml(msg.subject || '(No Subject)')}</div>
+                        <div class="message-preview">${escapeHtml(msg.body_preview || '')}</div>
+                    </div>
+                    <div class="message-meta">
+                        <div class="message-date">${formatDateShort(msg.deleted_at)}</div>
+                        ${msg.has_attachments ? '<span class="material-icons attachment-indicator">attach_file</span>' : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Update count
+        function updateCount() {
+            fetch('?action=get_deleted_messages&limit=1')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('total-count').textContent = data.total.toLocaleString();
+                    document.getElementById('deleted-count').textContent = data.total.toLocaleString();
+                });
+        }
+
+        // Utility functions
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function formatDateShort(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span class="material-icons">${type === 'success' ? 'check_circle' : 'error'}</span>
+                ${message}
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
         }
     </script>
 </body>
