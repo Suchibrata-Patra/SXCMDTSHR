@@ -975,10 +975,10 @@ $totalCount = getDeletedMessageCount($userEmail) ?? 0;
                         autocomplete="off"
                     >
                 </div>
-                <a href="inbox.php" class="btn">
+                <!-- <a href="inbox.php" class="btn">
                     <span class="material-icons-round">arrow_back</span>
                     Back to Inbox
-                </a>
+                </a> -->
             </div>
 
             <!-- Content Wrapper -->
