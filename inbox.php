@@ -114,44 +114,52 @@ $lastSync = getLastSyncDate($userEmail);
     ?>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
         /* ══════════════════════════════════════════════════════════
            DRIVE UI DESIGN SYSTEM - INBOX IMPLEMENTATION
            ══════════════════════════════════════════════════════════ */
-        
+
         :root {
             /* Foundation Colors */
-            --ink:       #1a1a2e;
-            --ink-2:     #2d2d44;
-            --ink-3:     #6b6b8a;
-            --ink-4:     #a8a8c0;
-            --bg:        #f0f0f7;
-            --surface:   #ffffff;
+            --ink: #1a1a2e;
+            --ink-2: #2d2d44;
+            --ink-3: #6b6b8a;
+            --ink-4: #a8a8c0;
+            --bg: #f0f0f7;
+            --surface: #ffffff;
             --surface-2: #f7f7fc;
-            --border:    rgba(100,100,160,0.12);
-            --border-2:  rgba(100,100,160,0.22);
-            
+            --border: rgba(100, 100, 160, 0.12);
+            --border-2: rgba(100, 100, 160, 0.22);
+
             /* Accent Colors */
-            --blue:      #5781a9;
-            --blue-2:    #c6d3ea;
-            --blue-glow: rgba(79,70,229,0.15);
-            --red:       #ef4444;
-            --green:     #10b981;
-            --amber:     #f59e0b;
-            --purple:    #8b5cf6;
-            
+            --blue: #5781a9;
+            --blue-2: #c6d3ea;
+            --blue-glow: rgba(79, 70, 229, 0.15);
+            --red: #ef4444;
+            --green: #10b981;
+            --amber: #f59e0b;
+            --purple: #8b5cf6;
+
             /* System */
-            --r:         10px;
-            --r-lg:      16px;
-            --shadow:    0 1px 3px rgba(79,70,229,0.08), 0 4px 16px rgba(79,70,229,0.06);
-            --shadow-lg: 0 8px 32px rgba(79,70,229,0.14), 0 2px 8px rgba(0,0,0,0.06);
-            --ease:      cubic-bezier(.4,0,.2,1);
-            --ease-spring: cubic-bezier(.34,1.56,.64,1);
+            --r: 10px;
+            --r-lg: 16px;
+            --shadow: 0 1px 3px rgba(79, 70, 229, 0.08), 0 4px 16px rgba(79, 70, 229, 0.06);
+            --shadow-lg: 0 8px 32px rgba(79, 70, 229, 0.14), 0 2px 8px rgba(0, 0, 0, 0.06);
+            --ease: cubic-bezier(.4, 0, .2, 1);
+            --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
         }
 
-        *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
         body {
             font-family: 'DM Sans', -apple-system, sans-serif;
@@ -202,7 +210,9 @@ $lastSync = getLastSyncDate($userEmail);
             color: var(--blue);
         }
 
-        .topbar-spacer { flex: 1; }
+        .topbar-spacer {
+            flex: 1;
+        }
 
         /* Action buttons */
         .topbar-actions {
@@ -240,7 +250,9 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .btn-compose {
@@ -292,8 +304,8 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .stat-icon {
-            width: 40px;
-            height: 40px;
+            width: 20px;
+            height: 20px;
             border-radius: var(--r);
             display: flex;
             align-items: center;
@@ -302,17 +314,17 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .stat-icon.total {
-            background: rgba(87,129,169,0.1);
+            background: rgba(87, 129, 169, 0.1);
             color: var(--blue);
         }
 
         .stat-icon.unread {
-            background: rgba(16,185,129,0.1);
+            background: rgba(16, 185, 129, 0.1);
             color: var(--green);
         }
 
         .stat-icon.new-stat {
-            background: rgba(139,92,246,0.1);
+            background: rgba(139, 92, 246, 0.1);
             color: var(--purple);
         }
 
@@ -470,7 +482,7 @@ $lastSync = getLastSyncDate($userEmail);
         .filter-chip.active {
             border-color: var(--blue);
             color: var(--blue);
-            background: rgba(79,70,229,.1);
+            background: rgba(79, 70, 229, .1);
         }
 
         .filter-chip .material-icons-round {
@@ -511,8 +523,15 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         @keyframes rowFadeIn {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: none; }
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
         }
 
         .message-item:hover {
@@ -520,7 +539,7 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .message-item.selected {
-            background: rgba(79,70,229,.05);
+            background: rgba(79, 70, 229, .05);
             border-left: 3px solid var(--blue);
             padding-left: 17px;
         }
@@ -671,7 +690,7 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .badge-new {
-            background: rgba(16,185,129,0.15);
+            background: rgba(16, 185, 129, 0.15);
             color: var(--green);
         }
 
@@ -759,7 +778,7 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .msg-action-btn.danger:hover {
-            background: rgba(239,68,68,.08);
+            background: rgba(239, 68, 68, .08);
             border-color: var(--red);
             color: var(--red);
         }
@@ -963,7 +982,7 @@ $lastSync = getLastSyncDate($userEmail);
             display: flex;
             align-items: center;
             gap: 8px;
-            box-shadow: 0 4px 20px rgba(0,0,0,.25);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, .25);
             animation: toastIn .25s var(--ease-spring) forwards;
             max-width: 320px;
         }
@@ -981,12 +1000,22 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         @keyframes toastIn {
-            from { opacity: 0; transform: translateX(20px); }
-            to { opacity: 1; transform: none; }
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
         }
 
         @keyframes toastOut {
-            to { opacity: 0; transform: translateX(20px); }
+            to {
+                opacity: 0;
+                transform: translateX(20px);
+            }
         }
 
         .toast .material-icons-round {
@@ -997,7 +1026,7 @@ $lastSync = getLastSyncDate($userEmail);
            SEARCH HIGHLIGHTS
            ══════════════════════════════════════════════════════════ */
         mark {
-            background-color: rgba(245,158,11,0.3);
+            background-color: rgba(245, 158, 11, 0.3);
             color: var(--ink);
             padding: 2px 3px;
             border-radius: 3px;
@@ -1023,7 +1052,9 @@ $lastSync = getLastSyncDate($userEmail);
                     <span class="material-icons-round">mail</span>
                 </div>
                 <div class="stat-content">
-                    <div class="stat-number" id="totalCount"><?= $totalCount ?></div>
+                    <div class="stat-number" id="totalCount">
+                        <?= $totalCount ?>
+                    </div>
                     <div class="stat-label">Total Received</div>
                 </div>
             </div>
@@ -1033,7 +1064,9 @@ $lastSync = getLastSyncDate($userEmail);
                     <span class="material-icons-round">mark_email_unread</span>
                 </div>
                 <div class="stat-content">
-                    <div class="stat-number" id="unreadCount"><?= $unreadCount ?></div>
+                    <div class="stat-number" id="unreadCount">
+                        <?= $unreadCount ?>
+                    </div>
                     <div class="stat-label">Unread</div>
                 </div>
             </div>
@@ -1043,7 +1076,9 @@ $lastSync = getLastSyncDate($userEmail);
                     <span class="material-icons-round">fiber_new</span>
                 </div>
                 <div class="stat-content">
-                    <div class="stat-number" id="newCount"><?= $newCount ?></div>
+                    <div class="stat-number" id="newCount">
+                        <?= $newCount ?>
+                    </div>
                     <div class="stat-label">New Today</div>
                 </div>
             </div>
@@ -1052,7 +1087,8 @@ $lastSync = getLastSyncDate($userEmail);
                     <span class="material-icons-round">schedule</span>
                     <span id="lastSyncText">
                         <?php if ($lastSync): ?>
-                        Last synced: <?= date('g:i A', strtotime($lastSync)) ?>
+                        Last synced:
+                        <?= date('g:i A', strtotime($lastSync)) ?>
                         <?php else: ?>
                         Never synced
                         <?php endif; ?>
@@ -1205,7 +1241,7 @@ $lastSync = getLastSyncDate($userEmail);
                 } else {
                     preview = 'No preview available';
                 }
-                
+
                 const senderEmail = msg.sender_email || 'unknown@email.com';
                 const senderName = msg.sender_name || senderEmail;
                 const subjectDisplay = msg.subject || '(No Subject)';
@@ -1366,7 +1402,7 @@ $lastSync = getLastSyncDate($userEmail);
                         const isStarred = starIcon.classList.toggle('starred');
                         starIcon.textContent = isStarred ? 'star' : 'star_border';
                     }
-                    
+
                     if (currentMessageId === messageId) {
                         viewMessage(messageId);
                     }
@@ -1441,7 +1477,7 @@ $lastSync = getLastSyncDate($userEmail);
         async function syncMessages() {
             const btn = document.getElementById('syncBtn');
             btn.classList.add('rotating');
-            
+
             try {
                 const response = await fetch('inbox.php?action=sync&limit=50');
                 const data = await response.json();
@@ -1450,9 +1486,9 @@ $lastSync = getLastSyncDate($userEmail);
                     showToast(`Synced ${data.new_count || 0} new messages`, 'success');
                     fetchMessages();
                     updateCounts();
-                    
+
                     const now = new Date();
-                    document.getElementById('lastSyncText').textContent = 
+                    document.getElementById('lastSyncText').textContent =
                         `Last synced: ${now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
                 }
             } catch (error) {
@@ -1579,7 +1615,7 @@ $lastSync = getLastSyncDate($userEmail);
                 const senderEl = item.querySelector('.message-sender');
                 const subjectEl = item.querySelector('.message-subject');
                 const previewEl = item.querySelector('.message-preview');
-                
+
                 if (senderEl && subjectEl && previewEl) {
                     originalMessageContent.set(id, {
                         sender: senderEl.innerHTML,
@@ -1606,7 +1642,7 @@ $lastSync = getLastSyncDate($userEmail);
         function performClientSideSearch() {
             const searchInput = document.getElementById('searchInput');
             const searchTerm = searchInput ? searchInput.value.trim() : '';
-            
+
             if (!searchTerm) {
                 removeAllHighlights();
                 const messageItems = document.querySelectorAll('.message-item');
@@ -1615,47 +1651,47 @@ $lastSync = getLastSyncDate($userEmail);
                 });
                 return;
             }
-            
+
             const searchLower = searchTerm.toLowerCase();
             const messageItems = document.querySelectorAll('.message-item');
             let visibleCount = 0;
-            
+
             messageItems.forEach(item => {
                 const id = item.dataset.messageId;
                 const original = originalMessageContent.get(id);
-                
+
                 if (!original) return;
-                
+
                 const senderText = original.sender.replace(/<[^>]*>/g, '').toLowerCase();
                 const subjectText = original.subject.replace(/<[^>]*>/g, '').toLowerCase();
                 const previewText = original.preview.replace(/<[^>]*>/g, '').toLowerCase();
-                
+
                 const senderMatch = senderText.includes(searchLower);
                 const subjectMatch = subjectText.includes(searchLower);
                 const previewMatch = previewText.includes(searchLower);
-                
+
                 const isMatch = senderMatch || subjectMatch || previewMatch;
-                
+
                 if (isMatch) {
                     item.style.display = 'flex';
                     visibleCount++;
-                    
+
                     const senderEl = item.querySelector('.message-sender');
                     const subjectEl = item.querySelector('.message-subject');
                     const previewEl = item.querySelector('.message-preview');
-                    
+
                     if (senderMatch && senderEl) {
                         senderEl.innerHTML = highlightMatches(original.sender.replace(/<[^>]*>/g, ''), searchTerm);
                     } else if (senderEl) {
                         senderEl.innerHTML = original.sender;
                     }
-                    
+
                     if (subjectMatch && subjectEl) {
                         subjectEl.innerHTML = highlightMatches(original.subject.replace(/<[^>]*>/g, ''), searchTerm);
                     } else if (subjectEl) {
                         subjectEl.innerHTML = original.subject;
                     }
-                    
+
                     if (previewMatch && previewEl) {
                         previewEl.innerHTML = highlightMatches(original.preview.replace(/<[^>]*>/g, ''), searchTerm);
                     } else if (previewEl) {
@@ -1665,7 +1701,7 @@ $lastSync = getLastSyncDate($userEmail);
                     item.style.display = 'none';
                 }
             });
-            
+
             const messageList = document.getElementById('messagesList');
             if (visibleCount === 0 && messageList) {
                 let noResultsDiv = document.getElementById('searchNoResults');
@@ -1691,7 +1727,7 @@ $lastSync = getLastSyncDate($userEmail);
 
         function highlightMatches(text, searchTerm) {
             if (!searchTerm || !text) return text;
-            
+
             const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const regex = new RegExp(`(${escapedTerm})`, 'gi');
             return text.replace(regex, '<mark>$1</mark>');
@@ -1702,12 +1738,12 @@ $lastSync = getLastSyncDate($userEmail);
             messageItems.forEach(item => {
                 const id = item.dataset.messageId;
                 const original = originalMessageContent.get(id);
-                
+
                 if (original) {
                     const senderEl = item.querySelector('.message-sender');
                     const subjectEl = item.querySelector('.message-subject');
                     const previewEl = item.querySelector('.message-preview');
-                    
+
                     if (senderEl) senderEl.innerHTML = original.sender;
                     if (subjectEl) subjectEl.innerHTML = original.subject;
                     if (previewEl) previewEl.innerHTML = original.preview;
