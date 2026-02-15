@@ -1047,6 +1047,18 @@ $lastSync = getLastSyncDate($userEmail);
                     <div class="stat-label">New Today</div>
                 </div>
             </div>
+            <div class="sync-info">
+                <div class="sync-text">
+                    <span class="material-icons-round">schedule</span>
+                    <span id="lastSyncText">
+                        <?php if ($lastSync): ?>
+                        Last synced: <?= date('g:i A', strtotime($lastSync)) ?>
+                        <?php else: ?>
+                        Never synced
+                        <?php endif; ?>
+                    </span>
+                </div>
+            </div>
             <div class="topbar-spacer"></div>
             <div class="topbar-actions">
                 <button class="btn-icon" onclick="syncMessages()" title="Sync now" id="syncBtn">
