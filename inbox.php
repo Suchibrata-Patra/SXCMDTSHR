@@ -1019,7 +1019,7 @@ $lastSync = getLastSyncDate($userEmail);
                 Inbox
             </div>
             <div class="topbar-spacer"></div>
-            <div class="topbar-actions">
+            <!-- <div class="topbar-actions">
                 <button class="btn-icon" onclick="syncMessages()" title="Sync now" id="syncBtn">
                     <span class="material-icons-round">sync</span>
                 </button>
@@ -1030,7 +1030,7 @@ $lastSync = getLastSyncDate($userEmail);
                     <span class="material-icons-round">edit</span>
                     Compose
                 </button>
-            </div>
+            </div> -->
         </div>
 
         <!-- Stats Bar -->
@@ -1064,7 +1064,18 @@ $lastSync = getLastSyncDate($userEmail);
                     <div class="stat-label">New Today</div>
                 </div>
             </div>
-
+<div class="topbar-actions">
+                <button class="btn-icon" onclick="syncMessages()" title="Sync now" id="syncBtn">
+                    <span class="material-icons-round">sync</span>
+                </button>
+                <button class="btn-icon" onclick="forceRefresh()" title="Force refresh" id="refreshBtn">
+                    <span class="material-icons-round">refresh</span>
+                </button>
+                <button class="btn-compose" onclick="location.href='index.php'">
+                    <span class="material-icons-round">edit</span>
+                    Compose
+                </button>
+            </div>
             <div class="sync-info">
                 <div class="sync-text">
                     <span class="material-icons-round">schedule</span>
