@@ -118,7 +118,7 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = fa
                 $body = getMessageBodyParsed($connection, $msgNum);
                 
                 // Strip HTML if it's HTML content
-                $cleanBody = stripHtmlFromBody($body);
+                $cleanBody = $body;
                 
                 // If still empty, use placeholder
                 if (empty($cleanBody)) {
