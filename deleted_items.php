@@ -300,7 +300,7 @@ $totalCount = getDeletedMessageCount($userEmail) ?? 0;
         /* Search */
         .search-wrap {
             position: relative;
-            width: 280px;
+            width: auto;
         }
         .search-wrap .material-icons-round {
             position: absolute;
