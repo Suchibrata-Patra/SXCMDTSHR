@@ -512,14 +512,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <body>
     <div class="page-wrapper">
         <div class="login-card">
-            <div class="brand-header">
+            <!-- <div class="brand-header">
                 <img src="Assets/image/sxc_logo.png" alt="SXC Logo" class="brand-logo">
                 <div class="brand-details">
                     Autonomous College (2006) | CPE (2006) |
                     CE (2014), NAAC A++ | 4th Cycle (2024) |
                     ISO 9001:2015 | NIRF 2025: 8th Position
                 </div>
-            </div>
+            </div> -->
 
             <h2>Authentication</h2>
             <!-- <p class="subtitle">Enter your credentials to continue.</p> -->
