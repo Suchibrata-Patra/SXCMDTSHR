@@ -40,12 +40,34 @@ if (isset($_GET['action'])) {
             
         case 'get_message':
             $messageId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-            $message = getInboxMessageById($messageId, $userEmail);
             
-            if ($message && $message['is_deleted'] == 1) {
-                echo json_encode(['success' => true, 'message' => $message]);
-            } else {
-                echo json_encode(['success' => false, 'error' => 'Message not found']);
+            try {
+                $pdo = getDatabaseConnection();
+                if (!$pdo) {
+                    echo json_encode(['success' => false, 'error' => 'Database connection failed']);
+                    exit();
+                }
+                
+                $stmt = $pdo->prepare("
+                    SELECT * FROM inbox_messages 
+                    WHERE id = :id AND user_email = :email AND is_deleted = 1
+                ");
+                
+                $stmt->execute([
+                    ':id' => $messageId,
+                    ':email' => $userEmail
+                ]);
+                
+                $message = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($message) {
+                    echo json_encode(['success' => true, 'message' => $message]);
+                } else {
+                    echo json_encode(['success' => false, 'error' => 'Message not found or not deleted']);
+                }
+            } catch (PDOException $e) {
+                error_log("Error getting message: " . $e->getMessage());
+                echo json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
             }
             exit();
             
