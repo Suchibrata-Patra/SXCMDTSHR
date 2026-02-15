@@ -728,6 +728,19 @@ $totalCount = getDeletedMessageCount($userEmail) ?? 0;
         .toast.error {
             background: var(--danger-red);
         }
+
+        /* ========== SEARCH HIGHLIGHTING ========== */
+        mark {
+            background-color: #FFEB3B;
+            color: #000;
+            padding: 2px 0;
+            border-radius: 2px;
+            font-weight: 500;
+        }
+
+        .empty-state-search {
+            padding: 40px 20px;
+        }
     </style>
 </head>
 
@@ -908,7 +921,7 @@ $totalCount = getDeletedMessageCount($userEmail) ?? 0;
                     </div>
                 </div>
                 <div class="message-view-body">
-                    <div class="message-detail">${escapeHtml(msg.body)}</div>
+                    <div class="message-detail" data-original-content="${escapeHtml(msg.body)}">${escapeHtml(msg.body)}</div>
                     ${attachments.length > 0 ? `
                         <div class="attachments-section">
                             <div class="attachments-title">
@@ -927,6 +940,12 @@ $totalCount = getDeletedMessageCount($userEmail) ?? 0;
                     ` : ''}
                 </div>
             `;
+            
+            // Apply search highlighting if there's an active search
+            const searchInput = document.getElementById('search-input');
+            if (searchInput.value.trim()) {
+                highlightMessageView(searchInput.value.trim());
+            }
         }
 
         // Restore message
@@ -938,8 +957,14 @@ $totalCount = getDeletedMessageCount($userEmail) ?? 0;
                 .then(data => {
                     if (data.success) {
                         showToast('Message restored successfully', 'success');
+                        
+                        // Remove from original content map
+                        originalMessageContent.delete(messageId.toString());
+                        
                         // Remove from list
-                        document.querySelector(`[data-id="${messageId}"]`).remove();
+                        const messageEl = document.querySelector(`[data-id="${messageId}"]`);
+                        if (messageEl) messageEl.remove();
+                        
                         // Clear view
                         document.getElementById('message-view-pane').innerHTML = `
                             <div class="empty-state">
@@ -947,8 +972,21 @@ $totalCount = getDeletedMessageCount($userEmail) ?? 0;
                                 <div class="empty-title">Select a message</div>
                             </div>
                         `;
+                        
                         // Update count
                         updateCount();
+                        
+                        // Check if any messages left
+                        const remainingMessages = document.querySelectorAll('.message-item').length;
+                        if (remainingMessages === 0) {
+                            document.getElementById('messages-container').innerHTML = `
+                                <div class="empty-state">
+                                    <div class="empty-icon"><span class="material-icons">delete_outline</span></div>
+                                    <div class="empty-title">No Deleted Messages</div>
+                                    <div class="empty-text">Your deleted messages will appear here</div>
+                                </div>
+                            `;
+                        }
                     } else {
                         showToast('Failed to restore message', 'error');
                     }
@@ -967,14 +1005,36 @@ $totalCount = getDeletedMessageCount($userEmail) ?? 0;
                 .then(data => {
                     if (data.success) {
                         showToast('Message deleted permanently', 'success');
-                        document.querySelector(`[data-id="${messageId}"]`).remove();
+                        
+                        // Remove from original content map
+                        originalMessageContent.delete(messageId.toString());
+                        
+                        // Remove from list
+                        const messageEl = document.querySelector(`[data-id="${messageId}"]`);
+                        if (messageEl) messageEl.remove();
+                        
+                        // Clear view
                         document.getElementById('message-view-pane').innerHTML = `
                             <div class="empty-state">
                                 <div class="empty-icon"><span class="material-icons">mail_outline</span></div>
                                 <div class="empty-title">Select a message</div>
                             </div>
                         `;
+                        
+                        // Update count
                         updateCount();
+                        
+                        // Check if any messages left
+                        const remainingMessages = document.querySelectorAll('.message-item').length;
+                        if (remainingMessages === 0) {
+                            document.getElementById('messages-container').innerHTML = `
+                                <div class="empty-state">
+                                    <div class="empty-icon"><span class="material-icons">delete_outline</span></div>
+                                    <div class="empty-title">No Deleted Messages</div>
+                                    <div class="empty-text">Your deleted messages will appear here</div>
+                                </div>
+                            `;
+                        }
                     } else {
                         showToast('Failed to delete message', 'error');
                     }
@@ -984,56 +1044,170 @@ $totalCount = getDeletedMessageCount($userEmail) ?? 0;
                 });
         }
 
-        // Search
-        let searchTimeout;
+        // ========== CLIENT-SIDE SEARCH WITH YELLOW HIGHLIGHTING ==========
+        
+        // Store original message data
+        let allMessages = [];
+        const originalMessageContent = new Map();
+        
+        // Store original messages on page load
+        function storeOriginalMessages() {
+            const messageItems = document.querySelectorAll('.message-item');
+            messageItems.forEach(item => {
+                const id = item.dataset.id;
+                originalMessageContent.set(id, {
+                    sender: item.querySelector('.message-sender').innerHTML,
+                    subject: item.querySelector('.message-subject').innerHTML,
+                    preview: item.querySelector('.message-preview').innerHTML
+                });
+            });
+        }
+        
+        // Initialize on load
+        if (document.querySelectorAll('.message-item').length > 0) {
+            storeOriginalMessages();
+        }
+        
+        // Search with highlighting
         document.getElementById('search-input').addEventListener('input', function(e) {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                performSearch(e.target.value);
-            }, 300);
+            const query = e.target.value.trim();
+            performClientSearch(query);
         });
 
-        function performSearch(query) {
-            fetch(`?action=get_deleted_messages&search=${encodeURIComponent(query)}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        renderMessages(data.messages);
+        function performClientSearch(query) {
+            const messageItems = document.querySelectorAll('.message-item');
+            
+            if (!query) {
+                // Show all messages and remove highlights
+                messageItems.forEach(item => {
+                    item.style.display = 'flex';
+                    const id = item.dataset.id;
+                    if (originalMessageContent.has(id)) {
+                        const original = originalMessageContent.get(id);
+                        item.querySelector('.message-sender').innerHTML = original.sender;
+                        item.querySelector('.message-subject').innerHTML = original.subject;
+                        item.querySelector('.message-preview').innerHTML = original.preview;
                     }
                 });
-        }
-
-        function renderMessages(messages) {
-            const container = document.getElementById('messages-container');
-            if (messages.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon"><span class="material-icons">search_off</span></div>
-                        <div class="empty-title">No messages found</div>
-                    </div>
-                `;
+                
+                // Clear message view if it has highlights
+                clearMessageViewHighlights();
                 return;
             }
             
-            container.innerHTML = messages.map(msg => `
-                <div class="message-item" data-id="${msg.id}" onclick="selectMessage(${msg.id})">
-                    <div class="message-content">
-                        <div class="message-header">
-                            <span class="deleted-badge">
-                                <span class="material-icons">delete</span>
-                                Deleted
-                            </span>
-                            <span class="message-sender">${escapeHtml(msg.sender_name || msg.sender_email)}</span>
-                        </div>
-                        <div class="message-subject">${escapeHtml(msg.subject || '(No Subject)')}</div>
-                        <div class="message-preview">${escapeHtml(msg.body_preview || '')}</div>
-                    </div>
-                    <div class="message-meta">
-                        <div class="message-date">${formatDateShort(msg.deleted_at)}</div>
-                        ${msg.has_attachments ? '<span class="material-icons attachment-indicator">attach_file</span>' : ''}
-                    </div>
-                </div>
-            `).join('');
+            let visibleCount = 0;
+            
+            messageItems.forEach(item => {
+                const id = item.dataset.id;
+                const senderEl = item.querySelector('.message-sender');
+                const subjectEl = item.querySelector('.message-subject');
+                const previewEl = item.querySelector('.message-preview');
+                
+                // Get original content
+                const original = originalMessageContent.get(id) || {
+                    sender: senderEl.textContent,
+                    subject: subjectEl.textContent,
+                    preview: previewEl.textContent
+                };
+                
+                // Search in all fields
+                const senderText = original.sender;
+                const subjectText = original.subject;
+                const previewText = original.preview;
+                
+                const senderMatch = senderText.toLowerCase().includes(query.toLowerCase());
+                const subjectMatch = subjectText.toLowerCase().includes(query.toLowerCase());
+                const previewMatch = previewText.toLowerCase().includes(query.toLowerCase());
+                
+                if (senderMatch || subjectMatch || previewMatch) {
+                    // Show and highlight
+                    item.style.display = 'flex';
+                    visibleCount++;
+                    
+                    // Highlight matches
+                    if (senderMatch) {
+                        senderEl.innerHTML = highlightText(senderText, query);
+                    } else {
+                        senderEl.innerHTML = senderText;
+                    }
+                    
+                    if (subjectMatch) {
+                        subjectEl.innerHTML = highlightText(subjectText, query);
+                    } else {
+                        subjectEl.innerHTML = subjectText;
+                    }
+                    
+                    if (previewMatch) {
+                        previewEl.innerHTML = highlightText(previewText, query);
+                    } else {
+                        previewEl.innerHTML = previewText;
+                    }
+                } else {
+                    // Hide non-matching
+                    item.style.display = 'none';
+                }
+            });
+            
+            // Show empty state if no results
+            const messagesContainer = document.getElementById('messages-container');
+            const existingEmpty = messagesContainer.querySelector('.empty-state-search');
+            
+            if (visibleCount === 0 && !existingEmpty) {
+                const emptyState = document.createElement('div');
+                emptyState.className = 'empty-state empty-state-search';
+                emptyState.innerHTML = `
+                    <div class="empty-icon"><span class="material-icons">search_off</span></div>
+                    <div class="empty-title">No messages found</div>
+                    <div class="empty-text">Try a different search term</div>
+                `;
+                messagesContainer.appendChild(emptyState);
+            } else if (visibleCount > 0 && existingEmpty) {
+                existingEmpty.remove();
+            }
+            
+            // Highlight in currently viewed message
+            if (selectedMessageId) {
+                highlightMessageView(query);
+            }
+        }
+        
+        // Highlight text with yellow background
+        function highlightText(text, query) {
+            if (!query) return text;
+            
+            const regex = new RegExp(`(${escapeRegex(query)})`, 'gi');
+            return text.replace(regex, '<mark style="background-color: #FFEB3B; color: #000; padding: 2px 0; border-radius: 2px;">$1</mark>');
+        }
+        
+        // Escape special regex characters
+        function escapeRegex(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+        
+        // Highlight in message view pane
+        function highlightMessageView(query) {
+            const messageDetail = document.querySelector('.message-detail');
+            if (!messageDetail) return;
+            
+            if (!messageDetail.dataset.originalContent) {
+                messageDetail.dataset.originalContent = messageDetail.innerHTML;
+            }
+            
+            if (!query) {
+                messageDetail.innerHTML = messageDetail.dataset.originalContent;
+                return;
+            }
+            
+            const originalContent = messageDetail.dataset.originalContent;
+            messageDetail.innerHTML = highlightText(originalContent, query);
+        }
+        
+        // Clear highlights in message view
+        function clearMessageViewHighlights() {
+            const messageDetail = document.querySelector('.message-detail');
+            if (messageDetail && messageDetail.dataset.originalContent) {
+                messageDetail.innerHTML = messageDetail.dataset.originalContent;
+            }
         }
 
         // Update count
