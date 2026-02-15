@@ -167,9 +167,9 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         box-shadow: 0 2px 8px rgba(87,129,169,0.25);
     }
 
-    .nav-item.active:hover {
+    /* .nav-item.active:hover {
         background: var(--ink-2);
-    }
+    } */
 
     /* Icons */
     .nav-item .material-icons-round {
