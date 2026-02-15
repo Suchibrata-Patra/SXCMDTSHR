@@ -139,74 +139,166 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - SXC Mail Delivery & Tracking System</title>
+    <title>Create Account - SXC Mail Delivery & Tracking System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
+        /* ══════════════════════════════════════════════════════════
+           DRIVE UI DESIGN SYSTEM
+           ══════════════════════════════════════════════════════════ */
+        
+        :root {
+            /* Foundation Colors */
+            --ink:       #1a1a2e;
+            --ink-2:     #2d2d44;
+            --ink-3:     #6b6b8a;
+            --ink-4:     #a8a8c0;
+            --bg:        #f0f0f7;
+            --surface:   #ffffff;
+            --surface-2: #f7f7fc;
+            --border:    rgba(100,100,160,0.12);
+            --border-2:  rgba(100,100,160,0.22);
+            
+            /* Accent Colors */
+            --blue:      #5781a9;
+            --blue-2:    #c6d3ea;
+            --blue-glow: rgba(79,70,229,0.15);
+            --red:       #ef4444;
+            --green:     #10b981;
+            --amber:     #f59e0b;
+            
+            /* System */
+            --r:         10px;
+            --r-lg:      16px;
+            --shadow:    0 1px 3px rgba(79,70,229,0.08), 0 4px 16px rgba(79,70,229,0.06);
+            --shadow-lg: 0 8px 32px rgba(79,70,229,0.14), 0 2px 8px rgba(0,0,0,0.06);
+            --ease:      cubic-bezier(.4,0,.2,1);
+            --ease-spring: cubic-bezier(.34,1.56,.64,1);
+        }
+
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #f5f5f5;
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            -webkit-font-smoothing: antialiased;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            line-height: 1.6;
         }
         
         .register-container {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-lg);
+            box-shadow: var(--shadow-lg);
             width: 100%;
-            max-width: 450px;
-            padding: 40px;
+            max-width: 480px;
+            padding: 48px;
+            transition: transform .18s var(--ease), box-shadow .18s var(--ease);
+        }
+        
+        .register-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 48px rgba(79,70,229,0.18), 0 4px 12px rgba(0,0,0,0.08);
         }
         
         .header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 32px;
         }
         
         .header h1 {
-            color: #333;
-            font-size: 24px;
+            color: var(--ink);
+            font-size: 28px;
+            font-weight: 700;
             margin-bottom: 8px;
+            letter-spacing: -0.5px;
         }
         
         .header p {
-            color: #666;
+            color: var(--ink-3);
             font-size: 14px;
+            font-weight: 400;
         }
         
         .alert {
-            padding: 12px 16px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            font-size: 14px;
+            padding: 14px 16px;
+            border-radius: var(--r);
+            margin-bottom: 24px;
+            font-size: 13px;
+            line-height: 1.5;
+            animation: slideIn .3s var(--ease-spring);
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
         .alert-error {
-            background-color: #fff3f3;
-            border: 1px solid #ffcdd2;
-            color: #c62828;
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: var(--ink-2);
+        }
+        
+        .alert-error strong {
+            color: var(--red);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
         }
         
         .alert-success {
-            background-color: #f1f8f4;
-            border: 1px solid #c8e6c9;
-            color: #2e7d32;
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--ink-2);
+        }
+        
+        .alert-success strong {
+            color: var(--green);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+        }
+        
+        .alert-success a {
+            color: var(--blue);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color .14s var(--ease);
+        }
+        
+        .alert-success a:hover {
+            color: var(--ink);
         }
         
         .alert ul {
-            margin: 8px 0 0 20px;
+            margin: 10px 0 0 0;
+            padding-left: 20px;
         }
         
         .alert li {
-            margin: 4px 0;
+            margin: 6px 0;
+            color: var(--ink-2);
         }
         
         .form-group {
@@ -216,94 +308,148 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .form-group label {
             display: block;
             margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
-            font-size: 14px;
+            color: var(--ink-2);
+            font-weight: 600;
+            font-size: 13px;
+            letter-spacing: 0.2px;
         }
         
         .form-group input {
             width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            height: 42px;
+            padding: 0 14px;
+            background: var(--surface);
+            border: 1px solid var(--border-2);
+            border-radius: var(--r);
+            font-family: inherit;
             font-size: 14px;
-            transition: border-color 0.2s;
+            color: var(--ink);
+            transition: all .18s var(--ease);
+        }
+        
+        .form-group input:hover {
+            border-color: var(--border-2);
+            background: var(--surface-2);
         }
         
         .form-group input:focus {
             outline: none;
-            border-color: #4285f4;
+            border-color: var(--blue);
+            background: var(--surface);
+            box-shadow: 0 0 0 3px var(--blue-glow);
+        }
+        
+        .form-group input::placeholder {
+            color: var(--ink-4);
         }
         
         .password-requirements {
             font-size: 12px;
-            color: #666;
-            margin-top: 6px;
+            color: var(--ink-3);
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: var(--surface-2);
+            border-radius: var(--r);
+            border-left: 2px solid var(--blue-2);
         }
         
         .checkbox-container {
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-top: 8px;
-            font-size: 14px;
-            color: #666;
+            margin-top: 10px;
+            font-size: 13px;
+            color: var(--ink-3);
             cursor: pointer;
             user-select: none;
+            transition: color .14s var(--ease);
+        }
+        
+        .checkbox-container:hover {
+            color: var(--ink-2);
         }
         
         .checkbox-container input[type="checkbox"] {
-            width: auto;
+            width: 16px;
+            height: 16px;
             cursor: pointer;
+            accent-color: var(--blue);
         }
         
         .btn {
             width: 100%;
-            padding: 12px;
-            background: #4285f4;
+            height: 44px;
+            padding: 0 20px;
+            background: var(--blue);
             color: white;
             border: none;
-            border-radius: 4px;
-            font-size: 15px;
-            font-weight: 500;
+            border-radius: var(--r);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all .18s var(--ease);
+            box-shadow: 0 2px 8px rgba(87, 129, 169, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
         
         .btn:hover {
-            background: #3367d6;
+            background: #4a6e93;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(87, 129, 169, 0.3);
         }
         
         .btn:active {
-            background: #2b56c4;
+            transform: translateY(0);
+            box-shadow: 0 1px 4px rgba(87, 129, 169, 0.2);
+        }
+        
+        .btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px var(--blue-glow), 0 2px 8px rgba(87, 129, 169, 0.2);
         }
         
         .login-link {
             text-align: center;
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #e0e0e0;
-            font-size: 14px;
-            color: #666;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--ink-3);
         }
         
         .login-link a {
-            color: #4285f4;
+            color: var(--blue);
             text-decoration: none;
-            font-weight: 500;
+            font-weight: 600;
+            transition: color .14s var(--ease);
         }
         
         .login-link a:hover {
-            text-decoration: underline;
+            color: var(--ink);
         }
         
-        @media (max-width: 480px) {
+        .material-icons-round {
+            font-size: 18px;
+            vertical-align: middle;
+        }
+        
+        @media (max-width: 520px) {
             .register-container {
-                padding: 30px 20px;
+                padding: 32px 24px;
             }
             
             .header h1 {
-                font-size: 22px;
+                font-size: 24px;
+            }
+        }
+        
+        @media (max-width: 380px) {
+            .register-container {
+                padding: 24px 20px;
             }
         }
     </style>
@@ -317,14 +463,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         <?php if ($success): ?>
             <div class="alert alert-success">
-                <strong>✓ Registration Successful!</strong><br>
-                Your account has been created. You can now <a href="login.php">login</a> with your credentials.
+                <strong>
+                    <span class="material-icons-round" style="font-size: 16px;">check_circle</span>
+                    Registration Successful!
+                </strong><br>
+                Your account has been created. You can now <a href="login.php">sign in</a> with your credentials.
             </div>
         <?php endif; ?>
         
         <?php if (!empty($errors)): ?>
             <div class="alert alert-error">
-                <strong>⚠ Please correct the following errors:</strong>
+                <strong>
+                    <span class="material-icons-round" style="font-size: 16px;">error</span>
+                    Please correct the following errors:
+                </strong>
                 <ul>
                     <?php foreach ($errors as $error): ?>
                         <li><?php echo htmlspecialchars($error); ?></li>
@@ -372,7 +524,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 >
                 <label class="checkbox-container">
                     <input type="checkbox" id="showPassword" onclick="togglePassword()">
-                    <span>Show Password</span>
+                    <span>Show password</span>
                 </label>
                 <div class="password-requirements">
                     Must be 8+ characters with uppercase, lowercase, and number
@@ -391,7 +543,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 >
             </div>
             
-            <button type="submit" class="btn">Create Account</button>
+            <button type="submit" class="btn">
+                <span class="material-icons-round">person_add</span>
+                Create Account
+            </button>
         </form>
         
         <div class="login-link">
