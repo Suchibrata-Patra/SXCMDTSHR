@@ -1,6 +1,6 @@
 <?php
 /**
- * Inbox Page - Minimalist UI matching drive.php aesthetic
+ * Professional Inbox Page - Refactored with External Sidebar
  */
 session_start();
 
@@ -107,154 +107,158 @@ $lastSync = getLastSyncDate($userEmail);
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <?php define('PAGE_TITLE', 'Inbox | SXC MDTS'); include 'header.php'; ?>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-    
+    <?php
+        define('PAGE_TITLE', 'SXC MDTS | Dashboard');
+        include 'header.php';
+    ?>
     <style>
         :root {
-            --ink:       #1a1a2e;
-            --ink-2:     #2d2d44;
-            --ink-3:     #6b6b8a;
-            --ink-4:     #a8a8c0;
-            --bg:        #f0f0f7;
-            --surface:   #ffffff;
-            --surface-2: #f7f7fc;
-            --border:    rgba(100,100,160,0.12);
-            --border-2:  rgba(100,100,160,0.22);
-            --blue:      #5781a9;
-            --blue-2:    #c6d3ea;
-            --blue-glow: rgba(79,70,229,0.15);
-            --amber:     #d97706;
-            --r:         10px;
-            --r-lg:      16px;
-            --shadow:    0 1px 3px rgba(79,70,229,0.08), 0 4px 16px rgba(79,70,229,0.06);
-            --shadow-lg: 0 8px 32px rgba(79,70,229,0.14), 0 2px 8px rgba(0,0,0,0.06);
-            --ease:      cubic-bezier(.4,0,.2,1);
-            --ease-spring: cubic-bezier(.34,1.56,.64,1);
+            --apple-blue: #007AFF;
+            --apple-gray: #8E8E93;
+            --apple-light-gray: #C7C7CC;
+            --apple-bg: #F2F2F7;
+            --glass: rgba(255, 255, 255, 0.7);
+            --border: #E5E5EA;
+            --success-green: #34C759;
+            --warning-orange: #FF9500;
+            --danger-red: #FF3B30;
+            --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --hover-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
         }
 
-        *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
-            font-family: 'DM Sans', -apple-system, sans-serif;
-            background: var(--bg);
-            color: var(--ink);
-            -webkit-font-smoothing: antialiased;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--apple-bg);
+            color: #1c1c1e;
             display: flex;
             height: 100vh;
             overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
-        /* ── LAYOUT ───────────────────────────────────────────── */
-        .app-shell  { display:flex; flex:1; overflow:hidden; }
-        .main-col   { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+        /* ========== MAIN CONTENT ========== */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
 
-        /* ── TOP BAR ─────────────────────────────────────────── */
-        .topbar {
-            height: 60px;
-            background: var(--surface);
+        /* ========== HEADER ========== */
+        .page-header {
+            background: white;
             border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 12px;
-            padding: 0 24px;
-            flex-shrink: 0;
         }
-        .topbar-title {
-            font-size: 17px;
+
+        .header-left {
+            flex: 1;
+        }
+
+        .page-title {
+            font-size: 24px;
             font-weight: 700;
-            color: var(--ink);
-            letter-spacing: -0.4px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            color: #1c1c1e;
+            letter-spacing: -0.5px;
+            margin-bottom: 2px;
         }
-        .topbar-title .material-icons-round { font-size:20px; color:var(--blue); }
-        .topbar-spacer { flex:1; }
 
-        /* Search */
-        .search-wrap {
-            position: relative;
-            width: 280px;
-        }
-        .search-wrap .material-icons-round {
-            position: absolute;
-            left: 10px; top: 50%;
-            transform: translateY(-50%);
-            font-size: 16px;
-            color: var(--ink-4);
-            pointer-events: none;
-        }
-        #searchInput {
-            width: 100%;
-            height: 36px;
-            border: 1.5px solid var(--border-2);
-            border-radius: 20px;
-            padding: 0 12px 0 34px;
-            font-family: inherit;
+        .page-subtitle {
             font-size: 13px;
-            background: var(--surface-2);
-            color: var(--ink);
-            outline: none;
-            transition: border-color .2s, box-shadow .2s;
+            color: var(--apple-gray);
+            font-weight: 400;
         }
-        #searchInput:focus { border-color:var(--blue); box-shadow:0 0 0 3px var(--blue-glow); background:var(--surface); }
-        #searchInput::placeholder { color:var(--ink-4); }
 
-        /* Buttons */
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
         .btn {
-            height: 36px;
-            padding: 0 16px;
-            background: var(--blue);
-            color: white;
+            padding: 8px 14px;
             border: none;
             border-radius: 8px;
-            font-family: inherit;
             font-size: 13px;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 6px;
-            transition: all .18s var(--ease-spring);
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
         }
-        .btn:hover { background:var(--blue-2); box-shadow:0 4px 12px var(--blue-glow); }
-        .btn:active { transform:scale(.96); }
-        .btn .material-icons-round { font-size:16px; }
+
+        .btn .material-icons {
+            font-size: 18px;
+        }
+
+        .btn-primary {
+            background: var(--apple-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0051D5;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+        }
 
         .btn-icon {
-            width: 34px;
-            height: 34px;
+            padding: 8px;
+            background: white;
+            border: 1px solid var(--border);
             border-radius: 8px;
-            border: 1.5px solid var(--border-2);
-            background: var(--surface);
-            color: var(--ink-3);
+            cursor: pointer;
+            transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            transition: all .18s;
         }
-        .btn-icon:hover {
-            border-color: var(--blue);
-            color: var(--blue);
-            background: var(--blue-glow);
-        }
-        .btn-icon .material-icons-round { font-size:18px; }
-        .btn-icon.rotating .material-icons-round { animation: spin .6s linear; }
-        @keyframes spin { to { transform:rotate(360deg); } }
 
-        /* ── STATS BAR ───────────────────────────────────────── */
+        .btn-icon:hover {
+            background: var(--apple-bg);
+            border-color: var(--apple-blue);
+        }
+
+        .btn-icon .material-icons {
+            color: var(--apple-gray);
+            transition: transform 0.3s ease;
+        }
+
+        .btn-icon.rotating .material-icons {
+            animation: rotate 0.6s linear;
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ========== STATS BAR ========== */
         .stats-bar {
-            background: var(--surface);
-            padding: 14px 24px;
+            background: white;
+            padding: 12px 24px;
             border-bottom: 1px solid var(--border);
             display: flex;
-            gap: 28px;
+            gap: 24px;
             align-items: center;
         }
 
@@ -265,16 +269,28 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .stat-icon {
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
             border-radius: 8px;
-            border: 1px solid var(--border);
-            background: var(--surface-2);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 16px;
-            color: var(--ink-3);
+        }
+
+        .stat-icon.total {
+            background: rgb(229,56,81,0.1);
+            color: rgb(229,56,81);
+        }
+
+        .stat-icon.unread {
+            background: rgb(144,236,64, 0.1);
+            color: rgb(144,236,64);
+        }
+
+        .stat-icon.new {
+            background: rgb(20,121,246,0.1);
+            color: rgb(20,121,246);
         }
 
         .stat-content {
@@ -283,19 +299,16 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .stat-number {
-            font-size: 17px;
+            font-size: 18px;
             font-weight: 700;
-            color: var(--ink);
+            color: #1c1c1e;
             line-height: 1;
-            font-family: 'DM Mono', monospace;
         }
 
         .stat-label {
             font-size: 11px;
-            color: var(--ink-3);
+            color: var(--apple-gray);
             margin-top: 2px;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
         }
 
         .sync-info {
@@ -303,40 +316,76 @@ $lastSync = getLastSyncDate($userEmail);
             display: flex;
             align-items: center;
             gap: 6px;
-            font-size: 11px;
-            color: var(--ink-3);
-            font-family: 'DM Mono', monospace;
+            font-size: 12px;
+            color: var(--apple-gray);
         }
 
-        .sync-info .material-icons-round {
+        .sync-info .material-icons {
             font-size: 14px;
         }
 
-        /* ── CONTENT WRAPPER ─────────────────────────────────── */
+        /* ========== CONTENT AREA WITH SPLIT PANE ========== */
         .content-wrapper {
             flex: 1;
+            display: flex;
             overflow: hidden;
-            display: grid;
-            grid-template-columns: 420px 1fr;
-            gap: 0;
         }
 
-        /* ── MESSAGES PANEL ──────────────────────────────────── */
-        .messages-panel {
-            background: var(--surface);
-            border-right: 1px solid var(--border);
+        .messages-pane {
+            width: 40%;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            border-right: 1px solid var(--border);
+            background: white;
         }
 
+        .message-view-pane {
+            width: 60%;
+            display: flex;
+            flex-direction: column;
+            background: #FAFAFA;
+        }
+
+        /* ========== TOOLBAR ========== */
         .toolbar {
-            padding: 14px 20px;
+            background: white;
+            padding: 12px 20px;
             border-bottom: 1px solid var(--border);
             display: flex;
-            gap: 8px;
+            gap: 10px;
             align-items: center;
-            flex-shrink: 0;
+        }
+
+        .search-box {
+            flex: 1;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 8px 12px 8px 36px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            background: var(--apple-bg);
+            transition: all 0.2s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            background: white;
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+
+        .search-box .material-icons {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--apple-gray);
+            font-size: 18px;
         }
 
         .filter-group {
@@ -345,78 +394,110 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .filter-btn {
-            height: 30px;
-            padding: 0 12px;
-            border: 1.5px solid var(--border-2);
-            border-radius: 20px;
-            font-family: inherit;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--ink-3);
-            background: var(--surface);
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
             cursor: pointer;
-            transition: all .18s;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #1c1c1e;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
         }
-        .filter-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-glow); }
-        .filter-btn.active { border-color:var(--blue); color:var(--blue); background:rgba(79,70,229,.1); }
-        .filter-btn .material-icons-round { font-size:14px; }
 
+        .filter-btn:hover {
+            background: var(--apple-bg);
+            border-color: var(--apple-blue);
+        }
+
+        .filter-btn.active {
+            background: var(--apple-blue);
+            color: white;
+            border-color: var(--apple-blue);
+        }
+
+        .filter-btn .material-icons {
+            font-size: 14px;
+        }
+
+        /* ========== MESSAGES AREA ========== */
         .messages-area {
             flex: 1;
             overflow-y: auto;
         }
 
-        .messages-area::-webkit-scrollbar { width:5px; }
-        .messages-area::-webkit-scrollbar-track { background:transparent; }
-        .messages-area::-webkit-scrollbar-thumb { background:var(--border-2); border-radius:10px; }
+        .messages-container {
+            background: white;
+        }
 
-        /* Message Item */
         .message-item {
             padding: 12px 20px;
             border-bottom: 1px solid var(--border);
             cursor: pointer;
-            transition: background .14s;
+            transition: all 0.2s;
             display: flex;
             gap: 12px;
-            align-items: flex-start;
+            align-items: start;
+            position: relative;
+        }
+
+        .message-item:last-child {
+            border-bottom: none;
         }
 
         .message-item:hover {
-            background: var(--surface-2);
+            background: #FAFAFA;
         }
 
         .message-item.selected {
-            background: rgba(79,70,229,.05);
-            border-left: 2px solid var(--blue);
+            background: #F0F7FF;
+            border-left: 3px solid var(--apple-blue);
         }
 
         .message-item.unread .message-sender {
             font-weight: 700;
         }
-
+        
         .message-item.unread .message-subject {
             font-weight: 600;
         }
 
+        .message-item.unread:hover {
+            background: linear-gradient(90deg, #f9fcff 0%, #FAFAFA 100%);
+        }
+
         .message-star {
             cursor: pointer;
-            color: var(--ink-4);
-            font-size: 16px;
+            color: var(--apple-light-gray);
+            font-size: 18px;
             margin-top: 2px;
-            transition: all .2s;
-            flex-shrink: 0;
+            transition: all 0.2s;
         }
 
         .message-star:hover {
-            color: var(--amber);
+            color: var(--warning-orange);
             transform: scale(1.1);
         }
 
         .message-star.starred {
-            color: var(--amber);
+            color: var(--warning-orange);
+        }
+
+        .message-important {
+            color: var(--warning-orange);
+            font-size: 18px;
+            margin-top: 2px;
+        }
+
+        .sender-email-hint {
+            font-size: 11px;
+            color: var(--apple-gray);
+            font-weight: 400;
+            margin-left: 4px;
         }
 
         .message-content {
@@ -427,45 +508,78 @@ $lastSync = getLastSyncDate($userEmail);
         .message-header {
             display: flex;
             align-items: baseline;
-            margin-bottom: 2px;
-            gap: 8px;
+            margin-bottom: 3px;
+            gap: 12px;
         }
 
         .message-sender {
             font-weight: 500;
-            color: var(--ink);
+            color: #1c1c1e;
             font-size: 13px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            flex: 1;
+        }
+
+        .message-sender strong,
+        .message-subject strong {
+            font-weight: 600;
+            color: var(--apple-gray);
+            margin-right: 4px;
         }
 
         .message-date {
-            font-size: 10px;
-            color: var(--ink-4);
+            font-size: 11px;
+            color: var(--apple-gray);
             white-space: nowrap;
-            font-family: 'DM Mono', monospace;
+            font-weight: 500;
             flex-shrink: 0;
         }
 
-        .message-subject {
-            font-size: 12px;
-            color: var(--ink-2);
+        .message-subject-line {
+            display: flex;
+            align-items: center;
+            gap: 6px;
             margin-bottom: 3px;
+        }
+
+        .message-subject {
+            font-size: 13px;
+            color: #1c1c1e;
+            font-weight: 500;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            flex: 1;
+        }
+
+        .inline-attachment-icon {
+            font-size: 14px !important;
+            color: var(--apple-gray);
+            flex-shrink: 0;
         }
 
         .message-preview {
-            font-size: 11px;
-            color: var(--ink-3);
+            font-size: 12px;
+            color: var(--apple-gray);
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            line-height: 1.4;
+            line-height: 1.5;
+            margin-bottom: 4px;
+            font-style: italic;
+            line-height: 1.5;
+            margin-bottom: 4px;
+        }
+
+        .message-id-badge {
+            font-size: 5px !important;
+            color: var(--apple-gray);
+            background: rgb(207, 207, 207);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 500;
         }
 
         .message-badges {
@@ -481,222 +595,166 @@ $lastSync = getLastSyncDate($userEmail);
             gap: 3px;
             padding: 2px 6px;
             border-radius: 4px;
-            font-size: 9px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
+            font-size: 10px;
+            font-weight: 600;
         }
 
         .badge-new {
-            background: rgba(79,70,229,.1);
-            color: var(--blue);
+            background: rgba(52, 199, 89, 0.15);
+            color: var(--success-green);
+        }
+
+        .badge-new-inline {
+            display: inline-block;
+            background: rgba(52, 199, 89, 0.15);
+            color: var(--success-green);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            margin-top: 2px;
         }
 
         .badge-attachment {
-            background: var(--surface-2);
-            border: 1px solid var(--border);
-            color: var(--ink-3);
+            background: rgb(227, 227, 227);
+            color: rgb(33, 33, 33);
+            padding: 5px 7px;
+            border-radius: 20px;
         }
 
-        .badge-attachment .material-icons-round {
-            font-size: 10px;
+        .badge-attachment .material-icons {
+            font-size: 11px;
         }
 
-        .unread-dot {
-            width: 8px;
-            height: 8px;
-            background: var(--blue);
-            border-radius: 50%;
-            flex-shrink: 0;
-            margin-top: 4px;
-        }
-
-        /* ── PREVIEW PANEL ───────────────────────────────────── */
-        .preview-panel {
-            background: var(--bg);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .preview-header {
-            background: var(--surface);
-            padding: 16px 24px;
+        /* ========== MESSAGE VIEW PANE ========== */
+        .message-view-header {
+            background: white;
             border-bottom: 1px solid var(--border);
+            padding: 16px 20px;
+        }
+
+        .message-view-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1c1c1e;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .message-view-meta {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .message-view-meta-item {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            flex-shrink: 0;
+            gap: 4px;
+            font-size: 12px;
+            color: var(--apple-gray);
         }
 
-        .preview-title {
+        .message-view-meta-item .material-icons {
             font-size: 14px;
-            font-weight: 700;
-            color: var(--ink-2);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
-        .preview-actions {
+        .message-view-meta-label {
+            font-weight: 600;
+            color: #1c1c1e;
+        }
+
+        .message-view-actions {
             display: flex;
             gap: 6px;
         }
 
-        .action-btn {
-            width: 34px;
-            height: 34px;
-            border-radius: 8px;
-            border: 1.5px solid var(--border-2);
-            background: var(--surface);
-            color: var(--ink-3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all .18s;
-        }
-
-        .action-btn:hover {
-            border-color: var(--blue);
-            color: var(--blue);
-            background: var(--blue-glow);
-        }
-
-        .action-btn .material-icons-round {
-            font-size: 18px;
-        }
-
-        /* Message Detail */
         .message-view-body {
             flex: 1;
             overflow-y: auto;
-            padding: 24px;
+            padding: 20px;
         }
 
-        .message-view-body::-webkit-scrollbar { width:5px; }
-        .message-view-body::-webkit-scrollbar-track { background:transparent; }
-        .message-view-body::-webkit-scrollbar-thumb { background:var(--border-2); border-radius:10px; }
-
-        .message-detail-header {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--r-lg);
-            padding: 24px;
-            margin-bottom: 20px;
-        }
-
-        .message-detail-subject {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--ink);
-            margin-bottom: 16px;
-            line-height: 1.4;
-        }
-
-        .message-detail-from {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 16px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .sender-avatar {
-            width: 44px;
-            height: 44px;
-            border-radius: var(--r);
-            background: var(--surface-2);
-            border: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--ink-3);
-        }
-
-        .sender-info {
-            flex: 1;
-        }
-
-        .sender-name {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--ink);
-        }
-
-        .sender-email {
-            font-size: 12px;
-            color: var(--ink-3);
-            font-family: 'DM Mono', monospace;
-        }
-
-        .message-detail-meta {
+        .message-meta {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-        }
-
-        .meta-row {
-            display: flex;
+            gap: 4px;
             align-items: center;
+            padding-top: 2px;
+        }
+
+        .message-right-meta {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding-top: 2px;
+            flex-shrink: 0;
+            min-width: 80px;
+        }
+
+        /* When there's no unread dot, move ID up to take its place */
+        .message-right-meta:not(.has-unread-dot) {
             gap: 8px;
-            font-size: 12px;
-            color: var(--ink-3);
         }
 
-        .meta-row .material-icons-round {
+        .message-right-meta:not(.has-unread-dot) .message-id-badge {
+            margin-top: 2px;
+        }
+
+        .message-right-meta .message-date {
+            font-size: 11px;
+            color: var(--apple-gray);
+            white-space: nowrap;
+            font-weight: 500;
+        }
+
+        .unread-dot {
+            width: 10px;
+            height: 10px;
+            background-color: #1a73e8;
+            /* nice Google-ish blue */
+            border-radius: 50%;
+        }
+
+        .message-detail {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
             font-size: 14px;
-            color: var(--ink-4);
-        }
-
-        .meta-label {
-            font-weight: 600;
-            min-width: 60px;
-        }
-
-        .meta-value {
-            font-family: 'DM Mono', monospace;
-        }
-
-        /* Message Body */
-        .message-body-wrap {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--r-lg);
-            padding: 24px;
-        }
-
-        .message-body {
-            font-size: 13px;
             line-height: 1.7;
-            color: var(--ink-2);
+            color: #1c1c1e;
+            box-shadow: var(--card-shadow);
             white-space: pre-wrap;
             word-wrap: break-word;
         }
 
-        .message-body a {
-            color: var(--blue);
+        .message-detail p {
+            margin-bottom: 12px;
+        }
+
+        .message-detail a {
+            color: var(--apple-blue);
             text-decoration: none;
         }
 
-        .message-body a:hover {
+        .message-detail a:hover {
             text-decoration: underline;
         }
 
         /* Attachments */
         .attachments-section {
             margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
         }
 
-        .attachments-header {
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--ink-2);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 12px;
+        .attachments-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1c1c1e;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
             gap: 6px;
@@ -709,85 +767,70 @@ $lastSync = getLastSyncDate($userEmail);
         }
 
         .attachment-card {
-            background: var(--surface);
+            background: white;
             border: 1px solid var(--border);
-            border-radius: var(--r);
+            border-radius: 8px;
             padding: 12px;
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
-            transition: all .18s;
+            transition: all 0.2s;
             cursor: pointer;
         }
 
         .attachment-card:hover {
-            border-color: var(--blue);
-            box-shadow: var(--shadow);
+            border-color: var(--apple-blue);
+            box-shadow: var(--card-shadow);
             transform: translateY(-2px);
         }
 
         .attachment-icon {
-            font-size: 32px;
+            font-size: 36px;
             margin-bottom: 6px;
-            color: var(--blue);
         }
 
         .attachment-name {
             font-size: 11px;
             font-weight: 500;
-            color: var(--ink);
+            color: #1c1c1e;
             margin-bottom: 3px;
             word-break: break-word;
         }
 
         .attachment-size {
             font-size: 10px;
-            color: var(--ink-3);
-            font-family: 'DM Mono', monospace;
+            color: var(--apple-gray);
         }
 
-        /* Empty State */
+        /* ========== EMPTY STATE ========== */
         .empty-state {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 80px 40px;
+            padding: 60px 20px;
             text-align: center;
         }
 
         .empty-icon {
-            width: 64px;
-            height: 64px;
-            border-radius: var(--r-lg);
-            background: var(--surface-2);
-            border: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            font-size: 64px;
             margin-bottom: 16px;
-        }
-
-        .empty-icon .material-icons-round {
-            font-size: 32px;
-            color: var(--ink-4);
+            opacity: 0.5;
         }
 
         .empty-title {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 600;
-            color: var(--ink-2);
+            color: #1c1c1e;
             margin-bottom: 6px;
         }
 
         .empty-text {
-            font-size: 13px;
-            color: var(--ink-3);
-            max-width: 300px;
+            font-size: 14px;
+            color: var(--apple-gray);
+            max-width: 320px;
+            margin: 0 auto;
+            line-height: 1.6;
         }
 
-        /* Loading */
+        /* ========== LOADING ========== */
         .loading {
             padding: 40px;
             text-align: center;
@@ -798,267 +841,202 @@ $lastSync = getLastSyncDate($userEmail);
             width: 32px;
             height: 32px;
             border: 2px solid var(--border);
-            border-top-color: var(--blue);
+            border-top-color: var(--apple-blue);
             border-radius: 50%;
-            animation: spin .8s linear infinite;
+            animation: spin 0.8s linear infinite;
             margin-bottom: 12px;
         }
 
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
         .loading-text {
-            font-size: 12px;
-            color: var(--ink-3);
+            font-size: 13px;
+            color: var(--apple-gray);
         }
 
-        /* Toast */
-        .toast-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
+        /* ========== TOAST NOTIFICATIONS ========== */
         .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #1c1c1e;
+            color: white;
+            padding: 12px 18px;
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 12px 18px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--r);
-            box-shadow: var(--shadow-lg);
-            min-width: 280px;
-            animation: slideIn 0.3s ease;
+            font-size: 13px;
+            font-weight: 500;
+            z-index: 2000;
+            animation: toastSlideIn 0.3s ease-out;
+            max-width: 360px;
         }
 
-        @keyframes slideIn {
+        @keyframes toastSlideIn {
             from {
-                transform: translateX(400px);
+                transform: translateX(100%);
                 opacity: 0;
             }
+
             to {
                 transform: translateX(0);
                 opacity: 1;
             }
         }
 
-        .toast .material-icons-round {
+        .toast.success {
+            background: var(--success-green);
+        }
+
+        .toast.error {
+            background: var(--danger-red);
+        }
+
+        .toast .material-icons {
             font-size: 18px;
-            color: var(--blue);
-        }
-
-        .toast.error .material-icons-round {
-            color: var(--ink-3);
-        }
-
-        .toast-message {
-            flex: 1;
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--ink);
-        }
-
-        /* Highlight */
-        mark {
-            background-color: #fef08a;
-            color: var(--ink);
-            padding: 1px 3px;
-            border-radius: 3px;
-        }
-
-        /* Responsive */
-        @media (max-width: 1200px) {
-            .content-wrapper {
-                grid-template-columns: 380px 1fr;
-            }
-        }
-
-        @media (max-width: 968px) {
-            .content-wrapper {
-                grid-template-columns: 1fr;
-            }
-
-            .messages-panel {
-                border-right: none;
-                border-bottom: 1px solid var(--border);
-                max-height: 50vh;
-            }
         }
     </style>
 </head>
+
 <body>
-    <!-- Include sidebar -->
-    <?php include 'sidebar.php'; ?>
+    <!-- ========== SIDEBAR (EXTERNAL) ========== -->
+    <?php require 'sidebar.php'; ?>
 
-    <!-- Toast Container -->
-    <div class="toast-container" id="toastContainer"></div>
-
-    <!-- Main App Shell -->
-    <div class="app-shell">
-        <div class="main-col">
-            <!-- Top Bar -->
-            <div class="topbar">
-                <div class="topbar-title">
-                    <span class="material-icons-round">inbox</span>
-                    Inbox
-                </div>
-                <div class="topbar-spacer"></div>
-                <div class="search-wrap">
-                    <span class="material-icons-round">search</span>
-                    <input 
-                        type="text" 
-                        id="searchInput" 
-                        placeholder="Search messages..."
-                        autocomplete="off"
-                    >
-                </div>
-                <button class="btn-icon" id="syncBtn" onclick="syncMessages()">
-                    <span class="material-icons-round">sync</span>
+    <!-- ========== MAIN CONTENT ========== -->
+    <div class="main-content">
+        <!-- Header -->
+        <!-- <div class="page-header">
+            <div class="header-left">
+                <h1 class="page-title">📬 Inbox</h1>
+                <p class="page-subtitle">View and manage your incoming emails</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn-icon" onclick="syncMessages()" title="Sync now" id="syncBtn">
+                    <span class="material-icons">sync</span>
                 </button>
-                <button class="btn" onclick="window.location.href='compose.php'">
-                    <span class="material-icons-round">edit</span>
-                    Compose
+                <button class="btn-icon" onclick="forceRefresh()" title="Force refresh" id="refreshBtn">
+                    <span class="material-icons">refresh</span>
+                </button>
+                <button class="btn-icon" onclick="location.href='index.php'">
+                    <span class="material-icons">edit</span>
                 </button>
             </div>
+        </div> -->
 
-            <!-- Stats Bar -->
-            <div class="stats-bar">
-                <div class="stat-item">
-                    <div class="stat-icon total">
-                        <span class="material-icons-round">inbox</span>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-number" id="total-count"><?= $totalCount ?></div>
-                        <div class="stat-label">Total</div>
-                    </div>
+        <!-- Stats bar -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-icon total">
+                    <span class="material-icons">mail</span>
                 </div>
-
-                <div class="stat-item">
-                    <div class="stat-icon unread">
-                        <span class="material-icons-round">mark_email_unread</span>
+                <div class="stat-content">
+                    <div class="stat-number" id="totalCount">
+                        <?= $totalCount ?>
                     </div>
-                    <div class="stat-content">
-                        <div class="stat-number" id="unread-count"><?= $unreadCount ?></div>
-                        <div class="stat-label">Unread</div>
-                    </div>
-                </div>
-
-                <div class="stat-item">
-                    <div class="stat-icon new">
-                        <span class="material-icons-round">fiber_new</span>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-number" id="new-count"><?= $newCount ?></div>
-                        <div class="stat-label">New</div>
-                    </div>
-                </div>
-
-                <div class="sync-info">
-                    <span class="material-icons-round">schedule</span>
-                    <span id="last-sync"><?= $lastSync ? date('M j, g:i A', strtotime($lastSync)) : 'Never' ?></span>
+                    <div class="stat-label">Total Received</div>
                 </div>
             </div>
 
-            <!-- Content Wrapper -->
-            <div class="content-wrapper">
-                <!-- Messages Panel -->
-                <div class="messages-panel">
-                    <div class="toolbar">
-                        <div class="filter-group">
-                            <button class="filter-btn" id="filter-unread" onclick="toggleFilter('unread')">
-                                <span class="material-icons-round">mark_email_unread</span>
-                                Unread
-                            </button>
-                            <button class="filter-btn" id="filter-starred" onclick="toggleFilter('starred')">
-                                <span class="material-icons-round">star</span>
-                                Starred
-                            </button>
-                            <button class="filter-btn" id="filter-new" onclick="toggleFilter('new')">
-                                <span class="material-icons-round">fiber_new</span>
-                                New
-                            </button>
-                        </div>
+            <div class="stat-item">
+                <div class="stat-icon unread">
+                    <span class="material-icons">mark_email_unread</span>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="unreadCount">
+                        <?= $unreadCount ?>
+                    </div>
+                    <div class="stat-label">Unread</div>
+                </div>
+            </div>
+
+            <div class="stat-item">
+                <div class="stat-icon new">
+                    <span class="material-icons">fiber_new</span>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="newCount">
+                        <?= $newCount ?>
+                    </div>
+                    <div class="stat-label">New Today</div>
+                </div>
+            </div>
+
+            
+            <div class="sync-info">
+            <div class="header-actions">
+                <button class="btn-icon" onclick="syncMessages()" title="Sync now" id="syncBtn">
+                    <span class="material-icons">sync</span>
+                </button>
+                <button class="btn-icon" onclick="forceRefresh()" title="Force refresh" id="refreshBtn">
+                    <span class="material-icons">refresh</span>
+                </button>
+                <button class="btn-icon" onclick="location.href='index.php'">
+                    <span class="material-icons">edit</span>
+                </button>
+            </div>
+                <span class="material-icons">schedule</span>
+                <span id="lastSyncText">
+                    <?php if ($lastSync): ?>
+                    Last synced:
+                    <?= date('g:i A', strtotime($lastSync)) ?>
+                    <?php else: ?>
+                    Never synced
+                    <?php endif; ?>
+                </span>
+            </div>
+        </div>
+
+        <!-- Content wrapper with split panes -->
+        <div class="content-wrapper">
+            <!-- Left pane: Messages list -->
+            <div class="messages-pane">
+                <!-- Toolbar -->
+                <div class="toolbar">
+                    <div class="search-box">
+                        <span class="material-icons">search</span>
+                        <input type="text" id="searchInput" placeholder="Search..." onkeyup="searchMessages()">
                     </div>
 
-                    <div class="messages-area" id="messages-container">
-                        <?php if (empty($messages)): ?>
-                            <div class="empty-state">
-                                <div class="empty-icon">
-                                    <span class="material-icons-round">inbox</span>
-                                </div>
-                                <div class="empty-title">No messages</div>
-                                <div class="empty-text">Your inbox is empty</div>
-                            </div>
-                        <?php else: ?>
-                            <?php foreach ($messages as $msg): 
-                                $unreadClass = $msg['is_read'] ? '' : 'unread';
-                                $starredClass = $msg['is_starred'] ? 'starred' : '';
-                            ?>
-                                <div class="message-item <?= $unreadClass ?>" 
-                                     data-id="<?= $msg['id'] ?>" 
-                                     onclick="loadMessage(<?= $msg['id'] ?>)">
-                                    
-                                    <?php if (!$msg['is_read']): ?>
-                                        <div class="unread-dot"></div>
-                                    <?php endif; ?>
-
-                                    <span class="material-icons-round message-star <?= $starredClass ?>" 
-                                          onclick="event.stopPropagation(); toggleStar(<?= $msg['id'] ?>)">
-                                        <?= $msg['is_starred'] ? 'star' : 'star_border' ?>
-                                    </span>
-
-                                    <div class="message-content">
-                                        <div class="message-header">
-                                            <div class="message-sender"><?= htmlspecialchars($msg['sender_name'] ?: $msg['sender_email']) ?></div>
-                                            <div class="message-date"><?= date('M j', strtotime($msg['received_date'])) ?></div>
-                                        </div>
-                                        <div class="message-subject"><?= htmlspecialchars($msg['subject'] ?: '(No Subject)') ?></div>
-                                        <div class="message-preview"><?= htmlspecialchars(substr($msg['body_preview'] ?? '', 0, 100)) ?></div>
-                                        
-                                        <?php if ($msg['is_new'] || $msg['has_attachments']): ?>
-                                            <div class="message-badges">
-                                                <?php if ($msg['is_new']): ?>
-                                                    <span class="badge badge-new">New</span>
-                                                <?php endif; ?>
-                                                <?php if ($msg['has_attachments']): ?>
-                                                    <span class="badge badge-attachment">
-                                                        <span class="material-icons-round">attach_file</span>
-                                                        Attachment
-                                                    </span>
-                                                <?php endif; ?>
-                                            </div>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
+                    <div class="filter-group">
+                        <button class="filter-btn" id="filterUnread" onclick="toggleFilter('unread')">
+                            <span class="material-icons">mark_email_unread</span>
+                            Unread
+                        </button>
+                        <button class="filter-btn" id="filterStarred" onclick="toggleFilter('starred')">
+                            <span class="material-icons">star</span>
+                            Starred
+                        </button>
+                        <button class="filter-btn" id="filterNew" onclick="toggleFilter('new')">
+                            <span class="material-icons">fiber_new</span>
+                            New
+                        </button>
                     </div>
                 </div>
 
-                <!-- Preview Panel -->
-                <div class="preview-panel">
-                    <div class="preview-header">
-                        <div class="preview-title">Message Preview</div>
-                        <div class="preview-actions" id="preview-actions" style="display: none;">
-                            <button class="action-btn" onclick="markAsUnread()" title="Mark as unread">
-                                <span class="material-icons-round">mark_email_unread</span>
-                            </button>
-                            <button class="action-btn" onclick="deleteMessage()" title="Delete">
-                                <span class="material-icons-round">delete</span>
-                            </button>
+                <!-- Messages list -->
+                <div class="messages-area">
+                    <div class="messages-container" id="messagesList">
+                        <div class="loading">
+                            <div class="loading-spinner"></div>
+                            <div class="loading-text">Loading messages...</div>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <div class="message-view-body" id="message-detail">
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <span class="material-icons-round">mail_outline</span>
-                            </div>
-                            <div class="empty-title">Select a message</div>
-                            <div class="empty-text">Choose a message from the list to view its contents</div>
-                        </div>
+            <!-- Right pane: Message view -->
+            <div class="message-view-pane">
+                <div id="messageViewContent">
+                    <div class="empty-state">
+                        <div class="empty-icon">✉️</div>
+                        <div class="empty-title">No message selected</div>
+                        <div class="empty-text">Click on a message to view its contents</div>
                     </div>
                 </div>
             </div>
@@ -1066,399 +1044,649 @@ $lastSync = getLastSyncDate($userEmail);
     </div>
 
     <script>
-        let selectedMessageId = null;
-        let currentFilters = { unread: false, starred: false, new: false };
-        let currentQuery = '';
+        let currentFilters = { unread_only: false, starred_only: false, new_only: false };
+        let currentSearchQuery = '';
+        let currentMessageId = null;
+        let selectedMessageElement = null;
 
-        // Load message details
-        function loadMessage(id) {
-            selectedMessageId = id;
-            
-            // Update active state
-            document.querySelectorAll('.message-item').forEach(item => {
-                item.classList.remove('selected');
-            });
-            document.querySelector(`[data-id="${id}"]`).classList.add('selected');
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchMessages();
+        });
 
-            // Show loading
-            const detailDiv = document.getElementById('message-detail');
-            detailDiv.innerHTML = `
-                <div class="loading">
-                    <div class="loading-spinner"></div>
-                    <div class="loading-text">Loading message...</div>
-                </div>
-            `;
-
-            // Fetch message
-            fetch(`?action=get_message&id=${id}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success && data.message) {
-                        displayMessage(data.message);
-                        document.getElementById('preview-actions').style.display = 'flex';
-                        
-                        // Update unread count
-                        updateCounts();
-                    } else {
-                        showToast('Failed to load message', 'error');
-                    }
-                })
-                .catch(err => {
-                    showToast('Error loading message', 'error');
+        async function fetchMessages() {
+            try {
+                const params = new URLSearchParams({
+                    action: 'fetch_messages',
+                    limit: 50,
+                    offset: 0
                 });
-        }
 
-        // Display message in preview
-        function displayMessage(msg) {
-            const detailDiv = document.getElementById('message-detail');
-            
-            // Get initials for avatar
-            const senderName = msg.sender_name || msg.sender_email;
-            const initials = senderName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-            
-            // Parse attachments
-            let attachmentsHtml = '';
-            if (msg.has_attachments && msg.attachment_data) {
-                try {
-                    const attachments = JSON.parse(msg.attachment_data);
-                    attachmentsHtml = `
-                        <div class="attachments-section">
-                            <div class="attachments-header">
-                                <span class="material-icons-round">attach_file</span>
-                                Attachments (${attachments.length})
-                            </div>
-                            <div class="attachments-grid">
-                                ${attachments.map(att => `
-                                    <div class="attachment-card">
-                                        <span class="material-icons-round attachment-icon">insert_drive_file</span>
-                                        <div class="attachment-name">${escapeHtml(att.name)}</div>
-                                        <div class="attachment-size">${formatBytes(att.size)}</div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    `;
-                } catch (e) {
-                    console.error('Error parsing attachments:', e);
+                if (currentSearchQuery) params.append('search', currentSearchQuery);
+                if (currentFilters.unread_only) params.append('unread_only', '1');
+                if (currentFilters.starred_only) params.append('starred_only', '1');
+                if (currentFilters.new_only) params.append('new_only', '1');
+
+                const response = await fetch(`inbox.php?${params.toString()}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    renderMessages(data.messages);
+                    document.getElementById('totalCount').textContent = data.total;
                 }
+            } catch (error) {
+                console.error('Error fetching messages:', error);
+                document.getElementById('messagesList').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">⚠️</div>
+                        <div class="empty-title">Error loading messages</div>
+                        <div class="empty-text">Please try refreshing the page</div>
+                    </div>
+                `;
             }
-
-            detailDiv.innerHTML = `
-                <div class="message-detail-header">
-                    <div class="message-detail-subject">${escapeHtml(msg.subject || '(No Subject)')}</div>
-                    
-                    <div class="message-detail-from">
-                        <div class="sender-avatar">${initials}</div>
-                        <div class="sender-info">
-                            <div class="sender-name">${escapeHtml(senderName)}</div>
-                            <div class="sender-email">${escapeHtml(msg.sender_email)}</div>
-                        </div>
-                    </div>
-
-                    <div class="message-detail-meta">
-                        <div class="meta-row">
-                            <span class="material-icons-round">schedule</span>
-                            <span class="meta-label">Received:</span>
-                            <span class="meta-value">${formatDate(msg.received_date)}</span>
-                        </div>
-                        <div class="meta-row">
-                            <span class="material-icons-round">email</span>
-                            <span class="meta-label">Message ID:</span>
-                            <span class="meta-value">${escapeHtml(msg.message_id)}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="message-body-wrap">
-                    <div class="message-body">${escapeHtml(msg.body_preview || '')}</div>
-                    ${attachmentsHtml}
-                </div>
-            `;
         }
 
-        // Toggle star
-        function toggleStar(id) {
-            fetch(`?action=toggle_star&id=${id}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        const item = document.querySelector(`[data-id="${id}"]`);
-                        const star = item.querySelector('.message-star');
-                        
-                        if (star.classList.contains('starred')) {
-                            star.classList.remove('starred');
-                            star.textContent = 'star_border';
-                        } else {
-                            star.classList.add('starred');
-                            star.textContent = 'star';
-                        }
-                    }
-                });
-        }
-
-        // Mark as unread
-        function markAsUnread() {
-            if (!selectedMessageId) return;
-
-            fetch(`?action=mark_unread&id=${selectedMessageId}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        showToast('Marked as unread', 'success');
-                        const item = document.querySelector(`[data-id="${selectedMessageId}"]`);
-                        if (item) {
-                            item.classList.add('unread');
-                            if (!item.querySelector('.unread-dot')) {
-                                const dot = document.createElement('div');
-                                dot.className = 'unread-dot';
-                                item.insertBefore(dot, item.firstChild);
-                            }
-                        }
-                        updateCounts();
-                    }
-                });
-        }
-
-        // Delete message
-        function deleteMessage() {
-            if (!selectedMessageId) return;
-
-            if (!confirm('Move this message to trash?')) return;
-
-            fetch(`?action=delete&id=${selectedMessageId}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        showToast('Message moved to trash', 'success');
-                        
-                        const messageItem = document.querySelector(`[data-id="${selectedMessageId}"]`);
-                        if (messageItem) {
-                            messageItem.style.opacity = '0';
-                            setTimeout(() => {
-                                messageItem.remove();
-                                clearPreview();
-                                updateCounts();
-                            }, 200);
-                        }
-                    } else {
-                        showToast('Failed to delete message', 'error');
-                    }
-                });
-        }
-
-        // Sync messages
-        function syncMessages(force = false) {
-            const syncBtn = document.getElementById('syncBtn');
-            syncBtn.classList.add('rotating');
-
-            fetch(`?action=sync&limit=50${force ? '&force=true' : ''}`)
-                .then(res => res.json())
-                .then(data => {
-                    syncBtn.classList.remove('rotating');
-                    
-                    if (data.success) {
-                        showToast(`Synced ${data.new_count} new message(s)`, 'success');
-                        loadMessages();
-                        updateCounts();
-                        updateLastSync();
-                    } else {
-                        showToast(data.error || 'Sync failed', 'error');
-                    }
-                })
-                .catch(err => {
-                    syncBtn.classList.remove('rotating');
-                    showToast('Sync error', 'error');
-                });
-        }
-
-        // Toggle filter
-        function toggleFilter(type) {
-            currentFilters[type] = !currentFilters[type];
-            document.getElementById(`filter-${type}`).classList.toggle('active');
-            loadMessages();
-        }
-
-        // Load messages
-        function loadMessages() {
-            const params = new URLSearchParams({
-                action: 'fetch_messages',
-                limit: 50,
-                offset: 0
-            });
-
-            if (currentFilters.unread) params.append('unread_only', '1');
-            if (currentFilters.starred) params.append('starred_only', '1');
-            if (currentFilters.new) params.append('new_only', '1');
-            if (currentQuery) params.append('search', currentQuery);
-
-            fetch(`?${params}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        renderMessages(data.messages);
-                    }
-                });
-        }
-
-        // Render messages
         function renderMessages(messages) {
-            const container = document.getElementById('messages-container');
-            
-            if (messages.length === 0) {
+            const container = document.getElementById('messagesList');
+
+            if (!messages || messages.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
-                        <div class="empty-icon">
-                            <span class="material-icons-round">inbox</span>
-                        </div>
-                        <div class="empty-title">No messages</div>
-                        <div class="empty-text">No messages match your filters</div>
+                        <div class="empty-icon">📭</div>
+                        <div class="empty-title">No messages found</div>
+                        <div class="empty-text">Your inbox is empty or no messages match your filters</div>
                     </div>
                 `;
                 return;
             }
 
             container.innerHTML = messages.map(msg => {
-                const unreadClass = msg.is_read ? '' : 'unread';
-                const starredClass = msg.is_starred ? 'starred' : '';
-                
-                return `
-                    <div class="message-item ${unreadClass}" 
-                         data-id="${msg.id}" 
-                         onclick="loadMessage(${msg.id})">
-                        
-                        ${!msg.is_read ? '<div class="unread-dot"></div>' : ''}
+                const classes = ['message-item'];
+                if (msg.is_read == 0) classes.push('unread');
+                if (msg.id == currentMessageId) classes.push('selected');
 
-                        <span class="material-icons-round message-star ${starredClass}" 
-                              onclick="event.stopPropagation(); toggleStar(${msg.id})">
-                            ${msg.is_starred ? 'star' : 'star_border'}
+                // Use body_preview if available, otherwise strip HTML from body
+                let preview = '';
+                if (msg.body_preview && msg.body_preview.trim()) {
+                    preview = msg.body_preview.substring(0, 150);
+                } else if (msg.body) {
+                    // Strip HTML tags and get plain text
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = msg.body;
+                    const plainText = tempDiv.textContent || tempDiv.innerText || '';
+                    preview = plainText.substring(0, 150);
+                } else {
+                    preview = 'No preview available';
+                }
+                
+                // Get sender email and name
+                const senderEmail = msg.sender_email || 'unknown@email.com';
+                const senderName = msg.sender_name || senderEmail;
+                
+                // Get subject or use default
+                const subjectDisplay = msg.subject || '(No Subject)';
+
+                return `
+                    <div class="${classes.join(' ')}" onclick="viewMessage(${msg.id}, event)" data-message-id="${msg.id}">
+                        <span class="message-meta">
+                            <span class="material-icons message-star ${msg.is_starred == 1 ? 'starred' : ''}"
+                                  onclick="toggleStar(${msg.id}, event)">
+                                ${msg.is_starred == 1 ? 'star' : 'star_border'}
+                            </span>
+                            ${msg.is_important == 1 ? '<span class="material-icons message-important" title="Important">label_important</span>' : ''}
                         </span>
 
                         <div class="message-content">
                             <div class="message-header">
-                                <div class="message-sender">${escapeHtml(msg.sender_name || msg.sender_email)}</div>
-                                <div class="message-date">${formatDateShort(msg.received_date)}</div>
+                                <span class="message-sender" title="${escapeHtml(senderEmail)}">
+                                     ${escapeHtml(senderName)} ${senderName !== senderEmail ? '<span class="sender-email-hint">&lt;' + escapeHtml(senderEmail) + '&gt;</span>' : ''}
+                                </span>
                             </div>
-                            <div class="message-subject">${escapeHtml(msg.subject || '(No Subject)')}</div>
-                            <div class="message-preview">${escapeHtml((msg.body_preview || '').substring(0, 100))}</div>
-                            
-                            ${(msg.is_new || msg.has_attachments) ? `
-                                <div class="message-badges">
-                                    ${msg.is_new ? '<span class="badge badge-new">New</span>' : ''}
-                                    ${msg.has_attachments ? '<span class="badge badge-attachment"><span class="material-icons-round">attach_file</span>Attachment</span>' : ''}
-                                </div>
-                            ` : ''}
+                            <div class="message-subject-line">
+                                <span class="message-subject" title="${escapeHtml(subjectDisplay)}">
+                                    ${escapeHtml(subjectDisplay)}
+                                </span>
+                                ${msg.has_attachments == 1 ? '<span class="inline-attachment-icon material-icons" title="Has attachments">attach_file</span>' : ''}
+                            </div>
+                            <div class="message-preview" title="${escapeHtml(preview)}">
+                                ${escapeHtml(preview)}${preview.length >= 150 ? '...' : ''}
+                            </div>
+                        </div>
+                        
+                        <div class="message-right-meta ${msg.is_read == 0 ? 'has-unread-dot' : ''}">
+                            <span class="message-date" title="${formatDateLong(msg.received_date)}">
+                                ${formatDate(msg.received_date)}
+                            </span>
+                            ${msg.is_read == 0 ? '<span class="unread-dot"></span>' : ''}
+                            <span class="message-id-badge" title="Message ID: ${msg.id}">ID: ${msg.id}</span>
                         </div>
                     </div>
                 `;
             }).join('');
         }
 
-        // Search
-        document.getElementById('searchInput').addEventListener('input', function(e) {
-            currentQuery = e.target.value.trim();
-            
-            if (currentQuery.length > 0 || currentFilters.unread || currentFilters.starred || currentFilters.new) {
-                loadMessages();
-            } else {
-                // Reset to initial state
-                window.location.reload();
-            }
-        });
+        async function viewMessage(messageId, event) {
+            if (event) {
+                // Remove selected class from previous element
+                if (selectedMessageElement) {
+                    selectedMessageElement.classList.remove('selected');
+                }
 
-        // Update counts
-        function updateCounts() {
-            fetch('?action=get_counts')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        document.getElementById('unread-count').textContent = data.unread;
-                        document.getElementById('new-count').textContent = data.new;
+                // Add selected class to clicked element
+                selectedMessageElement = event.currentTarget;
+                selectedMessageElement.classList.add('selected');
+            }
+
+            currentMessageId = messageId;
+
+            try {
+                const response = await fetch(`inbox.php?action=get_message&id=${messageId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const msg = data.message;
+
+                    // Parse attachments
+                    let attachments = [];
+                    if (msg.has_attachments && msg.attachment_data) {
+                        try {
+                            attachments = JSON.parse(msg.attachment_data);
+                        } catch (e) { }
                     }
-                });
+
+                    // Build body HTML
+                    let bodyHtml = `<div class="message-detail">${escapeHtml(msg.body)}</div>`;
+
+                    // Add attachments section
+                    if (attachments.length > 0) {
+                        bodyHtml += `
+                            <div class="attachments-section">
+                                <div class="attachments-title">
+                                    <span class="material-icons">attach_file</span>
+                                    ${attachments.length} Attachment${attachments.length > 1 ? 's' : ''}
+                                </div>
+                                <div class="attachments-grid">
+                                    ${attachments.map(att => `
+                                        <div class="attachment-card" onclick="downloadAttachment(${msg.id}, '${escapeHtml(att.filename)}')">
+                                            <div class="attachment-icon">${att.icon || '📎'}</div>
+                                            <div class="attachment-name">${escapeHtml(att.filename)}</div>
+                                            <div class="attachment-size">${formatBytes(att.size)}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    // Render message view
+                    document.getElementById('messageViewContent').innerHTML = `
+                        <div class="message-view-header">
+                            <div class="message-view-title">${escapeHtml(msg.subject)}</div>
+                            <div class="message-view-meta">
+                                <div class="message-view-meta-item">
+                                    <span class="material-icons">person</span>
+                                    <span class="message-view-meta-label">From:</span> ${escapeHtml(msg.sender)}
+                                </div>
+                                <div class="message-view-meta-item">
+                                    <span class="material-icons">schedule</span>
+                                    <span class="message-view-meta-label">Date:</span> ${formatDateLong(msg.received_date)}
+                                </div>
+                            </div>
+                            <div class="message-view-actions">
+                                <button class="filter-btn" onclick="toggleStarFromView()">
+                                    <span class="material-icons">${msg.is_starred == 1 ? 'star' : 'star_border'}</span>
+                                    ${msg.is_starred == 1 ? 'Starred' : 'Star'}
+                                </button>
+                                <button class="filter-btn" onclick="deleteMessageFromView()">
+                                    <span class="material-icons">delete</span>
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                        <div class="message-view-body">
+                            ${bodyHtml}
+                        </div>
+                    `;
+
+                    // Refresh list to update read status
+                    setTimeout(() => fetchMessages(), 100);
+                    updateCounts();
+                }
+            } catch (error) {
+                console.error('Error viewing message:', error);
+                showToast('Failed to load message', 'error');
+            }
         }
 
-        // Update last sync time
-        function updateLastSync() {
+        async function syncMessages() {
+            const btn = document.getElementById('syncBtn');
+            btn.classList.add('rotating');
+
+            try {
+                const response = await fetch('inbox.php?action=sync&limit=50&force=false');
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast(`Synced ${data.new_count} new messages`, 'success');
+                    fetchMessages();
+                    updateCounts();
+                    updateLastSyncTime();
+                } else {
+                    showToast(data.error || 'Sync failed', 'error');
+                }
+            } catch (error) {
+                console.error('Sync error:', error);
+                showToast('Sync failed', 'error');
+            } finally {
+                setTimeout(() => btn.classList.remove('rotating'), 600);
+            }
+        }
+
+        async function forceRefresh() {
+            const btn = document.getElementById('refreshBtn');
+            btn.classList.add('rotating');
+
+            try {
+                const response = await fetch('inbox.php?action=sync&limit=50&force=true');
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast(`Refreshed: ${data.new_count} new messages`, 'success');
+                    fetchMessages();
+                    updateCounts();
+                    updateLastSyncTime();
+                } else {
+                    showToast(data.error || 'Refresh failed', 'error');
+                }
+            } catch (error) {
+                console.error('Refresh error:', error);
+                showToast('Refresh failed', 'error');
+            } finally {
+                setTimeout(() => btn.classList.remove('rotating'), 600);
+            }
+        }
+
+        function toggleFilter(filterType) {
+            const filterBtn = document.getElementById('filter' + filterType.charAt(0).toUpperCase() + filterType.slice(1));
+
+            if (filterType === 'unread') {
+                currentFilters.unread_only = !currentFilters.unread_only;
+                filterBtn.classList.toggle('active');
+            } else if (filterType === 'starred') {
+                currentFilters.starred_only = !currentFilters.starred_only;
+                filterBtn.classList.toggle('active');
+            } else if (filterType === 'new') {
+                currentFilters.new_only = !currentFilters.new_only;
+                filterBtn.classList.toggle('active');
+            }
+
+            fetchMessages();
+        }
+
+        function searchMessages() {
+            currentSearchQuery = document.getElementById('searchInput').value;
+            fetchMessages();
+        }
+
+        async function toggleStar(messageId, event) {
+            event.stopPropagation();
+
+            try {
+                const response = await fetch(`inbox.php?action=toggle_star&id=${messageId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    fetchMessages();
+                    if (currentMessageId === messageId) {
+                        viewMessage(messageId);
+                    }
+                }
+            } catch (error) {
+                console.error('Error toggling star:', error);
+            }
+        }
+
+        async function toggleStarFromView() {
+            if (!currentMessageId) return;
+            await toggleStar(currentMessageId, { stopPropagation: () => { } });
+        }
+
+        async function deleteMessageFromView() {
+            if (!currentMessageId) return;
+
+            if (!confirm('Are you sure you want to delete this message?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`inbox.php?action=delete&id=${currentMessageId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('Message deleted', 'success');
+                    currentMessageId = null;
+                    document.getElementById('messageViewContent').innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">✉️</div>
+                            <div class="empty-title">No message selected</div>
+                            <div class="empty-text">Click on a message to view its contents</div>
+                        </div>
+                    `;
+                    fetchMessages();
+                    updateCounts();
+                } else {
+                    showToast('Failed to delete message', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting message:', error);
+                showToast('Failed to delete message', 'error');
+            }
+        }
+
+        function downloadAttachment(messageId, filename) {
+            window.location.href = `download_attachment.php?message_id=${messageId}&filename=${encodeURIComponent(filename)}`;
+        }
+
+        async function updateCounts() {
+            try {
+                const response = await fetch('inbox.php?action=get_counts');
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('unreadCount').textContent = data.unread;
+                    document.getElementById('newCount').textContent = data.new;
+
+                    const sidebarBadge = document.getElementById('sidebarUnreadBadge');
+                    if (sidebarBadge) {
+                        sidebarBadge.textContent = data.unread;
+                        sidebarBadge.style.display = data.unread > 0 ? 'block' : 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating counts:', error);
+            }
+        }
+
+        function updateLastSyncTime() {
             const now = new Date();
-            const formatted = now.toLocaleString('en-US', { 
-                month: 'short', 
+            const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            document.getElementById('lastSyncText').textContent = 'Last synced: ' + timeStr;
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return diffMins + 'm ago';
+            if (diffHours < 24) return diffHours + 'h ago';
+            if (diffDays < 7) return diffDays + 'd ago';
+
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        function formatDateLong(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleString('en-US', {
+                month: 'short',
                 day: 'numeric',
+                year: 'numeric',
                 hour: 'numeric',
                 minute: '2-digit',
                 hour12: true
             });
-            document.getElementById('last-sync').textContent = formatted;
         }
 
-        // Clear preview
-        function clearPreview() {
-            document.getElementById('message-detail').innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">
-                        <span class="material-icons-round">mail_outline</span>
-                    </div>
-                    <div class="empty-title">Select a message</div>
-                    <div class="empty-text">Choose a message from the list to view its contents</div>
-                </div>
-            `;
-            document.getElementById('preview-actions').style.display = 'none';
-            selectedMessageId = null;
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
         }
 
-        // Utility functions
         function escapeHtml(text) {
+            if (!text) return '';
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
 
-        function formatDate(dateStr) {
-            const date = new Date(dateStr);
-            return date.toLocaleString('en-US', { 
-                month: 'short', 
-                day: 'numeric', 
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
+        function showToast(message, type = 'info') {
+            document.querySelectorAll('.toast').forEach(t => t.remove());
 
-        function formatDateShort(dateStr) {
-            const date = new Date(dateStr);
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        }
-
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 B';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-        }
-
-        function showToast(message, type = 'success') {
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
-            
-            const icon = type === 'success' ? 'check_circle' : 'error';
-            
+
+            const icon = type === 'success' ? 'check_circle' :
+                type === 'error' ? 'error' :
+                    'info';
+
             toast.innerHTML = `
-                <span class="material-icons-round">${icon}</span>
-                <span class="toast-message">${escapeHtml(message)}</span>
+                <span class="material-icons">${icon}</span>
+                <span>${message}</span>
             `;
-            
-            document.getElementById('toastContainer').appendChild(toast);
-            
+
+            document.body.appendChild(toast);
+
             setTimeout(() => {
-                toast.style.animation = 'slideOut 0.3s ease';
+                toast.style.animation = 'toastSlideIn 0.3s ease-out reverse';
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
 
-        // Auto-sync every 5 minutes
-        setInterval(() => {
-            syncMessages();
-        }, 5 * 60 * 1000);
+        // Auto-update counts every 30 seconds
+        setInterval(updateCounts, 30000);
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + R to sync
+            if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+                e.preventDefault();
+                syncMessages();
+            }
+        });
+
+        // ========== CLIENT-SIDE SEARCH WITH YELLOW HIGHLIGHTING ==========
+        
+        // Store original content for each message item
+        const originalMessageContent = new Map();
+        
+        // Initialize original content storage
+        function storeOriginalContent() {
+            const messageItems = document.querySelectorAll('.message-item');
+            messageItems.forEach(item => {
+                const id = item.dataset.messageId;
+                const senderEl = item.querySelector('.message-sender');
+                const subjectEl = item.querySelector('.message-subject');
+                const previewEl = item.querySelector('.message-preview');
+                
+                if (senderEl && subjectEl && previewEl) {
+                    originalMessageContent.set(id, {
+                        sender: senderEl.innerHTML,
+                        subject: subjectEl.innerHTML,
+                        preview: previewEl.innerHTML
+                    });
+                }
+            });
+        }
+        
+        // Escape special regex characters
+        function escapeRegExpSearch(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+        
+        // Highlight matching text with yellow background
+        function highlightMatches(text, searchTerm) {
+            if (!searchTerm || !text) return text;
+            
+            const escapedTerm = escapeRegExpSearch(searchTerm);
+            const regex = new RegExp(`(${escapedTerm})`, 'gi');
+            return text.replace(regex, '<mark style="background-color: #f4cccc; color: #000; padding: 2px 3px; border-radius: 2px; font-weight: 600;">$1</mark>');
+        }
+        
+        // Remove all highlights and restore original content
+        function removeAllHighlights() {
+            const messageItems = document.querySelectorAll('.message-item');
+            messageItems.forEach(item => {
+                const id = item.dataset.messageId;
+                const original = originalMessageContent.get(id);
+                
+                if (original) {
+                    const senderEl = item.querySelector('.message-sender');
+                    const subjectEl = item.querySelector('.message-subject');
+                    const previewEl = item.querySelector('.message-preview');
+                    
+                    if (senderEl) senderEl.innerHTML = original.sender;
+                    if (subjectEl) subjectEl.innerHTML = original.subject;
+                    if (previewEl) previewEl.innerHTML = original.preview;
+                }
+            });
+        }
+        
+        // Perform client-side search and highlight
+        function performClientSideSearch() {
+            const searchInput = document.getElementById('searchInput');
+            const searchTerm = searchInput ? searchInput.value.trim() : '';
+            
+            // If search is empty, restore original content
+            if (!searchTerm) {
+                removeAllHighlights();
+                // Show all messages
+                const messageItems = document.querySelectorAll('.message-item');
+                messageItems.forEach(item => {
+                    item.style.display = 'flex';
+                });
+                return;
+            }
+            
+            const searchLower = searchTerm.toLowerCase();
+            const messageItems = document.querySelectorAll('.message-item');
+            let visibleCount = 0;
+            
+            messageItems.forEach(item => {
+                const id = item.dataset.messageId;
+                const original = originalMessageContent.get(id);
+                
+                if (!original) return;
+                
+                // Get text content for matching
+                const senderText = original.sender.replace(/<[^>]*>/g, '').toLowerCase();
+                const subjectText = original.subject.replace(/<[^>]*>/g, '').toLowerCase();
+                const previewText = original.preview.replace(/<[^>]*>/g, '').toLowerCase();
+                
+                // Check if search term matches
+                const senderMatch = senderText.includes(searchLower);
+                const subjectMatch = subjectText.includes(searchLower);
+                const previewMatch = previewText.includes(searchLower);
+                
+                const isMatch = senderMatch || subjectMatch || previewMatch;
+                
+                if (isMatch) {
+                    item.style.display = 'flex';
+                    visibleCount++;
+                    
+                    // Apply highlighting
+                    const senderEl = item.querySelector('.message-sender');
+                    const subjectEl = item.querySelector('.message-subject');
+                    const previewEl = item.querySelector('.message-preview');
+                    
+                    if (senderMatch && senderEl) {
+                        senderEl.innerHTML = highlightMatches(original.sender.replace(/<[^>]*>/g, ''), searchTerm);
+                    } else if (senderEl) {
+                        senderEl.innerHTML = original.sender;
+                    }
+                    
+                    if (subjectMatch && subjectEl) {
+                        subjectEl.innerHTML = highlightMatches(original.subject.replace(/<[^>]*>/g, ''), searchTerm);
+                    } else if (subjectEl) {
+                        subjectEl.innerHTML = original.subject;
+                    }
+                    
+                    if (previewMatch && previewEl) {
+                        previewEl.innerHTML = highlightMatches(original.preview.replace(/<[^>]*>/g, ''), searchTerm);
+                    } else if (previewEl) {
+                        previewEl.innerHTML = original.preview;
+                    }
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            // Show "no results" message if needed
+            const messageList = document.getElementById('messageList');
+            if (visibleCount === 0 && messageList) {
+                // Check if no-results message already exists
+                let noResultsDiv = document.getElementById('searchNoResults');
+                if (!noResultsDiv) {
+                    noResultsDiv = document.createElement('div');
+                    noResultsDiv.id = 'searchNoResults';
+                    noResultsDiv.style.cssText = 'text-align: center; padding: 60px 20px; color: #8E8E93;';
+                    noResultsDiv.innerHTML = `
+                        <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
+                        <div style="font-size: 18px; font-weight: 600; color: #1c1c1e; margin-bottom: 8px;">No results found</div>
+                        <div style="font-size: 14px;">Try adjusting your search terms</div>
+                    `;
+                    messageList.appendChild(noResultsDiv);
+                }
+                noResultsDiv.style.display = 'block';
+            } else {
+                const noResultsDiv = document.getElementById('searchNoResults');
+                if (noResultsDiv) {
+                    noResultsDiv.style.display = 'none';
+                }
+            }
+        }
+        
+        // Override the existing searchMessages function to use client-side search
+        const originalSearchMessages = searchMessages;
+        searchMessages = function() {
+            // Store original content if not already stored
+            if (originalMessageContent.size === 0) {
+                storeOriginalContent();
+            }
+            
+            // Perform client-side search with highlighting
+            performClientSideSearch();
+        };
+        
+        // Store original content after messages are loaded
+        const originalFetchMessages = fetchMessages;
+        fetchMessages = async function() {
+            await originalFetchMessages();
+            
+            // Wait a bit for DOM to update, then store original content
+            setTimeout(() => {
+                storeOriginalContent();
+            }, 100);
+        };
+        
+        // Attach search event listener
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                // Store original content on page load
+                setTimeout(() => {
+                    storeOriginalContent();
+                }, 500);
+                
+                // Real-time search as user types
+                searchInput.addEventListener('input', performClientSideSearch);
+                
+                // Clear search on ESC key
+                searchInput.addEventListener('keyup', (e) => {
+                    if (e.key === 'Escape') {
+                        searchInput.value = '';
+                        performClientSideSearch();
+                    }
+                });
+            }
+        });
     </script>
 </body>
+
 </html>
