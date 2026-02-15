@@ -792,10 +792,10 @@ $totalCount = getDeletedMessageCount($userEmail) ?? 0;
 
         /* Highlight */
         mark {
-            background-color: #fef08a;
+            background-color: #ce9ec2;
             color: var(--ink);
-            padding: 1px 3px;
-            border-radius: 3px;
+            padding: 2px 3px;
+            border-radius: 2px;
         }
 
         /* Toast */
