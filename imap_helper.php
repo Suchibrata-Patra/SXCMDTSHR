@@ -115,19 +115,21 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = fa
                 $subject = isset($info->subject) ? imap_utf8($info->subject) : '(No Subject)';
                 
                 // ✅ ULTIMATE FIX: Get properly parsed message body
-                $body = getMessageBodyParsed($connection, $msgNum);
-                
-                // Strip HTML if it's HTML content
-                $cleanBody = $body;
+                $bodyData = getMessageBodyParsed($connection, $msgNum);
+                $body = $bodyData['body'];
+                $isHtml = $bodyData['is_html'];
                 
                 // If still empty, use placeholder
-                if (empty($cleanBody)) {
-                    $cleanBody = "[Message body could not be retrieved]";
+                if (empty($body)) {
+                    $body = "[Message body could not be retrieved]";
                     error_log("ERROR: Could not retrieve body for message #$msgNum (Subject: $subject)");
                 }
                 
-                // Generate preview (first 500 chars)
-                $bodyPreview = substr($cleanBody, 0, 500);
+                // Generate preview (strip HTML for preview only)
+                $bodyPreview = strip_tags($body);
+                $bodyPreview = html_entity_decode($bodyPreview, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $bodyPreview = preg_replace('/\s+/', ' ', $bodyPreview);
+                $bodyPreview = substr(trim($bodyPreview), 0, 500);
                 
                 // Get attachments with metadata
                 $attachments = getAttachmentMetadata($connection, $msgNum);
@@ -144,8 +146,8 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = fa
                     'sender_email' => $senderEmail,
                     'sender_name' => $senderName,
                     'subject' => $subject,
-                    'body' => $cleanBody,
-                    'body_preview' => $bodyPreview,
+                    'body' => $body,  // Store as HTML if it's HTML
+                    'body_preview' => $bodyPreview,  // Preview is always plain text
                     'received_date' => $receivedDate,
                     'has_attachments' => $hasAttachments ? 1 : 0,
                     'attachment_data' => $attachmentData
@@ -194,7 +196,7 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = fa
 
 /**
  * ✅ ULTIMATE FIX: Get properly parsed message body
- * This function correctly handles MIME multipart messages
+ * Returns array with body content and whether it's HTML
  */
 function getMessageBodyParsed($connection, $msgNum) {
     try {
@@ -202,7 +204,10 @@ function getMessageBodyParsed($connection, $msgNum) {
         
         if (!$structure) {
             // Fallback to simple body
-            return imap_body($connection, $msgNum);
+            return [
+                'body' => imap_body($connection, $msgNum),
+                'is_html' => false
+            ];
         }
         
         // Check if multipart
@@ -218,21 +223,31 @@ function getMessageBodyParsed($connection, $msgNum) {
                 $body = decodeBody($body, $structure->encoding);
             }
             
-            return $body;
+            // Check if HTML
+            $isHtml = isset($structure->subtype) && strtolower($structure->subtype) === 'html';
+            
+            return [
+                'body' => $body,
+                'is_html' => $isHtml
+            ];
         }
         
     } catch (Exception $e) {
         error_log("Error in getMessageBodyParsed: " . $e->getMessage());
-        return imap_body($connection, $msgNum);
+        return [
+            'body' => imap_body($connection, $msgNum),
+            'is_html' => false
+        ];
     }
 }
 
 /**
  * ✅ NEW FUNCTION: Recursively parse MIME parts
- * This is the KEY to properly handling multipart messages
+ * Returns array with body and HTML detection
  */
 function getPartBody($connection, $msgNum, $structure, $partNumber) {
-    $data = '';
+    $plainText = '';
+    $htmlBody = '';
     
     // If this is a multipart, iterate through sub-parts
     if (isset($structure->parts) && is_array($structure->parts)) {
@@ -258,19 +273,22 @@ function getPartBody($connection, $msgNum, $structure, $partNumber) {
             
             // If this part has sub-parts, recurse
             if (isset($part->parts) && is_array($part->parts)) {
-                $data .= getPartBody($connection, $msgNum, $part, $currentPart);
+                $result = getPartBody($connection, $msgNum, $part, $currentPart);
+                if (!empty($result['body'])) {
+                    return $result;
+                }
             } else {
                 // This is a leaf part - fetch the content
                 
-                // Prefer text/plain over text/html
-                if ($mimeType == 'text/plain') {
-                    $body = imap_fetchbody($connection, $msgNum, $currentPart);
-                    $body = decodeBody($body, $part->encoding);
-                    return $body; // Return immediately for plain text
-                } elseif ($mimeType == 'text/html' && empty($data)) {
-                    $body = imap_fetchbody($connection, $msgNum, $currentPart);
-                    $body = decodeBody($body, $part->encoding);
-                    $data = $body; // Store HTML as fallback
+                // Fetch body part
+                $bodyPart = imap_fetchbody($connection, $msgNum, $currentPart);
+                $bodyPart = decodeBody($bodyPart, $part->encoding);
+                
+                // Prefer text/plain, but store HTML as backup
+                if ($mimeType == 'text/plain' && !empty($bodyPart)) {
+                    $plainText = $bodyPart;
+                } elseif ($mimeType == 'text/html' && !empty($bodyPart)) {
+                    $htmlBody = $bodyPart;
                 }
             }
         }
@@ -282,10 +300,31 @@ function getPartBody($connection, $msgNum, $structure, $partNumber) {
             $body = decodeBody($body, $structure->encoding);
         }
         
-        return $body;
+        $isHtml = isset($structure->subtype) && strtolower($structure->subtype) === 'html';
+        
+        return [
+            'body' => $body,
+            'is_html' => $isHtml
+        ];
     }
     
-    return $data;
+    // Return based on what we found
+    if (!empty($plainText)) {
+        return [
+            'body' => $plainText,
+            'is_html' => false
+        ];
+    } elseif (!empty($htmlBody)) {
+        return [
+            'body' => $htmlBody,
+            'is_html' => true
+        ];
+    }
+    
+    return [
+        'body' => '',
+        'is_html' => false
+    ];
 }
 
 /**

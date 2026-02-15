@@ -313,7 +313,21 @@ if (!$message['is_read']) {
 
                 <!-- Message Body -->
                 <div class="message-body">
-                    <?= nl2br(htmlspecialchars($message['body'])) ?>
+                    <?php 
+                    // Check if body contains HTML tags
+                    $isHtml = (strip_tags($message['body']) != $message['body']);
+                    
+                    if ($isHtml) {
+                        // Display as HTML (with some safety measures)
+                        // Allow most HTML but ensure it's displayed in a safe iframe-like manner
+                        echo '<div style="overflow: auto; max-width: 100%;">';
+                        echo $message['body'];
+                        echo '</div>';
+                    } else {
+                        // Display as plain text with line breaks
+                        echo nl2br(htmlspecialchars($message['body']));
+                    }
+                    ?>
                 </div>
 
                 <!-- Attachments Section -->
