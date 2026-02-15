@@ -985,7 +985,7 @@ $totalCount = getDeletedMessageCount($userEmail) ?? 0;
             <div class="content-wrapper">
                 <!-- Messages List Panel -->
                 <div class="messages-panel">
-                    <div class="panel-header">
+                    <!-- <div class="panel-header">
                         <div class="panel-title">
                             <span class="material-icons-round">inbox</span>
                             Messages
@@ -993,7 +993,7 @@ $totalCount = getDeletedMessageCount($userEmail) ?? 0;
                         <div class="panel-subtitle">
                             <span id="deleted-count"><?= number_format($totalCount) ?></span> deleted item<?= $totalCount !== 1 ? 's' : '' ?>
                         </div>
-                    </div>
+                    </div> -->
 
                     <div class="messages-list" id="messages-container">
                         <?php if (empty($messages)): ?>
