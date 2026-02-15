@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drive UI Design System Reference</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        /* ══════════════════════════════════════════════════════════
+           DRIVE UI DESIGN SYSTEM - EXACT REPLICA
+           ══════════════════════════════════════════════════════════ */
+        
+        :root {
+            /* Foundation Colors */
+            --ink:       #1a1a2e;
+            --ink-2:     #2d2d44;
+            --ink-3:     #6b6b8a;
+            --ink-4:     #a8a8c0;
+            --bg:        #f0f0f7;
+            --surface:   #ffffff;
+            --surface-2: #f7f7fc;
+            --border:    rgba(100,100,160,0.12);
+            --border-2:  rgba(100,100,160,0.22);
+            
+            /* Accent Colors */
+            --blue:      #5781a9;
+            --blue-2:    #c6d3ea;
+            --blue-glow: rgba(79,70,229,0.15);
+            --red:       #ef4444;
+            --green:     #10b981;
+            --amber:     #f59e0b;
+            
+            /* System */
+            --r:         10px;
+            --r-lg:      16px;
+            --shadow:    0 1px 3px rgba(79,70,229,0.08), 0 4px 16px rgba(79,70,229,0.06);
+            --shadow-lg: 0 8px 32px rgba(79,70,229,0.14), 0 2px 8px rgba(0,0,0,0.06);
+            --ease:      cubic-bezier(.4,0,.2,1);
+            --ease-spring: cubic-bezier(.34,1.56,.64,1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'DM Sans', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            -webkit-font-smoothing: antialiased;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-lg);
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--ink);
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 16px;
+            color: var(--ink-3);
+            font-weight: 400;
+        }
+
+        /* Section */
+        .section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-lg);
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--ink);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title .material-icons-round {
+            font-size: 24px;
+            color: var(--blue);
+        }
+
+        .section-subtitle {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ink-2);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 24px 0 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* Color Swatches */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .color-swatch {
+            border: 1px solid var(--border-2);
+            border-radius: var(--r);
+            overflow: hidden;
+            transition: transform .18s, box-shadow .18s;
+        }
+
+        .color-swatch:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .color-preview {
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'DM Mono', monospace;
+            font-size: 12px;
+            font-weight: 500;
+            position: relative;
+        }
+
+        .color-info {
+            padding: 12px;
+            background: var(--surface-2);
+        }
+
+        .color-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--ink);
+            margin-bottom: 4px;
+        }
+
+        .color-code {
+            font-size: 11px;
+            font-family: 'DM Mono', monospace;
+            color: var(--ink-3);
+        }
+
+        /* Typography Samples */
+        .type-sample {
+            padding: 16px;
+            background: var(--surface-2);
+            border-radius: var(--r);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .type-meta {
+            font-family: 'DM Mono', monospace;
+            font-size: 11px;
+            color: var(--ink-3);
+            min-width: 140px;
+        }
+
+        .type-display {
+            flex: 1;
+        }
+
+        /* Component Examples */
+        .component-demo {
+            padding: 24px;
+            background: var(--bg);
+            border-radius: var(--r);
+            margin-top: 16px;
+        }
+
+        /* Buttons */
+        .btn {
+            height: 36px;
+            padding: 0 16px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all .18s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .btn-primary {
+            background: var(--blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--blue-2);
+            box-shadow: 0 4px 12px var(--blue-glow);
+        }
+
+        .btn-primary:active {
+            transform: scale(.96);
+        }
+
+        .btn-ghost {
+            background: var(--surface-2);
+            color: var(--ink-2);
+            border: 1.5px solid var(--border-2);
+        }
+
+        .btn-ghost:hover {
+            background: var(--bg);
+        }
+
+        .btn .material-icons-round {
+            font-size: 16px;
+        }
+
+        /* Input */
+        .input-example {
+            width: 100%;
+            max-width: 400px;
+            height: 40px;
+            border: 1.5px solid var(--border-2);
+            border-radius: 8px;
+            padding: 0 12px;
+            font-family: inherit;
+            font-size: 14px;
+            color: var(--ink);
+            outline: none;
+            transition: border-color .2s, box-shadow .2s;
+            margin-bottom: 12px;
+        }
+
+        .input-example:focus {
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px var(--blue-glow);
+        }
+
+        /* Cards */
+        .card-demo {
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            border-radius: var(--r-lg);
+            padding: 20px;
+            transition: all .18s var(--ease);
+            cursor: pointer;
+            margin-bottom: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-demo::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(79,70,229,.04), transparent);
+            opacity: 0;
+            transition: opacity .2s;
+        }
+
+        .card-demo:hover {
+            border-color: var(--blue);
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .card-demo:hover::before {
+            opacity: 1;
+        }
+
+        .card-demo h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ink);
+            margin-bottom: 4px;
+        }
+
+        .card-demo p {
+            font-size: 12px;
+            color: var(--ink-3);
+        }
+
+        /* Chips */
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            height: 30px;
+            padding: 0 12px;
+            border: 1.5px solid var(--border-2);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--ink-3);
+            background: var(--surface);
+            cursor: pointer;
+            transition: all .18s;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .chip:hover {
+            border-color: var(--blue);
+            color: var(--blue);
+            background: var(--blue-glow);
+        }
+
+        .chip.active {
+            border-color: var(--blue);
+            color: var(--blue);
+            background: rgba(79,70,229,.1);
+        }
+
+        .chip-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* Shadow Examples */
+        .shadow-demo {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 16px;
+        }
+
+        .shadow-box {
+            height: 120px;
+            background: var(--surface);
+            border-radius: var(--r);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--ink-3);
+        }
+
+        .shadow-sm {
+            box-shadow: var(--shadow);
+        }
+
+        .shadow-lg {
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* Border Radius */
+        .radius-demo {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .radius-box {
+            height: 100px;
+            background: var(--surface);
+            border: 1.5px solid var(--border-2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--ink-3);
+        }
+
+        .radius-10 {
+            border-radius: 10px;
+        }
+
+        .radius-16 {
+            border-radius: 16px;
+        }
+
+        /* Animation Demo */
+        .anim-demo {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        .anim-box {
+            width: 80px;
+            height: 80px;
+            background: var(--blue);
+            border-radius: var(--r);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            text-align: center;
+            padding: 8px;
+        }
+
+        .anim-box.ease:hover {
+            transform: scale(1.1);
+            transition: transform .3s var(--ease);
+        }
+
+        .anim-box.spring:hover {
+            transform: scale(1.1);
+            transition: transform .3s var(--ease-spring);
+        }
+
+        .anim-box.lift:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            transition: all .18s var(--ease);
+        }
+
+        /* Code Block */
+        .code-block {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--r);
+            padding: 16px;
+            font-family: 'DM Mono', monospace;
+            font-size: 12px;
+            color: var(--ink-2);
+            overflow-x: auto;
+            margin-top: 12px;
+        }
+
+        .code-var {
+            color: var(--blue);
+        }
+
+        .code-value {
+            color: var(--green);
+        }
+
+        /* Grid Layout */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Drive UI Design System</h1>
+            <p>Professional minimalist interface design with whiteish color grading</p>
+        </div>
+
+        <!-- Color Palette -->
+        <div class="section">
+            <h2 class="section-title">
+                <span class="material-icons-round">palette</span>
+                Color System
+            </h2>
+
+            <div class="section-subtitle">Foundation - Background Layers</div>
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #f0f0f7; color: #1a1a2e;">
+                        #f0f0f7
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">--bg</div>
+                        <div class="color-code">Base canvas • Very light blue-gray</div>
+                    </div>
+                </div>
+
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #ffffff; color: #1a1a2e; border: 1px solid var(--border);">
+                        #ffffff
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">--surface</div>
+                        <div class="color-code">Pure white • Elevated cards</div>
+                    </div>
+                </div>
+
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #f7f7fc; color: #1a1a2e;">
+                        #f7f7fc
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">--surface-2</div>
+                        <div class="color-code">Subtle lavender • Secondary surfaces</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-subtitle">Text Hierarchy - Ink System</div>
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #1a1a2e; color: white;">
+                        #1a1a2e
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">--ink</div>
+                        <div class="color-code">Primary text • Deep purple-black</div>
+                    </div>
+                </div>
+
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #2d2d44; color: white;">
+                        #2d2d44
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">--ink-2</div>
+                        <div class="color-code">Secondary headings</div>
+                    </div>
+                </div>
+
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #6b6b8a; color: white;">
+                        #6b6b8a
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">--ink-3</div>
+                        <div class="color-code">Muted text • Labels</div>
+                    </div>
+                </div>
+
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #a8a8c0; color: white;">
+                        #a8a8c0
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">--ink-4</div>
+                        <div class="color-code">Placeholder • Disabled states</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-subtitle">Accent Colors</div>
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #5781a9; color: white;">
+                        #5781a9
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">--blue</div>
+                        <div class="color-code">Primary action • Muted professional blue</div>
+                    </div>
+                </div>
+
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #c6d3ea; color: #1a1a2e;">
+                        #c6d3ea
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">--blue-2</div>
+                        <div class="color-code">Lighter variant • Hover states</div>
+                    </div>
+                </div>
+
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: rgba(79,70,229,0.15); color: #1a1a2e; border: 1px solid var(--border);">
+                        rgba(79,70,229,0.15)
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">--blue-glow</div>
+                        <div class="color-code">Subtle focus glow • 15% opacity</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="code-block">
+<span class="code-var">--bg</span>: <span class="code-value">#f0f0f7</span>; <span style="color: var(--ink-3);">/* Very light blue-gray base */</span>
+<span class="code-var">--surface</span>: <span class="code-value">#ffffff</span>; <span style="color: var(--ink-3);">/* Pure white for cards */</span>
+<span class="code-var">--blue</span>: <span class="code-value">#5781a9</span>; <span style="color: var(--ink-3);">/* Muted professional blue */</span>
+            </div>
+        </div>
+
+        <!-- Typography -->
+        <div class="section">
+            <h2 class="section-title">
+                <span class="material-icons-round">text_fields</span>
+                Typography System
+            </h2>
+
+            <div class="type-sample">
+                <div class="type-meta">
+                    32px • Bold (700)<br>
+                    DM Sans
+                </div>
+                <div class="type-display" style="font-size: 32px; font-weight: 700;">
+                    Drive UI Design System
+                </div>
+            </div>
+
+            <div class="type-sample">
+                <div class="type-meta">
+                    20px • Bold (700)<br>
+                    DM Sans
+                </div>
+                <div class="type-display" style="font-size: 20px; font-weight: 700;">
+                    Section Heading
+                </div>
+            </div>
+
+            <div class="type-sample">
+                <div class="type-meta">
+                    17px • Bold (700)<br>
+                    DM Sans
+                </div>
+                <div class="type-display" style="font-size: 17px; font-weight: 700;">
+                    Topbar Title
+                </div>
+            </div>
+
+            <div class="type-sample">
+                <div class="type-meta">
+                    14px • Semi-bold (600)<br>
+                    DM Sans
+                </div>
+                <div class="type-display" style="font-size: 14px; font-weight: 600;">
+                    File Name • Card Title
+                </div>
+            </div>
+
+            <div class="type-sample">
+                <div class="type-meta">
+                    13px • Regular (400)<br>
+                    DM Sans
+                </div>
+                <div class="type-display" style="font-size: 13px; font-weight: 400;">
+                    Body text and general UI labels
+                </div>
+            </div>
+
+            <div class="type-sample">
+                <div class="type-meta">
+                    12px • Mono (400)<br>
+                    DM Mono
+                </div>
+                <div class="type-display" style="font-size: 12px; font-family: 'DM Mono', monospace;">
+                    2.4 MB • 15 Jan 2025 • Technical data
+                </div>
+            </div>
+
+            <div class="type-sample">
+                <div class="type-meta">
+                    11px • Mono Bold (700)<br>
+                    DM Mono
+                </div>
+                <div class="type-display" style="font-size: 11px; font-family: 'DM Mono', monospace; font-weight: 700; text-transform: uppercase;">
+                    FILE TYPE • BADGE
+                </div>
+            </div>
+        </div>
+
+        <!-- Components -->
+        <div class="section">
+            <h2 class="section-title">
+                <span class="material-icons-round">widgets</span>
+                Interactive Components
+            </h2>
+
+            <div class="section-subtitle">Buttons</div>
+            <div class="component-demo">
+                <button class="btn btn-primary">
+                    <span class="material-icons-round">upload</span>
+                    Upload Files
+                </button>
+                <button class="btn btn-primary">
+                    <span class="material-icons-round">add</span>
+                    New Folder
+                </button>
+                <button class="btn btn-ghost">
+                    <span class="material-icons-round">settings</span>
+                    Settings
+                </button>
+                <button class="btn btn-ghost">Cancel</button>
+            </div>
+
+            <div class="section-subtitle">Input Fields</div>
+            <div class="component-demo">
+                <input type="text" class="input-example" placeholder="Search files…">
+                <input type="text" class="input-example" placeholder="Enter file name" value="document.pdf">
+            </div>
+
+            <div class="section-subtitle">Filter Chips</div>
+            <div class="component-demo">
+                <span class="chip active">
+                    <span class="chip-dot" style="background: #5781a9;"></span>
+                    All Files
+                </span>
+                <span class="chip">
+                    <span class="chip-dot" style="background: #10b981;"></span>
+                    Images
+                </span>
+                <span class="chip">
+                    <span class="chip-dot" style="background: #f59e0b;"></span>
+                    Documents
+                </span>
+                <span class="chip">
+                    <span class="chip-dot" style="background: #ef4444;"></span>
+                    Videos
+                </span>
+                <span class="chip">
+                    <span class="chip-dot" style="background: #8b5cf6;"></span>
+                    Code
+                </span>
+            </div>
+
+            <div class="section-subtitle">Cards with Hover Effects</div>
+            <div class="component-demo">
+                <div class="grid-2">
+                    <div class="card-demo">
+                        <h4>Project Report.pdf</h4>
+                        <p>2.4 MB • Modified 2 hours ago</p>
+                    </div>
+                    <div class="card-demo">
+                        <h4>Design Mockups.fig</h4>
+                        <p>156 MB • Modified yesterday</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shadows & Elevation -->
+        <div class="section">
+            <h2 class="section-title">
+                <span class="material-icons-round">layers</span>
+                Shadows & Elevation
+            </h2>
+
+            <div class="shadow-demo">
+                <div class="shadow-box shadow-sm">
+                    Standard Shadow<br>
+                    <span style="font-size: 11px; color: var(--ink-4);">--shadow</span>
+                </div>
+                <div class="shadow-box shadow-lg">
+                    Large Shadow<br>
+                    <span style="font-size: 11px; color: var(--ink-4);">--shadow-lg</span>
+                </div>
+            </div>
+
+            <div class="code-block">
+<span class="code-var">--shadow</span>: <span class="code-value">0 1px 3px rgba(79,70,229,0.08), 0 4px 16px rgba(79,70,229,0.06)</span>;
+<span class="code-var">--shadow-lg</span>: <span class="code-value">0 8px 32px rgba(79,70,229,0.14), 0 2px 8px rgba(0,0,0,0.06)</span>;
+            </div>
+        </div>
+
+        <!-- Border Radius -->
+        <div class="section">
+            <h2 class="section-title">
+                <span class="material-icons-round">rounded_corner</span>
+                Border Radius System
+            </h2>
+
+            <div class="radius-demo">
+                <div class="radius-box radius-10">
+                    10px<br>
+                    <span style="font-size: 11px; color: var(--ink-4);">--r</span>
+                </div>
+                <div class="radius-box radius-16">
+                    16px<br>
+                    <span style="font-size: 11px; color: var(--ink-4);">--r-lg</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Animations -->
+        <div class="section">
+            <h2 class="section-title">
+                <span class="material-icons-round">animation</span>
+                Animation & Easing
+            </h2>
+
+            <p style="color: var(--ink-3); font-size: 14px; margin-bottom: 16px;">
+                Hover over the boxes to see different animation effects
+            </p>
+
+            <div class="anim-demo">
+                <div class="anim-box ease">
+                    Ease<br>
+                    <span style="font-size: 10px;">Smooth</span>
+                </div>
+                <div class="anim-box spring">
+                    Spring<br>
+                    <span style="font-size: 10px;">Bouncy</span>
+                </div>
+                <div class="anim-box lift">
+                    Lift<br>
+                    <span style="font-size: 10px;">Elevate</span>
+                </div>
+            </div>
+
+            <div class="code-block">
+<span class="code-var">--ease</span>: <span class="code-value">cubic-bezier(.4, 0, .2, 1)</span>; <span style="color: var(--ink-3);">/* Smooth deceleration */</span>
+<span class="code-var">--ease-spring</span>: <span class="code-value">cubic-bezier(.34, 1.56, .64, 1)</span>; <span style="color: var(--ink-3);">/* Bouncy spring */</span>
+            </div>
+        </div>
+
+        <!-- Key Principles -->
+        <div class="section">
+            <h2 class="section-title">
+                <span class="material-icons-round">lightbulb</span>
+                Key Design Principles
+            </h2>
+
+            <div class="grid-2">
+                <div style="padding: 16px; background: var(--surface-2); border-radius: var(--r); border-left: 3px solid var(--blue);">
+                    <h4 style="font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 6px;">
+                        Ultra-Light Base
+                    </h4>
+                    <p style="font-size: 12px; color: var(--ink-3);">
+                        #f0f0f7 background + pure white cards = depth without darkness
+                    </p>
+                </div>
+
+                <div style="padding: 16px; background: var(--surface-2); border-radius: var(--r); border-left: 3px solid var(--blue);">
+                    <h4 style="font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 6px;">
+                        Purple-Tinted Grays
+                    </h4>
+                    <p style="font-size: 12px; color: var(--ink-3);">
+                        Ink colors use purple undertones for refined, warm appearance
+                    </p>
+                </div>
+
+                <div style="padding: 16px; background: var(--surface-2); border-radius: var(--r); border-left: 3px solid var(--blue);">
+                    <h4 style="font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 6px;">
+                        Low-Opacity Borders
+                    </h4>
+                    <p style="font-size: 12px; color: var(--ink-3);">
+                        12-22% rgba borders create gentle separations that work everywhere
+                    </p>
+                </div>
+
+                <div style="padding: 16px; background: var(--surface-2); border-radius: var(--r); border-left: 3px solid var(--blue);">
+                    <h4 style="font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 6px;">
+                        Muted Accent Blue
+                    </h4>
+                    <p style="font-size: 12px; color: var(--ink-3);">
+                        #5781a9 is intentionally desaturated for professional calm
+                    </p>
+                </div>
+
+                <div style="padding: 16px; background: var(--surface-2); border-radius: var(--r); border-left: 3px solid var(--blue);">
+                    <h4 style="font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 6px;">
+                        Blue-Tinted Shadows
+                    </h4>
+                    <p style="font-size: 12px; color: var(--ink-3);">
+                        Shadows use rgba(79,70,229) to tie into the accent color system
+                    </p>
+                </div>
+
+                <div style="padding: 16px; background: var(--surface-2); border-radius: var(--r); border-left: 3px solid var(--blue);">
+                    <h4 style="font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 6px;">
+                        Fast Micro-Interactions
+                    </h4>
+                    <p style="font-size: 12px; color: var(--ink-3);">
+                        140-180ms transitions create responsive, immediate feeling
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; padding: 40px 20px; color: var(--ink-3); font-size: 13px;">
+            <p>Drive UI Design System • Professional Minimalist Interface Design</p>
+            <p style="margin-top: 8px; font-size: 12px;">Built with DM Sans, DM Mono, and Material Icons Round</p>
+        </div>
+    </div>
+</body>
+</html>
