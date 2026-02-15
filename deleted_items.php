@@ -36,7 +36,7 @@ function getAllDeletedEmails($userEmail, $limit, $offset, $filters) {
     
     try {
         // Build WHERE clauses for filters
-        $sentWhere = "se.sender_email = :sender_email AND se.current_status = 0";
+        $sentWhere = "se.sender_email = :sender_email AND se.is_deleted = 1";
         $inboxWhere = "im.user_email = :user_email AND im.is_deleted = 1";
         $params = [
             ':sender_email' => $userEmail,
@@ -175,7 +175,7 @@ function getAllDeletedEmailCount($userEmail, $filters) {
     if (!$pdo) return 0;
     
     try {
-        $sentWhere = "se.sender_email = :sender_email AND se.current_status = 0";
+        $sentWhere = "se.sender_email = :sender_email AND se.is_deleted = 1";
         $inboxWhere = "im.user_email = :user_email AND im.is_deleted = 1";
         $params = [
             ':sender_email' => $userEmail,
