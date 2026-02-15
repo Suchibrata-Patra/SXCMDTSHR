@@ -155,10 +155,10 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         cursor: pointer;
     }
 
-    /* .nav-item:hover {
+    .nav-item:hover {
         background: var(--surface-2);
         color: var(--ink);
-    } */
+    }
 
     .nav-item.active {
         background: var(--blue);
@@ -167,9 +167,9 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         box-shadow: 0 2px 8px rgba(87,129,169,0.25);
     }
 
-    .nav-item.active:hover {
+    /* .nav-item.active:hover {
         background: var(--blue-2);
-    }
+    } */
 
     /* Icons */
     .nav-item .material-icons-round {
