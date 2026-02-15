@@ -960,11 +960,11 @@ $totalCount = getDeletedMessageCount($userEmail) ?? 0;
         <div class="main-col">
             <!-- Top Bar -->
             <div class="topbar">
-                <div class="topbar-title">
+                <!-- <div class="topbar-title">
                     <span class="material-icons-round">delete</span>
                     Deleted Items
                     <span class="count-badge" id="total-count"><?= number_format($totalCount) ?></span>
-                </div>
+                </div> -->
                 <div class="topbar-spacer"></div>
                 <div class="search-wrap">
                     <span class="material-icons-round">search</span>
