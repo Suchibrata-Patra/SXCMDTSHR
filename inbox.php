@@ -1106,7 +1106,7 @@ $lastSync = getLastSyncDate($userEmail);
                 </div>
             </div> -->
 
-            <div class="sync-info">
+            <!-- <div class="sync-info">
                 <div class="sync-text">
                     <span class="material-icons-round">schedule</span>
                     <span id="lastSyncText">
@@ -1117,7 +1117,7 @@ $lastSync = getLastSyncDate($userEmail);
                         <?php endif; ?>
                     </span>
                 </div>
-            </div>
+            </div> -->
         </div>
 
         <!-- Split Pane Content -->
