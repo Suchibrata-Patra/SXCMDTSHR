@@ -1,9 +1,8 @@
 <?php
 /**
- * IMAP Helper - FIXED VERSION
- * ✅ Correct is_read handling (always 0 for new messages)
- * ✅ Preserves read status for existing messages via ON DUPLICATE KEY UPDATE
- * ✅ No longer clears messages on force refresh
+ * IMAP Helper - COMPLETE FIX
+ * ✅ Fixes read status preservation
+ * ✅ Fixes empty message body issue
  */
 require_once 'db_config.php';
 require_once 'settings_helper.php';
@@ -55,10 +54,9 @@ function connectToIMAP($server, $port, $email, $password, $encryption = 'ssl') {
 }
 
 /**
- * Fetch new messages from IMAP - FIXED VERSION
- * ✅ Always sets is_read = 0 for NEW messages
- * ✅ Preserves read status for EXISTING messages
- * ✅ No longer clears all messages on force refresh
+ * Fetch new messages from IMAP - COMPLETE FIX
+ * ✅ Fixes read status preservation
+ * ✅ Fixes empty body issue
  */
 function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = false) {
     $connection = connectToIMAPFromSession();
@@ -82,10 +80,6 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = fa
                 'count' => 0
             ];
         }
-        
-        // ✅ FIX: Removed clearInboxMessages() call
-        // The INSERT ... ON DUPLICATE KEY UPDATE in saveInboxMessage() handles updates properly
-        // Read status is preserved for existing messages
         
         $lastSyncDate = $forceRefresh ? null : getLastSyncDate($userEmail);
         
@@ -120,9 +114,29 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = fa
                 // Get subject
                 $subject = isset($info->subject) ? imap_utf8($info->subject) : '(No Subject)';
                 
-                // Get message body (with HTML stripping)
+                // ✅ FIX: Get message body with improved error handling
                 $body = getMessageBody($connection, $msgNum);
+                
+                // Debug logging
+                if (empty($body)) {
+                    error_log("WARNING: Empty body for message #$msgNum (Subject: $subject)");
+                }
+                
+                // ✅ FIX: Strip HTML and clean body text
                 $cleanBody = stripHtmlFromBody($body);
+                
+                // If still empty after cleaning, try to get raw body
+                if (empty($cleanBody)) {
+                    error_log("Attempting to fetch raw body for message #$msgNum");
+                    $rawBody = imap_body($connection, $msgNum);
+                    $cleanBody = stripHtmlFromBody($rawBody);
+                }
+                
+                // If STILL empty, use a placeholder
+                if (empty($cleanBody)) {
+                    $cleanBody = "[Message body could not be retrieved]";
+                    error_log("ERROR: Could not retrieve body for message #$msgNum");
+                }
                 
                 // Generate preview (first 500 chars)
                 $bodyPreview = substr($cleanBody, 0, 500);
@@ -136,8 +150,6 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = fa
                 $receivedDate = isset($info->date) ? date('Y-m-d H:i:s', strtotime($info->date)) : date('Y-m-d H:i:s');
                 
                 // ✅ FIX: Always set is_read to 0 for NEW messages
-                // The ON DUPLICATE KEY UPDATE in saveInboxMessage() will preserve
-                // the read status for EXISTING messages
                 $messageData = [
                     'message_id' => $messageId,
                     'user_email' => $userEmail,
@@ -190,6 +202,143 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = fa
             'count' => 0
         ];
     }
+}
+
+/**
+ * Get message body - IMPROVED VERSION
+ * ✅ Better handling of multipart messages
+ * ✅ Proper encoding detection and conversion
+ * ✅ Fallback mechanisms if primary method fails
+ */
+function getMessageBody($connection, $msgNum) {
+    $body = '';
+    
+    try {
+        $structure = imap_fetchstructure($connection, $msgNum);
+        
+        if (!$structure) {
+            error_log("Could not fetch structure for message #$msgNum");
+            // Fallback to simple body fetch
+            return imap_body($connection, $msgNum);
+        }
+        
+        // Check if this is a multipart message
+        if (isset($structure->parts) && count($structure->parts)) {
+            // Multipart message - search for text/plain or text/html
+            $body = getMultipartBody($connection, $msgNum, $structure);
+        } else {
+            // Simple message (not multipart)
+            $body = imap_body($connection, $msgNum);
+            
+            // Decode based on encoding
+            if (isset($structure->encoding)) {
+                $body = decodeBody($body, $structure->encoding);
+            }
+        }
+        
+        // Final cleanup
+        $body = trim($body);
+        
+        // If body is still empty, try one more fallback
+        if (empty($body)) {
+            error_log("Body empty after normal fetch, trying imap_fetchbody for message #$msgNum");
+            $body = imap_fetchbody($connection, $msgNum, "1");
+            
+            if (isset($structure->encoding)) {
+                $body = decodeBody($body, $structure->encoding);
+            }
+        }
+        
+    } catch (Exception $e) {
+        error_log("Exception in getMessageBody for message #$msgNum: " . $e->getMessage());
+        
+        // Last resort fallback
+        try {
+            $body = imap_body($connection, $msgNum);
+        } catch (Exception $e2) {
+            error_log("Even fallback failed for message #$msgNum: " . $e2->getMessage());
+            $body = '';
+        }
+    }
+    
+    return $body;
+}
+
+/**
+ * Get body from multipart message - NEW FUNCTION
+ * Handles complex email structures
+ */
+function getMultipartBody($connection, $msgNum, $structure) {
+    $plainTextBody = '';
+    $htmlBody = '';
+    
+    // Loop through parts to find text content
+    for ($i = 0; $i < count($structure->parts); $i++) {
+        $part = $structure->parts[$i];
+        $partNum = $i + 1;
+        
+        // Get the MIME type
+        $mimeType = '';
+        if (isset($part->type)) {
+            switch ($part->type) {
+                case 0: $mimeType = 'text'; break;
+                case 1: $mimeType = 'multipart'; break;
+                case 2: $mimeType = 'message'; break;
+                case 3: $mimeType = 'application'; break;
+                case 4: $mimeType = 'audio'; break;
+                case 5: $mimeType = 'image'; break;
+                case 6: $mimeType = 'video'; break;
+                case 7: $mimeType = 'other'; break;
+            }
+        }
+        
+        // Get subtype (PLAIN, HTML, etc.)
+        $subtype = isset($part->subtype) ? strtoupper($part->subtype) : '';
+        
+        // Skip attachments
+        $isAttachment = false;
+        if (isset($part->disposition)) {
+            $disposition = strtolower($part->disposition);
+            if ($disposition === 'attachment' || $disposition === 'inline') {
+                $isAttachment = true;
+            }
+        }
+        
+        if ($isAttachment) {
+            continue; // Skip attachments
+        }
+        
+        // Fetch the body part
+        $bodyPart = imap_fetchbody($connection, $msgNum, $partNum);
+        
+        // Decode based on encoding
+        if (isset($part->encoding)) {
+            $bodyPart = decodeBody($bodyPart, $part->encoding);
+        }
+        
+        // Store based on type
+        if ($mimeType === 'text' && $subtype === 'PLAIN' && !empty($bodyPart)) {
+            $plainTextBody = $bodyPart;
+            break; // Prefer plain text, so break here
+        } elseif ($mimeType === 'text' && $subtype === 'HTML' && !empty($bodyPart)) {
+            $htmlBody = $bodyPart;
+        }
+    }
+    
+    // Prefer plain text over HTML
+    if (!empty($plainTextBody)) {
+        return $plainTextBody;
+    } elseif (!empty($htmlBody)) {
+        return $htmlBody;
+    }
+    
+    // If we still don't have anything, try fetching section 1
+    $fallback = imap_fetchbody($connection, $msgNum, "1");
+    if (isset($structure->parts[0]->encoding)) {
+        $fallback = decodeBody($fallback, $structure->parts[0]->encoding);
+    }
+    
+    return $fallback;
 }
 
 function getAttachmentMetadata($connection, $msgNum) {
@@ -307,47 +456,9 @@ function getFileIcon($extension) {
 }
 
 
-function getMessageBody($connection, $msgNum) {
-    $body = '';
-    
-    try {
-        $structure = imap_fetchstructure($connection, $msgNum);
-        
-        if (isset($structure->parts) && count($structure->parts)) {
-            // Multipart message
-            for ($i = 0; $i < count($structure->parts); $i++) {
-                $part = $structure->parts[$i];
-                
-                // Plain text (preferred)
-                if ($part->subtype === 'PLAIN') {
-                    $body = imap_fetchbody($connection, $msgNum, $i + 1);
-                    $body = decodeBody($body, $part->encoding);
-                    break;
-                }
-                
-                // HTML (fallback)
-                if ($part->subtype === 'HTML' && empty($body)) {
-                    $body = imap_fetchbody($connection, $msgNum, $i + 1);
-                    $body = decodeBody($body, $part->encoding);
-                }
-            }
-        } else {
-            // Simple message
-            $body = imap_body($connection, $msgNum);
-            if (isset($structure->encoding)) {
-                $body = decodeBody($body, $structure->encoding);
-            }
-        }
-        
-    } catch (Exception $e) {
-        error_log("Error getting message body: " . $e->getMessage());
-        $body = imap_body($connection, $msgNum);
-    }
-    
-    return trim($body);
-}
-
-
+/**
+ * Decode message body based on encoding type
+ */
 function decodeBody($body, $encoding) {
     switch ($encoding) {
         case 0: // 7BIT
@@ -413,9 +524,13 @@ function quickSyncCheckFromSession($userEmail) {
 }
 
 /**
- * Strip HTML from message body and clean text
+ * Strip HTML from message body and clean text - IMPROVED
  */
 function stripHtmlFromBody($body) {
+    if (empty($body)) {
+        return '';
+    }
+    
     // Remove HTML tags
     $text = strip_tags($body);
     
@@ -424,6 +539,9 @@ function stripHtmlFromBody($body) {
     
     // Remove excessive whitespace
     $text = preg_replace('/\s+/', ' ', $text);
+    
+    // Remove null bytes and control characters
+    $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $text);
     
     // Trim
     $text = trim($text);
