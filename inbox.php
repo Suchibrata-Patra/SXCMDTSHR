@@ -1018,23 +1018,6 @@ $lastSync = getLastSyncDate($userEmail);
                 <span class="material-icons-round">mail</span>
                 Inbox
             </div>
-            <div class="topbar-spacer"></div>
-            <div class="topbar-actions">
-                <button class="btn-icon" onclick="syncMessages()" title="Sync now" id="syncBtn">
-                    <span class="material-icons-round">sync</span>
-                </button>
-                <button class="btn-icon" onclick="forceRefresh()" title="Force refresh" id="refreshBtn">
-                    <span class="material-icons-round">refresh</span>
-                </button>
-                <button class="btn-compose" onclick="location.href='index.php'">
-                    <span class="material-icons-round">edit</span>
-                    Compose
-                </button>
-            </div>
-        </div>
-
-        <!-- Stats Bar -->
-        <div class="stats-bar">
             <div class="stat-item">
                 <div class="stat-icon total">
                     <span class="material-icons-round">mail</span>
@@ -1064,6 +1047,52 @@ $lastSync = getLastSyncDate($userEmail);
                     <div class="stat-label">New Today</div>
                 </div>
             </div>
+            <div class="topbar-spacer"></div>
+            <div class="topbar-actions">
+                <button class="btn-icon" onclick="syncMessages()" title="Sync now" id="syncBtn">
+                    <span class="material-icons-round">sync</span>
+                </button>
+                <button class="btn-icon" onclick="forceRefresh()" title="Force refresh" id="refreshBtn">
+                    <span class="material-icons-round">refresh</span>
+                </button>
+                <button class="btn-compose" onclick="location.href='index.php'">
+                    <span class="material-icons-round">edit</span>
+                    Compose
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <!-- <div class="stat-item">
+                <div class="stat-icon total">
+                    <span class="material-icons-round">mail</span>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="totalCount"><?= $totalCount ?></div>
+                    <div class="stat-label">Total Received</div>
+                </div>
+            </div>
+
+            <div class="stat-item">
+                <div class="stat-icon unread">
+                    <span class="material-icons-round">mark_email_unread</span>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="unreadCount"><?= $unreadCount ?></div>
+                    <div class="stat-label">Unread</div>
+                </div>
+            </div>
+
+            <div class="stat-item">
+                <div class="stat-icon new-stat">
+                    <span class="material-icons-round">fiber_new</span>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="newCount"><?= $newCount ?></div>
+                    <div class="stat-label">New Today</div>
+                </div>
+            </div> -->
 
             <div class="sync-info">
                 <div class="sync-text">
