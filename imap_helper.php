@@ -1,8 +1,10 @@
 <?php
 /**
- * IMAP Helper - COMPLETE FIX
+ * IMAP Helper - ULTIMATE FIX
  * ✅ Fixes read status preservation
- * ✅ Fixes empty message body issue
+ * ✅ Properly parses multipart MIME messages
+ * ✅ Handles quoted-printable and base64 encoding
+ * ✅ Strips MIME boundaries and headers
  */
 require_once 'db_config.php';
 require_once 'settings_helper.php';
@@ -54,9 +56,7 @@ function connectToIMAP($server, $port, $email, $password, $encryption = 'ssl') {
 }
 
 /**
- * Fetch new messages from IMAP - COMPLETE FIX
- * ✅ Fixes read status preservation
- * ✅ Fixes empty body issue
+ * Fetch new messages from IMAP - ULTIMATE FIX
  */
 function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = false) {
     $connection = connectToIMAPFromSession();
@@ -114,28 +114,16 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = fa
                 // Get subject
                 $subject = isset($info->subject) ? imap_utf8($info->subject) : '(No Subject)';
                 
-                // ✅ FIX: Get message body with improved error handling
-                $body = getMessageBody($connection, $msgNum);
+                // ✅ ULTIMATE FIX: Get properly parsed message body
+                $body = getMessageBodyParsed($connection, $msgNum);
                 
-                // Debug logging
-                if (empty($body)) {
-                    error_log("WARNING: Empty body for message #$msgNum (Subject: $subject)");
-                }
-                
-                // ✅ FIX: Strip HTML and clean body text
+                // Strip HTML if it's HTML content
                 $cleanBody = stripHtmlFromBody($body);
                 
-                // If still empty after cleaning, try to get raw body
-                if (empty($cleanBody)) {
-                    error_log("Attempting to fetch raw body for message #$msgNum");
-                    $rawBody = imap_body($connection, $msgNum);
-                    $cleanBody = stripHtmlFromBody($rawBody);
-                }
-                
-                // If STILL empty, use a placeholder
+                // If still empty, use placeholder
                 if (empty($cleanBody)) {
                     $cleanBody = "[Message body could not be retrieved]";
-                    error_log("ERROR: Could not retrieve body for message #$msgNum");
+                    error_log("ERROR: Could not retrieve body for message #$msgNum (Subject: $subject)");
                 }
                 
                 // Generate preview (first 500 chars)
@@ -149,7 +137,7 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = fa
                 // Get received date
                 $receivedDate = isset($info->date) ? date('Y-m-d H:i:s', strtotime($info->date)) : date('Y-m-d H:i:s');
                 
-                // ✅ FIX: Always set is_read to 0 for NEW messages
+                // Save message data
                 $messageData = [
                     'message_id' => $messageId,
                     'user_email' => $userEmail,
@@ -205,140 +193,150 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = fa
 }
 
 /**
- * Get message body - IMPROVED VERSION
- * ✅ Better handling of multipart messages
- * ✅ Proper encoding detection and conversion
- * ✅ Fallback mechanisms if primary method fails
+ * ✅ ULTIMATE FIX: Get properly parsed message body
+ * This function correctly handles MIME multipart messages
  */
-function getMessageBody($connection, $msgNum) {
-    $body = '';
-    
+function getMessageBodyParsed($connection, $msgNum) {
     try {
         $structure = imap_fetchstructure($connection, $msgNum);
         
         if (!$structure) {
-            error_log("Could not fetch structure for message #$msgNum");
-            // Fallback to simple body fetch
+            // Fallback to simple body
             return imap_body($connection, $msgNum);
         }
         
-        // Check if this is a multipart message
-        if (isset($structure->parts) && count($structure->parts)) {
-            // Multipart message - search for text/plain or text/html
-            $body = getMultipartBody($connection, $msgNum, $structure);
+        // Check if multipart
+        if (isset($structure->parts) && is_array($structure->parts) && count($structure->parts) > 0) {
+            // Multipart message - use recursive parser
+            return getPartBody($connection, $msgNum, $structure, "0");
         } else {
-            // Simple message (not multipart)
+            // Simple message
             $body = imap_body($connection, $msgNum);
             
-            // Decode based on encoding
+            // Decode if needed
             if (isset($structure->encoding)) {
                 $body = decodeBody($body, $structure->encoding);
             }
-        }
-        
-        // Final cleanup
-        $body = trim($body);
-        
-        // If body is still empty, try one more fallback
-        if (empty($body)) {
-            error_log("Body empty after normal fetch, trying imap_fetchbody for message #$msgNum");
-            $body = imap_fetchbody($connection, $msgNum, "1");
             
-            if (isset($structure->encoding)) {
-                $body = decodeBody($body, $structure->encoding);
-            }
+            return $body;
         }
         
     } catch (Exception $e) {
-        error_log("Exception in getMessageBody for message #$msgNum: " . $e->getMessage());
-        
-        // Last resort fallback
-        try {
-            $body = imap_body($connection, $msgNum);
-        } catch (Exception $e2) {
-            error_log("Even fallback failed for message #$msgNum: " . $e2->getMessage());
-            $body = '';
-        }
+        error_log("Error in getMessageBodyParsed: " . $e->getMessage());
+        return imap_body($connection, $msgNum);
     }
-    
-    return $body;
 }
 
 /**
- * Get body from multipart message - NEW FUNCTION
- * Handles complex email structures
+ * ✅ NEW FUNCTION: Recursively parse MIME parts
+ * This is the KEY to properly handling multipart messages
  */
-function getMultipartBody($connection, $msgNum, $structure) {
-    $plainTextBody = '';
-    $htmlBody = '';
+function getPartBody($connection, $msgNum, $structure, $partNumber) {
+    $data = '';
     
-    // Loop through parts to find text content
-    for ($i = 0; $i < count($structure->parts); $i++) {
-        $part = $structure->parts[$i];
-        $partNum = $i + 1;
-        
-        // Get the MIME type
-        $mimeType = '';
-        if (isset($part->type)) {
-            switch ($part->type) {
-                case 0: $mimeType = 'text'; break;
-                case 1: $mimeType = 'multipart'; break;
-                case 2: $mimeType = 'message'; break;
-                case 3: $mimeType = 'application'; break;
-                case 4: $mimeType = 'audio'; break;
-                case 5: $mimeType = 'image'; break;
-                case 6: $mimeType = 'video'; break;
-                case 7: $mimeType = 'other'; break;
+    // If this is a multipart, iterate through sub-parts
+    if (isset($structure->parts) && is_array($structure->parts)) {
+        foreach ($structure->parts as $index => $part) {
+            $currentPart = $partNumber == "0" ? ($index + 1) : $partNumber . "." . ($index + 1);
+            
+            // Get MIME type
+            $mimeType = getMimeType($part);
+            
+            // Check if this is an attachment
+            $isAttachment = false;
+            if (isset($part->disposition)) {
+                $disposition = strtolower($part->disposition);
+                if ($disposition == 'attachment' || $disposition == 'inline') {
+                    $isAttachment = true;
+                }
+            }
+            
+            // Skip attachments
+            if ($isAttachment) {
+                continue;
+            }
+            
+            // If this part has sub-parts, recurse
+            if (isset($part->parts) && is_array($part->parts)) {
+                $data .= getPartBody($connection, $msgNum, $part, $currentPart);
+            } else {
+                // This is a leaf part - fetch the content
+                
+                // Prefer text/plain over text/html
+                if ($mimeType == 'text/plain') {
+                    $body = imap_fetchbody($connection, $msgNum, $currentPart);
+                    $body = decodeBody($body, $part->encoding);
+                    return $body; // Return immediately for plain text
+                } elseif ($mimeType == 'text/html' && empty($data)) {
+                    $body = imap_fetchbody($connection, $msgNum, $currentPart);
+                    $body = decodeBody($body, $part->encoding);
+                    $data = $body; // Store HTML as fallback
+                }
             }
         }
+    } else {
+        // No sub-parts - this is the content
+        $body = imap_fetchbody($connection, $msgNum, $partNumber);
         
-        // Get subtype (PLAIN, HTML, etc.)
-        $subtype = isset($part->subtype) ? strtoupper($part->subtype) : '';
-        
-        // Skip attachments
-        $isAttachment = false;
-        if (isset($part->disposition)) {
-            $disposition = strtolower($part->disposition);
-            if ($disposition === 'attachment' || $disposition === 'inline') {
-                $isAttachment = true;
-            }
+        if (isset($structure->encoding)) {
+            $body = decodeBody($body, $structure->encoding);
         }
         
-        if ($isAttachment) {
-            continue; // Skip attachments
-        }
-        
-        // Fetch the body part
-        $bodyPart = imap_fetchbody($connection, $msgNum, $partNum);
-        
-        // Decode based on encoding
-        if (isset($part->encoding)) {
-            $bodyPart = decodeBody($bodyPart, $part->encoding);
-        }
-        
-        // Store based on type
-        if ($mimeType === 'text' && $subtype === 'PLAIN' && !empty($bodyPart)) {
-            $plainTextBody = $bodyPart;
-            break; // Prefer plain text, so break here
-        } elseif ($mimeType === 'text' && $subtype === 'HTML' && !empty($bodyPart)) {
-            $htmlBody = $bodyPart;
+        return $body;
+    }
+    
+    return $data;
+}
+
+/**
+ * ✅ NEW FUNCTION: Get MIME type from part structure
+ */
+function getMimeType($part) {
+    $primaryType = '';
+    $secondaryType = '';
+    
+    // Primary type
+    if (isset($part->type)) {
+        switch ($part->type) {
+            case 0: $primaryType = 'text'; break;
+            case 1: $primaryType = 'multipart'; break;
+            case 2: $primaryType = 'message'; break;
+            case 3: $primaryType = 'application'; break;
+            case 4: $primaryType = 'audio'; break;
+            case 5: $primaryType = 'image'; break;
+            case 6: $primaryType = 'video'; break;
+            case 7: $primaryType = 'other'; break;
         }
     }
     
-    // Prefer plain text over HTML
-    if (!empty($plainTextBody)) {
-        return $plainTextBody;
-    } elseif (!empty($htmlBody)) {
-        return $htmlBody;
+    // Secondary type (subtype)
+    if (isset($part->subtype)) {
+        $secondaryType = strtolower($part->subtype);
     }
     
-    // If we still don't have anything, try fetching section 1
-    $fallback = imap_fetchbody($connection, $msgNum, "1");
-    if (isset($structure->parts[0]->encoding)) {
-        $fallback = decodeBody($fallback, $structure->parts[0]->encoding);
+    return $primaryType . '/' . $secondaryType;
+}
+
+/**
+ * ✅ IMPROVED: Decode message body based on encoding
+ */
+function decodeBody($body, $encoding) {
+    switch ($encoding) {
+        case 0: // 7BIT
+        case 1: // 8BIT
+        case 2: // BINARY
+            return $body;
+            
+        case 3: // BASE64
+            return base64_decode($body);
+            
+        case 4: // QUOTED-PRINTABLE
+            return quoted_printable_decode($body);
+            
+        case 5: // OTHER
+        default:
+            return $body;
     }
-    
-    return $fallback;
 }
 
 function getAttachmentMetadata($connection, $msgNum) {
@@ -382,7 +380,7 @@ function getAttachmentMetadata($connection, $msgNum) {
                 // Get file extension
                 $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
                 
-                // Estimate size (approximate)
+                // Estimate size
                 $size = isset($part->bytes) ? $part->bytes : 0;
                 
                 // Determine file type category
@@ -405,7 +403,6 @@ function getAttachmentMetadata($connection, $msgNum) {
     return $attachments;
 }
 
-
 function getFileTypeCategory($extension) {
     $categories = [
         'image' => ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'],
@@ -426,7 +423,6 @@ function getFileTypeCategory($extension) {
     
     return 'file';
 }
-
 
 function getFileIcon($extension) {
     $icons = [
@@ -455,30 +451,6 @@ function getFileIcon($extension) {
     return $icons[$extension] ?? '📎';
 }
 
-
-/**
- * Decode message body based on encoding type
- */
-function decodeBody($body, $encoding) {
-    switch ($encoding) {
-        case 0: // 7BIT
-        case 1: // 8BIT
-        case 2: // BINARY
-            return $body;
-        case 3: // BASE64
-            return base64_decode($body);
-        case 4: // QUOTED-PRINTABLE
-            return quoted_printable_decode($body);
-        case 5: // OTHER
-            return $body;
-        default:
-            return $body;
-    }
-}
-
-/**
- * Extract email address from "From" header
- */
 function extractEmail($from) {
     if (preg_match('/<([^>]+)>/', $from, $matches)) {
         return $matches[1];
@@ -486,9 +458,6 @@ function extractEmail($from) {
     return $from;
 }
 
-/**
- * Extract sender name from "From" header
- */
 function extractName($from) {
     if (preg_match('/^([^<]+)</', $from, $matches)) {
         return trim($matches[1], ' "');
@@ -496,9 +465,6 @@ function extractName($from) {
     return '';
 }
 
-/**
- * Quick sync check
- */
 function quickSyncCheckFromSession($userEmail) {
     $connection = connectToIMAPFromSession();
     
@@ -524,7 +490,7 @@ function quickSyncCheckFromSession($userEmail) {
 }
 
 /**
- * Strip HTML from message body and clean text - IMPROVED
+ * ✅ IMPROVED: Strip HTML and clean text
  */
 function stripHtmlFromBody($body) {
     if (empty($body)) {
