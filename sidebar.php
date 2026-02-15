@@ -155,10 +155,10 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
         cursor: pointer;
     }
 
-    .nav-item:hover {
-        /* background: var(--surface-2); */
+    /* .nav-item:hover {
+        background: var(--surface-2);
         color: var(--ink);
-    }
+    } */
 
     .nav-item.active {
         background: var(--blue);
