@@ -156,7 +156,7 @@ $unlabeledCount = getUnlabeledEmailCount($userEmail);
     }
 
     .nav-item:hover {
-        background: var(--surface-2);
+        /* background: var(--surface-2); */
         color: var(--ink);
     }
 
