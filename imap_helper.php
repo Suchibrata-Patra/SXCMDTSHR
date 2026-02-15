@@ -1,7 +1,9 @@
 <?php
 /**
- * IMAP Helper - OPTIMIZED VERSION
- * Includes body_preview generation for fast inbox queries
+ * IMAP Helper - FIXED VERSION
+ * ✅ Correct is_read handling (always 0 for new messages)
+ * ✅ Preserves read status for existing messages via ON DUPLICATE KEY UPDATE
+ * ✅ No longer clears messages on force refresh
  */
 require_once 'db_config.php';
 require_once 'settings_helper.php';
@@ -53,8 +55,10 @@ function connectToIMAP($server, $port, $email, $password, $encryption = 'ssl') {
 }
 
 /**
- * Fetch new messages from IMAP - OPTIMIZED VERSION
- * Now generates body_preview automatically
+ * Fetch new messages from IMAP - FIXED VERSION
+ * ✅ Always sets is_read = 0 for NEW messages
+ * ✅ Preserves read status for EXISTING messages
+ * ✅ No longer clears all messages on force refresh
  */
 function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = false) {
     $connection = connectToIMAPFromSession();
@@ -79,10 +83,9 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = fa
             ];
         }
         
-        // If force refresh, clear existing messages
-        if ($forceRefresh) {
-            clearInboxMessages($userEmail);
-        }
+        // ✅ FIX: Removed clearInboxMessages() call
+        // The INSERT ... ON DUPLICATE KEY UPDATE in saveInboxMessage() handles updates properly
+        // Read status is preserved for existing messages
         
         $lastSyncDate = $forceRefresh ? null : getLastSyncDate($userEmail);
         
@@ -90,6 +93,7 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = fa
         $endMsg = $totalMessages;
         
         $newMessagesCount = 0;
+        $updatedMessagesCount = 0;
         $lastMessageId = null;
         
         // Fetch messages in reverse order (newest first)
@@ -105,10 +109,8 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = fa
                 $messageId = $info->message_id ?? 'msg-' . $msgNum . '-' . time();
                 $lastMessageId = $messageId;
                 
-                // Skip if already exists (unless force refresh)
-                if (!$forceRefresh && messageExists($userEmail, $messageId)) {
-                    continue;
-                }
+                // Check if message already exists
+                $messageExists = messageExists($userEmail, $messageId);
                 
                 // Extract sender information
                 $from = $info->from ?? 'Unknown';
@@ -133,7 +135,9 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = fa
                 // Get received date
                 $receivedDate = isset($info->date) ? date('Y-m-d H:i:s', strtotime($info->date)) : date('Y-m-d H:i:s');
                 
-                // Save to database - NOW WITH BODY PREVIEW
+                // ✅ FIX: Always set is_read to 0 for NEW messages
+                // The ON DUPLICATE KEY UPDATE in saveInboxMessage() will preserve
+                // the read status for EXISTING messages
                 $messageData = [
                     'message_id' => $messageId,
                     'user_email' => $userEmail,
@@ -141,14 +145,18 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = fa
                     'sender_name' => $senderName,
                     'subject' => $subject,
                     'body' => $cleanBody,
-                    'body_preview' => $bodyPreview,  // NEW: Preview for fast queries
+                    'body_preview' => $bodyPreview,
                     'received_date' => $receivedDate,
                     'has_attachments' => $hasAttachments ? 1 : 0,
                     'attachment_data' => $attachmentData
                 ];
                 
                 if (saveInboxMessage($messageData)) {
-                    $newMessagesCount++;
+                    if ($messageExists) {
+                        $updatedMessagesCount++;
+                    } else {
+                        $newMessagesCount++;
+                    }
                 }
                 
             } catch (Exception $e) {
@@ -164,9 +172,11 @@ function fetchNewMessagesFromSession($userEmail, $limit = 50, $forceRefresh = fa
         return [
             'success' => true,
             'message' => $forceRefresh 
-                ? "Refreshed inbox with $newMessagesCount messages" 
-                : "Fetched $newMessagesCount new messages",
+                ? "Synced: $newMessagesCount new, $updatedMessagesCount updated" 
+                : "Fetched $newMessagesCount new messages" . 
+                  ($updatedMessagesCount > 0 ? " (updated $updatedMessagesCount)" : ""),
             'count' => $newMessagesCount,
+            'updated' => $updatedMessagesCount,
             'total' => $totalMessages
         ];
         

@@ -1,13 +1,14 @@
 <?php
 /**
- * Enhanced Inbox Functions - OPTIMIZED VERSION
- * Supports body_preview for fast queries
- * New vs unread email distinction
+ * Enhanced Inbox Functions - FIXED VERSION
+ * ✅ Proper read status preservation during sync
+ * ✅ Uses INSERT ... ON DUPLICATE KEY UPDATE
  */
 require_once 'db_config.php';
 
 /**
- * Save inbox message to database - WITH BODY PREVIEW
+ * Save inbox message to database - FIXED VERSION
+ * ✅ Now preserves read status for existing messages
  */
 function saveInboxMessage($messageData) {
     try {
@@ -17,12 +18,23 @@ function saveInboxMessage($messageData) {
         // Generate preview if not provided
         $bodyPreview = $messageData['body_preview'] ?? substr($messageData['body'] ?? '', 0, 500);
         
+        // ✅ FIX: Use INSERT ... ON DUPLICATE KEY UPDATE
+        // This preserves read status for existing messages while updating content
         $stmt = $pdo->prepare("
             INSERT INTO inbox_messages (
                 message_id, user_email, sender_email, sender_name,
                 subject, body, body_preview, received_date, fetched_at,
                 has_attachments, attachment_data, is_read
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, 0)
+            ON DUPLICATE KEY UPDATE
+                subject = VALUES(subject),
+                body = VALUES(body),
+                body_preview = VALUES(body_preview),
+                has_attachments = VALUES(has_attachments),
+                attachment_data = VALUES(attachment_data),
+                fetched_at = NOW()
+                -- ✅ NOTE: is_read and read_at are NOT updated
+                -- This preserves the user's read/unread status
         ");
         
         return $stmt->execute([
@@ -405,19 +417,25 @@ function messageExists($userEmail, $messageId) {
 }
 
 /**
- * Clear all inbox messages for user (for force refresh)
+ * ⚠️ DEPRECATED - DO NOT USE
+ * This function is kept for compatibility but should not be called
+ * Clearing all messages loses read status!
  */
 function clearInboxMessages($userEmail) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) return false;
-        
-        $stmt = $pdo->prepare("DELETE FROM inbox_messages WHERE user_email = :email");
-        return $stmt->execute([':email' => $userEmail]);
-    } catch (Exception $e) {
-        error_log("Error clearing inbox messages: " . $e->getMessage());
-        return false;
-    }
+    error_log("WARNING: clearInboxMessages() called - this is deprecated and should not be used!");
+    return false;
+    
+    // Old problematic code commented out:
+    // try {
+    //     $pdo = getDatabaseConnection();
+    //     if (!$pdo) return false;
+    //     
+    //     $stmt = $pdo->prepare("DELETE FROM inbox_messages WHERE user_email = :email");
+    //     return $stmt->execute([':email' => $userEmail]);
+    // } catch (Exception $e) {
+    //     error_log("Error clearing inbox messages: " . $e->getMessage());
+    //     return false;
+    // }
 }
 
 /**
