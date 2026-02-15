@@ -1,6 +1,6 @@
 <?php
 /**
- * Deleted Items Page - Split Pane UI
+ * Deleted Items Page - Minimalist UI matching drive.php aesthetic
  * Shows deleted inbox messages with preview
  */
 session_start();
@@ -215,504 +215,616 @@ $totalCount = getDeletedMessageCount($userEmail) ?? 0;
 ?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <?php
-        define('PAGE_TITLE', 'Deleted Items | SXC MDTS');
-        include 'header.php';
-    ?>
+    <?php define('PAGE_TITLE', 'Deleted Items | SXC MDTS'); include 'header.php'; ?>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    
     <style>
         :root {
-            --apple-blue: #007AFF;
-            --apple-gray: #8E8E93;
-            --apple-light-gray: #C7C7CC;
-            --apple-bg: #F2F2F7;
-            --border: #E5E5EA;
-            --danger-red: #FF3B30;
-            --success-green: #34C759;
-            --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --ink:       #1a1a2e;
+            --ink-2:     #2d2d44;
+            --ink-3:     #6b6b8a;
+            --ink-4:     #a8a8c0;
+            --bg:        #f0f0f7;
+            --surface:   #ffffff;
+            --surface-2: #f7f7fc;
+            --border:    rgba(100,100,160,0.12);
+            --border-2:  rgba(100,100,160,0.22);
+            --blue:      #5781a9;
+            --blue-2:    #c6d3ea;
+            --blue-glow: rgba(79,70,229,0.15);
+            --red:       #ef4444;
+            --r:         10px;
+            --r-lg:      16px;
+            --shadow:    0 1px 3px rgba(79,70,229,0.08), 0 4px 16px rgba(79,70,229,0.06);
+            --shadow-lg: 0 8px 32px rgba(79,70,229,0.14), 0 2px 8px rgba(0,0,0,0.06);
+            --ease:      cubic-bezier(.4,0,.2,1);
+            --ease-spring: cubic-bezier(.34,1.56,.64,1);
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--apple-bg);
-            color: #1c1c1e;
+            font-family: 'DM Sans', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            -webkit-font-smoothing: antialiased;
             display: flex;
             height: 100vh;
             overflow: hidden;
-            -webkit-font-smoothing: antialiased;
         }
 
-        /* ========== MAIN CONTENT ========== */
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
+        /* ── LAYOUT ───────────────────────────────────────────── */
+        .app-shell  { display:flex; flex:1; overflow:hidden; }
+        .main-col   { flex:1; display:flex; flex-direction:column; overflow:hidden; }
 
-        /* ========== HEADER ========== */
-        .page-header {
-            background: white;
+        /* ── TOP BAR ─────────────────────────────────────────── */
+        .topbar {
+            height: 60px;
+            background: var(--surface);
             border-bottom: 1px solid var(--border);
-            padding: 16px 24px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            gap: 12px;
+            padding: 0 24px;
+            flex-shrink: 0;
         }
-
-        .header-left {
-            flex: 1;
-        }
-
-        .page-title {
-            font-size: 24px;
+        .topbar-title {
+            font-size: 17px;
             font-weight: 700;
-            color: #1c1c1e;
-            letter-spacing: -0.5px;
-            margin-bottom: 2px;
+            color: var(--ink);
+            letter-spacing: -0.4px;
             display: flex;
             align-items: center;
-            gap: 10px;
-        }
-
-        .page-title .material-icons {
-            color: var(--danger-red);
-            font-size: 28px;
-        }
-
-        .page-subtitle {
-            font-size: 13px;
-            color: var(--apple-gray);
-            font-weight: 400;
-        }
-
-        .header-actions {
-            display: flex;
             gap: 8px;
-            align-items: center;
         }
-
-        .btn {
-            padding: 8px 14px;
-            border: none;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
+        .topbar-title .material-icons-round { font-size:20px; color:var(--ink-3); }
+        .topbar-spacer { flex:1; }
+        
+        .count-badge {
             display: inline-flex;
             align-items: center;
+            padding: 2px 9px;
+            background: var(--surface-2);
+            color: var(--ink-3);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'DM Mono', monospace;
+        }
+
+        /* Search */
+        .search-wrap {
+            position: relative;
+            width: 280px;
+        }
+        .search-wrap .material-icons-round {
+            position: absolute;
+            left: 10px; top: 50%;
+            transform: translateY(-50%);
+            font-size: 16px;
+            color: var(--ink-4);
+            pointer-events: none;
+        }
+        #searchInput {
+            width: 100%;
+            height: 36px;
+            border: 1.5px solid var(--border-2);
+            border-radius: 20px;
+            padding: 0 12px 0 34px;
+            font-family: inherit;
+            font-size: 13px;
+            background: var(--surface-2);
+            color: var(--ink);
+            outline: none;
+            transition: border-color .2s, box-shadow .2s;
+        }
+        #searchInput:focus { border-color:var(--blue); box-shadow:0 0 0 3px var(--blue-glow); background:var(--surface); }
+        #searchInput::placeholder { color:var(--ink-4); }
+
+        /* Buttons */
+        .btn {
+            height: 36px;
+            padding: 0 16px;
+            background: var(--surface);
+            color: var(--ink-2);
+            border: 1.5px solid var(--border-2);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
             gap: 6px;
-            transition: all 0.2s;
-            font-family: 'Inter', sans-serif;
+            transition: all .18s;
             text-decoration: none;
         }
-
-        .btn .material-icons {
-            font-size: 18px;
+        .btn:hover {
+            border-color: var(--blue);
+            color: var(--blue);
+            background: var(--blue-glow);
         }
+        .btn .material-icons-round { font-size:16px; }
 
-        .btn-secondary {
-            background: white;
-            color: #1c1c1e;
-            border: 1px solid var(--border);
-        }
-
-        .btn-secondary:hover {
-            background: var(--apple-bg);
-            border-color: var(--apple-blue);
-        }
-
-        .btn-danger {
-            background: var(--danger-red);
+        .btn-primary {
+            background: var(--blue);
             color: white;
+            border-color: var(--blue);
+        }
+        .btn-primary:hover {
+            background: var(--blue-2);
+            box-shadow: 0 4px 12px var(--blue-glow);
         }
 
-        .btn-danger:hover {
-            background: #D32F2F;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
-        }
-
-        .btn-success {
-            background: var(--success-green);
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #2CA84B;
-        }
-
-        /* ========== STATS BAR ========== */
-        .stats-bar {
-            background: white;
-            padding: 12px 24px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            gap: 24px;
-            align-items: center;
-        }
-
-        .stat-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .stat-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            background: rgba(255, 59, 48, 0.1);
-            color: var(--danger-red);
-        }
-
-        .stat-content {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .stat-value {
-            font-size: 18px;
-            font-weight: 700;
-            color: #1c1c1e;
-            line-height: 1;
-        }
-
-        .stat-label {
-            font-size: 11px;
-            color: var(--apple-gray);
-            margin-top: 2px;
-        }
-
-        /* ========== SPLIT PANE LAYOUT ========== */
+        /* ── CONTENT AREA ─────────────────────────────────────── */
         .content-wrapper {
             flex: 1;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 0;
+        }
+
+        /* ── MESSAGES PANEL ──────────────────────────────────── */
+        .messages-panel {
+            background: var(--surface);
+            border-right: 1px solid var(--border);
             display: flex;
+            flex-direction: column;
             overflow: hidden;
         }
 
-        .messages-pane {
-            width: 40%;
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid var(--border);
-            background: white;
-        }
-
-        .message-view-pane {
-            width: 60%;
-            display: flex;
-            flex-direction: column;
-            background: #FAFAFA;
-        }
-
-        /* ========== TOOLBAR ========== */
-        .toolbar {
-            background: white;
-            padding: 12px 20px;
+        .panel-header {
+            padding: 20px 24px;
             border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .panel-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--ink-2);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
             display: flex;
-            gap: 10px;
             align-items: center;
+            gap: 8px;
         }
 
-        .search-box {
-            flex: 1;
-            position: relative;
+        .panel-subtitle {
+            font-size: 12px;
+            color: var(--ink-3);
+            margin-top: 4px;
         }
 
-        .search-box input {
-            width: 100%;
-            padding: 8px 12px 8px 36px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 13px;
-            font-family: 'Inter', sans-serif;
-            background: var(--apple-bg);
-            transition: all 0.2s;
-        }
-
-        .search-box input:focus {
-            outline: none;
-            background: white;
-            border-color: var(--apple-blue);
-            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
-        }
-
-        .search-box .material-icons {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--apple-gray);
-            font-size: 18px;
-        }
-
-        /* ========== MESSAGES LIST ========== */
-        .messages-area {
+        .messages-list {
             flex: 1;
             overflow-y: auto;
         }
 
+        .messages-list::-webkit-scrollbar { width:5px; }
+        .messages-list::-webkit-scrollbar-track { background:transparent; }
+        .messages-list::-webkit-scrollbar-thumb { background:var(--border-2); border-radius:10px; }
+
+        /* Message Item */
         .message-item {
-            padding: 12px 20px;
+            padding: 14px 24px;
             border-bottom: 1px solid var(--border);
             cursor: pointer;
-            transition: all 0.2s;
+            transition: background .14s;
             display: flex;
             gap: 12px;
-            align-items: start;
+            align-items: flex-start;
         }
 
         .message-item:hover {
-            background: var(--apple-bg);
+            background: var(--surface-2);
         }
 
-        .message-item.selected {
-            background: #E3F2FD;
-            border-left: 3px solid var(--apple-blue);
+        .message-item.active {
+            background: rgba(79,70,229,.05);
+            border-left: 2px solid var(--blue);
         }
 
-        .message-content {
+        .message-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .message-icon .material-icons-round {
+            font-size: 18px;
+            color: var(--ink-3);
+        }
+
+        .message-info {
             flex: 1;
             min-width: 0;
         }
 
-        .message-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 4px;
-        }
-
-        .deleted-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 3px;
-            padding: 2px 6px;
-            background: rgba(255, 59, 48, 0.1);
-            color: var(--danger-red);
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .deleted-badge .material-icons {
-            font-size: 12px;
-        }
-
         .message-sender {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
-            color: #1c1c1e;
+            color: var(--ink);
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .message-subject {
-            font-size: 13px;
-            font-weight: 500;
-            color: #1c1c1e;
-            margin-bottom: 3px;
+            font-size: 12px;
+            color: var(--ink-2);
+            margin-bottom: 4px;
+            white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            white-space: nowrap;
         }
 
         .message-preview {
-            font-size: 12px;
-            color: var(--apple-gray);
+            font-size: 11px;
+            color: var(--ink-3);
+            white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            white-space: nowrap;
         }
 
         .message-meta {
             display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 4px;
-            flex-shrink: 0;
+            align-items: center;
+            gap: 6px;
+            margin-top: 6px;
         }
 
         .message-date {
-            font-size: 11px;
-            color: var(--apple-gray);
-            white-space: nowrap;
+            font-size: 10px;
+            color: var(--ink-4);
+            font-family: 'DM Mono', monospace;
         }
 
-        .attachment-indicator {
-            color: var(--apple-gray);
-            font-size: 16px;
+        .attachment-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            font-size: 10px;
+            color: var(--ink-4);
         }
 
-        /* ========== MESSAGE VIEW PANE ========== */
-        .message-view-header {
-            background: white;
-            border-bottom: 1px solid var(--border);
-            padding: 16px 20px;
+        .attachment-badge .material-icons-round {
+            font-size: 12px;
         }
 
-        .message-view-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #1c1c1e;
-            margin-bottom: 12px;
-            line-height: 1.4;
-        }
-
-        .message-view-meta {
+        /* ── PREVIEW PANEL ───────────────────────────────────── */
+        .preview-panel {
+            background: var(--bg);
             display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: 12px;
+            flex-direction: column;
+            overflow: hidden;
         }
 
-        .message-view-meta-item {
+        .preview-header {
+            background: var(--surface);
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
-            gap: 4px;
-            font-size: 12px;
-            color: var(--apple-gray);
+            justify-content: space-between;
+            flex-shrink: 0;
         }
 
-        .message-view-meta-item .material-icons {
+        .preview-title {
             font-size: 14px;
+            font-weight: 700;
+            color: var(--ink-2);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .message-view-meta-label {
-            font-weight: 600;
-            color: #1c1c1e;
-        }
-
-        .message-view-actions {
+        .preview-actions {
             display: flex;
             gap: 8px;
         }
 
-        .message-view-body {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
+        .icon-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            border: 1.5px solid var(--border-2);
+            background: var(--surface);
+            color: var(--ink-3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all .18s;
         }
 
+        .icon-btn:hover {
+            border-color: var(--blue);
+            color: var(--blue);
+            background: var(--blue-glow);
+        }
+
+        .icon-btn .material-icons-round {
+            font-size: 18px;
+        }
+
+        /* Message Detail */
         .message-detail {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+
+        .message-detail::-webkit-scrollbar { width:5px; }
+        .message-detail::-webkit-scrollbar-track { background:transparent; }
+        .message-detail::-webkit-scrollbar-thumb { background:var(--border-2); border-radius:10px; }
+
+        .message-header {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-lg);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .message-subject-large {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--ink);
+            margin-bottom: 16px;
+            line-height: 1.4;
+        }
+
+        .message-from {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sender-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--r);
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--ink-3);
+        }
+
+        .sender-info {
+            flex: 1;
+        }
+
+        .sender-name {
             font-size: 14px;
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .sender-email {
+            font-size: 12px;
+            color: var(--ink-3);
+            font-family: 'DM Mono', monospace;
+        }
+
+        .message-dates {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .date-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--ink-3);
+        }
+
+        .date-row .material-icons-round {
+            font-size: 14px;
+            color: var(--ink-4);
+        }
+
+        .date-label {
+            font-weight: 600;
+            min-width: 70px;
+        }
+
+        .date-value {
+            font-family: 'DM Mono', monospace;
+        }
+
+        /* Message Body */
+        .message-body-wrap {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-lg);
+            padding: 24px;
+        }
+
+        .message-body {
+            font-size: 13px;
             line-height: 1.7;
-            color: #1c1c1e;
-            box-shadow: var(--card-shadow);
+            color: var(--ink-2);
             white-space: pre-wrap;
             word-wrap: break-word;
         }
 
-        /* ========== ATTACHMENTS ========== */
+        /* Attachments */
         .attachments-section {
             margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border);
         }
 
-        .attachments-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: #1c1c1e;
-            margin-bottom: 10px;
+        .attachments-header {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--ink-2);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
             gap: 6px;
         }
 
-        .attachments-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        .attachment-item {
+            display: flex;
+            align-items: center;
             gap: 10px;
+            padding: 10px 14px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--r);
+            margin-bottom: 8px;
+            transition: border-color .18s;
         }
 
-        .attachment-card {
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            transition: all 0.2s;
+        .attachment-item:hover {
+            border-color: var(--blue);
         }
 
         .attachment-icon {
-            font-size: 36px;
-            margin-bottom: 6px;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .attachment-icon .material-icons-round {
+            font-size: 18px;
+            color: var(--blue);
+        }
+
+        .attachment-info {
+            flex: 1;
         }
 
         .attachment-name {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 500;
-            color: #1c1c1e;
-            margin-bottom: 3px;
-            word-break: break-word;
+            color: var(--ink);
         }
 
-        /* ========== EMPTY STATE ========== */
+        .attachment-size {
+            font-size: 11px;
+            color: var(--ink-3);
+            font-family: 'DM Mono', monospace;
+        }
+
+        /* Empty State */
         .empty-state {
-            padding: 60px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 40px;
             text-align: center;
         }
 
         .empty-icon {
-            font-size: 64px;
-            color: var(--apple-gray);
+            width: 64px;
+            height: 64px;
+            border-radius: var(--r-lg);
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             margin-bottom: 16px;
-            opacity: 0.5;
+        }
+
+        .empty-icon .material-icons-round {
+            font-size: 32px;
+            color: var(--ink-4);
         }
 
         .empty-title {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
-            color: #1c1c1e;
+            color: var(--ink-2);
             margin-bottom: 6px;
         }
 
         .empty-text {
-            font-size: 14px;
-            color: var(--apple-gray);
+            font-size: 13px;
+            color: var(--ink-3);
         }
 
-        /* ========== TOAST ========== */
-        .toast {
+        /* Loading */
+        .loading-spinner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .spin {
+            animation: spin .8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Highlight */
+        mark {
+            background-color: #fef08a;
+            color: var(--ink);
+            padding: 1px 3px;
+            border-radius: 3px;
+        }
+
+        /* Toast */
+        .toast-container {
             position: fixed;
-            bottom: 24px;
-            right: 24px;
-            background: #1c1c1e;
-            color: white;
-            padding: 12px 18px;
-            border-radius: 10px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
             display: flex;
             align-items: center;
             gap: 10px;
-            font-size: 13px;
-            font-weight: 500;
-            z-index: 2000;
-            animation: toastSlideIn 0.3s ease-out;
+            padding: 12px 18px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r);
+            box-shadow: var(--shadow-lg);
+            min-width: 280px;
+            animation: slideIn 0.3s ease;
         }
 
-        @keyframes toastSlideIn {
+        @keyframes slideIn {
             from {
-                transform: translateX(100%);
+                transform: translateX(400px);
                 opacity: 0;
             }
             to {
@@ -721,271 +833,386 @@ $totalCount = getDeletedMessageCount($userEmail) ?? 0;
             }
         }
 
-        .toast.success {
-            background: var(--success-green);
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
         }
 
-        .toast.error {
-            background: var(--danger-red);
+        .toast .material-icons-round {
+            font-size: 18px;
+            color: var(--blue);
         }
 
-        /* ========== SEARCH HIGHLIGHTING ========== */
-        mark {
-            background-color: #FFEB3B;
-            color: #000;
-            padding: 2px 0;
-            border-radius: 2px;
+        .toast.error .material-icons-round {
+            color: var(--red);
+        }
+
+        .toast-message {
+            flex: 1;
+            font-size: 13px;
             font-weight: 500;
+            color: var(--ink);
         }
 
-        .empty-state-search {
-            padding: 40px 20px;
+        /* Modal */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 999;
+            background: rgba(20,20,40,.55);
+            backdrop-filter: blur(4px);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-backdrop.show {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--surface);
+            border-radius: var(--r-lg);
+            box-shadow: var(--shadow-lg);
+            min-width: 400px;
+            max-width: 90vw;
+            animation: modalIn .22s cubic-bezier(.34,1.56,.64,1);
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(.92) translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        .modal-header {
+            padding: 20px 24px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-body {
+            padding: 20px 24px;
+        }
+
+        .modal-text {
+            font-size: 13px;
+            color: var(--ink-2);
+            line-height: 1.6;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .content-wrapper {
+                grid-template-columns: 380px 1fr;
+            }
+        }
+
+        @media (max-width: 968px) {
+            .content-wrapper {
+                grid-template-columns: 1fr;
+            }
+
+            .messages-panel {
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                max-height: 50vh;
+            }
         }
     </style>
 </head>
-
 <body>
-    <?php include('sidebar.php'); ?>
+    <!-- Include sidebar -->
+    <?php include 'sidebar.php'; ?>
 
-    <div class="main-content">
-        <!-- Header -->
-        <div class="page-header">
-            <div class="header-left">
-                <h1 class="page-title">
-                    <span class="material-icons">delete</span>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Main App Shell -->
+    <div class="app-shell">
+        <div class="main-col">
+            <!-- Top Bar -->
+            <div class="topbar">
+                <div class="topbar-title">
+                    <span class="material-icons-round">delete</span>
                     Deleted Items
-                </h1>
-                <p class="page-subtitle">
-                    <span id="total-count"><?= number_format($totalCount) ?></span> deleted messages
-                </p>
-            </div>
-            <div class="header-actions">
-                <a href="inbox.php" class="btn btn-secondary">
-                    <span class="material-icons">arrow_back</span>
+                    <span class="count-badge" id="total-count"><?= number_format($totalCount) ?></span>
+                </div>
+                <div class="topbar-spacer"></div>
+                <div class="search-wrap">
+                    <span class="material-icons-round">search</span>
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        placeholder="Search deleted messages..."
+                        autocomplete="off"
+                    >
+                </div>
+                <a href="inbox.php" class="btn">
+                    <span class="material-icons-round">arrow_back</span>
                     Back to Inbox
                 </a>
             </div>
-        </div>
 
-        <!-- Stats Bar -->
-        <div class="stats-bar">
-            <div class="stat-item">
-                <div class="stat-icon">
-                    <span class="material-icons">delete</span>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-value" id="deleted-count"><?= number_format($totalCount) ?></div>
-                    <div class="stat-label">Deleted Messages</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Split Pane Content -->
-        <div class="content-wrapper">
-            <!-- Messages List Pane -->
-            <div class="messages-pane">
-                <!-- Toolbar -->
-                <div class="toolbar">
-                    <div class="search-box">
-                        <span class="material-icons">search</span>
-                        <input type="text" id="search-input" placeholder="Search deleted messages..." autocomplete="off">
+            <!-- Content Wrapper -->
+            <div class="content-wrapper">
+                <!-- Messages List Panel -->
+                <div class="messages-panel">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <span class="material-icons-round">inbox</span>
+                            Messages
+                        </div>
+                        <div class="panel-subtitle">
+                            <span id="deleted-count"><?= number_format($totalCount) ?></span> deleted item<?= $totalCount !== 1 ? 's' : '' ?>
+                        </div>
                     </div>
-                </div>
 
-                <!-- Messages List -->
-                <div class="messages-area" id="messages-area">
-                    <div class="messages-container" id="messages-container">
+                    <div class="messages-list" id="messages-container">
                         <?php if (empty($messages)): ?>
                             <div class="empty-state">
                                 <div class="empty-icon">
-                                    <span class="material-icons">delete_outline</span>
+                                    <span class="material-icons-round">delete_outline</span>
                                 </div>
-                                <div class="empty-title">No Deleted Messages</div>
-                                <div class="empty-text">Your deleted messages will appear here</div>
+                                <div class="empty-title">No deleted messages</div>
+                                <div class="empty-text">Your trash is empty</div>
                             </div>
                         <?php else: ?>
                             <?php foreach ($messages as $msg): ?>
-                                <div class="message-item" data-id="<?= $msg['id'] ?>" onclick="selectMessage(<?= $msg['id'] ?>)">
-                                    <div class="message-content">
-                                        <div class="message-header">
-                                            <span class="deleted-badge">
-                                                <span class="material-icons">delete</span>
-                                                Deleted
-                                            </span>
-                                            <span class="message-sender"><?= htmlspecialchars($msg['sender_name'] ?: $msg['sender_email']) ?></span>
-                                        </div>
-                                        <div class="message-subject"><?= htmlspecialchars($msg['subject'] ?: '(No Subject)') ?></div>
-                                        <div class="message-preview"><?= htmlspecialchars($msg['body_preview'] ?: '') ?></div>
+                                <div class="message-item" data-id="<?= htmlspecialchars($msg['id']) ?>" onclick="loadMessage(<?= htmlspecialchars($msg['id']) ?>)">
+                                    <div class="message-icon">
+                                        <span class="material-icons-round">mail</span>
                                     </div>
-                                    <div class="message-meta">
-                                        <div class="message-date"><?= date('M j', strtotime($msg['deleted_at'])) ?></div>
-                                        <?php if ($msg['has_attachments']): ?>
-                                            <span class="material-icons attachment-indicator">attach_file</span>
-                                        <?php endif; ?>
+                                    <div class="message-info">
+                                        <div class="message-sender"><?= htmlspecialchars($msg['sender_name'] ?: $msg['sender_email']) ?></div>
+                                        <div class="message-subject"><?= htmlspecialchars($msg['subject'] ?: '(No Subject)') ?></div>
+                                        <div class="message-preview"><?= htmlspecialchars(substr($msg['body_preview'] ?? '', 0, 60)) ?></div>
+                                        <div class="message-meta">
+                                            <span class="message-date"><?= date('M j, Y', strtotime($msg['deleted_at'])) ?></span>
+                                            <?php if ($msg['has_attachments']): ?>
+                                                <span class="attachment-badge">
+                                                    <span class="material-icons-round">attach_file</span>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </div>
                 </div>
-            </div>
 
-            <!-- Message View Pane -->
-            <div class="message-view-pane" id="message-view-pane">
-                <div class="empty-state">
-                    <div class="empty-icon">
-                        <span class="material-icons">mail_outline</span>
+                <!-- Preview Panel -->
+                <div class="preview-panel">
+                    <div class="preview-header">
+                        <div class="preview-title">Message Preview</div>
+                        <div class="preview-actions" id="preview-actions" style="display: none;">
+                            <button class="icon-btn" onclick="restoreMessage()" title="Restore">
+                                <span class="material-icons-round">restore_from_trash</span>
+                            </button>
+                            <button class="icon-btn" onclick="confirmDelete()" title="Delete Permanently">
+                                <span class="material-icons-round">delete_forever</span>
+                            </button>
+                        </div>
                     </div>
-                    <div class="empty-title">Select a message</div>
-                    <div class="empty-text">Choose a message from the list to view its contents</div>
+
+                    <div class="message-detail" id="message-detail">
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <span class="material-icons-round">mail_outline</span>
+                            </div>
+                            <div class="empty-title">Select a message</div>
+                            <div class="empty-text">Choose a message from the list to view its contents</div>
+                        </div>
+                    </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-backdrop" id="deleteModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <span class="material-icons-round" style="color: var(--red);">warning</span>
+                    Permanently Delete Message
+                </div>
+            </div>
+            <div class="modal-body">
+                <p class="modal-text">
+                    Are you sure you want to permanently delete this message? This action cannot be undone.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('deleteModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="permanentDelete()">Delete Forever</button>
             </div>
         </div>
     </div>
 
     <script>
         let selectedMessageId = null;
+        let currentQuery = '';
 
-        // Select and view message
-        function selectMessage(messageId) {
-            selectedMessageId = messageId;
+        // Load message details
+        function loadMessage(id) {
+            selectedMessageId = id;
             
-            // Update selected state in list
+            // Update active state
             document.querySelectorAll('.message-item').forEach(item => {
-                item.classList.remove('selected');
+                item.classList.remove('active');
             });
-            document.querySelector(`[data-id="${messageId}"]`).classList.add('selected');
-            
-            // Load message content
-            loadMessageView(messageId);
-        }
+            document.querySelector(`[data-id="${id}"]`).classList.add('active');
 
-        // Load message view
-        function loadMessageView(messageId) {
-            fetch(`?action=get_message&id=${messageId}`)
+            // Show loading
+            const detailDiv = document.getElementById('message-detail');
+            detailDiv.innerHTML = `
+                <div class="loading-spinner">
+                    <span class="material-icons-round spin" style="font-size: 32px; color: var(--ink-4);">autorenew</span>
+                </div>
+            `;
+
+            // Fetch message
+            fetch(`?action=get_message&id=${id}`)
                 .then(res => res.json())
                 .then(data => {
-                    if (data.success) {
+                    if (data.success && data.message) {
                         displayMessage(data.message);
+                        document.getElementById('preview-actions').style.display = 'flex';
                     } else {
                         showToast('Failed to load message', 'error');
                     }
                 })
                 .catch(err => {
-                    console.error(err);
                     showToast('Error loading message', 'error');
                 });
         }
 
-        // Display message in view pane
+        // Display message in preview
         function displayMessage(msg) {
-            const viewPane = document.getElementById('message-view-pane');
+            const detailDiv = document.getElementById('message-detail');
+            
+            // Get initials for avatar
+            const senderName = msg.sender_name || msg.sender_email;
+            const initials = senderName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
             
             // Parse attachments
-            let attachments = [];
-            if (msg.attachment_data) {
+            let attachmentsHtml = '';
+            if (msg.has_attachments && msg.attachment_data) {
                 try {
-                    attachments = JSON.parse(msg.attachment_data);
-                } catch (e) {}
-            }
-            
-            viewPane.innerHTML = `
-                <div class="message-view-header">
-                    <div class="message-view-title">${escapeHtml(msg.subject || '(No Subject)')}</div>
-                    <div class="message-view-meta">
-                        <div class="message-view-meta-item">
-                            <span class="material-icons">person</span>
-                            <span class="message-view-meta-label">From:</span>
-                            ${escapeHtml(msg.sender_name || msg.sender_email)}
-                        </div>
-                        <div class="message-view-meta-item">
-                            <span class="material-icons">schedule</span>
-                            <span class="message-view-meta-label">Received:</span>
-                            ${formatDate(msg.received_date)}
-                        </div>
-                        <div class="message-view-meta-item">
-                            <span class="material-icons">delete</span>
-                            <span class="message-view-meta-label">Deleted:</span>
-                            ${formatDate(msg.deleted_at)}
-                        </div>
-                    </div>
-                    <div class="message-view-actions">
-                        <button class="btn btn-success" onclick="restoreMessage(${msg.id})">
-                            <span class="material-icons">restore</span>
-                            Restore
-                        </button>
-                        <button class="btn btn-danger" onclick="permanentDelete(${msg.id})">
-                            <span class="material-icons">delete_forever</span>
-                            Delete Forever
-                        </button>
-                    </div>
-                </div>
-                <div class="message-view-body">
-                    <div class="message-detail" data-original-content="${escapeHtml(msg.body)}">${escapeHtml(msg.body)}</div>
-                    ${attachments.length > 0 ? `
+                    const attachments = JSON.parse(msg.attachment_data);
+                    attachmentsHtml = `
                         <div class="attachments-section">
-                            <div class="attachments-title">
-                                <span class="material-icons">attach_file</span>
+                            <div class="attachments-header">
+                                <span class="material-icons-round">attach_file</span>
                                 Attachments (${attachments.length})
                             </div>
-                            <div class="attachments-grid">
-                                ${attachments.map(att => `
-                                    <div class="attachment-card">
-                                        <div class="attachment-icon">${att.icon || '📄'}</div>
-                                        <div class="attachment-name">${escapeHtml(att.filename)}</div>
+                            ${attachments.map(att => `
+                                <div class="attachment-item">
+                                    <div class="attachment-icon">
+                                        <span class="material-icons-round">insert_drive_file</span>
                                     </div>
-                                `).join('')}
-                            </div>
+                                    <div class="attachment-info">
+                                        <div class="attachment-name">${escapeHtml(att.name)}</div>
+                                        <div class="attachment-size">${formatBytes(att.size)}</div>
+                                    </div>
+                                </div>
+                            `).join('')}
                         </div>
-                    ` : ''}
+                    `;
+                } catch (e) {
+                    console.error('Error parsing attachments:', e);
+                }
+            }
+
+            detailDiv.innerHTML = `
+                <div class="message-header">
+                    <div class="message-subject-large">${escapeHtml(msg.subject || '(No Subject)')}</div>
+                    
+                    <div class="message-from">
+                        <div class="sender-avatar">${initials}</div>
+                        <div class="sender-info">
+                            <div class="sender-name">${escapeHtml(senderName)}</div>
+                            <div class="sender-email">${escapeHtml(msg.sender_email)}</div>
+                        </div>
+                    </div>
+
+                    <div class="message-dates">
+                        <div class="date-row">
+                            <span class="material-icons-round">schedule</span>
+                            <span class="date-label">Received:</span>
+                            <span class="date-value">${formatDate(msg.received_date)}</span>
+                        </div>
+                        <div class="date-row">
+                            <span class="material-icons-round">delete</span>
+                            <span class="date-label">Deleted:</span>
+                            <span class="date-value">${formatDate(msg.deleted_at)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="message-body-wrap">
+                    <div class="message-body">${escapeHtml(msg.body_preview || '')}</div>
+                    ${attachmentsHtml}
                 </div>
             `;
+
+            // Store original content for highlighting
+            detailDiv.dataset.originalContent = detailDiv.innerHTML;
             
-            // Apply search highlighting if there's an active search
-            const searchInput = document.getElementById('search-input');
-            if (searchInput.value.trim()) {
-                highlightMessageView(searchInput.value.trim());
+            // Apply highlighting if search is active
+            if (currentQuery) {
+                highlightMessageView(currentQuery);
             }
         }
 
         // Restore message
-        function restoreMessage(messageId) {
-            if (!confirm('Restore this message to your inbox?')) return;
-            
-            fetch(`?action=restore&id=${messageId}`)
+        function restoreMessage() {
+            if (!selectedMessageId) return;
+
+            fetch(`?action=restore&id=${selectedMessageId}`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
                         showToast('Message restored successfully', 'success');
                         
-                        // Remove from original content map
-                        originalMessageContent.delete(messageId.toString());
-                        
                         // Remove from list
-                        const messageEl = document.querySelector(`[data-id="${messageId}"]`);
-                        if (messageEl) messageEl.remove();
-                        
-                        // Clear view
-                        document.getElementById('message-view-pane').innerHTML = `
-                            <div class="empty-state">
-                                <div class="empty-icon"><span class="material-icons">mail_outline</span></div>
-                                <div class="empty-title">Select a message</div>
-                            </div>
-                        `;
-                        
-                        // Update count
-                        updateCount();
-                        
-                        // Check if any messages left
-                        const remainingMessages = document.querySelectorAll('.message-item').length;
-                        if (remainingMessages === 0) {
-                            document.getElementById('messages-container').innerHTML = `
-                                <div class="empty-state">
-                                    <div class="empty-icon"><span class="material-icons">delete_outline</span></div>
-                                    <div class="empty-title">No Deleted Messages</div>
-                                    <div class="empty-text">Your deleted messages will appear here</div>
-                                </div>
-                            `;
+                        const messageItem = document.querySelector(`[data-id="${selectedMessageId}"]`);
+                        if (messageItem) {
+                            messageItem.style.opacity = '0';
+                            setTimeout(() => {
+                                messageItem.remove();
+                                updateCount();
+                                clearPreview();
+                            }, 200);
                         }
                     } else {
                         showToast('Failed to restore message', 'error');
@@ -996,44 +1223,32 @@ $totalCount = getDeletedMessageCount($userEmail) ?? 0;
                 });
         }
 
+        // Confirm permanent delete
+        function confirmDelete() {
+            openModal('deleteModal');
+        }
+
         // Permanent delete
-        function permanentDelete(messageId) {
-            if (!confirm('Permanently delete this message? This cannot be undone!')) return;
-            
-            fetch(`?action=permanent_delete&id=${messageId}`)
+        function permanentDelete() {
+            if (!selectedMessageId) return;
+
+            closeModal('deleteModal');
+
+            fetch(`?action=permanent_delete&id=${selectedMessageId}`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        showToast('Message deleted permanently', 'success');
-                        
-                        // Remove from original content map
-                        originalMessageContent.delete(messageId.toString());
+                        showToast('Message permanently deleted', 'success');
                         
                         // Remove from list
-                        const messageEl = document.querySelector(`[data-id="${messageId}"]`);
-                        if (messageEl) messageEl.remove();
-                        
-                        // Clear view
-                        document.getElementById('message-view-pane').innerHTML = `
-                            <div class="empty-state">
-                                <div class="empty-icon"><span class="material-icons">mail_outline</span></div>
-                                <div class="empty-title">Select a message</div>
-                            </div>
-                        `;
-                        
-                        // Update count
-                        updateCount();
-                        
-                        // Check if any messages left
-                        const remainingMessages = document.querySelectorAll('.message-item').length;
-                        if (remainingMessages === 0) {
-                            document.getElementById('messages-container').innerHTML = `
-                                <div class="empty-state">
-                                    <div class="empty-icon"><span class="material-icons">delete_outline</span></div>
-                                    <div class="empty-title">No Deleted Messages</div>
-                                    <div class="empty-text">Your deleted messages will appear here</div>
-                                </div>
-                            `;
+                        const messageItem = document.querySelector(`[data-id="${selectedMessageId}"]`);
+                        if (messageItem) {
+                            messageItem.style.opacity = '0';
+                            setTimeout(() => {
+                                messageItem.remove();
+                                updateCount();
+                                clearPreview();
+                            }, 200);
                         }
                     } else {
                         showToast('Failed to delete message', 'error');
@@ -1044,33 +1259,50 @@ $totalCount = getDeletedMessageCount($userEmail) ?? 0;
                 });
         }
 
-        // ========== CLIENT-SIDE SEARCH WITH YELLOW HIGHLIGHTING ==========
-        
-        // Store original message data
-        let allMessages = [];
+        function clearPreview() {
+            document.getElementById('message-detail').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <span class="material-icons-round">mail_outline</span>
+                    </div>
+                    <div class="empty-title">Select a message</div>
+                    <div class="empty-text">Choose a message from the list to view its contents</div>
+                </div>
+            `;
+            document.getElementById('preview-actions').style.display = 'none';
+            selectedMessageId = null;
+        }
+
+        // Search functionality
         const originalMessageContent = new Map();
-        
-        // Store original messages on page load
+
         function storeOriginalMessages() {
             const messageItems = document.querySelectorAll('.message-item');
             messageItems.forEach(item => {
                 const id = item.dataset.id;
-                originalMessageContent.set(id, {
-                    sender: item.querySelector('.message-sender').innerHTML,
-                    subject: item.querySelector('.message-subject').innerHTML,
-                    preview: item.querySelector('.message-preview').innerHTML
-                });
+                const sender = item.querySelector('.message-sender');
+                const subject = item.querySelector('.message-subject');
+                const preview = item.querySelector('.message-preview');
+                
+                if (sender && subject && preview) {
+                    originalMessageContent.set(id, {
+                        sender: sender.textContent,
+                        subject: subject.textContent,
+                        preview: preview.textContent
+                    });
+                }
             });
         }
-        
+
         // Initialize on load
         if (document.querySelectorAll('.message-item').length > 0) {
             storeOriginalMessages();
         }
-        
+
         // Search with highlighting
-        document.getElementById('search-input').addEventListener('input', function(e) {
+        document.getElementById('searchInput').addEventListener('input', function(e) {
             const query = e.target.value.trim();
+            currentQuery = query;
             performClientSearch(query);
         });
 
@@ -1084,14 +1316,20 @@ $totalCount = getDeletedMessageCount($userEmail) ?? 0;
                     const id = item.dataset.id;
                     if (originalMessageContent.has(id)) {
                         const original = originalMessageContent.get(id);
-                        item.querySelector('.message-sender').innerHTML = original.sender;
-                        item.querySelector('.message-subject').innerHTML = original.subject;
-                        item.querySelector('.message-preview').innerHTML = original.preview;
+                        const sender = item.querySelector('.message-sender');
+                        const subject = item.querySelector('.message-subject');
+                        const preview = item.querySelector('.message-preview');
+                        
+                        if (sender) sender.textContent = original.sender;
+                        if (subject) subject.textContent = original.subject;
+                        if (preview) preview.textContent = original.preview;
                     }
                 });
                 
-                // Clear message view if it has highlights
                 clearMessageViewHighlights();
+                
+                const emptyState = document.querySelector('.empty-state-search');
+                if (emptyState) emptyState.remove();
                 return;
             }
             
@@ -1099,51 +1337,35 @@ $totalCount = getDeletedMessageCount($userEmail) ?? 0;
             
             messageItems.forEach(item => {
                 const id = item.dataset.id;
-                const senderEl = item.querySelector('.message-sender');
-                const subjectEl = item.querySelector('.message-subject');
-                const previewEl = item.querySelector('.message-preview');
+                const original = originalMessageContent.get(id);
                 
-                // Get original content
-                const original = originalMessageContent.get(id) || {
-                    sender: senderEl.textContent,
-                    subject: subjectEl.textContent,
-                    preview: previewEl.textContent
-                };
+                if (!original) {
+                    item.style.display = 'none';
+                    return;
+                }
                 
-                // Search in all fields
-                const senderText = original.sender;
-                const subjectText = original.subject;
-                const previewText = original.preview;
-                
-                const senderMatch = senderText.toLowerCase().includes(query.toLowerCase());
-                const subjectMatch = subjectText.toLowerCase().includes(query.toLowerCase());
-                const previewMatch = previewText.toLowerCase().includes(query.toLowerCase());
+                const senderMatch = original.sender.toLowerCase().includes(query.toLowerCase());
+                const subjectMatch = original.subject.toLowerCase().includes(query.toLowerCase());
+                const previewMatch = original.preview.toLowerCase().includes(query.toLowerCase());
                 
                 if (senderMatch || subjectMatch || previewMatch) {
-                    // Show and highlight
                     item.style.display = 'flex';
                     visibleCount++;
                     
-                    // Highlight matches
-                    if (senderMatch) {
-                        senderEl.innerHTML = highlightText(senderText, query);
-                    } else {
-                        senderEl.innerHTML = senderText;
-                    }
+                    const sender = item.querySelector('.message-sender');
+                    const subject = item.querySelector('.message-subject');
+                    const preview = item.querySelector('.message-preview');
                     
-                    if (subjectMatch) {
-                        subjectEl.innerHTML = highlightText(subjectText, query);
-                    } else {
-                        subjectEl.innerHTML = subjectText;
+                    if (sender) {
+                        sender.innerHTML = senderMatch ? highlightText(original.sender, query) : original.sender;
                     }
-                    
-                    if (previewMatch) {
-                        previewEl.innerHTML = highlightText(previewText, query);
-                    } else {
-                        previewEl.innerHTML = previewText;
+                    if (subject) {
+                        subject.innerHTML = subjectMatch ? highlightText(original.subject, query) : original.subject;
+                    }
+                    if (preview) {
+                        preview.innerHTML = previewMatch ? highlightText(original.preview, query) : original.preview;
                     }
                 } else {
-                    // Hide non-matching
                     item.style.display = 'none';
                 }
             });
@@ -1156,7 +1378,9 @@ $totalCount = getDeletedMessageCount($userEmail) ?? 0;
                 const emptyState = document.createElement('div');
                 emptyState.className = 'empty-state empty-state-search';
                 emptyState.innerHTML = `
-                    <div class="empty-icon"><span class="material-icons">search_off</span></div>
+                    <div class="empty-icon">
+                        <span class="material-icons-round">search_off</span>
+                    </div>
                     <div class="empty-title">No messages found</div>
                     <div class="empty-text">Try a different search term</div>
                 `;
@@ -1170,41 +1394,48 @@ $totalCount = getDeletedMessageCount($userEmail) ?? 0;
                 highlightMessageView(query);
             }
         }
-        
-        // Highlight text with yellow background
+
         function highlightText(text, query) {
             if (!query) return text;
-            
             const regex = new RegExp(`(${escapeRegex(query)})`, 'gi');
-            return text.replace(regex, '<mark style="background-color: #FFEB3B; color: #000; padding: 2px 0; border-radius: 2px;">$1</mark>');
+            return text.replace(regex, '<mark>$1</mark>');
         }
-        
-        // Escape special regex characters
+
         function escapeRegex(string) {
             return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         }
-        
-        // Highlight in message view pane
+
         function highlightMessageView(query) {
-            const messageDetail = document.querySelector('.message-detail');
-            if (!messageDetail) return;
-            
-            if (!messageDetail.dataset.originalContent) {
-                messageDetail.dataset.originalContent = messageDetail.innerHTML;
-            }
+            const messageDetail = document.getElementById('message-detail');
+            if (!messageDetail || !messageDetail.dataset.originalContent) return;
             
             if (!query) {
                 messageDetail.innerHTML = messageDetail.dataset.originalContent;
                 return;
             }
             
-            const originalContent = messageDetail.dataset.originalContent;
-            messageDetail.innerHTML = highlightText(originalContent, query);
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = messageDetail.dataset.originalContent;
+            
+            const walker = document.createTreeWalker(tempDiv, NodeFilter.SHOW_TEXT, null, false);
+            const textNodes = [];
+            while (walker.nextNode()) {
+                textNodes.push(walker.currentNode);
+            }
+            
+            textNodes.forEach(node => {
+                if (node.textContent.toLowerCase().includes(query.toLowerCase())) {
+                    const span = document.createElement('span');
+                    span.innerHTML = highlightText(node.textContent, query);
+                    node.parentNode.replaceChild(span, node);
+                }
+            });
+            
+            messageDetail.innerHTML = tempDiv.innerHTML;
         }
-        
-        // Clear highlights in message view
+
         function clearMessageViewHighlights() {
-            const messageDetail = document.querySelector('.message-detail');
+            const messageDetail = document.getElementById('message-detail');
             if (messageDetail && messageDetail.dataset.originalContent) {
                 messageDetail.innerHTML = messageDetail.dataset.originalContent;
             }
@@ -1215,10 +1446,48 @@ $totalCount = getDeletedMessageCount($userEmail) ?? 0;
             fetch('?action=get_deleted_messages&limit=1')
                 .then(res => res.json())
                 .then(data => {
-                    document.getElementById('total-count').textContent = data.total.toLocaleString();
-                    document.getElementById('deleted-count').textContent = data.total.toLocaleString();
+                    const count = data.total || 0;
+                    document.getElementById('total-count').textContent = count.toLocaleString();
+                    document.getElementById('deleted-count').textContent = count.toLocaleString();
+                    
+                    if (count === 0 && document.querySelectorAll('.message-item').length === 0) {
+                        document.getElementById('messages-container').innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <span class="material-icons-round">delete_outline</span>
+                                </div>
+                                <div class="empty-title">No deleted messages</div>
+                                <div class="empty-text">Your trash is empty</div>
+                            </div>
+                        `;
+                    }
                 });
         }
+
+        // Modal functions
+        function openModal(id) {
+            document.getElementById(id).classList.add('show');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('show');
+        }
+
+        document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+            backdrop.addEventListener('click', (e) => {
+                if (e.target === backdrop) {
+                    closeModal(backdrop.id);
+                }
+            });
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-backdrop.show').forEach(modal => {
+                    closeModal(modal.id);
+                });
+            }
+        });
 
         // Utility functions
         function escapeHtml(text) {
@@ -1238,22 +1507,30 @@ $totalCount = getDeletedMessageCount($userEmail) ?? 0;
             });
         }
 
-        function formatDateShort(dateStr) {
-            const date = new Date(dateStr);
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
         }
 
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
+            
+            const icon = type === 'success' ? 'check_circle' : 'error';
+            
             toast.innerHTML = `
-                <span class="material-icons">${type === 'success' ? 'check_circle' : 'error'}</span>
-                ${message}
+                <span class="material-icons-round">${icon}</span>
+                <span class="toast-message">${escapeHtml(message)}</span>
             `;
-            document.body.appendChild(toast);
+            
+            document.getElementById('toastContainer').appendChild(toast);
             
             setTimeout(() => {
-                toast.remove();
+                toast.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
     </script>
