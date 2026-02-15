@@ -1406,10 +1406,10 @@ if (!$hasSessionAuth && $hasEnvAuth) {
                                         <span class="material-icons-round">add_to_drive</span>
                                         Drive
                                     </button>
-                                    <button class="segmented-btn" id="segUpload" onclick="switchAttachmentTab('upload')">
+                                    <!-- <button class="segmented-btn" id="segUpload" onclick="switchAttachmentTab('upload')">
                                         <span class="material-icons-round">upload</span>
                                         Upload
-                                    </button>
+                                    </button> -->
                                 </div>
 
                                 <!-- Drive content -->
