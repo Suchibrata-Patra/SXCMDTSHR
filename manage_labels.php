@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     
     if ($action === 'create') {
         $labelName = trim($_POST['label_name'] ?? '');
-        $labelColor = $_POST['label_color'] ?? '#0973dc';
+        $labelColor = $_POST['label_color'] ?? '#5781a9';
         
         if (empty($labelName)) {
             echo json_encode(['success' => false, 'message' => 'Label name is required']);
@@ -53,31 +53,59 @@ $labels = getLabelCounts($userEmail);
 <!DOCTYPE html>
 <html lang="en">
 <head>
-        <?php
-        define('PAGE_TITLE', 'SXC MDTS | Dashboard');
-        include 'header.php';
+    <?php
+    define('PAGE_TITLE', 'SXC MDTS | Manage Labels');
+    include 'header.php';
     ?>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    
     <style>
+        /* ══════════════════════════════════════════════════════════
+           DRIVE UI DESIGN SYSTEM - Label Management
+           ══════════════════════════════════════════════════════════ */
+        
         :root {
-            --primary-white: #ffffff;
-            --background-gray: #f8f9fa;
-            --border-light: #e9ecef;
-            --text-primary: #212529;
-            --text-secondary: #6c757d;
-            --accent-primary: #0d6efd;
-            --accent-success: #34a853;
-            --accent-danger: #dc3545;
-            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            /* Foundation Colors */
+            --ink:       #1a1a2e;
+            --ink-2:     #2d2d44;
+            --ink-3:     #6b6b8a;
+            --ink-4:     #a8a8c0;
+            --bg:        #f0f0f7;
+            --surface:   #ffffff;
+            --surface-2: #f7f7fc;
+            --border:    rgba(100,100,160,0.12);
+            --border-2:  rgba(100,100,160,0.22);
+            
+            /* Accent Colors */
+            --blue:      #5781a9;
+            --blue-2:    #c6d3ea;
+            --blue-glow: rgba(79,70,229,0.15);
+            --red:       #ef4444;
+            --green:     #10b981;
+            --amber:     #f59e0b;
+            
+            /* System */
+            --r:         10px;
+            --r-lg:      16px;
+            --shadow:    0 1px 3px rgba(79,70,229,0.08), 0 4px 16px rgba(79,70,229,0.06);
+            --shadow-lg: 0 8px 32px rgba(79,70,229,0.14), 0 2px 8px rgba(0,0,0,0.06);
+            --ease:      cubic-bezier(.4,0,.2,1);
+            --ease-spring: cubic-bezier(.34,1.56,.64,1);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            background-color: var(--background-gray);
-            color: var(--text-primary);
+            font-family: 'DM Sans', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            -webkit-font-smoothing: antialiased;
             display: flex;
-            height: 100vh;
+            min-height: 100vh;
+            line-height: 1.6;
         }
 
         .main-content {
@@ -86,28 +114,37 @@ $labels = getLabelCounts($userEmail);
             padding: 40px;
         }
 
+        /* Page Header */
         .page-header {
-            margin-bottom: 32px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-lg);
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
         }
 
         .page-title {
             font-size: 32px;
             font-weight: 700;
+            color: var(--ink);
+            letter-spacing: -0.5px;
             margin-bottom: 8px;
-            color: var(--text-primary);
         }
 
         .page-subtitle {
             font-size: 16px;
-            color: var(--text-secondary);
+            color: var(--ink-3);
+            font-weight: 400;
         }
 
+        /* Content Card */
         .content-card {
-            background: var(--primary-white);
-            border-radius: 12px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-lg);
             padding: 32px;
-            box-shadow: var(--shadow-sm);
-            margin-bottom: 24px;
+            box-shadow: var(--shadow);
         }
 
         .card-header {
@@ -116,78 +153,99 @@ $labels = getLabelCounts($userEmail);
             align-items: center;
             margin-bottom: 24px;
             padding-bottom: 16px;
-            border-bottom: 1px solid var(--border-light);
+            border-bottom: 1px solid var(--border);
         }
 
         .card-title {
             font-size: 20px;
-            font-weight: 600;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
+            font-weight: 700;
+            color: var(--ink);
+            display: flex;
             align-items: center;
             gap: 8px;
         }
 
+        .card-title .material-icons-round {
+            font-size: 24px;
+            color: var(--blue);
+        }
+
+        /* Buttons */
+        .btn {
+            height: 36px;
+            padding: 0 16px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all .18s var(--ease);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
         .btn-primary {
-            background: var(--accent-primary);
+            background: var(--blue);
             color: white;
         }
 
         .btn-primary:hover {
-            background: #0a58ca;
+            background: #4a6b8f;
             transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(13, 110, 253, 0.2);
+            box-shadow: 0 4px 12px rgba(87,129,169,0.3);
         }
 
-        .btn-secondary {
-            background: var(--background-gray);
-            color: var(--text-primary);
+        .btn-primary:active {
+            transform: translateY(0);
         }
 
-        .btn-secondary:hover {
-            background: var(--border-light);
+        .btn-ghost {
+            background: transparent;
+            color: var(--ink-2);
+            border: 1px solid var(--border-2);
+        }
+
+        .btn-ghost:hover {
+            background: var(--surface-2);
+            border-color: var(--ink-3);
+        }
+
+        .btn .material-icons-round {
+            font-size: 18px;
         }
 
         /* Labels Table */
         .labels-table {
             width: 100%;
             border-collapse: separate;
-            border-spacing: 0 8px;
+            border-spacing: 0;
         }
 
         .labels-table thead th {
             text-align: left;
             padding: 12px 16px;
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-secondary);
-            border-bottom: 2px solid var(--border-light);
+            letter-spacing: 0.8px;
+            color: var(--ink-3);
+            border-bottom: 1px solid var(--border);
         }
 
         .labels-table tbody tr {
-            background: #ffffff;
-            border: 1px solid var(--border-light);
-            transition: all 0.2s;
+            transition: all .14s var(--ease);
+            border-bottom: 1px solid var(--border);
         }
 
         .labels-table tbody tr:hover {
-            background: #f8f9fa;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            background: var(--surface-2);
         }
 
         .labels-table tbody td {
             padding: 16px;
+            vertical-align: middle;
         }
 
         .label-display {
@@ -197,75 +255,48 @@ $labels = getLabelCounts($userEmail);
         }
 
         .label-color-box {
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             border-radius: 6px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1), inset 0 0 0 1px rgba(255,255,255,0.2);
+            flex-shrink: 0;
         }
 
         .main_label_names {
             font-weight: 500;
-            font-size: 15px;
+            font-size: 14px;
+            color: var(--ink);
         }
 
         .label-count {
-            color: var(--text-secondary);
-            font-size: 14px;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 8px;
-            justify-content: flex-end;
-        }
-
-        .btn-icon {
-            background: none;
-            border: none;
-            padding: 8px;
-            cursor: pointer;
-            border-radius: 6px;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .btn-icon:hover {
-            background: var(--background-gray);
-        }
-
-        .btn-icon .material-icons {
-            font-size: 20px;
-            color: var(--text-secondary);
-        }
-
-        .btn-icon:hover .material-icons {
-            color: var(--text-primary);
+            color: var(--ink-3);
+            font-size: 13px;
+            font-weight: 400;
         }
 
         /* Empty State */
         .empty-state {
             text-align: center;
-            padding: 60px 20px;
+            padding: 80px 20px;
         }
 
-        .empty-state .material-icons {
-            font-size: 64px;
-            color: var(--border-light);
+        .empty-state .material-icons-round {
+            font-size: 72px;
+            color: var(--ink-4);
+            opacity: 0.5;
             margin-bottom: 16px;
         }
 
         .empty-state h3 {
             font-size: 20px;
             font-weight: 600;
+            color: var(--ink-2);
             margin-bottom: 8px;
-            color: var(--text-primary);
         }
 
         .empty-state p {
-            color: var(--text-secondary);
             font-size: 14px;
+            color: var(--ink-3);
         }
 
         /* Modal */
@@ -276,70 +307,106 @@ $labels = getLabelCounts($userEmail);
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(26,26,46,0.6);
+            backdrop-filter: blur(4px);
             z-index: 1000;
             align-items: center;
             justify-content: center;
+            animation: fadeIn .18s var(--ease);
         }
 
         .modal.active {
             display: flex;
         }
 
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.96);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
         .modal-content {
-            background: white;
-            border-radius: 12px;
+            background: var(--surface);
+            border-radius: var(--r-lg);
             width: 90%;
-            max-width: 500px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 480px;
+            box-shadow: var(--shadow-lg);
+            animation: slideUp .24s var(--ease-spring);
+            border: 1px solid var(--border-2);
         }
 
         .modal-header {
-            padding: 24px 24px 16px;
-            border-bottom: 1px solid var(--border-light);
+            padding: 24px 32px;
+            border-bottom: 1px solid var(--border);
         }
 
         .modal-title {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
+            color: var(--ink);
         }
 
         .modal-body {
-            padding: 24px;
+            padding: 32px;
         }
 
         .modal-footer {
-            padding: 16px 24px 24px;
+            padding: 20px 32px;
+            border-top: 1px solid var(--border);
             display: flex;
             gap: 12px;
             justify-content: flex-end;
         }
 
+        /* Form Elements */
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 24px;
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
         }
 
         .form-label {
             display: block;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
+            color: var(--ink-2);
             margin-bottom: 8px;
+            letter-spacing: 0.2px;
         }
 
         .form-input {
             width: 100%;
-            padding: 12px;
-            border: 1px solid var(--border-light);
+            height: 40px;
+            padding: 0 14px;
+            border: 1px solid var(--border-2);
             border-radius: 8px;
+            font-family: inherit;
             font-size: 14px;
-            font-family: 'Inter', sans-serif;
-            transition: border-color 0.2s;
+            color: var(--ink);
+            background: var(--surface);
+            transition: all .18s var(--ease);
         }
 
         .form-input:focus {
             outline: none;
-            border-color: var(--accent-primary);
-            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px var(--blue-glow);
+        }
+
+        .form-input::placeholder {
+            color: var(--ink-4);
         }
 
         /* Color Picker */
@@ -352,21 +419,29 @@ $labels = getLabelCounts($userEmail);
         .color-picker {
             width: 60px;
             height: 40px;
-            border: 1px solid var(--border-light);
+            border: 1px solid var(--border-2);
             border-radius: 8px;
             cursor: pointer;
+            transition: all .18s var(--ease);
+        }
+
+        .color-picker:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         .color-hex {
-            font-family: monospace;
-            font-size: 14px;
-            color: var(--text-secondary);
+            font-family: 'DM Mono', monospace;
+            font-size: 13px;
+            color: var(--ink-3);
+            font-weight: 500;
         }
 
         .color-presets {
             display: flex;
             gap: 8px;
             margin-top: 12px;
+            flex-wrap: wrap;
         }
 
         .color-preset {
@@ -375,50 +450,112 @@ $labels = getLabelCounts($userEmail);
             border-radius: 6px;
             cursor: pointer;
             border: 2px solid transparent;
-            transition: all 0.2s;
+            transition: all .18s var(--ease-spring);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1), inset 0 0 0 1px rgba(255,255,255,0.2);
         }
 
         .color-preset:hover {
-            transform: scale(1.1);
-            border-color: var(--text-primary);
+            transform: scale(1.15);
+            border-color: var(--ink);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15), inset 0 0 0 1px rgba(255,255,255,0.3);
+        }
+
+        .color-preset:active {
+            transform: scale(1.05);
         }
 
         /* Alert */
         #alertContainer {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: 24px;
+            right: 24px;
             z-index: 2000;
             display: flex;
             flex-direction: column;
             gap: 12px;
+            pointer-events: none;
         }
 
         .alert {
-            background: white;
-            border-radius: 8px;
+            background: var(--surface);
+            border-radius: var(--r);
             padding: 16px 20px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-2);
             display: flex;
             align-items: center;
             gap: 12px;
-            min-width: 300px;
+            min-width: 320px;
+            animation: slideInRight .24s var(--ease-spring);
+            pointer-events: all;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
 
         .alert-success {
-            border-left: 4px solid var(--accent-success);
+            border-left: 3px solid var(--green);
         }
 
-        .alert-success .material-icons {
-            color: var(--accent-success);
+        .alert-success .material-icons-round {
+            color: var(--green);
         }
 
         .alert-error {
-            border-left: 4px solid var(--accent-danger);
+            border-left: 3px solid var(--red);
         }
 
-        .alert-error .material-icons {
-            color: var(--accent-danger);
+        .alert-error .material-icons-round {
+            color: var(--red);
+        }
+
+        .alert .material-icons-round {
+            font-size: 22px;
+        }
+
+        .alert span:not(.material-icons-round) {
+            font-size: 14px;
+            color: var(--ink);
+            font-weight: 500;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 20px;
+            }
+
+            .page-header,
+            .content-card {
+                padding: 24px;
+            }
+
+            .card-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+
+            .labels-table {
+                font-size: 13px;
+            }
+
+            .labels-table thead th,
+            .labels-table tbody td {
+                padding: 12px 8px;
+            }
+
+            .modal-content {
+                width: 95%;
+            }
         }
     </style>
 </head>
@@ -434,16 +571,19 @@ $labels = getLabelCounts($userEmail);
 
         <div class="content-card">
             <div class="card-header">
-                <h2 class="card-title">All Labels</h2>
+                <h2 class="card-title">
+                    <span class="material-icons-round">label</span>
+                    All Labels
+                </h2>
                 <button class="btn btn-primary" onclick="openCreateModal()">
-                    <span class="material-icons" style="font-size: 18px;">add</span>
+                    <span class="material-icons-round">add</span>
                     Create Label
                 </button>
             </div>
 
             <?php if (empty($labels)): ?>
                 <div class="empty-state">
-                    <span class="material-icons">label_off</span>
+                    <span class="material-icons-round">label_off</span>
                     <h3>No labels yet</h3>
                     <p>Create your first label to start organizing your emails</p>
                 </div>
@@ -466,15 +606,15 @@ $labels = getLabelCounts($userEmail);
                                 </div>
                             </td>
                             <td>
-    <span class="label-count">
-        <?= htmlspecialchars($label['email_count'] ?? '0') ?> emails
-    </span>
-</td>
-<td>
-    <span class="label-count">
-        <?= !empty($label['created_at']) ? date('M j, Y', strtotime($label['created_at'])) : 'N/A' ?>
-    </span>
-</td>
+                                <span class="label-count">
+                                    <?= htmlspecialchars($label['email_count'] ?? '0') ?> emails
+                                </span>
+                            </td>
+                            <td>
+                                <span class="label-count">
+                                    <?= !empty($label['created_at']) ? date('M j, Y', strtotime($label['created_at'])) : 'N/A' ?>
+                                </span>
+                            </td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -503,23 +643,24 @@ $labels = getLabelCounts($userEmail);
                     <div class="form-group">
                         <label class="form-label">Label Color</label>
                         <div class="color-picker-wrapper">
-                            <input type="color" class="color-picker" id="labelColor" name="label_color" value="#0973dc">
-                            <span class="color-hex" id="colorHex">#0973dc</span>
+                            <input type="color" class="color-picker" id="labelColor" name="label_color" value="#5781a9">
+                            <span class="color-hex" id="colorHex">#5781a9</span>
                         </div>
                         <div class="color-presets">
-                            <div class="color-preset" style="background: #0973dc;" onclick="setColor('#0973dc')"></div>
-                            <div class="color-preset" style="background: #34a853;" onclick="setColor('#34a853')"></div>
-                            <div class="color-preset" style="background: #ea4335;" onclick="setColor('#ea4335')"></div>
-                            <div class="color-preset" style="background: #fbbc04;" onclick="setColor('#fbbc04')"></div>
-                            <div class="color-preset" style="background: #5f6368;" onclick="setColor('#5f6368')"></div>
-                            <div class="color-preset" style="background: #8e24aa;" onclick="setColor('#8e24aa')"></div>
-                            <div class="color-preset" style="background: #ff6d00;" onclick="setColor('#ff6d00')"></div>
+                            <div class="color-preset" style="background: #5781a9;" onclick="setColor('#5781a9')" title="Blue"></div>
+                            <div class="color-preset" style="background: #10b981;" onclick="setColor('#10b981')" title="Green"></div>
+                            <div class="color-preset" style="background: #ef4444;" onclick="setColor('#ef4444')" title="Red"></div>
+                            <div class="color-preset" style="background: #f59e0b;" onclick="setColor('#f59e0b')" title="Amber"></div>
+                            <div class="color-preset" style="background: #8b5cf6;" onclick="setColor('#8b5cf6')" title="Purple"></div>
+                            <div class="color-preset" style="background: #6b6b8a;" onclick="setColor('#6b6b8a')" title="Gray"></div>
+                            <div class="color-preset" style="background: #ec4899;" onclick="setColor('#ec4899')" title="Pink"></div>
+                            <div class="color-preset" style="background: #06b6d4;" onclick="setColor('#06b6d4')" title="Cyan"></div>
                         </div>
                     </div>
                 </div>
                 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancel</button>
                     <button type="submit" class="btn btn-primary">Save Label</button>
                 </div>
             </form>
@@ -544,8 +685,8 @@ $labels = getLabelCounts($userEmail);
             document.getElementById('formAction').value = 'create';
             document.getElementById('labelId').value = '';
             document.getElementById('labelName').value = '';
-            document.getElementById('labelColor').value = '#0973dc';
-            colorHex.textContent = '#0973dc';
+            document.getElementById('labelColor').value = '#5781a9';
+            colorHex.textContent = '#5781a9';
             document.getElementById('labelModal').classList.add('active');
         }
         
@@ -553,8 +694,16 @@ $labels = getLabelCounts($userEmail);
             document.getElementById('labelModal').classList.remove('active');
         }
         
+        // Close modal on backdrop click
         document.getElementById('labelModal').addEventListener('click', (e) => {
             if (e.target.id === 'labelModal') {
+                closeModal();
+            }
+        });
+        
+        // Close modal on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && document.getElementById('labelModal').classList.contains('active')) {
                 closeModal();
             }
         });
@@ -590,12 +739,15 @@ $labels = getLabelCounts($userEmail);
             const alert = document.createElement('div');
             alert.className = `alert alert-${type}`;
             alert.innerHTML = `
-                <span class="material-icons">${type === 'success' ? 'check_circle' : 'error'}</span>
+                <span class="material-icons-round">${type === 'success' ? 'check_circle' : 'error'}</span>
                 <span>${message}</span>
             `;
             container.appendChild(alert);
             
-            setTimeout(() => alert.remove(), 5000);
+            setTimeout(() => {
+                alert.style.animation = 'slideInRight .24s var(--ease-spring) reverse';
+                setTimeout(() => alert.remove(), 240);
+            }, 4000);
         }
     </script>
 </body>
