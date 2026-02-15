@@ -1048,9 +1048,9 @@ $lastSync = getLastSyncDate($userEmail);
                 Inbox
             </div>
             <div class="stat-item">
-                <div class="stat-icon total">
+                <!-- <div class="stat-icon total">
                     <span class="material-icons-round">mail</span>
-                </div>
+                </div> -->
                 <div class="stat-content">
                     <div class="stat-number" id="totalCount">
                         <?= $totalCount ?>
@@ -1060,9 +1060,9 @@ $lastSync = getLastSyncDate($userEmail);
             </div>
 
             <div class="stat-item">
-                <div class="stat-icon unread">
+                <!-- <div class="stat-icon unread">
                     <span class="material-icons-round">mark_email_unread</span>
-                </div>
+                </div> -->
                 <div class="stat-content">
                     <div class="stat-number" id="unreadCount">
                         <?= $unreadCount ?>
@@ -1072,9 +1072,9 @@ $lastSync = getLastSyncDate($userEmail);
             </div>
 
             <div class="stat-item">
-                <div class="stat-icon new-stat">
+                <!-- <div class="stat-icon new-stat">
                     <span class="material-icons-round">fiber_new</span>
-                </div>
+                </div> -->
                 <div class="stat-content">
                     <div class="stat-number" id="newCount">
                         <?= $newCount ?>
