@@ -906,7 +906,8 @@ function buildEmailBody(
         '{{SIGNATURE_NAME}}',
         '{{SIGNATURE_DESIGNATION}}',
         '{{COMPANY_NAME}}',
-        '{{SIGNATURE_EXTRA}}'
+        '{{SIGNATURE_EXTRA}}',
+        '{{DATE}}',
     ], [
         htmlspecialchars($articleTitle, ENT_QUOTES, 'UTF-8'),
         nl2br(htmlspecialchars($messageContent, ENT_QUOTES, 'UTF-8')),
@@ -914,7 +915,8 @@ function buildEmailBody(
         htmlspecialchars($senderName, ENT_QUOTES, 'UTF-8'),
         htmlspecialchars($senderDesignation, ENT_QUOTES, 'UTF-8'),
         htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8'),
-        htmlspecialchars($additionalInfo, ENT_QUOTES, 'UTF-8')
+        htmlspecialchars($additionalInfo, ENT_QUOTES, 'UTF-8'),
+        date('d F Y'),
     ], $emailTemplate);
 }
 
