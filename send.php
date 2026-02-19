@@ -76,7 +76,7 @@ function buildEmailFromTemplate(
     string $signatureDesignation,
     string $signatureExtra
 ): string {
-    $templatePath = __DIR__ . '/template1.html';
+    $templatePath = __DIR__ . '/templates/template1.html';
 
     if (!file_exists($templatePath)) {
         throw new \RuntimeException("Email template not found: $templatePath");
