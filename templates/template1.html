@@ -119,47 +119,92 @@
                   &#160;
                 </td>
 
-                <!-- Text column -->
+                <!-- Text column — inner nested table, one concept per row -->
                 <td valign="middle"
-                    style="padding-top:20px;padding-bottom:20px;">
+                    style="padding-top:18px;padding-bottom:18px;">
 
-                  <!-- College name -->
-                  <p class="college-name"
-                     style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
-                            font-size:18px;font-weight:700;color:#0b2d48;
-                            line-height:1.25;letter-spacing:-0.2px;
-                            margin:0 0 5px 0;padding:0;">
-                    St. Xavier&#8217;s College (Autonomous), Kolkata
-                  </p>
-
-                  <!-- Accreditation line -->
-                  <p class="accred-text"
-                     style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
-                            font-size:10.5px;color:#556677;line-height:1.7;
-                            margin:0 0 10px 0;padding:0;">
-                    Autonomous College (2006)&#160;&#183;&#160;College of Excellence (2014)&#160;&#183;&#160;NAAC A++ Grade&#160;&#183;&#160;4th Cycle (2024)<br />
-                    ISO 9001:2015 Certified&#160;&#183;&#160;NIRF India Ranking 2025: 8th Position
-                  </p>
-
-                  <!-- Invitation tag -->
                   <table role="presentation" border="0" cellpadding="0" cellspacing="0"
+                         width="100%"
                          style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
+
+                    <!-- ROW A · College name only -->
                     <tr>
-                      <td style="background-color:#fff8eb;border:1px solid #d08c00;
-                                 border-radius:3px;padding:4px 10px;">
-                        <span style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
-                                      font-size:9.5px;font-weight:700;color:#a06800;
-                                      letter-spacing:0.2px;white-space:nowrap;">
-                          Official Invitation &#8212; Campus Recruitment, MSc Data Science 2026
-                        </span>
-                      </td>
-                      <td width="12" style="width:12px;">&#160;</td>
-                      <td valign="middle">
-                        
+                      <td style="padding-bottom:7px;">
+                        <p class="college-name"
+                           style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                                  font-size:18px;font-weight:700;color:#0b2d48;
+                                  line-height:1.25;letter-spacing:-0.2px;
+                                  margin:0;padding:0;">
+                          St. Xavier&#8217;s College (Autonomous), Kolkata
+                        </p>
                       </td>
                     </tr>
-                  </table>
 
+                    <!-- ROW B · NIRF ranking badge — ISOLATED. Nothing else in this cell. -->
+                    <tr>
+                      <td style="padding-bottom:8px;">
+                        <table role="presentation" border="0" cellpadding="0" cellspacing="0"
+                               style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
+                          <tr>
+                            <td style="background-color:#0b2d48;
+                                       border-radius:3px;
+                                       padding-top:4px;padding-bottom:4px;
+                                       padding-left:10px;padding-right:10px;">
+                              <span style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                                            font-size:10px;font-weight:700;
+                                            color:#ffffff;
+                                            letter-spacing:0.3px;
+                                            white-space:nowrap;">
+                                Ranked 8th in India &#8212; NIRF 2025
+                              </span>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+
+                    <!-- ROW C · Accreditation details only (no NIRF here) -->
+                    <tr>
+                      <td style="padding-bottom:10px;">
+                        <p class="accred-text"
+                           style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                                  font-size:10.5px;color:#556677;line-height:1.7;
+                                  margin:0;padding:0;">
+                          Autonomous College (2006)&#160;&#183;&#160;College of Excellence (2014)&#160;&#183;&#160;NAAC A++ Grade&#160;&#183;&#160;4th Cycle (2024)&#160;&#183;&#160;ISO 9001:2015 Certified
+                        </p>
+                      </td>
+                    </tr>
+
+                    <!-- ROW D · Official invitation tag + date -->
+                    <tr>
+                      <td>
+                        <table role="presentation" border="0" cellpadding="0" cellspacing="0"
+                               style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
+                          <tr>
+                            <td style="background-color:#fff8eb;
+                                       border:1px solid #d08c00;
+                                       border-radius:3px;
+                                       padding-top:4px;padding-bottom:4px;
+                                       padding-left:10px;padding-right:10px;">
+                              <span style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                                            font-size:9.5px;font-weight:700;color:#a06800;
+                                            letter-spacing:0.2px;white-space:nowrap;">
+                                Official Invitation &#8212; Campus Recruitment, MSc Data Science 2026
+                              </span>
+                            </td>
+                            <td width="12" style="width:12px;">&#160;</td>
+                            <td valign="middle">
+                              <span style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                                            font-size:10px;color:#8899aa;">
+                                {{DATE}}
+                              </span>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+
+                  </table>
                 </td>
 
                 <!-- Right pad -->
@@ -215,8 +260,7 @@
                         </v:roundrect>
                         <![endif]-->
                         <!--[if !mso]><!-->
-                        <a class="btn-anchor" href="mailto:placement@sxccal.edu"
-                           style="display:block;
+                        <a class="btn-anchor" href="/cdn-cgi/l/email-protection#23534f4240464e464d5763505b4040424f0d464756" style="display:block;
                                   font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
                                   font-size:11.5px;font-weight:700;
                                   color:#ffffff;text-decoration:none;
@@ -390,7 +434,10 @@
 
                 <!-- Date -->
                 <td valign="middle">
-                  
+                  <span style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                                font-size:11px;color:#8899aa;">
+                    Published: {{DATE}}
+                  </span>
                 </td>
 
               </tr>
@@ -841,11 +888,10 @@
                         </svg>
                       </td>
                       <td valign="top">
-                        <a href="mailto:placement@sxccal.edu"
-                           style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                        <a href="/cdn-cgi/l/email-protection#9cecf0fdfff9f1f9f2e8dcefe4fffffdf0b2f9f8e9" style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
                                   font-size:11.5px;color:#99bbcc;
                                   text-decoration:none;line-height:1.5;">
-                          placement@sxccal.edu
+                          <span class="__cf_email__" data-cfemail="60100c0103050d050e142013180303010c4e050415">[email&#160;protected]</span>
                         </a>
                       </td>
                     </tr>
@@ -928,7 +974,6 @@
           </td>
         </tr>
         <!-- END FOOTER -->
-
 
       </table>
       <!-- END CARD -->
