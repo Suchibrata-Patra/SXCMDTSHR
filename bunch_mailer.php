@@ -1534,7 +1534,7 @@ if (!$hasSessionAuth && $hasEnvAuth) {
         const AUTOMATCH = {
             recipient_email:    ['mail', 'email', 'mail_id', 'mailid', 'e-mail'],
             recipient_name:     ['name', 'recipient', 'receiver'],
-            subject:            ['subject', 'mail_subject', 'sub'],
+            subject:            ['subject', 'subj', 'sub'],
             article_title:      ['article', 'title', 'article_title'],
             message_content:    ['message', 'body', 'content', 'personalised', 'personalized'],
             closing_wish:       ['closing', 'wish', 'footer'],
