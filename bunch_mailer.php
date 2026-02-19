@@ -1521,7 +1521,7 @@ if (!$hasSessionAuth && $hasEnvAuth) {
             { value: 'recipient_email',    label: 'Email Address' },
             { value: 'recipient_name',     label: 'Recipient Name' },
             { value: 'subject',            label: 'Subject' },
-            { value: 'article_title',      label: 'Article Title' },
+            { value: 'article_title',      label: 'Company Name' },
             { value: 'message_content',    label: 'Message Body' },
             { value: 'closing_wish',       label: 'Closing Wish' },
             { value: 'sender_name',        label: 'Sender Name' },
