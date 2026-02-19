@@ -647,9 +647,9 @@
 
                                             <div style="font-family: 'Merriweather', 'Georgia', serif; font-size: 0.85rem; color: #222222; line-height: 1.85; text-align: justify;">
 
-                                                <p style="margin: 0 0 18px 0;">
-                                                    Dear {{receiver_name}},
-                                                </p>
+                                                <!-- {{MESSAGE}} from process_bulk_mail.php → maps to message_content column in bulk_mail_queue -->
+                                                <!-- The greeting "Dear [name]," should be included at the start of message_content in the CSV -->
+                                                <p style="margin: 0 0 18px 0;">{{MESSAGE}}</p>
 
                                                 <p style="margin: 0 0 18px 0;">
                                                     Greetings from the Postgraduate Department of Data Science, St. Xavier's College (Autonomous), Kolkata.
@@ -660,7 +660,7 @@
                                                 </p>
 
                                                 <p style="margin: 0 0 18px 0;">
-                                                    I am writing to explore the possibility of connecting with <strong>{{Company_Name}}</strong> regarding campus placement opportunities for our <strong>M.Sc. in Data Science (Batch 2024–2026)</strong>.
+                                                    I am writing to explore the possibility of connecting with <strong>{{COMPANY_NAME}}</strong> regarding campus placement opportunities for our <strong>M.Sc. in Data Science (Batch 2024–2026)</strong>.
                                                 </p>
 
                                                 <p style="margin: 0 0 18px 0;">
@@ -694,18 +694,16 @@
                                             <!-- Signature Section -->
                                             <div style="margin-top: 50px; padding-top: 35px; border-top: 1px solid #d0d0d0;">
                                                 <p class="template1_body-text" style="margin-bottom: 5px;">
-                                                    Regards,
+                                                    {{SIGNATURE_WISH}}
                                                 </p>
                                                 <p class="template1_body-text" style="font-weight: 700; margin-bottom: 5px;">
-                                                    Durba Bhattacharya
+                                                    {{SIGNATURE_NAME}}
                                                 </p>
                                                 <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; color: #666666; margin: 0 0 10px 0;">
-                                                    Head, Postgraduate Department of Data Science,<br>
-                                                    St. Xavier's College (Autonomous), Kolkata
+                                                    {{SIGNATURE_DESIGNATION}}
                                                 </p>
                                                 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; color: #888888; margin-top: 10px; line-height: 1.6;">
-                                                    <strong>Email:</strong> <a href="mailto:durba@sxccal.edu" style="color: #226799;">durba@sxccal.edu</a><br>
-                                                    <strong>Phone No:</strong> <a href="tel:+919830275826" style="color: #226799;">+91 98302 75826</a>
+                                                    {{SIGNATURE_EXTRA}}
                                                 </div>
                                             </div>
 
