@@ -1521,10 +1521,10 @@ if (!$hasSessionAuth && $hasEnvAuth) {
             { value: 'recipient_email',    label: 'Email Address' },
             { value: 'recipient_name',     label: 'Recipient Name' },
             { value: 'subject',            label: 'Subject' },
-            { value: 'article_title',      label: 'Company Name' },
+            { value: 'article_title',      label: 'Article Title' },
             { value: 'message_content',    label: 'Message Body' },
             { value: 'closing_wish',       label: 'Closing Wish' },
-            { value: 'sender_name',        label: 'Sender Name' },
+            { value: 'sender_name',        label: 'Company Name' },
             { value: 'sender_designation', label: 'Sender Designation' },
         ];
 
@@ -1532,9 +1532,9 @@ if (!$hasSessionAuth && $hasEnvAuth) {
 
         // Auto-match keywords map
         const AUTOMATCH = {
-            recipient_email:    ['mail', 'email', 'mail_id', 'mailid', 'e-mail'],
+            recipient_email:    ['id', 'email', 'mail_id', 'mailid', 'e-mail'],
             recipient_name:     ['name', 'recipient', 'receiver'],
-            subject:            ['subject', 'mail_subject', 'sub'],
+            subject:            ['subject', 'subj', 'sub'],
             article_title:      ['article', 'title', 'article_title'],
             message_content:    ['message', 'body', 'content', 'personalised', 'personalized'],
             closing_wish:       ['closing', 'wish', 'footer'],

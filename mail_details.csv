@@ -1,4 +1,4 @@
-mail_id,receiver_name,Mail_Subject,Article_Title,Personalised_message,closing_wish,Name,Designation,Additional_information,Attachments
-suchibrata.official@gmail.com,Editorial Office,Article Submission,Bioinformatics Pipeline Optimization,Kindly find the submitted article attached.,Regards,Suchibrata,MSc Candidate,No conflicts of interest declared,cv.pdf
-patrasuchi2003@gmail.com,Technical Team,Issue Reporting,Server Response Latency,Reporting an unusual delay in server response.,Thanks,Suchibrata Patra,Developer,Logs attached below,cv.pdf
-trading.suchibrata.com@gmail.com,Conference Committee,Registration Confirmation,NeuroTech Summit 2026,Please confirm my registration details.,Warmly,Suchibrata,Presenter,Paid fees online,cv.pdf
+mail_id,Mail_Subject,Article_Title,receiver_name,Company_Name,Personalised_message,closing_wish,Designation,Additional_information,Attachments
+suchibrata.official@gmail.com,Article Submission,Bioinformatics Pipeline Optimization,Editorial Office,Suchibrata,Kindly find the submitted article attached.,Regards,MSc Candidate,No conflicts of interest declared,cv.pdf
+patrasuchi2003@gmail.com,Issue Reporting,Server Response Latency,Technical Team,Suchibrata Patra,Reporting an unusual delay in server response.,Thanks,Developer,Logs attached below,cv.pdf
+trading.suchibrata.com@gmail.com,Registration Confirmation,NeuroTech Summit 2026,Conference Committee,Suchibrata,Please confirm my registration details.,Warmly,Presenter,Paid fees online,cv.pdf
