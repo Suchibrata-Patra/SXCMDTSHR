@@ -174,6 +174,8 @@ try {
                     $suggestedMapping[$column] = 'sender_name';
                 } elseif (strpos($columnLower, 'designation') !== false) {
                     $suggestedMapping[$column] = 'sender_designation';
+                } elseif (strpos($columnLower, 'company') !== false || strpos($columnLower, 'organisation') !== false || strpos($columnLower, 'organization') !== false || strpos($columnLower, 'org') !== false || strpos($columnLower, 'firm') !== false) {
+                    $suggestedMapping[$column] = 'company_name';
                 }
             }
             
@@ -282,13 +284,14 @@ try {
                             closing_wish,
                             sender_name,
                             sender_designation,
+                            company_name,
                             additional_info,
                             attachment_id,
                             drive_file_path,
                             status,
                             created_at
                         ) VALUES (
-                            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW()
+                            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW()
                         )
                     ");
                     
@@ -303,6 +306,7 @@ try {
                         $email['closing_wish'] ?? '',
                         $email['sender_name'] ?? '',
                         $email['sender_designation'] ?? '',
+                        $email['company_name'] ?? '',
                         $email['additional_info'] ?? '',
                         $attachmentId,
                         $driveFilePath

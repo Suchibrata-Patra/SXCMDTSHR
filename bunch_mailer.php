@@ -1526,6 +1526,7 @@ if (!$hasSessionAuth && $hasEnvAuth) {
             { value: 'closing_wish',       label: 'Closing Wish' },
             { value: 'sender_name',        label: 'Sender Name' },
             { value: 'sender_designation', label: 'Sender Designation' },
+            { value: 'company_name',        label: 'Company Name' },
         ];
 
         const REQUIRED_FIELDS = ['recipient_email'];
@@ -1540,6 +1541,7 @@ if (!$hasSessionAuth && $hasEnvAuth) {
             closing_wish:       ['closing', 'wish', 'footer'],
             sender_name:        ['sender', 'from_name', 'from'],
             sender_designation: ['designation', 'title', 'role', 'position'],
+            company_name:       ['company', 'company_name', 'organisation', 'organization', 'org', 'firm'],
         };
 
         /* ═══ TAB SWITCHING ══════════════════════════════════════════════ */

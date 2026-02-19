@@ -658,6 +658,7 @@ function sendBulkEmail(
         $closingWish     = (string)($queueItem['closing_wish']     ?: 'Best Regards,');
         $senderName      = (string)($queueItem['sender_name']      ?: $displayName);
         $senderDesig     = (string)($queueItem['sender_designation'] ?: '');
+        $companyName     = (string)($queueItem['company_name']     ?: '');
         $additionalInfo  = (string)($queueItem['additional_info']  ?: "St. Xavier's College (Autonomous), Kolkata");
 
         $mail->Subject = $subject;
@@ -665,7 +666,7 @@ function sendBulkEmail(
         // Build HTML body
         $emailBody = buildEmailBody(
             $articleTitle, $messageContent, $closingWish,
-            $senderName,   $senderDesig,    $additionalInfo
+            $senderName,   $senderDesig,    $companyName,  $additionalInfo
         );
 
         $mail->isHTML(true);
@@ -874,6 +875,7 @@ function buildEmailBody(
     string $closingWish,
     string $senderName,
     string $senderDesignation,
+    string $companyName,
     string $additionalInfo
 ): string {
     $templatePath = __DIR__ . '/templates/template1.html';
@@ -888,6 +890,7 @@ function buildEmailBody(
                 <p>{$closingWish}<br>
                 <strong>{$senderName}</strong><br>
                 {$senderDesignation}<br>
+                {$companyName}<br>
                 {$additionalInfo}</p>
             </body>
             </html>
@@ -902,6 +905,7 @@ function buildEmailBody(
         '{{SIGNATURE_WISH}}',
         '{{SIGNATURE_NAME}}',
         '{{SIGNATURE_DESIGNATION}}',
+        '{{COMPANY_NAME}}',
         '{{SIGNATURE_EXTRA}}'
     ], [
         htmlspecialchars($articleTitle, ENT_QUOTES, 'UTF-8'),
@@ -909,6 +913,7 @@ function buildEmailBody(
         htmlspecialchars($closingWish, ENT_QUOTES, 'UTF-8'),
         htmlspecialchars($senderName, ENT_QUOTES, 'UTF-8'),
         htmlspecialchars($senderDesignation, ENT_QUOTES, 'UTF-8'),
+        htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8'),
         htmlspecialchars($additionalInfo, ENT_QUOTES, 'UTF-8')
     ], $emailTemplate);
 }
@@ -1026,6 +1031,7 @@ function ensureSchemaColumns(PDO $pdo): void
         "ALTER TABLE bulk_mail_queue ADD COLUMN IF NOT EXISTS retry_after  DATETIME NULL",
         "ALTER TABLE bulk_mail_queue ADD COLUMN IF NOT EXISTS last_error_at DATETIME NULL",
         "ALTER TABLE bulk_mail_queue ADD COLUMN IF NOT EXISTS locked_until  DATETIME NULL",
+        "ALTER TABLE bulk_mail_queue ADD COLUMN IF NOT EXISTS company_name  VARCHAR(255) NOT NULL DEFAULT ''",
     ];
 
     foreach ($alterStatements as $sql) {
