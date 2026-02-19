@@ -119,7 +119,7 @@
                   &#160;
                 </td>
 
-                <!-- Text column — inner nested table, one concept per row -->
+                <!-- Text column — one concept per row, strictly isolated -->
                 <td valign="middle"
                     style="padding-top:18px;padding-bottom:18px;">
 
@@ -127,9 +127,9 @@
                          width="100%"
                          style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
 
-                    <!-- ROW A · College name only -->
+                    <!-- ROW A · College name — nothing else in this cell -->
                     <tr>
-                      <td style="padding-bottom:7px;">
+                      <td style="padding-bottom:6px;">
                         <p class="college-name"
                            style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
                                   font-size:18px;font-weight:700;color:#0b2d48;
@@ -140,30 +140,7 @@
                       </td>
                     </tr>
 
-                    <!-- ROW B · NIRF ranking badge — ISOLATED. Nothing else in this cell. -->
-                    <tr>
-                      <td style="padding-bottom:8px;">
-                        <table role="presentation" border="0" cellpadding="0" cellspacing="0"
-                               style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
-                          <tr>
-                            <td style="background-color:#0b2d48;
-                                       border-radius:3px;
-                                       padding-top:4px;padding-bottom:4px;
-                                       padding-left:10px;padding-right:10px;">
-                              <span style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
-                                            font-size:10px;font-weight:700;
-                                            color:#ffffff;
-                                            letter-spacing:0.3px;
-                                            white-space:nowrap;">
-                                Ranked 8th in India &#8212; NIRF 2025
-                              </span>
-                            </td>
-                          </tr>
-                        </table>
-                      </td>
-                    </tr>
-
-                    <!-- ROW C · Accreditation details only (no NIRF here) -->
+                    <!-- ROW B · Accreditation credentials — no NIRF here -->
                     <tr>
                       <td style="padding-bottom:10px;">
                         <p class="accred-text"
@@ -175,30 +152,53 @@
                       </td>
                     </tr>
 
-                    <!-- ROW D · Official invitation tag + date -->
+                    <!-- ROW C · NIRF ranking badge ONLY — isolated cell, amber style.
+                         Date sits beside badge as plain text in its own separate cell. -->
                     <tr>
                       <td>
                         <table role="presentation" border="0" cellpadding="0" cellspacing="0"
                                style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                           <tr>
-                            <td style="background-color:#fff8eb;
-                                       border:1px solid #d08c00;
+
+                            <!-- Badge cell — contains ONLY the NIRF ranking text -->
+                            <td style="background-color:#fff3cd;
+                                       border:1px solid #c9900c;
                                        border-radius:3px;
                                        padding-top:4px;padding-bottom:4px;
                                        padding-left:10px;padding-right:10px;">
-                              <span style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
-                                            font-size:9.5px;font-weight:700;color:#a06800;
-                                            letter-spacing:0.2px;white-space:nowrap;">
-                                Official Invitation &#8212; Campus Recruitment, MSc Data Science 2026
-                              </span>
+                              <table role="presentation" border="0" cellpadding="0" cellspacing="0"
+                                     style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
+                                <tr>
+                                  <!-- Star SVG icon -->
+                                  <td valign="middle" style="padding-right:5px;line-height:0;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11"
+                                         viewBox="0 0 24 24" fill="#c9900c" stroke="#c9900c"
+                                         stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                      <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                                    </svg>
+                                  </td>
+                                  <!-- Badge text — ONLY this text, nothing else -->
+                                  <td valign="middle">
+                                    <span style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                                                  font-size:10px;font-weight:700;
+                                                  color:#7a5800;
+                                                  letter-spacing:0.2px;
+                                                  white-space:nowrap;">
+                                      Ranked 8th in India &#8212; NIRF 2025
+                                    </span>
+                                  </td>
+                                </tr>
+                              </table>
                             </td>
+
+                            <!-- Gap between badge and date -->
                             <td width="12" style="width:12px;">&#160;</td>
+
+                            <!-- Date — separate cell, no sharing with badge -->
                             <td valign="middle">
-                              <span style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
-                                            font-size:10px;color:#8899aa;">
-                                {{DATE}}
-                              </span>
+                              
                             </td>
+
                           </tr>
                         </table>
                       </td>
@@ -235,7 +235,7 @@
                    style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
               <tr>
 
-                <!-- ── CTA 1: Connect (solid) ── -->
+                <!-- ── CTA 1: Connect (solid fill) ── -->
                 <td valign="top" width="32%"
                     style="width:32%;padding-right:6px;">
                   <table class="btn-table" role="presentation" border="0"
@@ -244,38 +244,22 @@
                     <tr>
                       <td align="center" valign="middle"
                           style="background-color:#0b2d48;
-                                 border-radius:4px;border:2px solid #0b2d48;">
-
-                        <!--[if mso]>
-                        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml"
-                          xmlns:w="urn:schemas-microsoft-com:office:word"
-                          href="mailto:placement@sxccal.edu"
-                          style="height:42px;v-text-anchor:middle;width:170px;"
-                          arcsize="9%" stroke="f" fillcolor="#0b2d48">
-                          <w:anchorlock/>
-                          <center style="font-family:Arial,sans-serif;font-size:11px;
-                                         font-weight:700;color:#ffffff;">
-                            Connect With<br/>Placement Cell
-                          </center>
-                        </v:roundrect>
-                        <![endif]-->
-                        <!--[if !mso]><!-->
-                        <a class="btn-anchor" href="/cdn-cgi/l/email-protection#23534f4240464e464d5763505b4040424f0d464756" style="display:block;
-                                  font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                                 border-radius:4px;border:2px solid #0b2d48;
+                                 padding-top:11px;padding-bottom:11px;
+                                 padding-left:8px;padding-right:8px;">
+                        <a class="btn-anchor" href="mailto:placement@sxccal.edu"
+                           style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
                                   font-size:11.5px;font-weight:700;
                                   color:#ffffff;text-decoration:none;
-                                  text-align:center;line-height:1.35;
-                                  padding-top:11px;padding-bottom:11px;
-                                  padding-left:8px;padding-right:8px;">
-                          <!-- Mail icon SVG -->
-                          <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMi4yIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjIiIHk9IjQiIHdpZHRoPSIyMCIgaGVpZ2h0PSIxNiIgcng9IjIiLz48cG9seWxpbmUgcG9pbnRzPSIyLDQgMTIsMTMgMjIsNCIvPjwvc3ZnPg=="
-                               alt="" width="14" height="14"
-                               style="display:inline;vertical-align:middle;
-                                      margin-bottom:3px;margin-right:5px;border:0;" />
-                          Connect With<br />Placement Cell
+                                  display:block;text-align:center;line-height:1.35;">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13"
+                               viewBox="0 0 24 24" fill="none" stroke="#ffffff"
+                               stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"
+                               style="display:inline;vertical-align:middle;margin-bottom:3px;margin-right:4px;">
+                            <rect x="2" y="4" width="20" height="16" rx="2"/>
+                            <polyline points="2,4 12,13 22,4"/>
+                          </svg>Connect With<br />Placement Cell
                         </a>
-                        <!--<![endif]-->
-
                       </td>
                     </tr>
                   </table>
@@ -290,39 +274,23 @@
                     <tr>
                       <td align="center" valign="middle"
                           style="background-color:#ffffff;
-                                 border-radius:4px;border:2px solid #0b2d48;">
-
-                        <!--[if mso]>
-                        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml"
-                          xmlns:w="urn:schemas-microsoft-com:office:word"
-                          href="{{BROCHURE_PDF_URL}}"
-                          style="height:42px;v-text-anchor:middle;width:170px;"
-                          arcsize="9%" strokecolor="#0b2d48" fillcolor="#ffffff">
-                          <w:anchorlock/>
-                          <center style="font-family:Arial,sans-serif;font-size:11px;
-                                         font-weight:700;color:#0b2d48;">
-                            Student Brochure
-                          </center>
-                        </v:roundrect>
-                        <![endif]-->
-                        <!--[if !mso]><!-->
+                                 border-radius:4px;border:2px solid #0b2d48;
+                                 padding-top:11px;padding-bottom:11px;
+                                 padding-left:8px;padding-right:8px;">
                         <a class="btn-anchor" href="{{BROCHURE_PDF_URL}}"
-                           style="display:block;
-                                  font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                           style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
                                   font-size:11.5px;font-weight:700;
                                   color:#0b2d48;text-decoration:none;
-                                  text-align:center;line-height:1.35;
-                                  padding-top:11px;padding-bottom:11px;
-                                  padding-left:8px;padding-right:8px;">
-                          <!-- Download icon SVG -->
-                          <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwYjJkNDgiIHN0cm9rZS13aWR0aD0iMi4yIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik0yMSAxNXY0YTIgMiAwIDAgMS0yIDJINWEyIDIgMCAwIDEtMi0ydi00Ii8+PHBvbHlsaW5lIHBvaW50cz0iNywxMCAxMiwxNSAxNywxMCIvPjxsaW5lIHgxPSIxMiIgeTE9IjE1IiB4Mj0iMTIiIHkyPSIzIi8+PC9zdmc+"
-                               alt="" width="14" height="14"
-                               style="display:inline;vertical-align:middle;
-                                      margin-bottom:3px;margin-right:5px;border:0;" />
-                          Student Brochure
+                                  display:block;text-align:center;line-height:1.35;">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13"
+                               viewBox="0 0 24 24" fill="none" stroke="#0b2d48"
+                               stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"
+                               style="display:inline;vertical-align:middle;margin-bottom:3px;margin-right:4px;">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7,10 12,15 17,10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                          </svg>Student Brochure
                         </a>
-                        <!--<![endif]-->
-
                       </td>
                     </tr>
                   </table>
@@ -337,39 +305,24 @@
                     <tr>
                       <td align="center" valign="middle"
                           style="background-color:#ffffff;
-                                 border-radius:4px;border:2px solid #0b2d48;">
-
-                        <!--[if mso]>
-                        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml"
-                          xmlns:w="urn:schemas-microsoft-com:office:word"
-                          href="{{CV_PACK_PDF_URL}}"
-                          style="height:42px;v-text-anchor:middle;width:170px;"
-                          arcsize="9%" strokecolor="#0b2d48" fillcolor="#ffffff">
-                          <w:anchorlock/>
-                          <center style="font-family:Arial,sans-serif;font-size:11px;
-                                         font-weight:700;color:#0b2d48;">
-                            Student CV
-                          </center>
-                        </v:roundrect>
-                        <![endif]-->
-                        <!--[if !mso]><!-->
+                                 border-radius:4px;border:2px solid #0b2d48;
+                                 padding-top:11px;padding-bottom:11px;
+                                 padding-left:8px;padding-right:8px;">
                         <a class="btn-anchor" href="{{CV_PACK_PDF_URL}}"
-                           style="display:block;
-                                  font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                           style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
                                   font-size:11.5px;font-weight:700;
                                   color:#0b2d48;text-decoration:none;
-                                  text-align:center;line-height:1.35;
-                                  padding-top:11px;padding-bottom:11px;
-                                  padding-left:8px;padding-right:8px;">
-                          <!-- File icon SVG -->
-                          <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwYjJkNDgiIHN0cm9rZS13aWR0aD0iMi4yIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik0xNCAySDBhMiAyIDAgMCAwLTIgMnYxNmEyIDIgMCAwIDAgMiAyaDEyYTIgMiAwIDAgMCAyLTJWOHoiLz48cG9seWxpbmUgcG9pbnRzPSIxNCwyIDE0LDggMjAsOCIvPjxsaW5lIHgxPSIxNiIgeTE9IjEzIiB4Mj0iOCIgeTI9IjEzIi8+PGxpbmUgeDE9IjE2IiB5MT0iMTciIHgyPSI4IiB5Mj0iMTciLz48cG9seWxpbmUgcG9pbnRzPSIxMCw5IDksOSA4LDkiLz48L3N2Zz4="
-                               alt="" width="14" height="14"
-                               style="display:inline;vertical-align:middle;
-                                      margin-bottom:3px;margin-right:5px;border:0;" />
-                          Student CV
+                                  display:block;text-align:center;line-height:1.35;">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13"
+                               viewBox="0 0 24 24" fill="none" stroke="#0b2d48"
+                               stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"
+                               style="display:inline;vertical-align:middle;margin-bottom:3px;margin-right:4px;">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14,2 14,8 20,8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                          </svg>Student CV Pack
                         </a>
-                        <!--<![endif]-->
-
                       </td>
                     </tr>
                   </table>
@@ -434,10 +387,7 @@
 
                 <!-- Date -->
                 <td valign="middle">
-                  <span style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
-                                font-size:11px;color:#8899aa;">
-                    Published: {{DATE}}
-                  </span>
+                  
                 </td>
 
               </tr>
