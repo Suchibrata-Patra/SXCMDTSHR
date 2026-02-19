@@ -660,13 +660,14 @@ function sendBulkEmail(
         $senderDesig     = (string)($queueItem['sender_designation'] ?: '');
         $companyName     = (string)($queueItem['company_name']     ?: '');
         $additionalInfo  = (string)($queueItem['additional_info']  ?: "St. Xavier's College (Autonomous), Kolkata");
+        $recipientName   = (string)($queueItem['recipient_name']   ?: 'Recruiter');
 
         $mail->Subject = $subject;
 
         // Build HTML body
         $emailBody = buildEmailBody(
             $articleTitle, $messageContent, $closingWish,
-            $senderName,   $senderDesig,    $companyName,  $additionalInfo
+            $senderName,   $senderDesig,    $companyName,  $additionalInfo, $recipientName
         );
 
         $mail->isHTML(true);
@@ -876,16 +877,18 @@ function buildEmailBody(
     string $senderName,
     string $senderDesignation,
     string $companyName,
-    string $additionalInfo
+    string $additionalInfo,
+    string $recipientName = 'Recruiter'
 ): string {
     $templatePath = __DIR__ . '/templates/template1.html';
-    
+
     if (!file_exists($templatePath)) {
         // Fallback template if file doesn't exist
         return "
             <html>
             <body style='font-family: Arial, sans-serif;'>
                 <h1>{$articleTitle}</h1>
+                <p>Dear {$recipientName},</p>
                 <p>" . nl2br(htmlspecialchars($messageContent)) . "</p>
                 <p>{$closingWish}<br>
                 <strong>{$senderName}</strong><br>
@@ -896,7 +899,7 @@ function buildEmailBody(
             </html>
         ";
     }
-    
+
     $emailTemplate = file_get_contents($templatePath);
 
     // ── Logo: embed as Base64 so it renders in ALL email clients (Outlook,
@@ -904,12 +907,12 @@ function buildEmailBody(
     //    External URLs (like Wikipedia) are blocked by desktop clients by default.
     $logoPath = __DIR__ . '/assets/sxc_logo.jpg';
     if (file_exists($logoPath)) {
-        $ext      = strtolower(pathinfo($logoPath, PATHINFO_EXTENSION));
-        $mime     = ($ext === 'png') ? 'image/png' : 'image/jpeg';
-        $logoSrc  = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+        $ext     = strtolower(pathinfo($logoPath, PATHINFO_EXTENSION));
+        $mime    = ($ext === 'png') ? 'image/png' : 'image/jpeg';
+        $logoSrc = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
     } else {
         // Fallback: keep the original Wikipedia URL if the local file is missing
-        $logoSrc  = "https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg";
+        $logoSrc = "https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg";
     }
 
     return str_replace([
@@ -921,6 +924,7 @@ function buildEmailBody(
         '{{COMPANY_NAME}}',
         '{{SIGNATURE_EXTRA}}',
         '{{DATE}}',
+        '{{RECIPIENT_NAME}}',
         '{{LOGO_SRC}}',
     ], [
         htmlspecialchars($articleTitle, ENT_QUOTES, 'UTF-8'),
@@ -931,6 +935,7 @@ function buildEmailBody(
         htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8'),
         htmlspecialchars($additionalInfo, ENT_QUOTES, 'UTF-8'),
         date('d F Y'),
+        htmlspecialchars($recipientName, ENT_QUOTES, 'UTF-8'),
         $logoSrc,
     ], $emailTemplate);
 }
