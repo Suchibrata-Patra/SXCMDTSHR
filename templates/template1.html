@@ -561,8 +561,8 @@
                             <table border="0" cellpadding="0" cellspacing="0" style="padding: 15px 0 15px 96px;">
                                 <tr>
                                     <td valign="middle">
-                                        <img src="https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg"
-                                            alt="SXC Logo" width="60"
+                                        <img src="{{LOGO_SRC}}"
+                                            alt="SXC Logo" width="90"
                                             style="display: block; width: 90px; height: auto;">
                                     </td>
                                     <td valign="middle" style="padding-left: 20px;">
@@ -645,64 +645,37 @@
                                             <!-- Abstract/Greeting Section -->
                                             <h2 class="template1_section-heading">Communication</h2>
 
-                                            <div style="font-family: 'Merriweather', 'Georgia', serif; font-size: 0.85rem; color: #222222; line-height: 1.85; text-align: justify;">
-
-                                                <!-- {{MESSAGE}} from process_bulk_mail.php → maps to message_content column in bulk_mail_queue -->
-                                                <!-- The greeting "Dear [name]," should be included at the start of message_content in the CSV -->
-                                                <p style="margin: 0 0 18px 0;">{{MESSAGE}}</p>
-
-                                                <p style="margin: 0 0 18px 0;">
-                                                    Greetings from the Postgraduate Department of Data Science, St. Xavier's College (Autonomous), Kolkata.
-                                                </p>
-
-                                                <p style="margin: 0 0 18px 0;">
-                                                    I hope you are doing well.
-                                                </p>
-
-                                                <p style="margin: 0 0 18px 0;">
-                                                    I am writing to explore the possibility of connecting with <strong>{{COMPANY_NAME}}</strong> regarding campus placement opportunities for our <strong>M.Sc. in Data Science (Batch 2024–2026)</strong>.
-                                                </p>
-
-                                                <p style="margin: 0 0 18px 0;">
-                                                    Recognized as the <strong>8th best college in India by the NIRF 2025</strong> and designated as a <strong>College of Excellence by the UGC</strong>, St. Xavier's College is among the leading institutions in the country. Our M.Sc. program in Data Science is designed with a strong interdisciplinary foundation, integrating Statistics, Computer Science, Mathematics, and applied analytics, with emphasis on practical implementation through projects and industry exposure.
-                                                </p>
-
-                                                <p style="margin: 0 0 12px 0;">Our students are trained in areas such as:</p>
-
-                                                <table style="width: 100%; border-collapse: separate; border-spacing: 0 6px; margin: 0 0 18px 0;">
-                                                    <tr><td style="padding: 8px 14px; font-family: 'Merriweather', 'Georgia', serif; font-size: 0.82rem; color: #222222; border-left: 3px solid #226799; background-color: #f7f9fc;">Data Analysis and Statistical Modeling</td></tr>
-                                                    <tr><td style="padding: 8px 14px; font-family: 'Merriweather', 'Georgia', serif; font-size: 0.82rem; color: #222222; border-left: 3px solid #226799; background-color: #f7f9fc;">Machine Learning and Predictive Analytics</td></tr>
-                                                    <tr><td style="padding: 8px 14px; font-family: 'Merriweather', 'Georgia', serif; font-size: 0.82rem; color: #222222; border-left: 3px solid #226799; background-color: #f7f9fc;">Data Engineering Fundamentals</td></tr>
-                                                    <tr><td style="padding: 8px 14px; font-family: 'Merriweather', 'Georgia', serif; font-size: 0.82rem; color: #222222; border-left: 3px solid #226799; background-color: #f7f9fc;">Business Intelligence and Visualization</td></tr>
-                                                    <tr><td style="padding: 8px 14px; font-family: 'Merriweather', 'Georgia', serif; font-size: 0.82rem; color: #222222; border-left: 3px solid #226799; background-color: #f7f9fc;">Applied AI and Emerging Technologies</td></tr>
-                                                </table>
-
-                                                <p style="margin: 0 0 18px 0;">
-                                                    Depending on your organization's requirements, our students are prepared to contribute across analytics, technology, research, or data-driven decision-support roles. For your reference, we have attached the <strong>Student Profiles and Placement Brochure</strong> to this email.
-                                                </p>
-
-                                                <p style="margin: 0 0 18px 0;">
-                                                    We would be grateful for the opportunity to understand your hiring needs and explore whether our students may align with your current or upcoming requirements. If convenient, we would be happy to share further details or arrange a brief discussion at your preferred time.
-                                                </p>
-
-                                                <p style="margin: 0 0 0 0;">
-                                                    Thank you for your time and consideration.
-                                                </p>
-
+                                            <p class="template1_body-text">
+                                                Dear Esteemed Corporate Partner,
+                                            </p>
+                                            <!-- Dynamic Message Content -->
+                                            <div style="
+    font-family: 'Merriweather', 'Georgia', serif;
+    font-size: 0.8rem;
+    color: #222222;
+    line-height: 1.75;
+    text-align: justify;
+  ">
+                                                {{MESSAGE}}
                                             </div>
 
+
                                             <!-- Signature Section -->
-                                            <div style="margin-top: 50px; padding-top: 35px; border-top: 1px solid #d0d0d0;">
+                                            <div
+                                                style="margin-top: 50px; padding-top: 35px; border-top: 1px solid #d0d0d0;">
                                                 <p class="template1_body-text" style="margin-bottom: 5px;">
                                                     {{SIGNATURE_WISH}}
                                                 </p>
-                                                <p class="template1_body-text" style="font-weight: 700; margin-bottom: 5px;">
+                                                <p class="template1_body-text"
+                                                    style="font-weight: 700; margin-bottom: 5px;">
                                                     {{SIGNATURE_NAME}}
                                                 </p>
-                                                <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; color: #666666; margin: 0 0 10px 0;">
+                                                <p
+                                                    style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; color: #666666; margin: 0 0 10px 0;">
                                                     {{SIGNATURE_DESIGNATION}}
                                                 </p>
-                                                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; color: #888888; margin-top: 10px; line-height: 1.6;">
+                                                <div
+                                                    style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; color: #888888; margin-top: 10px; line-height: 1.6;">
                                                     {{SIGNATURE_EXTRA}}
                                                 </div>
                                             </div>

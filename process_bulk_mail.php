@@ -898,7 +898,20 @@ function buildEmailBody(
     }
     
     $emailTemplate = file_get_contents($templatePath);
-    
+
+    // ── Logo: embed as Base64 so it renders in ALL email clients (Outlook,
+    //    Gmail desktop, Apple Mail) without needing "Load images" to be clicked.
+    //    External URLs (like Wikipedia) are blocked by desktop clients by default.
+    $logoPath = __DIR__ . '/assets/sxc_logo.jpg';
+    if (file_exists($logoPath)) {
+        $ext      = strtolower(pathinfo($logoPath, PATHINFO_EXTENSION));
+        $mime     = ($ext === 'png') ? 'image/png' : 'image/jpeg';
+        $logoSrc  = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+    } else {
+        // Fallback: keep the original Wikipedia URL if the local file is missing
+        $logoSrc  = "https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg";
+    }
+
     return str_replace([
         '{{articletitle}}',
         '{{MESSAGE}}',
@@ -908,6 +921,7 @@ function buildEmailBody(
         '{{COMPANY_NAME}}',
         '{{SIGNATURE_EXTRA}}',
         '{{DATE}}',
+        '{{LOGO_SRC}}',
     ], [
         htmlspecialchars($articleTitle, ENT_QUOTES, 'UTF-8'),
         nl2br(htmlspecialchars($messageContent, ENT_QUOTES, 'UTF-8')),
@@ -917,6 +931,7 @@ function buildEmailBody(
         htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8'),
         htmlspecialchars($additionalInfo, ENT_QUOTES, 'UTF-8'),
         date('d F Y'),
+        $logoSrc,
     ], $emailTemplate);
 }
 
