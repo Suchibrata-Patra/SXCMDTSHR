@@ -1229,6 +1229,146 @@ if (!$hasSessionAuth && $hasEnvAuth) {
             .mapping-meta { display: none; }
             .summary-grid { grid-template-columns: 1fr; }
         }
+
+        /* ─── SIGNATURE PANEL ────────────────────────────────────────────── */
+        .sig-panel {
+            background: var(--surface);
+            border: 1px solid var(--divider);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xs);
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .sig-panel-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--divider);
+            cursor: pointer;
+            user-select: none;
+            background: linear-gradient(135deg, rgba(0,113,227,.04) 0%, rgba(0,113,227,.01) 100%);
+        }
+
+        .sig-panel-icon {
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            background: rgba(0,113,227,.1);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--blue);
+            flex-shrink: 0;
+        }
+
+        .sig-panel-icon .material-icons-round { font-size: 16px; }
+
+        .sig-panel-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--ink);
+            flex: 1;
+        }
+
+        .sig-panel-sub {
+            font-size: 11px;
+            color: var(--ink-4);
+            margin-top: 1px;
+        }
+
+        .sig-collapse-btn {
+            background: none; border: none;
+            cursor: pointer;
+            color: var(--ink-4);
+            display: flex; align-items: center;
+            border-radius: 4px;
+            padding: 3px;
+            transition: color .15s, background .15s, transform .2s var(--ease);
+        }
+
+        .sig-collapse-btn.open { transform: rotate(180deg); }
+        .sig-collapse-btn:hover { color: var(--ink-2); background: var(--bg); }
+        .sig-collapse-btn .material-icons-round { font-size: 18px; }
+
+        .sig-panel-body {
+            padding: 18px 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .sig-panel-body .sig-full { grid-column: 1 / -1; }
+
+        .sig-field {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .sig-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--ink-3);
+            letter-spacing: .04em;
+            text-transform: uppercase;
+        }
+
+        .sig-label span.optional {
+            font-weight: 400;
+            color: var(--ink-4);
+            text-transform: none;
+            letter-spacing: 0;
+            margin-left: 4px;
+        }
+
+        .sig-input, .sig-textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1.5px solid var(--divider-heavy);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--ink);
+            background: var(--surface);
+            font-family: inherit;
+            transition: border-color .15s, box-shadow .15s;
+            resize: vertical;
+        }
+
+        .sig-input::placeholder, .sig-textarea::placeholder { color: var(--ink-4); }
+
+        .sig-input:focus, .sig-textarea:focus {
+            outline: none;
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px var(--blue-glow);
+        }
+
+        .sig-textarea { min-height: 72px; }
+
+        .sig-preview {
+            background: var(--bg);
+            border: 1px solid var(--divider);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            font-size: 13px;
+            color: var(--ink-2);
+            line-height: 1.6;
+        }
+
+        .sig-preview .sig-preview-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            color: var(--ink-4);
+            margin-bottom: 8px;
+        }
+
+        .sig-divider {
+            grid-column: 1 / -1;
+            height: 1px;
+            background: var(--divider);
+            margin: 2px 0;
+        }
     </style>
 </head>
 
@@ -1310,6 +1450,64 @@ if (!$hasSessionAuth && $hasEnvAuth) {
                                             <span class="material-icons-round">close</span>
                                         </button>
                                     </div>
+                                </div>
+                            </div>
+
+                            <!-- ── SENDER SIGNATURE PANEL ──────────────── -->
+                            <div class="sig-panel" id="sigPanel">
+                                <div class="sig-panel-header" onclick="toggleSigPanel()">
+                                    <div class="sig-panel-icon">
+                                        <span class="material-icons-round">draw</span>
+                                    </div>
+                                    <div style="flex:1">
+                                        <div class="sig-panel-title">Email Signature</div>
+                                        <div class="sig-panel-sub">Sender details appended to every email in this batch</div>
+                                    </div>
+                                    <button class="sig-collapse-btn open" id="sigCollapseBtn" aria-label="Collapse">
+                                        <span class="material-icons-round">expand_more</span>
+                                    </button>
+                                </div>
+
+                                <div class="sig-panel-body" id="sigPanelBody">
+
+                                    <!-- Sender Name -->
+                                    <div class="sig-field">
+                                        <label class="sig-label" for="sigSenderName">Sender Name</label>
+                                        <input class="sig-input" id="sigSenderName" type="text" placeholder="Your full name" oninput="updateSigPreview()">
+                                    </div>
+
+                                    <!-- Closing Wish -->
+                                    <div class="sig-field">
+                                        <label class="sig-label" for="sigClosingWish">Closing Wish</label>
+                                        <input class="sig-input" id="sigClosingWish" type="text" placeholder="e.g. Best Regards," value="Best Regards," oninput="updateSigPreview()">
+                                    </div>
+
+                                    <!-- Designation -->
+                                    <div class="sig-field">
+                                        <label class="sig-label" for="sigDesignation">Designation</label>
+                                        <input class="sig-input" id="sigDesignation" type="text" placeholder="Your title or position" oninput="updateSigPreview()">
+                                    </div>
+
+                                    <!-- Additional Info -->
+                                    <div class="sig-field">
+                                        <label class="sig-label" for="sigAdditional">Additional Info <span class="optional">(optional)</span></label>
+                                        <input class="sig-input" id="sigAdditional" type="text" placeholder="Department, organisation, etc." oninput="updateSigPreview()">
+                                    </div>
+
+                                    <!-- Raw Email Signature (full width) -->
+                                    <div class="sig-field sig-full">
+                                        <label class="sig-label" for="sigRaw">Raw Email Signature <span class="optional">(optional — overrides above if filled)</span></label>
+                                        <textarea class="sig-textarea" id="sigRaw" placeholder="Paste custom HTML or plain-text signature here. When filled, this is used as-is instead of the fields above." oninput="updateSigPreview()"></textarea>
+                                    </div>
+
+                                    <!-- Live Preview -->
+                                    <div class="sig-full" id="sigPreviewWrap">
+                                        <div class="sig-preview">
+                                            <div class="sig-preview-label">Preview</div>
+                                            <div id="sigPreviewContent" style="color:var(--ink-3);font-style:italic;font-size:12px">Fill in the fields above to preview your signature.</div>
+                                        </div>
+                                    </div>
+
                                 </div>
                             </div>
 
@@ -1520,12 +1718,10 @@ if (!$hasSessionAuth && $hasEnvAuth) {
         const EMAIL_FIELDS = [
             { value: 'recipient_email',    label: 'Email Address' },
             { value: 'recipient_name',     label: 'Recipient Name' },
+            { value: 'company_name',       label: 'Company / Organisation' },
             { value: 'subject',            label: 'Subject' },
             { value: 'article_title',      label: 'Article Title' },
             { value: 'message_content',    label: 'Message Body' },
-            { value: 'closing_wish',       label: 'Closing Wish' },
-            { value: 'sender_name',        label: 'Sender Name' },
-            { value: 'sender_designation', label: 'Sender Designation' },
         ];
 
         const REQUIRED_FIELDS = ['recipient_email'];
@@ -1534,13 +1730,61 @@ if (!$hasSessionAuth && $hasEnvAuth) {
         const AUTOMATCH = {
             recipient_email:    ['mail', 'email', 'mail_id', 'mailid', 'e-mail'],
             recipient_name:     ['name', 'recipient', 'receiver'],
+            company_name:       ['company', 'organisation', 'organization', 'org', 'firm', 'institute'],
             subject:            ['subject', 'mail_subject', 'sub'],
             article_title:      ['article', 'title', 'article_title'],
             message_content:    ['message', 'body', 'content', 'personalised', 'personalized'],
-            closing_wish:       ['closing', 'wish', 'footer'],
-            sender_name:        ['sender', 'from_name', 'from'],
-            sender_designation: ['designation', 'title', 'role', 'position'],
         };
+
+        /* ═══ SIGNATURE PANEL ════════════════════════════════════════════ */
+        let sigExpanded = true;
+
+        function toggleSigPanel() {
+            sigExpanded = !sigExpanded;
+            const body = document.getElementById('sigPanelBody');
+            const btn  = document.getElementById('sigCollapseBtn');
+            if (sigExpanded) {
+                body.style.display = '';
+                btn.classList.add('open');
+            } else {
+                body.style.display = 'none';
+                btn.classList.remove('open');
+            }
+        }
+
+        function updateSigPreview() {
+            const raw   = document.getElementById('sigRaw').value.trim();
+            const name  = document.getElementById('sigSenderName').value.trim();
+            const wish  = document.getElementById('sigClosingWish').value.trim();
+            const desig = document.getElementById('sigDesignation').value.trim();
+            const extra = document.getElementById('sigAdditional').value.trim();
+            const preview = document.getElementById('sigPreviewContent');
+
+            if (raw) {
+                preview.innerHTML = `<em style="color:var(--ink-4);font-size:11px">Using raw signature</em><hr style="margin:6px 0;border:none;border-top:1px solid var(--divider)">` + raw;
+                return;
+            }
+            if (!name && !wish && !desig) {
+                preview.innerHTML = `<span style="color:var(--ink-3);font-style:italic;font-size:12px">Fill in the fields above to preview your signature.</span>`;
+                return;
+            }
+            let html = '';
+            if (wish) html += `<div>${wish}</div>`;
+            if (name) html += `<div><strong>${name}</strong></div>`;
+            if (desig) html += `<div style="color:var(--ink-3)">${desig}</div>`;
+            if (extra) html += `<div style="color:var(--ink-4);font-size:12px">${extra}</div>`;
+            preview.innerHTML = html;
+        }
+
+        function getSigValues() {
+            return {
+                sender_name:        document.getElementById('sigSenderName').value.trim(),
+                closing_wish:       document.getElementById('sigClosingWish').value.trim(),
+                sender_designation: document.getElementById('sigDesignation').value.trim(),
+                additional_info:    document.getElementById('sigAdditional').value.trim(),
+                raw_signature:      document.getElementById('sigRaw').value.trim(),
+            };
+        }
 
         /* ═══ TAB SWITCHING ══════════════════════════════════════════════ */
         function switchTab(name) {
@@ -1974,11 +2218,24 @@ if (!$hasSessionAuth && $hasEnvAuth) {
 
                 if (!parseData.success) throw new Error(parseData.error || 'Failed to parse CSV');
 
+                const sig = getSigValues();
                 const emails = parseData.rows.map(row => {
                     const email = {};
                     for (const [csvCol, emailField] of Object.entries(currentMapping)) {
                         email[emailField] = row[csvCol] || '';
                     }
+                    // Merge sender signature fields (manual form overrides CSV if mapped)
+                    if (sig.sender_name      && !email.sender_name)        email.sender_name        = sig.sender_name;
+                    if (sig.closing_wish     && !email.closing_wish)        email.closing_wish       = sig.closing_wish;
+                    if (sig.sender_designation && !email.sender_designation) email.sender_designation = sig.sender_designation;
+                    if (sig.additional_info  && !email.additional_info)     email.additional_info    = sig.additional_info;
+                    if (sig.raw_signature)                                   email.raw_signature      = sig.raw_signature;
+                    // Always apply signature values (they are global for the batch)
+                    email.sender_name        = sig.sender_name        || email.sender_name        || '';
+                    email.closing_wish       = sig.closing_wish       || email.closing_wish       || 'Best Regards,';
+                    email.sender_designation = sig.sender_designation || email.sender_designation || '';
+                    email.additional_info    = sig.additional_info    || email.additional_info    || '';
+                    if (sig.raw_signature)   email.raw_signature      = sig.raw_signature;
                     return email;
                 });
 

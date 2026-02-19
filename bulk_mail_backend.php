@@ -276,6 +276,7 @@ try {
                             batch_uuid,
                             recipient_email,
                             recipient_name,
+                            company_name,
                             subject,
                             article_title,
                             message_content,
@@ -283,12 +284,13 @@ try {
                             sender_name,
                             sender_designation,
                             additional_info,
+                            raw_signature,
                             attachment_id,
                             drive_file_path,
                             status,
                             created_at
                         ) VALUES (
-                            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW()
+                            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW()
                         )
                     ");
                     
@@ -297,6 +299,7 @@ try {
                         $batchUuid,
                         $recipientEmail,
                         $email['recipient_name'] ?? '',
+                        $email['company_name'] ?? '',
                         $email['subject'] ?? 'Bulk Email',
                         $email['article_title'] ?? '',
                         $email['message_content'] ?? '',
@@ -304,6 +307,7 @@ try {
                         $email['sender_name'] ?? '',
                         $email['sender_designation'] ?? '',
                         $email['additional_info'] ?? '',
+                        $email['raw_signature'] ?? '',
                         $attachmentId,
                         $driveFilePath
                     ]);

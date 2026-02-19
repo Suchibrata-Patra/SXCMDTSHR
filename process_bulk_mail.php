@@ -659,13 +659,16 @@ function sendBulkEmail(
         $senderName      = (string)($queueItem['sender_name']      ?: $displayName);
         $senderDesig     = (string)($queueItem['sender_designation'] ?: '');
         $additionalInfo  = (string)($queueItem['additional_info']  ?: "St. Xavier's College (Autonomous), Kolkata");
+        $rawSignature    = (string)($queueItem['raw_signature']    ?: '');
+        $companyName     = (string)($queueItem['company_name']     ?: '');
 
         $mail->Subject = $subject;
 
         // Build HTML body
         $emailBody = buildEmailBody(
             $articleTitle, $messageContent, $closingWish,
-            $senderName,   $senderDesig,    $additionalInfo
+            $senderName,   $senderDesig,    $additionalInfo,
+            $rawSignature, $companyName
         );
 
         $mail->isHTML(true);
@@ -874,21 +877,36 @@ function buildEmailBody(
     string $closingWish,
     string $senderName,
     string $senderDesignation,
-    string $additionalInfo
+    string $additionalInfo,
+    string $rawSignature = '',
+    string $companyName  = ''
 ): string {
     $templatePath = __DIR__ . '/templates/template1.html';
+
+    // If raw_signature is provided, build a simple signature block from it
+    $signatureBlock = '';
+    if ($rawSignature !== '') {
+        $signatureBlock = $rawSignature; // used as-is (already HTML or plain)
+    } else {
+        // Build structured signature
+        $lines = [];
+        if ($closingWish)      $lines[] = htmlspecialchars($closingWish, ENT_QUOTES, 'UTF-8');
+        if ($senderName)       $lines[] = '<strong>' . htmlspecialchars($senderName, ENT_QUOTES, 'UTF-8') . '</strong>';
+        if ($senderDesignation) $lines[] = htmlspecialchars($senderDesignation, ENT_QUOTES, 'UTF-8');
+        if ($additionalInfo)   $lines[] = htmlspecialchars($additionalInfo, ENT_QUOTES, 'UTF-8');
+        $signatureBlock = implode('<br>', $lines);
+    }
     
     if (!file_exists($templatePath)) {
         // Fallback template if file doesn't exist
+        $companyLine = $companyName ? "<p><em>" . htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') . "</em></p>" : '';
         return "
             <html>
             <body style='font-family: Arial, sans-serif;'>
                 <h1>{$articleTitle}</h1>
-                <p>" . nl2br(htmlspecialchars($messageContent)) . "</p>
-                <p>{$closingWish}<br>
-                <strong>{$senderName}</strong><br>
-                {$senderDesignation}<br>
-                {$additionalInfo}</p>
+                {$companyLine}
+                <p>" . nl2br(htmlspecialchars($messageContent, ENT_QUOTES, 'UTF-8')) . "</p>
+                <p>{$signatureBlock}</p>
             </body>
             </html>
         ";
@@ -898,18 +916,24 @@ function buildEmailBody(
     
     return str_replace([
         '{{articletitle}}',
+        '{{COMPANY_NAME}}',
         '{{MESSAGE}}',
         '{{SIGNATURE_WISH}}',
         '{{SIGNATURE_NAME}}',
         '{{SIGNATURE_DESIGNATION}}',
-        '{{SIGNATURE_EXTRA}}'
+        '{{SIGNATURE_EXTRA}}',
+        '{{RAW_SIGNATURE}}',
+        '{{SIGNATURE_BLOCK}}',
     ], [
         htmlspecialchars($articleTitle, ENT_QUOTES, 'UTF-8'),
+        htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8'),
         nl2br(htmlspecialchars($messageContent, ENT_QUOTES, 'UTF-8')),
         htmlspecialchars($closingWish, ENT_QUOTES, 'UTF-8'),
         htmlspecialchars($senderName, ENT_QUOTES, 'UTF-8'),
         htmlspecialchars($senderDesignation, ENT_QUOTES, 'UTF-8'),
-        htmlspecialchars($additionalInfo, ENT_QUOTES, 'UTF-8')
+        htmlspecialchars($additionalInfo, ENT_QUOTES, 'UTF-8'),
+        $rawSignature,
+        $signatureBlock,
     ], $emailTemplate);
 }
 
@@ -1026,6 +1050,8 @@ function ensureSchemaColumns(PDO $pdo): void
         "ALTER TABLE bulk_mail_queue ADD COLUMN IF NOT EXISTS retry_after  DATETIME NULL",
         "ALTER TABLE bulk_mail_queue ADD COLUMN IF NOT EXISTS last_error_at DATETIME NULL",
         "ALTER TABLE bulk_mail_queue ADD COLUMN IF NOT EXISTS locked_until  DATETIME NULL",
+        "ALTER TABLE bulk_mail_queue ADD COLUMN IF NOT EXISTS company_name   VARCHAR(255) NOT NULL DEFAULT ''",
+        "ALTER TABLE bulk_mail_queue ADD COLUMN IF NOT EXISTS raw_signature  TEXT NULL",
     ];
 
     foreach ($alterStatements as $sql) {
