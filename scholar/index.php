@@ -1,6 +1,6 @@
 <?php
 // ─────────────────────────────────────────────────────────────
-//  ScholarLens — index.php
+//  ScholarLens — index.php  (Nature journal aesthetic)
 // ─────────────────────────────────────────────────────────────
 $result = null;
 $error  = null;
@@ -10,9 +10,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['user_id'])) {
     $userId = trim($_POST['user_id']);
     if (preg_match('/[?&]user=([^&\s]+)/', $userId, $m)) $userId = $m[1];
     $userId = preg_replace('/[^A-Za-z0-9_\-]/', '', $userId);
-
     if (empty($userId)) {
-        $error = 'Invalid user ID. Paste the full Google Scholar URL or just the user ID.';
+        $error = 'Invalid user ID. Please paste a full Google Scholar URL or just the user ID.';
     } else {
         try {
             $result = fetchScholarProfile($userId);
@@ -22,14 +21,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['user_id'])) {
     }
 }
 
-// Quartile colour mapping
-function quartileColor(string $q): string {
+function quartileColor(string $q): array {
     return match($q) {
-        'Q1' => '#7fff6e',   // green
-        'Q2' => '#ffd166',   // yellow
-        'Q3' => '#ff9f43',   // orange
-        'Q4' => '#ff6b6b',   // red
-        default => '#6b6b80',
+        'Q1' => ['bg' => '#e8f5e9', 'border' => '#2e7d32', 'text' => '#1b5e20'],
+        'Q2' => ['bg' => '#fff8e1', 'border' => '#f9a825', 'text' => '#e65100'],
+        'Q3' => ['bg' => '#fff3e0', 'border' => '#ef6c00', 'text' => '#bf360c'],
+        'Q4' => ['bg' => '#fce4ec', 'border' => '#c62828', 'text' => '#b71c1c'],
+        default => ['bg' => '#f5f5f5', 'border' => '#bdbdbd', 'text' => '#616161'],
     };
 }
 ?>
@@ -39,291 +37,916 @@ function quartileColor(string $q): string {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ScholarLens — Research Profile Extractor</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400&family=Source+Sans+3:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+
 <style>
+/* ── Reset & Base ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
 :root {
-  --bg:#09090f; --surface:#111118; --border:#1e1e2e;
-  --accent:#7fff6e; --accent2:#00d4ff; --accent3:#ff6b6b;
-  --text:#e8e8f0; --muted:#6b6b80; --card:#13131c;
+  --white:       #ffffff;
+  --off-white:   #f8f8f8;
+  --pale-grey:   #f3f3f3;
+  --rule:        #d8d8d8;
+  --rule-light:  #ececec;
+  --text-primary:#222222;
+  --text-body:   #333333;
+  --text-meta:   #666666;
+  --text-muted:  #999999;
+  --nature-red:  #c8102e;      /* Nature's signature red */
+  --link:        #006699;      /* Nature link blue */
+  --link-hover:  #004e75;
+  --q1:          #1b5e20;
+  --accent-pale: #e8f4f8;
+  --sidebar-w:   280px;
+  --content-max: 780px;
 }
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;min-height:100vh;overflow-x:hidden}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(127,255,110,.03)1px,transparent 1px),linear-gradient(90deg,rgba(127,255,110,.03)1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
-.wrap{max-width:1080px;margin:0 auto;padding:2rem;position:relative;z-index:1}
 
-header{padding:3.5rem 0 2.5rem;border-bottom:1px solid var(--border);margin-bottom:2.5rem}
-.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:2.6rem;letter-spacing:-.02em;line-height:1;margin-bottom:.4rem}
-.logo span{color:var(--accent)}
-.tagline{font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--muted);letter-spacing:.14em;text-transform:uppercase}
+html { font-size: 16px; scroll-behavior: smooth; }
 
-.search-label{font-family:'IBM Plex Mono',monospace;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.7rem;display:block}
-.search-row{display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:.6rem}
-input[type=text]{flex:1;min-width:280px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:.85rem 1.1rem;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:.82rem;outline:none;transition:border-color .2s}
-input[type=text]:focus{border-color:var(--accent)}
-input::placeholder{color:var(--muted)}
-.btn{background:var(--accent);color:#000;border:none;border-radius:4px;padding:.85rem 1.8rem;font-family:'Syne',sans-serif;font-weight:700;font-size:.85rem;letter-spacing:.05em;cursor:pointer;transition:opacity .2s,transform .1s;white-space:nowrap}
-.btn:hover{opacity:.85}.btn:active{transform:scale(.98)}
-.hint{font-size:.72rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;line-height:1.7}
-.hint code{color:var(--accent2)}
+body {
+  background: var(--white);
+  color: var(--text-body);
+  font-family: 'Source Sans 3', 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 400;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
 
-.alert{padding:.9rem 1.1rem;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:.78rem;margin-bottom:2rem}
-.alert-err{background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.25);color:var(--accent3)}
+a { color: var(--link); text-decoration: none; }
+a:hover { color: var(--link-hover); text-decoration: underline; }
 
-/* Profile */
-.profile-header{display:grid;grid-template-columns:auto 1fr;gap:1.8rem;align-items:start;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:1.8rem;margin-bottom:1.5rem}
-.avatar{width:85px;height:85px;border-radius:50%;object-fit:cover;border:2px solid var(--accent);background:var(--border)}
-.avatar-ph{width:85px;height:85px;border-radius:50%;background:var(--border);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:2rem;color:var(--accent)}
-.pname{font-family:'Syne',sans-serif;font-weight:800;font-size:1.7rem;margin-bottom:.2rem}
-.paffil{color:var(--muted);font-size:.83rem;margin-bottom:.8rem}
-.tags{display:flex;flex-wrap:wrap;gap:.35rem}
-.tag{background:rgba(127,255,110,.08);border:1px solid rgba(127,255,110,.2);color:var(--accent);padding:.18rem .55rem;border-radius:20px;font-size:.68rem;font-family:'IBM Plex Mono',monospace}
+/* ── Top brand bar ────────────────────────────────────────── */
+.brand-bar {
+  background: var(--nature-red);
+  padding: 0;
+  height: 6px;
+}
 
-/* Stats */
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:1rem;margin-bottom:1.5rem}
-.stat-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:1.4rem;text-align:center}
-.stat-val{font-family:'Syne',sans-serif;font-weight:800;font-size:2rem;color:var(--accent);line-height:1;margin-bottom:.35rem}
-.stat-lbl{font-family:'IBM Plex Mono',monospace;font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+/* ── Site header ──────────────────────────────────────────── */
+.site-header {
+  border-bottom: 1px solid var(--rule);
+  background: var(--white);
+}
+.site-header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+.site-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+.logo-mark {
+  width: 36px;
+  height: 36px;
+  background: var(--nature-red);
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-family: 'Merriweather', serif;
+  font-weight: 900;
+  font-size: 1.1rem;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+.logo-text {
+  font-family: 'Merriweather', serif;
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+.logo-text span {
+  color: var(--nature-red);
+}
+.site-tagline {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-style: italic;
+  font-family: 'Merriweather', serif;
+}
 
-.sec-title{font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent2);margin-bottom:.9rem;padding-bottom:.45rem;border-bottom:1px solid var(--border)}
+/* ── Breadcrumb nav ───────────────────────────────────────── */
+.breadcrumb-bar {
+  background: var(--off-white);
+  border-bottom: 1px solid var(--rule-light);
+  padding: 0.45rem 0;
+}
+.breadcrumb-bar .inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.breadcrumb-bar a {
+  color: var(--link);
+  font-size: 0.75rem;
+}
+.breadcrumb-bar .sep { color: var(--rule); }
 
-/* Chart */
-.chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:1.4rem;margin-bottom:1.5rem}
-.bar-chart{display:flex;align-items:flex-end;gap:5px;height:130px;margin-bottom:.4rem}
-.bar-col{display:flex;flex-direction:column;align-items:center;flex:1;height:100%;justify-content:flex-end;gap:4px}
-.bar{width:100%;background:var(--accent);border-radius:3px 3px 0 0;min-height:3px;cursor:default}
-.bar:hover{opacity:.65}
-.bar-lbl{font-family:'IBM Plex Mono',monospace;font-size:.5rem;color:var(--muted);transform:rotate(-45deg);white-space:nowrap}
-.bar-cnt{font-family:'IBM Plex Mono',monospace;font-size:.58rem;color:var(--accent)}
+/* ── Main layout ──────────────────────────────────────────── */
+.page-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem 4rem;
+}
 
-/* Table */
-.tbl-wrap{overflow-x:auto;margin-bottom:1.5rem}
-table{width:100%;border-collapse:collapse;font-size:.8rem}
-th{font-family:'IBM Plex Mono',monospace;font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);padding:.55rem .75rem;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
-td{padding:.75rem;border-bottom:1px solid rgba(30,30,46,.6);vertical-align:top}
-tr:hover td{background:rgba(255,255,255,.015)}
-.ptitle{font-weight:500;line-height:1.35;margin-bottom:.2rem}
-.ptitle a{color:var(--text);text-decoration:none}
-.ptitle a:hover{color:var(--accent)}
-.pvenue{font-family:'IBM Plex Mono',monospace;font-size:.67rem;color:var(--muted);margin-top:.15rem}
-.pyear{font-family:'IBM Plex Mono',monospace;font-size:.78rem;color:var(--accent2);white-space:nowrap}
-.pcite{font-family:'IBM Plex Mono',monospace;font-size:.78rem;color:var(--accent)}
+/* ── Search section ───────────────────────────────────────── */
+.search-section {
+  padding: 2.5rem 0 2rem;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 2rem;
+}
+.search-eyebrow {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--nature-red);
+  margin-bottom: 0.5rem;
+}
+.search-heading {
+  font-family: 'Merriweather', serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1.25rem;
+  line-height: 1.3;
+}
+.search-form-row {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+.search-input {
+  flex: 1;
+  min-width: 320px;
+  height: 44px;
+  border: 1.5px solid var(--rule);
+  border-radius: 3px;
+  padding: 0 1rem;
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 0.9rem;
+  color: var(--text-body);
+  background: var(--white);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.search-input:focus {
+  border-color: var(--link);
+  box-shadow: 0 0 0 3px rgba(0,102,153,0.08);
+}
+.search-input::placeholder { color: var(--text-muted); }
+.search-btn {
+  height: 44px;
+  padding: 0 1.6rem;
+  background: var(--nature-red);
+  color: white;
+  border: none;
+  border-radius: 3px;
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.search-btn:hover { background: #a00d24; }
+.search-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+.search-hint code {
+  font-family: 'Source Code Pro', monospace;
+  font-size: 0.75rem;
+  background: var(--pale-grey);
+  padding: 0.1rem 0.35rem;
+  border-radius: 2px;
+  color: var(--link);
+}
 
-/* Metric badges */
-.metric-row{display:flex;flex-wrap:wrap;gap:.3rem;align-items:center}
-.badge{display:inline-flex;align-items:center;gap:.25rem;padding:.15rem .45rem;border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:.66rem;white-space:nowrap;border:1px solid transparent}
-.badge-sjr{background:rgba(0,212,255,.1);border-color:rgba(0,212,255,.25);color:var(--accent2)}
-.badge-q{font-weight:700;padding:.15rem .5rem;border-radius:3px;font-family:'Syne',sans-serif;font-size:.72rem}
-.badge-cites{background:rgba(127,255,110,.1);border-color:rgba(127,255,110,.25);color:var(--accent)}
-.badge-h{background:rgba(255,209,102,.1);border-color:rgba(255,209,102,.25);color:#ffd166}
-.badge-src{background:rgba(107,107,128,.1);border-color:rgba(107,107,128,.2);color:var(--muted);font-size:.58rem}
-.badge-na{color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:.7rem}
+/* ── Alert ────────────────────────────────────────────────── */
+.alert {
+  padding: 0.9rem 1.1rem;
+  border-radius: 3px;
+  font-size: 0.85rem;
+  margin: 1.5rem 0;
+  border-left: 4px solid;
+}
+.alert-error {
+  background: #fff5f5;
+  border-color: var(--nature-red);
+  color: #7a0000;
+}
+.alert-info {
+  background: var(--accent-pale);
+  border-color: var(--link);
+  color: #003d5c;
+  font-size: 0.82rem;
+  line-height: 1.65;
+}
+.alert-info strong { color: var(--link); }
 
-/* Legend */
-.legend{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--muted)}
-.legend-item{display:flex;align-items:center;gap:.35rem}
-.legend-dot{width:10px;height:10px;border-radius:2px}
+/* ── Article layout (two-col) ─────────────────────────────── */
+.article-layout {
+  display: grid;
+  grid-template-columns: 1fr var(--sidebar-w);
+  gap: 3rem;
+  align-items: start;
+}
 
-/* Export */
-.export-row{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:.5rem}
-.btn-ghost{background:transparent;border:1px solid var(--accent2);color:var(--accent2);border-radius:4px;padding:.55rem 1.1rem;font-family:'IBM Plex Mono',monospace;font-size:.72rem;cursor:pointer;transition:background .2s;text-decoration:none;display:inline-block}
-.btn-ghost:hover{background:rgba(0,212,255,.07)}
+/* ── Profile / article header ─────────────────────────────── */
+.article-header {
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 1.75rem;
+}
+.article-type-tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--nature-red);
+  border: 1px solid var(--nature-red);
+  padding: 0.18rem 0.55rem;
+  border-radius: 2px;
+  margin-bottom: 0.9rem;
+}
+.researcher-name {
+  font-family: 'Merriweather', serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.25;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.01em;
+}
+.researcher-affil {
+  font-size: 0.9rem;
+  color: var(--text-meta);
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+.researcher-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.researcher-avatar {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--rule);
+  flex-shrink: 0;
+}
+.researcher-avatar-ph {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: var(--pale-grey);
+  border: 2px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Merriweather', serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-meta);
+  flex-shrink: 0;
+}
+.researcher-info { flex: 1; }
 
-/* Notice */
-.notice{background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.15);border-radius:6px;padding:.9rem 1.1rem;margin-bottom:1.5rem;font-size:.76rem;color:var(--muted);line-height:1.65}
-.notice strong{color:var(--accent2)}
+/* ── Interest keywords ────────────────────────────────────── */
+.keyword-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.9rem;
+}
+.keyword {
+  font-size: 0.72rem;
+  background: var(--pale-grey);
+  color: var(--text-meta);
+  padding: 0.2rem 0.6rem;
+  border-radius: 2px;
+  border: 1px solid var(--rule-light);
+  font-weight: 500;
+}
+.keyword:hover {
+  background: var(--accent-pale);
+  color: var(--link);
+  border-color: #b3d4e3;
+  cursor: default;
+}
 
-@media(max-width:620px){
-  .profile-header{grid-template-columns:1fr}
-  .logo{font-size:2rem}
-  th:nth-child(4),td:nth-child(4){display:none}
+/* ── Abstract/stats box (like Nature's article metrics box) ── */
+.metrics-panel {
+  background: var(--pale-grey);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 1.25rem;
+  margin-bottom: 1.75rem;
+}
+.metrics-panel-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--rule);
+}
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1rem;
+}
+.metric-item {}
+.metric-value {
+  font-family: 'Merriweather', serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: 0.2rem;
+}
+.metric-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ── Section heading (like Nature's section titles) ───────── */
+.section-heading {
+  font-family: 'Merriweather', serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 2px solid var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+/* ── Year chart ───────────────────────────────────────────── */
+.chart-container {
+  margin-bottom: 2rem;
+}
+.chart-area {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 100px;
+  padding-bottom: 28px;
+  position: relative;
+  border-bottom: 1px solid var(--rule);
+  border-left: 1px solid var(--rule);
+}
+.bar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  height: 100%;
+  justify-content: flex-end;
+  gap: 3px;
+  position: relative;
+}
+.bar {
+  width: 100%;
+  background: var(--link);
+  border-radius: 1px 1px 0 0;
+  min-height: 2px;
+  transition: opacity 0.15s;
+}
+.bar:hover { opacity: 0.7; }
+.bar-year-label {
+  position: absolute;
+  bottom: -22px;
+  font-size: 0.5rem;
+  color: var(--text-muted);
+  transform: rotate(-45deg);
+  transform-origin: top left;
+  white-space: nowrap;
+}
+.bar-count {
+  font-size: 0.55rem;
+  color: var(--text-muted);
+  position: absolute;
+  bottom: 102%;
+  white-space: nowrap;
+}
+
+/* ── Papers list (Nature article-listing style) ───────────── */
+.papers-list {
+  margin-bottom: 2rem;
+}
+.paper-item {
+  padding: 1.1rem 0;
+  border-bottom: 1px solid var(--rule-light);
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 0 0.75rem;
+}
+.paper-number {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: 'Source Code Pro', monospace;
+  padding-top: 0.15rem;
+  text-align: right;
+}
+.paper-body {}
+.paper-title {
+  font-family: 'Merriweather', serif;
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  line-height: 1.45;
+  margin-bottom: 0.3rem;
+}
+.paper-title a {
+  color: var(--link);
+}
+.paper-title a:hover { text-decoration: underline; }
+.paper-venue-row {
+  font-size: 0.77rem;
+  color: var(--text-meta);
+  margin-bottom: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.paper-venue-name {
+  font-style: italic;
+}
+.paper-year-chip {
+  font-size: 0.7rem;
+  background: var(--pale-grey);
+  color: var(--text-meta);
+  padding: 0.1rem 0.4rem;
+  border-radius: 2px;
+  border: 1px solid var(--rule-light);
+  font-style: normal;
+}
+.paper-cite-chip {
+  font-size: 0.7rem;
+  color: var(--link);
+  font-style: normal;
+}
+.paper-metrics-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+/* metric chips */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.18rem 0.5rem;
+  border-radius: 2px;
+  font-size: 0.68rem;
+  font-family: 'Source Sans 3', sans-serif;
+  font-weight: 600;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.chip-quartile {
+  /* dynamically styled via inline */
+}
+.chip-sjr {
+  background: #e8f4f8;
+  border-color: #b3d4e3;
+  color: #004e75;
+}
+.chip-if {
+  background: #e8f5e9;
+  border-color: #a5d6a7;
+  color: #1b5e20;
+}
+.chip-h {
+  background: #fff8e1;
+  border-color: #ffe082;
+  color: #5d4037;
+}
+.chip-src {
+  background: var(--pale-grey);
+  border-color: var(--rule);
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 0.62rem;
+}
+
+/* ── Sidebar (Nature-style: access, metrics, download) ────── */
+.sidebar {}
+.sidebar-card {
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+}
+.sidebar-card-header {
+  background: var(--pale-grey);
+  padding: 0.65rem 1rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--rule);
+}
+.sidebar-card-body {
+  padding: 0.9rem 1rem;
+  background: var(--white);
+}
+.sidebar-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--rule-light);
+  font-size: 0.82rem;
+}
+.sidebar-stat-row:last-child { border-bottom: none; }
+.sidebar-stat-label { color: var(--text-meta); }
+.sidebar-stat-value {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: 'Merriweather', serif;
+}
+.sidebar-action {
+  display: block;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  background: var(--link);
+  color: white;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s;
+  margin-bottom: 0.5rem;
+}
+.sidebar-action:hover {
+  background: var(--link-hover);
+  color: white;
+  text-decoration: none;
+}
+
+/* ── Legend ───────────────────────────────────────────────── */
+.quartile-legend {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  border: 1px solid;
+  flex-shrink: 0;
+}
+
+/* ── Footer ───────────────────────────────────────────────── */
+.site-footer {
+  margin-top: 4rem;
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--rule);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+.site-footer a { color: var(--link); }
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 820px) {
+  .article-layout {
+    grid-template-columns: 1fr;
+  }
+  .sidebar { order: -1; }
+  .metrics-grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 560px) {
+  .search-input { min-width: 100%; }
+  .metrics-grid { grid-template-columns: 1fr 1fr; }
+  .researcher-name { font-size: 1.4rem; }
 }
 </style>
 </head>
 <body>
-<div class="wrap">
-<header>
-  <div class="logo">Scholar<span>Lens</span></div>
-  <div class="tagline">// Research Profile Extractor — PHP + SCImago + OpenAlex</div>
+
+<!-- Red brand stripe -->
+<div class="brand-bar"></div>
+
+<!-- Site header -->
+<header class="site-header">
+  <div class="site-header-inner">
+    <a class="site-logo" href="/">
+      <div class="logo-mark">SL</div>
+      <div>
+        <div class="logo-text">Scholar<span>Lens</span></div>
+      </div>
+    </a>
+    <div class="site-tagline">Research Profile Extractor</div>
+  </div>
 </header>
 
-<form method="POST">
-  <label class="search-label">// Google Scholar Profile URL or User ID</label>
-  <div class="search-row">
-    <input type="text" name="user_id"
-      placeholder="https://scholar.google.com/citations?user=JicYPdAAAAAJ  or just  JicYPdAAAAAJ"
-      value="<?= htmlspecialchars($_POST['user_id'] ?? '') ?>">
-    <button class="btn" type="submit">Analyze →</button>
+<!-- Breadcrumb -->
+<div class="breadcrumb-bar">
+  <div class="inner">
+    <a href="/">Home</a>
+    <span class="sep">›</span>
+    <span>Researcher Profile</span>
+    <?php if ($result): ?>
+    <span class="sep">›</span>
+    <span><?= htmlspecialchars($result['name']) ?></span>
+    <?php endif; ?>
   </div>
-  <div class="hint">
-    Runs entirely server-side — no CORS issues, no browser blocks.<br>
-    Journal metrics: <code>SCImago</code> (SJR + Quartile + Cites/Doc ≈ JIF) with <code>OpenAlex</code> as fallback.<br>
-    <strong style="color:var(--accent)">No API keys required.</strong>
-    True Clarivate JIF is proprietary — this uses the closest freely available equivalents.
-  </div>
-</form>
-
-<?php if ($error): ?>
-<br>
-<div class="alert alert-err">❌ <?= htmlspecialchars($error) ?></div>
-<?php endif; ?>
-
-<?php if ($result): ?>
-<br>
-
-<!-- Notice -->
-<div class="notice">
-  <strong>About Impact Factor:</strong>
-  The Clarivate <em>Journal Impact Factor (JIF)</em> is proprietary (requires paid Web of Science access).
-  This tool uses the closest free alternatives:<br>
-  &nbsp;• <strong>Cites/Doc (2yr)</strong> from SCImago — computed with the same formula as JIF, but using Scopus citation data.<br>
-  &nbsp;• <strong>SJR</strong> (SCImago Journal Rank) — prestige-weighted score (analogous to Google PageRank for journals).<br>
-  &nbsp;• <strong>Quartile</strong> (Q1–Q4) — where the journal ranks in its Scopus subject category.<br>
-  Both are published annually by <a href="https://www.scimagojr.com" target="_blank" style="color:var(--accent2)">SCImago</a>, freely and without login.
 </div>
 
-<!-- Profile card -->
-<div class="profile-header">
-  <?php if (!empty($result['avatar'])): ?>
-    <img class="avatar" src="<?= htmlspecialchars($result['avatar']) ?>" alt="Avatar">
-  <?php else: ?>
-    <div class="avatar-ph"><?= mb_strtoupper(mb_substr($result['name'], 0, 1)) ?></div>
+<div class="page-wrap">
+
+  <!-- Search -->
+  <section class="search-section">
+    <div class="search-eyebrow">Profile Search</div>
+    <div class="search-heading">Lookup a Google Scholar Researcher</div>
+    <form method="POST">
+      <div class="search-form-row">
+        <input class="search-input" type="text" name="user_id"
+          placeholder="Paste Google Scholar URL or user ID — e.g. JicYPdAAAAAJ"
+          value="<?= htmlspecialchars($_POST['user_id'] ?? '') ?>">
+        <button class="search-btn" type="submit">Search →</button>
+      </div>
+      <div class="search-hint">
+        Runs server-side — no CORS restrictions. &nbsp;·&nbsp;
+        Journal metrics via <code>SCImago</code> (SJR, Quartile, Cites/Doc ≈ JIF) and <code>OpenAlex</code> fallback. &nbsp;·&nbsp;
+        No API keys required.
+      </div>
+    </form>
+  </section>
+
+  <?php if ($error): ?>
+  <div class="alert alert-error">
+    <strong>Error:</strong> <?= htmlspecialchars($error) ?>
+  </div>
   <?php endif; ?>
-  <div>
-    <div class="pname"><?= htmlspecialchars($result['name']) ?></div>
-    <div class="paffil"><?= htmlspecialchars($result['affiliation']) ?></div>
-    <div class="tags">
-      <?php foreach ($result['interests'] as $i): ?>
-        <span class="tag"><?= htmlspecialchars($i) ?></span>
-      <?php endforeach; ?>
-    </div>
+
+  <?php if ($result): ?>
+
+  <!-- Impact factor notice -->
+  <div class="alert alert-info">
+    <strong>About Impact Factor:</strong>
+    The Clarivate <em>Journal Impact Factor (JIF)</em> is proprietary (Elsevier/Web of Science paywall).
+    This tool shows the closest freely available equivalents from SCImago:
+    <strong>Cites/Doc&nbsp;(2yr)</strong> — computed with the identical formula on Scopus data —
+    <strong>SJR</strong> (prestige-weighted rank), and <strong>Quartile&nbsp;(Q1–Q4)</strong>.
+    Data from <a href="https://www.scimagojr.com" target="_blank">scimagojr.com</a>
+    and <a href="https://openalex.org" target="_blank">OpenAlex</a>.
   </div>
-</div>
 
-<!-- Stats -->
-<div class="stats-grid">
-  <div class="stat-card"><div class="stat-val"><?= htmlspecialchars($result['citations']) ?></div><div class="stat-lbl">Total Citations</div></div>
-  <div class="stat-card"><div class="stat-val"><?= htmlspecialchars($result['h_index']) ?></div><div class="stat-lbl">h-index</div></div>
-  <div class="stat-card"><div class="stat-val"><?= htmlspecialchars($result['i10_index']) ?></div><div class="stat-lbl">i10-index</div></div>
-  <div class="stat-card"><div class="stat-val"><?= count($result['papers']) ?></div><div class="stat-lbl">Papers</div></div>
-</div>
+  <div class="article-layout">
 
-<!-- Year Chart -->
-<?php
-  $yearMap = [];
-  foreach ($result['papers'] as $p) {
-    if (!empty($p['year'])) $yearMap[$p['year']] = ($yearMap[$p['year']] ?? 0) + 1;
-  }
-  ksort($yearMap);
-  $maxY = max(array_values($yearMap) ?: [1]);
-?>
-<div class="sec-title">Publications by Year</div>
-<div class="chart-wrap">
-  <div class="bar-chart">
-    <?php foreach ($yearMap as $yr => $cnt): ?>
-      <?php $h = max(3, (int)round(($cnt / $maxY) * 110)); ?>
-      <div class="bar-col">
-        <div class="bar-cnt"><?= $cnt ?></div>
-        <div class="bar" style="height:<?= $h ?>px" title="<?= $cnt ?> papers in <?= $yr ?>"></div>
-        <div class="bar-lbl"><?= $yr ?></div>
-      </div>
-    <?php endforeach; ?>
-  </div>
-</div>
+    <!-- ── Main content column ─────────────────────────────── -->
+    <main>
 
-<!-- Legend -->
-<div class="legend">
-  <div class="legend-item"><div class="legend-dot" style="background:#7fff6e"></div>Q1 — top 25%</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#ffd166"></div>Q2 — top 50%</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#ff9f43"></div>Q3 — top 75%</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Q4 — bottom 25%</div>
-  <div class="legend-item"><div class="legend-dot" style="background:var(--accent2)"></div>SJR — prestige score</div>
-  <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Cites/Doc 2yr ≈ JIF</div>
-</div>
-
-<!-- Papers Table -->
-<div class="sec-title">Publications</div>
-<div class="tbl-wrap">
-<table>
-  <thead>
-    <tr>
-      <th>#</th>
-      <th>Title / Journal</th>
-      <th>Year</th>
-      <th>Cited by</th>
-      <th>Journal Metrics</th>
-    </tr>
-  </thead>
-  <tbody>
-  <?php foreach ($result['papers'] as $i => $p): ?>
-  <tr>
-    <td style="color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:.72rem"><?= $i + 1 ?></td>
-    <td>
-      <div class="ptitle">
-        <?php if (!empty($p['link'])): ?>
-          <a href="<?= htmlspecialchars($p['link']) ?>" target="_blank" rel="noopener">
-            <?= htmlspecialchars($p['title']) ?>
-          </a>
-        <?php else: ?>
-          <?= htmlspecialchars($p['title']) ?>
-        <?php endif; ?>
-      </div>
-      <?php $venue = $p['venue_clean'] ?? $p['venue'] ?? ''; ?>
-      <?php if ($venue): ?>
-        <div class="pvenue"><?= htmlspecialchars($venue) ?></div>
-      <?php endif; ?>
-    </td>
-    <td class="pyear"><?= htmlspecialchars($p['year'] ?? '—') ?></td>
-    <td class="pcite"><?= htmlspecialchars($p['cited'] ?? '0') ?></td>
-    <td>
-      <?php $m = $p['metrics'] ?? null; ?>
-      <?php if ($m): ?>
-        <div class="metric-row">
-          <?php if (!empty($m['quartile'])): ?>
-            <?php $qc = quartileColor($m['quartile']); ?>
-            <span class="badge badge-q" style="background:<?= $qc ?>22;border-color:<?= $qc ?>55;color:<?= $qc ?>">
-              <?= htmlspecialchars($m['quartile']) ?>
-            </span>
+      <!-- Researcher header (like a Nature article header) -->
+      <header class="article-header">
+        <div class="article-type-tag">Researcher Profile</div>
+        <div class="researcher-meta-row" style="margin-bottom:1rem">
+          <?php if (!empty($result['avatar'])): ?>
+            <img class="researcher-avatar" src="<?= htmlspecialchars($result['avatar']) ?>" alt="">
+          <?php else: ?>
+            <div class="researcher-avatar-ph"><?= mb_strtoupper(mb_substr($result['name'],0,1)) ?></div>
           <?php endif; ?>
-          <?php if (!empty($m['sjr'])): ?>
-            <span class="badge badge-sjr" title="SCImago Journal Rank">SJR <?= htmlspecialchars($m['sjr']) ?></span>
-          <?php endif; ?>
-          <?php if (!empty($m['cites_per_doc_2yr'])): ?>
-            <span class="badge badge-cites" title="Cites per Document (2-year) ≈ Impact Factor formula">
-              IF≈ <?= htmlspecialchars($m['cites_per_doc_2yr']) ?>
-            </span>
-          <?php endif; ?>
-          <?php if (!empty($m['h_index'])): ?>
-            <span class="badge badge-h" title="Journal h-index">h <?= htmlspecialchars($m['h_index']) ?></span>
-          <?php endif; ?>
-        </div>
-        <?php if (!empty($m['source'])): ?>
-          <div style="margin-top:.3rem">
-            <span class="badge badge-src"><?= htmlspecialchars($m['source']) ?></span>
-            <?php if (!empty($m['journal_name']) && $m['journal_name'] !== ($venue ?? '')): ?>
-              <span class="badge badge-src" style="color:var(--muted);font-style:italic">
-                matched: <?= htmlspecialchars(mb_substr($m['journal_name'], 0, 40)) ?>
-              </span>
+          <div class="researcher-info">
+            <h1 class="researcher-name"><?= htmlspecialchars($result['name']) ?></h1>
+            <?php if ($result['affiliation']): ?>
+            <div class="researcher-affil"><?= htmlspecialchars($result['affiliation']) ?></div>
             <?php endif; ?>
           </div>
+        </div>
+        <?php if ($result['interests']): ?>
+        <div class="keyword-list">
+          <?php foreach ($result['interests'] as $kw): ?>
+            <span class="keyword"><?= htmlspecialchars($kw) ?></span>
+          <?php endforeach; ?>
+        </div>
         <?php endif; ?>
-        <?php if (empty($m['sjr']) && empty($m['h_index']) && empty($m['quartile']) && empty($m['cites_per_doc_2yr'])): ?>
-          <span class="badge-na">N/A</span>
-        <?php endif; ?>
-      <?php else: ?>
-        <span class="badge-na">—</span>
-      <?php endif; ?>
-    </td>
-  </tr>
-  <?php endforeach; ?>
-  </tbody>
-</table>
-</div>
+      </header>
 
-<div class="export-row">
-  <a class="btn-ghost" href="export.php?user_id=<?= urlencode($_POST['user_id']) ?>">⬇ Export CSV</a>
-</div>
+      <!-- Publication timeline chart -->
+      <div class="chart-container">
+        <h2 class="section-heading">Publication Timeline</h2>
+        <?php
+          $yearMap = [];
+          foreach ($result['papers'] as $p) {
+            if (!empty($p['year'])) $yearMap[$p['year']] = ($yearMap[$p['year']] ?? 0) + 1;
+          }
+          ksort($yearMap);
+          $maxY = max(array_values($yearMap) ?: [1]);
+        ?>
+        <div class="chart-area">
+          <?php foreach ($yearMap as $yr => $cnt): ?>
+            <?php $h = max(2, (int)round(($cnt / $maxY) * 90)); ?>
+            <div class="bar-col" title="<?= $cnt ?> papers in <?= $yr ?>">
+              <span class="bar-count"><?= $cnt ?></span>
+              <div class="bar" style="height:<?= $h ?>px"></div>
+              <span class="bar-year-label"><?= $yr ?></span>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      </div>
 
-<?php endif; ?>
-</div>
+      <!-- Papers list -->
+      <div class="papers-list">
+        <h2 class="section-heading">Publications (<?= count($result['papers']) ?>)</h2>
+
+        <!-- Quartile legend -->
+        <div class="quartile-legend">
+          <?php foreach (['Q1'=>'Top 25%','Q2'=>'Top 50%','Q3'=>'Top 75%','Q4'=>'Bottom 25%'] as $q => $label): ?>
+            <?php $qc = quartileColor($q); ?>
+            <div class="legend-item">
+              <div class="legend-swatch" style="background:<?= $qc['bg'] ?>;border-color:<?= $qc['border'] ?>"></div>
+              <span><?= $q ?> — <?= $label ?></span>
+            </div>
+          <?php endforeach; ?>
+        </div>
+
+        <?php foreach ($result['papers'] as $i => $p): ?>
+        <?php $m = $p['metrics'] ?? null; ?>
+        <div class="paper-item">
+          <div class="paper-number"><?= $i + 1 ?></div>
+          <div class="paper-body">
+            <div class="paper-title">
+              <?php if (!empty($p['link'])): ?>
+                <a href="<?= htmlspecialchars($p['link']) ?>" target="_blank" rel="noopener">
+                  <?= htmlspecialchars($p['title']) ?>
+                </a>
+              <?php else: ?>
+                <?= htmlspecialchars($p['title']) ?>
+              <?php endif; ?>
+            </div>
+            <div class="paper-venue-row">
+              <?php $venue = $p['venue_clean'] ?? $p['venue'] ?? ''; ?>
+              <?php if ($venue): ?>
+                <span class="paper-venue-name"><?= htmlspecialchars($venue) ?></span>
+              <?php endif; ?>
+              <?php if (!empty($p['year'])): ?>
+                <span class="paper-year-chip"><?= htmlspecialchars($p['year']) ?></span>
+              <?php endif; ?>
+              <?php if (!empty($p['cited']) && $p['cited'] !== '0'): ?>
+                <span class="paper-cite-chip">
+                  <?= htmlspecialchars($p['cited']) ?> citation<?= $p['cited'] != 1 ? 's' : '' ?>
+                </span>
+              <?php endif; ?>
+            </div>
+
+            <?php if ($m): ?>
+            <div class="paper-metrics-row">
+              <?php if (!empty($m['quartile'])): ?>
+                <?php $qc = quartileColor($m['quartile']); ?>
+                <span class="chip chip-quartile"
+                  style="background:<?= $qc['bg'] ?>;border-color:<?= $qc['border'] ?>;color:<?= $qc['text'] ?>">
+                  <?= htmlspecialchars($m['quartile']) ?>
+                </span>
+              <?php endif; ?>
+              <?php if (!empty($m['sjr'])): ?>
+                <span class="chip chip-sjr" title="SCImago Journal Rank">SJR <?= htmlspecialchars($m['sjr']) ?></span>
+              <?php endif; ?>
+              <?php if (!empty($m['cites_per_doc_2yr'])): ?>
+                <span class="chip chip-if" title="Cites per Document (2yr) — equivalent to Impact Factor formula">
+                  IF≈ <?= htmlspecialchars($m['cites_per_doc_2yr']) ?>
+                </span>
+              <?php endif; ?>
+              <?php if (!empty($m['h_index'])): ?>
+                <span class="chip chip-h" title="Journal h-index">h-index <?= htmlspecialchars($m['h_index']) ?></span>
+              <?php endif; ?>
+              <?php if (!empty($m['source'])): ?>
+                <span class="chip chip-src"><?= htmlspecialchars($m['source']) ?></span>
+              <?php endif; ?>
+            </div>
+            <?php endif; ?>
+
+          </div>
+        </div>
+        <?php endforeach; ?>
+      </div>
+
+    </main>
+
+    <!-- ── Sidebar ──────────────────────────────────────────── -->
+    <aside class="sidebar">
+
+      <!-- Citation metrics card -->
+      <div class="sidebar-card">
+        <div class="sidebar-card-header">Citation Metrics</div>
+        <div class="sidebar-card-body">
+          <div class="sidebar-stat-row">
+            <span class="sidebar-stat-label">Total Citations</span>
+            <span class="sidebar-stat-value"><?= htmlspecialchars($result['citations']) ?></span>
+          </div>
+          <div class="sidebar-stat-row">
+            <span class="sidebar-stat-label">h-index</span>
+            <span class="sidebar-stat-value"><?= htmlspecialchars($result['h_index']) ?></span>
+          </div>
+          <div class="sidebar-stat-row">
+            <span class="sidebar-stat-label">i10-index</span>
+            <span class="sidebar-stat-value"><?= htmlspecialchars($result['i10_index']) ?></span>
+          </div>
+          <div class="sidebar-stat-row">
+            <span class="sidebar-stat-label">Papers</span>
+            <span class="sidebar-stat-value"><?= count($result['papers']) ?></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Download card -->
+      <div class="sidebar-card">
+        <div class="sidebar-card-header">Download Data</div>
+        <div class="sidebar-card-body">
+          <a class="sidebar-action"
+            href="export.php?user_id=<?= urlencode($_POST['user_id']) ?>">
+            ↓ Download CSV
+          </a>
+          <div style="font-size:0.72rem;color:var(--text-muted);line-height:1.5">
+            Includes title, venue, year, citations, Quartile, SJR, Cites/Doc (≈ JIF), and h-index per paper.
+          </div>
+        </div>
+      </div>
+
+      <!-- About metrics card -->
+      <div class="sidebar-card">
+        <div class="sidebar-card-header">About Metrics</div>
+        <div class="sidebar-card-body" style="font-size:0.76rem;color:var(--text-meta);line-height:1.65">
+          <p style="margin-bottom:0.6rem">
+            <strong style="color:var(--text-body)">IF≈ (Cites/Doc 2yr)</strong><br>
+            Same formula as Clarivate JIF, computed on Scopus citation data. Highly correlated with JIF.
+          </p>
+          <p style="margin-bottom:0.6rem">
+            <strong style="color:var(--text-body)">SJR</strong><br>
+            SCImago Journal Rank. Prestige-weighted score — higher-quality citations count more.
+          </p>
+          <p style="margin-bottom:0.6rem">
+            <strong style="color:var(--text-body)">Quartile</strong><br>
+            Where the journal ranks among all journals in its Scopus subject category.
+          </p>
+          <p>
+            Source: <a href="https://www.scimagojr.com" target="_blank">SCImago</a> /
+            <a href="https://openalex.org" target="_blank">OpenAlex</a>
+          </p>
+        </div>
+      </div>
+
+    </aside>
+
+  </div><!-- /.article-layout -->
+
+  <?php endif; ?>
+
+</div><!-- /.page-wrap -->
+
+<footer class="site-footer">
+  ScholarLens &nbsp;·&nbsp; Journal metrics from
+  <a href="https://www.scimagojr.com" target="_blank">SCImago</a> &amp;
+  <a href="https://openalex.org" target="_blank">OpenAlex</a> &nbsp;·&nbsp;
+  Not affiliated with Google Scholar, Clarivate, or Nature Publishing Group.
+</footer>
+
 </body>
 </html>
