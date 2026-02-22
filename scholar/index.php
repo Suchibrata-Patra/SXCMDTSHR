@@ -1,17 +1,20 @@
 <?php
 // ─────────────────────────────────────────────────────────────
-//  ScholarLens — index.php  (Nature journal aesthetic)
+//  ScholarLens — index.php
+//  Nature-black academic UI · Live progress · Gemini IF
 // ─────────────────────────────────────────────────────────────
+require_once 'scholar.php';
+
 $result = null;
 $error  = null;
+$apiKey = GEMINI_API_KEY !== 'YOUR_GEMINI_API_KEY_HERE' && !empty(GEMINI_API_KEY);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['user_id'])) {
-    require_once 'scholar.php';
     $userId = trim($_POST['user_id']);
     if (preg_match('/[?&]user=([^&\s]+)/', $userId, $m)) $userId = $m[1];
     $userId = preg_replace('/[^A-Za-z0-9_\-]/', '', $userId);
     if (empty($userId)) {
-        $error = 'Invalid user ID. Please paste a full Google Scholar URL or just the user ID.';
+        $error = 'Invalid ID — paste the full Scholar URL or just the user ID.';
     } else {
         try {
             $result = fetchScholarProfile($userId);
@@ -21,13 +24,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['user_id'])) {
     }
 }
 
-function quartileColor(string $q): array {
+function qColor(string $q): array {
     return match($q) {
-        'Q1' => ['bg' => '#e8f5e9', 'border' => '#2e7d32', 'text' => '#1b5e20'],
-        'Q2' => ['bg' => '#fff8e1', 'border' => '#f9a825', 'text' => '#e65100'],
-        'Q3' => ['bg' => '#fff3e0', 'border' => '#ef6c00', 'text' => '#bf360c'],
-        'Q4' => ['bg' => '#fce4ec', 'border' => '#c62828', 'text' => '#b71c1c'],
-        default => ['bg' => '#f5f5f5', 'border' => '#bdbdbd', 'text' => '#616161'],
+        'Q1' => ['#d4edda','#28a745','#155724'],
+        'Q2' => ['#fff3cd','#ffc107','#856404'],
+        'Q3' => ['#ffe5d0','#fd7e14','#7d3514'],
+        'Q4' => ['#f8d7da','#dc3545','#721c24'],
+        default => ['#2a2a2a','#555','#aaa'],
     };
 }
 ?>
@@ -35,664 +38,651 @@ function quartileColor(string $q): array {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ScholarLens — Research Profile Extractor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400&family=Source+Sans+3:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
 <style>
-/* ── Reset & Base ─────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ════════════════════════════════════════════════════════════
+   NATURE-BLACK ACADEMIC DESIGN SYSTEM
+   Inspired by: Nature.com dark overlays, Springer dark panels,
+   Cell Press bold headers — sharp monochrome editorial aesthetic
+   ════════════════════════════════════════════════════════════ */
 
 :root {
-  --white:       #ffffff;
-  --off-white:   #f8f8f8;
-  --pale-grey:   #f3f3f3;
-  --rule:        #d8d8d8;
-  --rule-light:  #ececec;
-  --text-primary:#222222;
-  --text-body:   #333333;
-  --text-meta:   #666666;
-  --text-muted:  #999999;
-  --nature-red:  #c8102e;      /* Nature's signature red */
-  --link:        #006699;      /* Nature link blue */
-  --link-hover:  #004e75;
-  --q1:          #1b5e20;
-  --accent-pale: #e8f4f8;
-  --sidebar-w:   280px;
-  --content-max: 780px;
+  /* Core palette */
+  --ink:        #0a0a0a;
+  --ink-90:     #111111;
+  --ink-80:     #1a1a1a;
+  --ink-70:     #222222;
+  --ink-60:     #2e2e2e;
+  --rule:       #2a2a2a;
+  --rule-mid:   #383838;
+  --rule-lt:    #444444;
+  --smoke:      #888888;
+  --mist:       #aaaaaa;
+  --fog:        #cccccc;
+  --white:      #f5f4f0;   /* warm off-white like quality paper */
+  --pure:       #ffffff;
+
+  /* Nature red accent */
+  --red:        #c8102e;
+  --red-dim:    #8a0b1f;
+  --red-glow:   rgba(200,16,46,.15);
+
+  /* Gemini purple */
+  --gem:        #8b5cf6;
+  --gem-dim:    rgba(139,92,246,.12);
+
+  /* Impact factor green */
+  --if-green:   #22c55e;
+  --if-dim:     rgba(34,197,94,.12);
+
+  /* Typography */
+  --font-serif: 'EB Garamond', 'Georgia', serif;
+  --font-sans:  'Inter', 'Helvetica Neue', sans-serif;
+  --font-mono:  'JetBrains Mono', 'Courier New', monospace;
 }
 
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 16px; scroll-behavior: smooth; }
-
 body {
-  background: var(--white);
-  color: var(--text-body);
-  font-family: 'Source Sans 3', 'Helvetica Neue', Arial, sans-serif;
+  background: var(--ink);
+  color: var(--fog);
+  font-family: var(--font-sans);
   font-weight: 400;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
 }
 
-a { color: var(--link); text-decoration: none; }
-a:hover { color: var(--link-hover); text-decoration: underline; }
+/* ── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; background: var(--ink-80); }
+::-webkit-scrollbar-thumb { background: var(--rule-lt); border-radius: 3px; }
 
-/* ── Top brand bar ────────────────────────────────────────── */
-.brand-bar {
-  background: var(--nature-red);
-  padding: 0;
-  height: 6px;
-}
+/* ── Top red stripe ─────────────────────────────────────────── */
+.stripe { height: 3px; background: var(--red); }
 
-/* ── Site header ──────────────────────────────────────────── */
+/* ── Site header ────────────────────────────────────────────── */
 .site-header {
+  background: var(--ink-90);
   border-bottom: 1px solid var(--rule);
-  background: var(--white);
+  position: sticky; top: 0; z-index: 100;
+  backdrop-filter: blur(12px);
 }
-.site-header-inner {
-  max-width: 1200px;
-  margin: 0 auto;
+.hdr-inner {
+  max-width: 1100px; margin: 0 auto;
   padding: 0 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 64px;
+  height: 58px;
+  display: flex; align-items: center; justify-content: space-between;
 }
-.site-logo {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.logo {
+  display: flex; align-items: center; gap: .6rem;
   text-decoration: none;
 }
 .logo-mark {
-  width: 36px;
-  height: 36px;
-  background: var(--nature-red);
-  border-radius: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-family: 'Merriweather', serif;
-  font-weight: 900;
-  font-size: 1.1rem;
-  letter-spacing: -0.02em;
+  width: 32px; height: 32px;
+  background: var(--red);
+  border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-serif);
+  font-weight: 700; font-size: 1rem;
+  color: var(--pure);
+  letter-spacing: -.02em;
   flex-shrink: 0;
 }
-.logo-text {
-  font-family: 'Merriweather', serif;
-  font-weight: 700;
-  font-size: 1.15rem;
-  color: var(--text-primary);
-  letter-spacing: -0.01em;
+.logo-name {
+  font-family: var(--font-serif);
+  font-size: 1.2rem; font-weight: 700;
+  color: var(--white);
+  letter-spacing: -.01em;
 }
-.logo-text span {
-  color: var(--nature-red);
+.logo-name em { color: var(--red); font-style: normal; }
+.hdr-badge {
+  display: flex; align-items: center; gap: .35rem;
+  font-size: .7rem; color: var(--smoke);
+  font-family: var(--font-mono);
+  letter-spacing: .04em;
 }
-.site-tagline {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  font-style: italic;
-  font-family: 'Merriweather', serif;
-}
-
-/* ── Breadcrumb nav ───────────────────────────────────────── */
-.breadcrumb-bar {
-  background: var(--off-white);
-  border-bottom: 1px solid var(--rule-light);
-  padding: 0.45rem 0;
-}
-.breadcrumb-bar .inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 2rem;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-.breadcrumb-bar a {
-  color: var(--link);
-  font-size: 0.75rem;
-}
-.breadcrumb-bar .sep { color: var(--rule); }
-
-/* ── Main layout ──────────────────────────────────────────── */
-.page-wrap {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 2rem 4rem;
+.hdr-badge .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--gem); flex-shrink: 0;
+  box-shadow: 0 0 6px var(--gem);
 }
 
-/* ── Search section ───────────────────────────────────────── */
-.search-section {
-  padding: 2.5rem 0 2rem;
+/* ── Breadcrumb ─────────────────────────────────────────────── */
+.breadcrumb {
+  background: var(--ink-80);
   border-bottom: 1px solid var(--rule);
-  margin-bottom: 2rem;
+  padding: .4rem 0; font-size: .72rem;
+}
+.breadcrumb .inner {
+  max-width: 1100px; margin: 0 auto; padding: 0 2rem;
+  display: flex; align-items: center; gap: .4rem;
+  color: var(--smoke);
+}
+.breadcrumb a { color: var(--mist); }
+.breadcrumb a:hover { color: var(--white); }
+.breadcrumb .sep { color: var(--rule-lt); }
+
+/* ── Page wrap ──────────────────────────────────────────────── */
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 2rem 6rem;
+}
+
+/* ── Search section ─────────────────────────────────────────── */
+.search-section {
+  padding: 3rem 0 2.5rem;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 2.5rem;
 }
 .search-eyebrow {
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--nature-red);
-  margin-bottom: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: .65rem; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--red);
+  margin-bottom: .5rem;
 }
-.search-heading {
-  font-family: 'Merriweather', serif;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 1.25rem;
-  line-height: 1.3;
+.search-title {
+  font-family: var(--font-serif);
+  font-size: 2.1rem; font-weight: 700;
+  color: var(--white);
+  letter-spacing: -.02em; line-height: 1.2;
+  margin-bottom: 1.5rem;
 }
-.search-form-row {
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-  margin-bottom: 0.75rem;
+.search-title span { color: var(--red); }
+
+.search-form {
+  display: flex; gap: .6rem; flex-wrap: wrap;
+  margin-bottom: .8rem;
 }
 .search-input {
-  flex: 1;
-  min-width: 320px;
-  height: 44px;
-  border: 1.5px solid var(--rule);
-  border-radius: 3px;
-  padding: 0 1rem;
-  font-family: 'Source Sans 3', sans-serif;
-  font-size: 0.9rem;
-  color: var(--text-body);
-  background: var(--white);
+  flex: 1; min-width: 300px; height: 48px;
+  background: var(--ink-70);
+  border: 1px solid var(--rule-lt);
+  border-radius: 4px;
+  padding: 0 1.1rem;
+  font-family: var(--font-mono); font-size: .82rem;
+  color: var(--white);
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color .2s, box-shadow .2s;
 }
 .search-input:focus {
-  border-color: var(--link);
-  box-shadow: 0 0 0 3px rgba(0,102,153,0.08);
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px var(--red-glow);
 }
-.search-input::placeholder { color: var(--text-muted); }
+.search-input::placeholder { color: var(--smoke); }
+
 .search-btn {
-  height: 44px;
-  padding: 0 1.6rem;
-  background: var(--nature-red);
-  color: white;
-  border: none;
-  border-radius: 3px;
-  font-family: 'Source Sans 3', sans-serif;
-  font-size: 0.875rem;
-  font-weight: 600;
+  height: 48px; padding: 0 2rem;
+  background: var(--red); color: var(--pure);
+  border: none; border-radius: 4px;
+  font-family: var(--font-sans); font-weight: 600;
+  font-size: .875rem; letter-spacing: .03em;
   cursor: pointer;
-  letter-spacing: 0.02em;
-  transition: background 0.15s;
+  transition: background .15s, transform .1s;
   white-space: nowrap;
 }
 .search-btn:hover { background: #a00d24; }
-.search-hint {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  line-height: 1.6;
+.search-btn:active { transform: scale(.98); }
+
+.search-note {
+  font-size: .72rem; color: var(--smoke); line-height: 1.7;
 }
-.search-hint code {
-  font-family: 'Source Code Pro', monospace;
-  font-size: 0.75rem;
-  background: var(--pale-grey);
-  padding: 0.1rem 0.35rem;
-  border-radius: 2px;
-  color: var(--link);
+.search-note code {
+  font-family: var(--font-mono); font-size: .68rem;
+  background: var(--ink-70); color: var(--mist);
+  padding: .1rem .4rem; border-radius: 3px;
+  border: 1px solid var(--rule-lt);
 }
 
-/* ── Alert ────────────────────────────────────────────────── */
-.alert {
-  padding: 0.9rem 1.1rem;
-  border-radius: 3px;
-  font-size: 0.85rem;
-  margin: 1.5rem 0;
-  border-left: 4px solid;
+/* ── API key notice ─────────────────────────────────────────── */
+.notice {
+  margin: 1.2rem 0; padding: .85rem 1.1rem;
+  border-radius: 4px; font-size: .8rem; line-height: 1.65;
+  border-left: 3px solid;
 }
-.alert-error {
-  background: #fff5f5;
-  border-color: var(--nature-red);
-  color: #7a0000;
-}
-.alert-info {
-  background: var(--accent-pale);
-  border-color: var(--link);
-  color: #003d5c;
-  font-size: 0.82rem;
-  line-height: 1.65;
-}
-.alert-info strong { color: var(--link); }
+.notice.warn { background: rgba(255,193,7,.07); border-color: #ffc107; color: #ffd54f; }
+.notice.active { background: var(--gem-dim); border-color: var(--gem); color: #c4b5fd; }
+.notice.error { background: var(--red-glow); border-color: var(--red); color: #fca5a5; }
+.notice a { color: inherit; text-decoration: underline dotted; }
+.notice code { font-family: var(--font-mono); font-size: .7rem;
+  background: rgba(255,255,255,.08); padding: .1rem .35rem; border-radius: 2px; }
 
-/* ── Article layout (two-col) ─────────────────────────────── */
-.article-layout {
+/* ════════════════════════════════════════════════════════════
+   LIVE PROGRESS PANEL
+   ════════════════════════════════════════════════════════════ */
+#progress-panel {
+  display: none;
+  background: var(--ink-80);
+  border: 1px solid var(--rule-mid);
+  border-radius: 6px;
+  padding: 1.5rem;
+  margin: 2rem 0;
+}
+.progress-header {
+  display: flex; align-items: center; gap: .75rem;
+  margin-bottom: 1.25rem;
+}
+.progress-spinner {
+  width: 20px; height: 20px;
+  border: 2px solid var(--rule-lt);
+  border-top-color: var(--red);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.progress-title {
+  font-family: var(--font-serif); font-size: 1.05rem;
+  color: var(--white); font-weight: 500;
+}
+.progress-subtitle {
+  font-size: .72rem; color: var(--smoke);
+  font-family: var(--font-mono);
+}
+
+/* Step list */
+.step-list { display: flex; flex-direction: column; gap: .5rem; }
+.step {
+  display: flex; align-items: center; gap: .7rem;
+  padding: .55rem .75rem;
+  border-radius: 4px;
+  background: var(--ink-70);
+  font-size: .8rem; color: var(--mist);
+  transition: background .3s, color .3s;
+}
+.step.active { background: rgba(200,16,46,.1); color: var(--white); }
+.step.done   { background: rgba(34,197,94,.08); color: #86efac; }
+.step.error  { background: rgba(200,16,46,.1);  color: #fca5a5; }
+.step-icon { font-size: .85rem; width: 18px; text-align: center; flex-shrink: 0; }
+.step-text { flex: 1; }
+.step-badge {
+  font-family: var(--font-mono); font-size: .65rem;
+  background: rgba(255,255,255,.07); padding: .1rem .4rem;
+  border-radius: 3px; color: var(--smoke);
+}
+.step.active .step-badge { color: var(--red); }
+.step.done   .step-badge { color: #4ade80; }
+
+/* Venue progress */
+.venue-progress {
+  margin-top: 1rem;
+  border-top: 1px solid var(--rule);
+  padding-top: .9rem;
+}
+.vp-header {
+  display: flex; justify-content: space-between;
+  align-items: center; margin-bottom: .65rem;
+}
+.vp-label { font-size: .7rem; font-family: var(--font-mono); color: var(--smoke); letter-spacing: .06em; }
+.vp-count { font-size: .7rem; font-family: var(--font-mono); color: var(--red); }
+
+.prog-track {
+  width: 100%; height: 4px;
+  background: var(--rule-mid); border-radius: 2px;
+  overflow: hidden; margin-bottom: .75rem;
+}
+.prog-fill {
+  height: 100%; background: var(--red);
+  border-radius: 2px; width: 0;
+  transition: width .5s ease;
+}
+
+.venue-chips {
+  display: flex; flex-wrap: wrap; gap: .35rem;
+}
+.venue-chip {
+  font-family: var(--font-mono); font-size: .62rem;
+  padding: .2rem .6rem; border-radius: 3px;
+  border: 1px solid var(--rule-lt); color: var(--smoke);
+  background: var(--ink-70); max-width: 200px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: all .3s;
+}
+.venue-chip.loading {
+  border-color: var(--red);
+  color: var(--red);
+  animation: pulse 1s ease-in-out infinite;
+}
+.venue-chip.done    { border-color: #166534; color: #4ade80; background: rgba(34,197,94,.07); }
+.venue-chip.no-data { border-color: var(--rule-lt); color: var(--rule-lt); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+/* ════════════════════════════════════════════════════════════
+   RESULTS LAYOUT
+   ════════════════════════════════════════════════════════════ */
+#results { display: none; }
+
+.results-layout {
   display: grid;
-  grid-template-columns: 1fr var(--sidebar-w);
-  gap: 3rem;
+  grid-template-columns: 1fr 260px;
+  gap: 2.5rem;
   align-items: start;
 }
 
-/* ── Profile / article header ─────────────────────────────── */
-.article-header {
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--rule);
-  margin-bottom: 1.75rem;
-}
-.article-type-tag {
-  display: inline-block;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--nature-red);
-  border: 1px solid var(--nature-red);
-  padding: 0.18rem 0.55rem;
-  border-radius: 2px;
-  margin-bottom: 0.9rem;
-}
-.researcher-name {
-  font-family: 'Merriweather', serif;
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.25;
-  margin-bottom: 0.5rem;
-  letter-spacing: -0.01em;
-}
-.researcher-affil {
-  font-size: 0.9rem;
-  color: var(--text-meta);
-  margin-bottom: 1rem;
-  font-style: italic;
-}
-.researcher-meta-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-.researcher-avatar {
-  width: 68px;
-  height: 68px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--rule);
-  flex-shrink: 0;
-}
-.researcher-avatar-ph {
-  width: 68px;
-  height: 68px;
-  border-radius: 50%;
-  background: var(--pale-grey);
-  border: 2px solid var(--rule);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Merriweather', serif;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--text-meta);
-  flex-shrink: 0;
-}
-.researcher-info { flex: 1; }
-
-/* ── Interest keywords ────────────────────────────────────── */
-.keyword-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-top: 0.9rem;
-}
-.keyword {
-  font-size: 0.72rem;
-  background: var(--pale-grey);
-  color: var(--text-meta);
-  padding: 0.2rem 0.6rem;
-  border-radius: 2px;
-  border: 1px solid var(--rule-light);
-  font-weight: 500;
-}
-.keyword:hover {
-  background: var(--accent-pale);
-  color: var(--link);
-  border-color: #b3d4e3;
-  cursor: default;
-}
-
-/* ── Abstract/stats box (like Nature's article metrics box) ── */
-.metrics-panel {
-  background: var(--pale-grey);
-  border: 1px solid var(--rule);
-  border-radius: 3px;
-  padding: 1.25rem;
-  margin-bottom: 1.75rem;
-}
-.metrics-panel-title {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--rule);
-}
-.metrics-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem 1rem;
-}
-.metric-item {}
-.metric-value {
-  font-family: 'Merriweather', serif;
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1;
-  margin-bottom: 0.2rem;
-}
-.metric-label {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-/* ── Section heading (like Nature's section titles) ───────── */
-.section-heading {
-  font-family: 'Merriweather', serif;
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 1rem;
-  padding-bottom: 0.4rem;
-  border-bottom: 2px solid var(--text-primary);
-  letter-spacing: -0.01em;
-}
-
-/* ── Year chart ───────────────────────────────────────────── */
-.chart-container {
+/* ── Profile card ───────────────────────────────────────────── */
+.profile-card {
+  background: var(--ink-80);
+  border: 1px solid var(--rule-mid);
+  border-radius: 6px;
+  padding: 1.75rem;
   margin-bottom: 2rem;
 }
-.chart-area {
+.profile-type-tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: .62rem; letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--red); border: 1px solid var(--red-dim);
+  padding: .15rem .55rem; border-radius: 3px;
+  margin-bottom: 1rem;
+}
+.profile-row {
+  display: flex; align-items: flex-start; gap: 1.1rem;
+  margin-bottom: .9rem;
+}
+.profile-avatar {
+  width: 72px; height: 72px; border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--rule-mid); flex-shrink: 0;
+}
+.profile-avatar-ph {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: var(--ink-70);
+  border: 2px solid var(--rule-mid);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-serif); font-size: 1.6rem; font-weight: 700;
+  color: var(--smoke); flex-shrink: 0;
+}
+.profile-name {
+  font-family: var(--font-serif);
+  font-size: 1.6rem; font-weight: 700;
+  color: var(--white); line-height: 1.2;
+  letter-spacing: -.02em; margin-bottom: .25rem;
+}
+.profile-affil {
+  font-size: .83rem; color: var(--smoke);
+  font-style: italic; line-height: 1.4;
+}
+
+.kw-list { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .75rem; }
+.kw {
+  font-size: .68rem; color: var(--mist);
+  background: var(--ink-70);
+  border: 1px solid var(--rule-lt);
+  padding: .2rem .6rem; border-radius: 3px;
+  cursor: default; transition: all .15s;
+}
+.kw:hover { border-color: var(--red-dim); color: var(--red); }
+
+/* ── Section heading ────────────────────────────────────────── */
+.sec-h {
+  font-family: var(--font-serif);
+  font-size: 1rem; font-weight: 700;
+  color: var(--white);
+  margin-bottom: 1.1rem;
+  padding-bottom: .4rem;
+  border-bottom: 1px solid var(--rule-mid);
+  letter-spacing: -.01em;
+  display: flex; align-items: center; gap: .6rem;
+}
+.sec-h .sec-count {
+  font-family: var(--font-mono); font-size: .68rem;
+  color: var(--smoke); font-weight: 400;
+  background: var(--ink-70); padding: .1rem .45rem;
+  border-radius: 3px; border: 1px solid var(--rule-lt);
+}
+
+/* ════════════════════════════════════════════════════════════
+   CHART — compact, pro, right-aligned
+   ════════════════════════════════════════════════════════════ */
+.chart-section { margin-bottom: 2.5rem; }
+.chart-outer {
+  background: var(--ink-80);
+  border: 1px solid var(--rule-mid);
+  border-radius: 6px;
+  padding: 1.25rem 1.4rem 1rem;
+}
+.chart-inner {
+  /* fixed height, NOT full-width — compact like Nature charts */
+  height: 140px;
   display: flex;
   align-items: flex-end;
-  gap: 4px;
-  height: 100px;
-  padding-bottom: 28px;
-  position: relative;
-  border-bottom: 1px solid var(--rule);
-  border-left: 1px solid var(--rule);
+  gap: 6px;
+  border-bottom: 1px solid var(--rule-mid);
+  border-left: 1px solid var(--rule-mid);
+  padding: 0 0 0 4px;
+  max-width: 600px;   /* ← cap the width so it's not horizon-spanning */
 }
-.bar-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-  height: 100%;
-  justify-content: flex-end;
-  gap: 3px;
-  position: relative;
+.ch-col {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-end;
+  gap: 3px; flex: 1; max-width: 36px;
+  height: 100%; position: relative;
 }
-.bar {
+.ch-bar {
   width: 100%;
-  background: var(--link);
-  border-radius: 1px 1px 0 0;
+  background: var(--red);
+  border-radius: 2px 2px 0 0;
   min-height: 2px;
-  transition: opacity 0.15s;
+  transition: opacity .15s;
+  position: relative;
 }
-.bar:hover { opacity: 0.7; }
-.bar-year-label {
-  position: absolute;
-  bottom: -22px;
-  font-size: 0.5rem;
-  color: var(--text-muted);
-  transform: rotate(-45deg);
-  transform-origin: top left;
+.ch-bar:hover { opacity: .75; }
+.ch-bar::after {
+  content: attr(data-n);
+  position: absolute; bottom: 100%; left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono); font-size: .52rem;
+  color: var(--smoke); margin-bottom: 2px;
+  pointer-events: none;
+}
+.ch-yr {
+  font-family: var(--font-mono); font-size: .5rem;
+  color: var(--smoke);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  margin-top: 3px;
   white-space: nowrap;
 }
-.bar-count {
-  font-size: 0.55rem;
-  color: var(--text-muted);
-  position: absolute;
-  bottom: 102%;
-  white-space: nowrap;
+.chart-meta {
+  margin-top: .6rem;
+  font-family: var(--font-mono); font-size: .62rem;
+  color: var(--smoke); display: flex; gap: 1.5rem;
 }
+.chart-meta span { display: flex; align-items: center; gap: .3rem; }
+.chart-meta .dot-r { width:8px;height:8px;border-radius:2px;background:var(--red);flex-shrink:0; }
 
-/* ── Papers list (Nature article-listing style) ───────────── */
-.papers-list {
-  margin-bottom: 2rem;
+/* ════════════════════════════════════════════════════════════
+   PAPERS LIST
+   ════════════════════════════════════════════════════════════ */
+.papers-section { margin-bottom: 2rem; }
+
+.q-legend {
+  display: flex; flex-wrap: wrap; gap: .5rem 1.2rem;
+  margin-bottom: 1rem; font-size: .68rem; color: var(--smoke);
 }
+.ql-item { display: flex; align-items: center; gap: .3rem; }
+.ql-dot { width:10px;height:10px;border-radius:2px;flex-shrink:0; }
+
 .paper-item {
-  padding: 1.1rem 0;
-  border-bottom: 1px solid var(--rule-light);
   display: grid;
-  grid-template-columns: 28px 1fr;
-  gap: 0 0.75rem;
+  grid-template-columns: 26px 1fr;
+  gap: 0 .65rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--rule);
 }
-.paper-number {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  font-family: 'Source Code Pro', monospace;
-  padding-top: 0.15rem;
-  text-align: right;
+.p-num {
+  font-family: var(--font-mono); font-size: .65rem;
+  color: var(--rule-lt); padding-top: .1rem;
+  text-align: right; line-height: 1.6;
 }
-.paper-body {}
-.paper-title {
-  font-family: 'Merriweather', serif;
-  font-size: 0.9rem;
-  font-weight: 400;
-  color: var(--text-primary);
-  line-height: 1.45;
-  margin-bottom: 0.3rem;
+.p-body {}
+.p-title {
+  font-family: var(--font-serif);
+  font-size: .95rem; font-weight: 400;
+  color: var(--white); line-height: 1.4; margin-bottom: .3rem;
 }
-.paper-title a {
-  color: var(--link);
+.p-title a { color: #6ab0d4; text-decoration: none; }
+.p-title a:hover { color: var(--white); text-decoration: underline; }
+
+.p-meta {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .4rem;
+  font-size: .75rem; color: var(--smoke); margin-bottom: .5rem;
 }
-.paper-title a:hover { text-decoration: underline; }
-.paper-venue-row {
-  font-size: 0.77rem;
-  color: var(--text-meta);
-  margin-bottom: 0.5rem;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
+.p-venue { font-style: italic; color: var(--mist); }
+.p-year-chip {
+  font-family: var(--font-mono); font-size: .65rem;
+  background: var(--ink-70); color: var(--smoke);
+  border: 1px solid var(--rule-lt); padding: .08rem .4rem; border-radius: 3px;
 }
-.paper-venue-name {
-  font-style: italic;
-}
-.paper-year-chip {
-  font-size: 0.7rem;
-  background: var(--pale-grey);
-  color: var(--text-meta);
-  padding: 0.1rem 0.4rem;
-  border-radius: 2px;
-  border: 1px solid var(--rule-light);
-  font-style: normal;
-}
-.paper-cite-chip {
-  font-size: 0.7rem;
-  color: var(--link);
-  font-style: normal;
-}
-.paper-metrics-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  align-items: center;
+.p-cite-chip {
+  font-family: var(--font-mono); font-size: .65rem; color: #6ab0d4;
 }
 
-/* metric chips */
+/* Metric chips */
+.m-row { display: flex; flex-wrap: wrap; gap: .3rem; align-items: center; }
 .chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
-  padding: 0.18rem 0.5rem;
-  border-radius: 2px;
-  font-size: 0.68rem;
-  font-family: 'Source Sans 3', sans-serif;
-  font-weight: 600;
-  border: 1px solid;
-  white-space: nowrap;
+  display: inline-flex; align-items: center; gap: .2rem;
+  padding: .16rem .5rem; border-radius: 3px;
+  font-size: .65rem; font-family: var(--font-mono);
+  border: 1px solid; line-height: 1.4; white-space: nowrap;
 }
-.chip-quartile {
-  /* dynamically styled via inline */
-}
-.chip-sjr {
-  background: #e8f4f8;
-  border-color: #b3d4e3;
-  color: #004e75;
-}
-.chip-if {
-  background: #e8f5e9;
-  border-color: #a5d6a7;
-  color: #1b5e20;
-}
-.chip-h {
-  background: #fff8e1;
-  border-color: #ffe082;
-  color: #5d4037;
-}
-.chip-src {
-  background: var(--pale-grey);
-  border-color: var(--rule);
-  color: var(--text-muted);
-  font-weight: 400;
-  font-size: 0.62rem;
-}
+.chip-if   { background:var(--if-dim); border-color:#166534; color:var(--if-green); font-weight:600; }
+.chip-q1   { background:rgba(40,167,69,.12);  border-color:#166534; color:#4ade80; }
+.chip-q2   { background:rgba(255,193,7,.1);   border-color:#92400e; color:#fbbf24; }
+.chip-q3   { background:rgba(253,126,20,.1);  border-color:#92400e; color:#fb923c; }
+.chip-q4   { background:rgba(220,53,69,.1);   border-color:#7f1d1d; color:#f87171; }
+.chip-sjr  { background:rgba(107,176,212,.1); border-color:#164e63; color:#7dd3fc; }
+.chip-cs   { background:var(--gem-dim);       border-color:#4c1d95; color:#c4b5fd; }
+.chip-h    { background:rgba(251,191,36,.08); border-color:#78350f; color:#fbbf24; }
+.chip-src  { background:transparent; border-color:var(--rule-lt); color:var(--smoke); font-size:.6rem; }
+.chip-gem  { background:var(--gem-dim); border-color:#4c1d95; color:#a78bfa; font-size:.6rem; }
+.chip-load { background:var(--ink-70); border-color:var(--rule-lt); color:var(--smoke);
+             animation: pulse 1.2s ease-in-out infinite; }
 
-/* ── Sidebar (Nature-style: access, metrics, download) ────── */
+.p-sources-btn {
+  background:none; border:none; cursor:pointer;
+  font-size:.62rem; color:var(--smoke); font-family:var(--font-mono);
+  text-decoration:underline dotted; margin-top:.25rem;
+  display:block;
+}
+.p-sources-btn:hover { color:var(--mist); }
+.p-sources {
+  margin-top:.35rem; padding:.5rem .7rem;
+  background:var(--ink-70); border:1px solid var(--rule-lt);
+  border-radius:4px; font-size:.66rem; line-height:1.7;
+  display:none;
+}
+.p-sources.open { display:block; }
+.p-sources a { color:#7dd3fc; font-size:.66rem; }
+
+/* ════════════════════════════════════════════════════════════
+   SIDEBAR
+   ════════════════════════════════════════════════════════════ */
 .sidebar {}
-.sidebar-card {
-  border: 1px solid var(--rule);
-  border-radius: 3px;
+.sb-card {
+  background: var(--ink-80);
+  border: 1px solid var(--rule-mid);
+  border-radius: 6px;
   margin-bottom: 1.25rem;
   overflow: hidden;
 }
-.sidebar-card-header {
-  background: var(--pale-grey);
-  padding: 0.65rem 1rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+.sb-hd {
+  background: var(--ink-70);
+  border-bottom: 1px solid var(--rule-mid);
+  padding: .55rem .9rem;
+  font-family: var(--font-mono);
+  font-size: .62rem; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--smoke);
+}
+.sb-body { padding: .85rem .9rem; }
+.sb-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: .35rem 0;
   border-bottom: 1px solid var(--rule);
+  font-size: .8rem;
 }
-.sidebar-card-body {
-  padding: 0.9rem 1rem;
-  background: var(--white);
+.sb-row:last-child { border-bottom: none; }
+.sb-label { color: var(--smoke); }
+.sb-val {
+  font-family: var(--font-serif);
+  font-weight: 700; font-size: 1rem;
+  color: var(--white);
 }
-.sidebar-stat-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  padding: 0.35rem 0;
-  border-bottom: 1px solid var(--rule-light);
-  font-size: 0.82rem;
+.sb-btn {
+  display: block; width: 100%;
+  padding: .6rem; text-align: center;
+  background: var(--rule-mid);
+  color: var(--mist); border: 1px solid var(--rule-lt);
+  border-radius: 4px; font-size: .75rem; font-weight: 600;
+  text-decoration: none; transition: all .15s;
+  font-family: var(--font-sans);
+  margin-bottom: .5rem;
 }
-.sidebar-stat-row:last-child { border-bottom: none; }
-.sidebar-stat-label { color: var(--text-meta); }
-.sidebar-stat-value {
-  font-weight: 700;
-  color: var(--text-primary);
-  font-family: 'Merriweather', serif;
-}
-.sidebar-action {
-  display: block;
-  width: 100%;
-  padding: 0.6rem 1rem;
-  background: var(--link);
-  color: white;
-  text-align: center;
-  font-size: 0.8rem;
-  font-weight: 600;
-  border: none;
-  border-radius: 2px;
-  cursor: pointer;
-  text-decoration: none;
-  transition: background 0.15s;
-  margin-bottom: 0.5rem;
-}
-.sidebar-action:hover {
-  background: var(--link-hover);
-  color: white;
-  text-decoration: none;
-}
+.sb-btn:hover { background: var(--rule-lt); color: var(--white); text-decoration: none; }
+.sb-btn.primary { background: var(--red); border-color: var(--red); color: var(--pure); }
+.sb-btn.primary:hover { background: #a00d24; }
+.sb-note { font-size: .68rem; color: var(--smoke); line-height: 1.55; }
 
-/* ── Legend ───────────────────────────────────────────────── */
-.quartile-legend {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  margin-bottom: 0.75rem;
-  font-size: 0.72rem;
-  color: var(--text-muted);
+.gem-badge {
+  display: flex; align-items: center; gap: .4rem;
+  background: var(--gem-dim);
+  border: 1px solid rgba(139,92,246,.25);
+  border-radius: 4px; padding: .4rem .65rem;
+  font-size: .7rem; color: #c4b5fd;
+  font-family: var(--font-mono); margin-bottom: .75rem;
 }
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-.legend-swatch {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-  border: 1px solid;
-  flex-shrink: 0;
-}
+.gem-badge::before { content: '✦'; color: var(--gem); }
 
-/* ── Footer ───────────────────────────────────────────────── */
-.site-footer {
-  margin-top: 4rem;
-  padding: 1.5rem 0;
-  border-top: 1px solid var(--rule);
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  text-align: center;
-}
-.site-footer a { color: var(--link); }
-
-/* ── Responsive ───────────────────────────────────────────── */
+/* ── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 820px) {
-  .article-layout {
-    grid-template-columns: 1fr;
-  }
+  .results-layout { grid-template-columns: 1fr; }
   .sidebar { order: -1; }
-  .metrics-grid { grid-template-columns: repeat(4, 1fr); }
+  .chart-inner { max-width: 100%; }
 }
-@media (max-width: 560px) {
+@media (max-width: 540px) {
   .search-input { min-width: 100%; }
-  .metrics-grid { grid-template-columns: 1fr 1fr; }
-  .researcher-name { font-size: 1.4rem; }
+  .search-title { font-size: 1.6rem; }
 }
+
+/* ── Footer ─────────────────────────────────────────────────── */
+.site-footer {
+  border-top: 1px solid var(--rule);
+  padding: 1.5rem 0;
+  text-align: center;
+  font-size: .72rem; color: var(--smoke);
+}
+.site-footer a { color: var(--mist); }
 </style>
 </head>
 <body>
 
-<!-- Red brand stripe -->
-<div class="brand-bar"></div>
+<div class="stripe"></div>
 
-<!-- Site header -->
 <header class="site-header">
-  <div class="site-header-inner">
-    <a class="site-logo" href="/">
+  <div class="hdr-inner">
+    <a class="logo" href="/">
       <div class="logo-mark">SL</div>
-      <div>
-        <div class="logo-text">Scholar<span>Lens</span></div>
-      </div>
+      <div class="logo-name">Scholar<em>Lens</em></div>
     </a>
-    <div class="site-tagline">Research Profile Extractor</div>
+    <div class="hdr-badge">
+      <div class="dot"></div>
+      Gemini 2.0 Flash · Google Search Grounding
+    </div>
   </div>
 </header>
 
-<!-- Breadcrumb -->
-<div class="breadcrumb-bar">
+<div class="breadcrumb">
   <div class="inner">
     <a href="/">Home</a>
     <span class="sep">›</span>
-    <span>Researcher Profile</span>
+    <span>Profile Extractor</span>
     <?php if ($result): ?>
     <span class="sep">›</span>
     <span><?= htmlspecialchars($result['name']) ?></span>
@@ -700,253 +690,482 @@ a:hover { color: var(--link-hover); text-decoration: underline; }
   </div>
 </div>
 
-<div class="page-wrap">
+<div class="page">
 
-  <!-- Search -->
+  <!-- ── SEARCH SECTION ───────────────────────────────────────── -->
   <section class="search-section">
-    <div class="search-eyebrow">Profile Search</div>
-    <div class="search-heading">Lookup a Google Scholar Researcher</div>
-    <form method="POST">
-      <div class="search-form-row">
-        <input class="search-input" type="text" name="user_id"
-          placeholder="Paste Google Scholar URL or user ID — e.g. JicYPdAAAAAJ"
-          value="<?= htmlspecialchars($_POST['user_id'] ?? '') ?>">
-        <button class="search-btn" type="submit">Search →</button>
-      </div>
-      <div class="search-hint">
-        Runs server-side — no CORS restrictions. &nbsp;·&nbsp;
-        Journal metrics via <code>SCImago</code> (SJR, Quartile, Cites/Doc ≈ JIF) and <code>OpenAlex</code> fallback. &nbsp;·&nbsp;
-        No API keys required.
-      </div>
+    <div class="search-eyebrow">// scholar profile extractor</div>
+    <h1 class="search-title">Research <span>Intelligence</span> Dashboard</h1>
+
+    <?php if (!$apiKey): ?>
+    <div class="notice warn">
+      <strong>⚠ Gemini API key not set.</strong>
+      Journal metrics (Impact Factor, SJR, Quartile) need a key.<br>
+      1. Free key at <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a><br>
+      2. In <code>scholar.php</code> set <code>define('GEMINI_API_KEY', 'AIza...')</code><br>
+      Scholar profile + charts still work without a key.
+    </div>
+    <?php else: ?>
+    <div class="notice active">
+      ✦ Gemini 2.0 Flash active — Impact Factor fetched live via Google Search grounding.
+      Free tier: 1,500 requests/day · 15 req/min.
+    </div>
+    <?php endif; ?>
+
+    <form class="search-form" id="searchForm" method="POST">
+      <input class="search-input" type="text" name="user_id" id="userIdInput"
+        placeholder="Scholar URL or user ID — e.g. JicYPdAAAAAJ"
+        value="<?= htmlspecialchars($_POST['user_id'] ?? '') ?>">
+      <button class="search-btn" type="submit" id="searchBtn">
+        Analyze Profile →
+      </button>
     </form>
+    <div class="search-note">
+      Fetches server-side — no CORS. &nbsp;·&nbsp;
+      Scholar profile + stats parsed first. &nbsp;·&nbsp;
+      Then Gemini looks up <code>Impact Factor</code>, <code>SJR</code>, <code>Quartile</code>, <code>CiteScore</code> per journal. &nbsp;·&nbsp;
+      Progress shown live below.
+    </div>
   </section>
 
   <?php if ($error): ?>
-  <div class="alert alert-error">
-    <strong>Error:</strong> <?= htmlspecialchars($error) ?>
-  </div>
+  <div class="notice error"><strong>Error:</strong> <?= htmlspecialchars($error) ?></div>
   <?php endif; ?>
 
+  <!-- ════════════════════════════════════════════════════════
+       LIVE PROGRESS PANEL (shown during AJAX metric fetch)
+       ════════════════════════════════════════════════════════ -->
+  <div id="progress-panel">
+    <div class="progress-header">
+      <div class="progress-spinner" id="mainSpinner"></div>
+      <div>
+        <div class="progress-title" id="progressTitle">Fetching Scholar profile…</div>
+        <div class="progress-subtitle" id="progressSub">Connecting to Google Scholar</div>
+      </div>
+    </div>
+
+    <div class="step-list" id="stepList">
+      <div class="step" id="step-scholar">
+        <span class="step-icon">📡</span>
+        <span class="step-text">Fetching Google Scholar profile</span>
+        <span class="step-badge" id="step-scholar-badge">waiting</span>
+      </div>
+      <div class="step" id="step-parse">
+        <span class="step-icon">🔍</span>
+        <span class="step-text">Parsing papers, citations & metadata</span>
+        <span class="step-badge" id="step-parse-badge">waiting</span>
+      </div>
+      <div class="step" id="step-gemini">
+        <span class="step-icon">✦</span>
+        <span class="step-text">Gemini · looking up journal metrics via Google Search</span>
+        <span class="step-badge" id="step-gemini-badge">waiting</span>
+      </div>
+      <div class="step" id="step-done">
+        <span class="step-icon">✅</span>
+        <span class="step-text">All done — rendering results</span>
+        <span class="step-badge" id="step-done-badge">waiting</span>
+      </div>
+    </div>
+
+    <!-- Venue-level progress (shown when Gemini step active) -->
+    <div class="venue-progress" id="venueProgress" style="display:none">
+      <div class="vp-header">
+        <span class="vp-label">// JOURNAL LOOKUP PROGRESS</span>
+        <span class="vp-count" id="venueCount">0 / 0</span>
+      </div>
+      <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+      <div class="venue-chips" id="venueChips"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
+       RESULTS  (populated by PHP + enriched by JS)
+       ════════════════════════════════════════════════════════ -->
   <?php if ($result): ?>
+  <div id="results" style="display:block">
+    <div class="results-layout">
 
-  <!-- Impact factor notice -->
-  <div class="alert alert-info">
-    <strong>About Impact Factor:</strong>
-    The Clarivate <em>Journal Impact Factor (JIF)</em> is proprietary (Elsevier/Web of Science paywall).
-    This tool shows the closest freely available equivalents from SCImago:
-    <strong>Cites/Doc&nbsp;(2yr)</strong> — computed with the identical formula on Scopus data —
-    <strong>SJR</strong> (prestige-weighted rank), and <strong>Quartile&nbsp;(Q1–Q4)</strong>.
-    Data from <a href="https://www.scimagojr.com" target="_blank">scimagojr.com</a>
-    and <a href="https://openalex.org" target="_blank">OpenAlex</a>.
-  </div>
+      <!-- ── MAIN CONTENT ──────────────────────────────────── -->
+      <main>
 
-  <div class="article-layout">
-
-    <!-- ── Main content column ─────────────────────────────── -->
-    <main>
-
-      <!-- Researcher header (like a Nature article header) -->
-      <header class="article-header">
-        <div class="article-type-tag">Researcher Profile</div>
-        <div class="researcher-meta-row" style="margin-bottom:1rem">
-          <?php if (!empty($result['avatar'])): ?>
-            <img class="researcher-avatar" src="<?= htmlspecialchars($result['avatar']) ?>" alt="">
-          <?php else: ?>
-            <div class="researcher-avatar-ph"><?= mb_strtoupper(mb_substr($result['name'],0,1)) ?></div>
+        <!-- Profile card -->
+        <div class="profile-card">
+          <div class="profile-type-tag">// researcher · profile</div>
+          <div class="profile-row">
+            <?php if (!empty($result['avatar'])): ?>
+              <img class="profile-avatar" src="<?= htmlspecialchars($result['avatar']) ?>" alt="">
+            <?php else: ?>
+              <div class="profile-avatar-ph"><?= mb_strtoupper(mb_substr($result['name'],0,1)) ?></div>
+            <?php endif; ?>
+            <div>
+              <div class="profile-name"><?= htmlspecialchars($result['name']) ?></div>
+              <?php if ($result['affiliation']): ?>
+              <div class="profile-affil"><?= htmlspecialchars($result['affiliation']) ?></div>
+              <?php endif; ?>
+            </div>
+          </div>
+          <?php if ($result['interests']): ?>
+          <div class="kw-list">
+            <?php foreach ($result['interests'] as $kw): ?>
+              <span class="kw"><?= htmlspecialchars($kw) ?></span>
+            <?php endforeach; ?>
+          </div>
           <?php endif; ?>
-          <div class="researcher-info">
-            <h1 class="researcher-name"><?= htmlspecialchars($result['name']) ?></h1>
-            <?php if ($result['affiliation']): ?>
-            <div class="researcher-affil"><?= htmlspecialchars($result['affiliation']) ?></div>
-            <?php endif; ?>
-          </div>
         </div>
-        <?php if ($result['interests']): ?>
-        <div class="keyword-list">
-          <?php foreach ($result['interests'] as $kw): ?>
-            <span class="keyword"><?= htmlspecialchars($kw) ?></span>
-          <?php endforeach; ?>
-        </div>
-        <?php endif; ?>
-      </header>
 
-      <!-- Publication timeline chart -->
-      <div class="chart-container">
-        <h2 class="section-heading">Publication Timeline</h2>
+        <!-- Chart -->
         <?php
-          $yearMap = [];
+          $ym = []; $totalPapers = 0;
           foreach ($result['papers'] as $p) {
-            if (!empty($p['year'])) $yearMap[$p['year']] = ($yearMap[$p['year']] ?? 0) + 1;
+            if (!empty($p['year'])) { $ym[$p['year']] = ($ym[$p['year']] ?? 0) + 1; $totalPapers++; }
           }
-          ksort($yearMap);
-          $maxY = max(array_values($yearMap) ?: [1]);
+          ksort($ym);
+          $maxY = max(array_values($ym) ?: [1]);
+          $peakYear = array_search($maxY, $ym);
         ?>
-        <div class="chart-area">
-          <?php foreach ($yearMap as $yr => $cnt): ?>
-            <?php $h = max(2, (int)round(($cnt / $maxY) * 90)); ?>
-            <div class="bar-col" title="<?= $cnt ?> papers in <?= $yr ?>">
-              <span class="bar-count"><?= $cnt ?></span>
-              <div class="bar" style="height:<?= $h ?>px"></div>
-              <span class="bar-year-label"><?= $yr ?></span>
+        <div class="chart-section">
+          <h2 class="sec-h">
+            Publication Timeline
+            <span class="sec-count"><?= $totalPapers ?> papers · peak <?= $peakYear ?></span>
+          </h2>
+          <div class="chart-outer">
+            <div class="chart-inner">
+              <?php foreach ($ym as $yr => $n): ?>
+                <?php $h = max(3, (int)round(($n/$maxY)*118)); ?>
+                <div class="ch-col" title="<?= $n ?> papers · <?= $yr ?>">
+                  <div class="ch-bar" style="height:<?= $h ?>px" data-n="<?= $n ?>"></div>
+                  <div class="ch-yr"><?= $yr ?></div>
+                </div>
+              <?php endforeach; ?>
             </div>
-          <?php endforeach; ?>
-        </div>
-      </div>
-
-      <!-- Papers list -->
-      <div class="papers-list">
-        <h2 class="section-heading">Publications (<?= count($result['papers']) ?>)</h2>
-
-        <!-- Quartile legend -->
-        <div class="quartile-legend">
-          <?php foreach (['Q1'=>'Top 25%','Q2'=>'Top 50%','Q3'=>'Top 75%','Q4'=>'Bottom 25%'] as $q => $label): ?>
-            <?php $qc = quartileColor($q); ?>
-            <div class="legend-item">
-              <div class="legend-swatch" style="background:<?= $qc['bg'] ?>;border-color:<?= $qc['border'] ?>"></div>
-              <span><?= $q ?> — <?= $label ?></span>
+            <div class="chart-meta">
+              <span><span class="dot-r"></span><?= count($ym) ?> years active</span>
+              <span>Peak: <?= $maxY ?> papers in <?= $peakYear ?></span>
+              <span>Total: <?= $totalPapers ?> indexed</span>
             </div>
-          <?php endforeach; ?>
+          </div>
         </div>
 
-        <?php foreach ($result['papers'] as $i => $p): ?>
-        <?php $m = $p['metrics'] ?? null; ?>
-        <div class="paper-item">
-          <div class="paper-number"><?= $i + 1 ?></div>
-          <div class="paper-body">
-            <div class="paper-title">
-              <?php if (!empty($p['link'])): ?>
-                <a href="<?= htmlspecialchars($p['link']) ?>" target="_blank" rel="noopener">
+        <!-- Papers -->
+        <div class="papers-section">
+          <h2 class="sec-h">
+            Publications
+            <span class="sec-count"><?= count($result['papers']) ?> papers</span>
+          </h2>
+
+          <?php if ($apiKey): ?>
+          <div class="q-legend">
+            <div class="ql-item"><div class="ql-dot" style="background:#4ade80"></div>Q1 — top 25%</div>
+            <div class="ql-item"><div class="ql-dot" style="background:#fbbf24"></div>Q2 — top 50%</div>
+            <div class="ql-item"><div class="ql-dot" style="background:#fb923c"></div>Q3 — top 75%</div>
+            <div class="ql-item"><div class="ql-dot" style="background:#f87171"></div>Q4 — bottom 25%</div>
+            <div class="ql-item"><div class="ql-dot" style="background:#22c55e"></div>IF — Impact Factor (live)</div>
+          </div>
+          <?php endif; ?>
+
+          <?php foreach ($result['papers'] as $i => $p): ?>
+          <?php $vc = htmlspecialchars($p['venue_clean'] ?? ''); ?>
+          <div class="paper-item" id="paper-<?= $i ?>">
+            <div class="p-num"><?= $i+1 ?></div>
+            <div class="p-body">
+              <div class="p-title">
+                <?php if (!empty($p['link'])): ?>
+                  <a href="<?= htmlspecialchars($p['link']) ?>" target="_blank" rel="noopener">
+                    <?= htmlspecialchars($p['title']) ?>
+                  </a>
+                <?php else: ?>
                   <?= htmlspecialchars($p['title']) ?>
-                </a>
-              <?php else: ?>
-                <?= htmlspecialchars($p['title']) ?>
+                <?php endif; ?>
+              </div>
+              <div class="p-meta">
+                <?php if ($vc): ?>
+                  <span class="p-venue"><?= $vc ?></span>
+                <?php endif; ?>
+                <?php if (!empty($p['year'])): ?>
+                  <span class="p-year-chip"><?= htmlspecialchars($p['year']) ?></span>
+                <?php endif; ?>
+                <?php if (!empty($p['cited']) && $p['cited'] !== '0'): ?>
+                  <span class="p-cite-chip"><?= htmlspecialchars($p['cited']) ?> cited</span>
+                <?php endif; ?>
+              </div>
+
+              <!-- Metrics injected by JS — placeholder while loading -->
+              <?php if ($apiKey && !empty($p['venue_clean'])): ?>
+              <div class="m-row" id="metrics-<?= $i ?>"
+                data-venue="<?= htmlspecialchars($p['venue_clean']) ?>">
+                <span class="chip chip-load">✦ fetching metrics…</span>
+              </div>
               <?php endif; ?>
+
             </div>
-            <div class="paper-venue-row">
-              <?php $venue = $p['venue_clean'] ?? $p['venue'] ?? ''; ?>
-              <?php if ($venue): ?>
-                <span class="paper-venue-name"><?= htmlspecialchars($venue) ?></span>
-              <?php endif; ?>
-              <?php if (!empty($p['year'])): ?>
-                <span class="paper-year-chip"><?= htmlspecialchars($p['year']) ?></span>
-              <?php endif; ?>
-              <?php if (!empty($p['cited']) && $p['cited'] !== '0'): ?>
-                <span class="paper-cite-chip">
-                  <?= htmlspecialchars($p['cited']) ?> citation<?= $p['cited'] != 1 ? 's' : '' ?>
-                </span>
-              <?php endif; ?>
+          </div>
+          <?php endforeach; ?>
+        </div>
+
+      </main>
+
+      <!-- ── SIDEBAR ───────────────────────────────────────── -->
+      <aside class="sidebar">
+
+        <div class="sb-card">
+          <div class="sb-hd">// citation stats</div>
+          <div class="sb-body">
+            <div class="sb-row">
+              <span class="sb-label">Total Citations</span>
+              <span class="sb-val"><?= htmlspecialchars($result['citations']) ?></span>
             </div>
-
-            <?php if ($m): ?>
-            <div class="paper-metrics-row">
-              <?php if (!empty($m['quartile'])): ?>
-                <?php $qc = quartileColor($m['quartile']); ?>
-                <span class="chip chip-quartile"
-                  style="background:<?= $qc['bg'] ?>;border-color:<?= $qc['border'] ?>;color:<?= $qc['text'] ?>">
-                  <?= htmlspecialchars($m['quartile']) ?>
-                </span>
-              <?php endif; ?>
-              <?php if (!empty($m['sjr'])): ?>
-                <span class="chip chip-sjr" title="SCImago Journal Rank">SJR <?= htmlspecialchars($m['sjr']) ?></span>
-              <?php endif; ?>
-              <?php if (!empty($m['cites_per_doc_2yr'])): ?>
-                <span class="chip chip-if" title="Cites per Document (2yr) — equivalent to Impact Factor formula">
-                  IF≈ <?= htmlspecialchars($m['cites_per_doc_2yr']) ?>
-                </span>
-              <?php endif; ?>
-              <?php if (!empty($m['h_index'])): ?>
-                <span class="chip chip-h" title="Journal h-index">h-index <?= htmlspecialchars($m['h_index']) ?></span>
-              <?php endif; ?>
-              <?php if (!empty($m['source'])): ?>
-                <span class="chip chip-src"><?= htmlspecialchars($m['source']) ?></span>
-              <?php endif; ?>
+            <div class="sb-row">
+              <span class="sb-label">h-index</span>
+              <span class="sb-val"><?= htmlspecialchars($result['h_index']) ?></span>
             </div>
-            <?php endif; ?>
-
+            <div class="sb-row">
+              <span class="sb-label">i10-index</span>
+              <span class="sb-val"><?= htmlspecialchars($result['i10_index']) ?></span>
+            </div>
+            <div class="sb-row">
+              <span class="sb-label">Papers indexed</span>
+              <span class="sb-val"><?= count($result['papers']) ?></span>
+            </div>
+            <div class="sb-row">
+              <span class="sb-label">Unique journals</span>
+              <span class="sb-val"><?= count($result['unique_venues']) ?></span>
+            </div>
           </div>
         </div>
-        <?php endforeach; ?>
-      </div>
 
-    </main>
-
-    <!-- ── Sidebar ──────────────────────────────────────────── -->
-    <aside class="sidebar">
-
-      <!-- Citation metrics card -->
-      <div class="sidebar-card">
-        <div class="sidebar-card-header">Citation Metrics</div>
-        <div class="sidebar-card-body">
-          <div class="sidebar-stat-row">
-            <span class="sidebar-stat-label">Total Citations</span>
-            <span class="sidebar-stat-value"><?= htmlspecialchars($result['citations']) ?></span>
-          </div>
-          <div class="sidebar-stat-row">
-            <span class="sidebar-stat-label">h-index</span>
-            <span class="sidebar-stat-value"><?= htmlspecialchars($result['h_index']) ?></span>
-          </div>
-          <div class="sidebar-stat-row">
-            <span class="sidebar-stat-label">i10-index</span>
-            <span class="sidebar-stat-value"><?= htmlspecialchars($result['i10_index']) ?></span>
-          </div>
-          <div class="sidebar-stat-row">
-            <span class="sidebar-stat-label">Papers</span>
-            <span class="sidebar-stat-value"><?= count($result['papers']) ?></span>
+        <div class="sb-card">
+          <div class="sb-hd">// export</div>
+          <div class="sb-body">
+            <a class="sb-btn primary" href="export.php?user_id=<?= urlencode($_POST['user_id']) ?>">
+              ↓ Download CSV
+            </a>
+            <div class="sb-note">
+              Includes title, venue, year, citations, Impact Factor, SJR, Quartile, CiteScore per paper.
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Download card -->
-      <div class="sidebar-card">
-        <div class="sidebar-card-header">Download Data</div>
-        <div class="sidebar-card-body">
-          <a class="sidebar-action"
-            href="export.php?user_id=<?= urlencode($_POST['user_id']) ?>">
-            ↓ Download CSV
-          </a>
-          <div style="font-size:0.72rem;color:var(--text-muted);line-height:1.5">
-            Includes title, venue, year, citations, Quartile, SJR, Cites/Doc (≈ JIF), and h-index per paper.
+        <div class="sb-card" id="geminiStatusCard" style="<?= $apiKey?'':'display:none' ?>">
+          <div class="sb-hd">// gemini metrics status</div>
+          <div class="sb-body">
+            <div class="gem-badge">Powered by Gemini 2.0 Flash</div>
+            <div class="sb-note" id="geminiStatus">
+              Looking up journal metrics…<br>
+              <span id="geminiProgress">0 / <?= count($result['unique_venues']) ?> venues</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- About metrics card -->
-      <div class="sidebar-card">
-        <div class="sidebar-card-header">About Metrics</div>
-        <div class="sidebar-card-body" style="font-size:0.76rem;color:var(--text-meta);line-height:1.65">
-          <p style="margin-bottom:0.6rem">
-            <strong style="color:var(--text-body)">IF≈ (Cites/Doc 2yr)</strong><br>
-            Same formula as Clarivate JIF, computed on Scopus citation data. Highly correlated with JIF.
-          </p>
-          <p style="margin-bottom:0.6rem">
-            <strong style="color:var(--text-body)">SJR</strong><br>
-            SCImago Journal Rank. Prestige-weighted score — higher-quality citations count more.
-          </p>
-          <p style="margin-bottom:0.6rem">
-            <strong style="color:var(--text-body)">Quartile</strong><br>
-            Where the journal ranks among all journals in its Scopus subject category.
-          </p>
-          <p>
-            Source: <a href="https://www.scimagojr.com" target="_blank">SCImago</a> /
-            <a href="https://openalex.org" target="_blank">OpenAlex</a>
-          </p>
+        <div class="sb-card">
+          <div class="sb-hd">// metric legend</div>
+          <div class="sb-body">
+            <div class="sb-note" style="line-height:1.9">
+              <strong style="color:var(--white)">IF</strong> — Clarivate Impact Factor (live via Gemini+Google)<br>
+              <strong style="color:var(--white)">SJR</strong> — SCImago Journal Rank (prestige-weighted)<br>
+              <strong style="color:var(--white)">CS</strong> — Scopus CiteScore (4yr avg)<br>
+              <strong style="color:var(--white)">Q1–Q4</strong> — Quartile in Scopus subject category<br>
+              <strong style="color:var(--white)">h-idx</strong> — Journal h-index<br>
+              <br>
+              <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#7dd3fc">
+                Get free Gemini API key →
+              </a>
+            </div>
+          </div>
         </div>
-      </div>
 
-    </aside>
+      </aside>
 
-  </div><!-- /.article-layout -->
-
+    </div>
+  </div>
   <?php endif; ?>
 
-</div><!-- /.page-wrap -->
+</div><!-- /.page -->
 
 <footer class="site-footer">
-  ScholarLens &nbsp;·&nbsp; Journal metrics from
-  <a href="https://www.scimagojr.com" target="_blank">SCImago</a> &amp;
-  <a href="https://openalex.org" target="_blank">OpenAlex</a> &nbsp;·&nbsp;
-  Not affiliated with Google Scholar, Clarivate, or Nature Publishing Group.
+  ScholarLens &nbsp;·&nbsp; Scholar data scraped server-side &nbsp;·&nbsp;
+  Metrics via Gemini 2.0 Flash + Google Search Grounding &nbsp;·&nbsp;
+  Not affiliated with Google, Clarivate, or Nature Publishing Group
 </footer>
+
+<!-- ════════════════════════════════════════════════════════════
+     JAVASCRIPT — Live progress + AJAX metric fetching
+     ════════════════════════════════════════════════════════════ -->
+<script>
+// ── Helper ────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const stepState = (id, state, badge) => {
+  const el = $(id); if (!el) return;
+  el.className = 'step ' + state;
+  const b = el.querySelector('.step-badge');
+  if (b && badge) b.textContent = badge;
+};
+
+// ── Show progress while form is submitting (Scholar fetch) ────
+$('searchForm')?.addEventListener('submit', function() {
+  const panel = $('progress-panel');
+  if (panel) { panel.style.display = 'block'; }
+  stepState('step-scholar', 'active', 'connecting…');
+  $('searchBtn').textContent = 'Searching…';
+  $('searchBtn').disabled = true;
+  $('progressTitle').textContent = 'Fetching Scholar profile…';
+  $('progressSub').textContent = 'Server-side cURL → scholar.google.com';
+});
+
+<?php if ($result && $apiKey): ?>
+// ── AJAX: Fetch metrics for each unique venue ─────────────────
+(function() {
+  // Mark Scholar + parse steps done (server already finished)
+  stepState('step-scholar', 'done', 'done');
+  stepState('step-parse',   'done', '<?= count($result["papers"]) ?> papers');
+  stepState('step-gemini',  'active', 'starting…');
+  $('progress-panel').style.display = 'block';
+  $('mainSpinner').style.display = 'block';
+  $('progressTitle').textContent = 'Fetching journal metrics via Gemini…';
+  $('progressSub').textContent = 'Google Search grounding · Impact Factor · SJR · Quartile';
+
+  // All unique venues from PHP
+  const venues = <?= json_encode($result['unique_venues']) ?>;
+  const total  = venues.length;
+
+  // Map venue → paper indices that use it
+  const venuePapers = {};
+  document.querySelectorAll('[data-venue]').forEach(el => {
+    const v = el.getAttribute('data-venue');
+    if (!venuePapers[v]) venuePapers[v] = [];
+    venuePapers[v].push(el.id.replace('metrics-',''));
+  });
+
+  // Build venue chip UI
+  const vp = $('venueProgress');
+  vp.style.display = 'block';
+  const chips = $('venueChips');
+  const chipMap = {};
+  venues.forEach(v => {
+    const c = document.createElement('span');
+    c.className = 'venue-chip';
+    c.title = v;
+    c.textContent = v.length > 30 ? v.slice(0,28)+'…' : v;
+    chips.appendChild(c);
+    chipMap[v] = c;
+  });
+
+  let done = 0;
+
+  function updateProgress() {
+    done++;
+    $('venueCount').textContent = done + ' / ' + total;
+    $('progFill').style.width = Math.round((done/total)*100) + '%';
+    stepState('step-gemini', 'active', done+'/'+total+' venues');
+    const gp = $('geminiProgress');
+    if (gp) gp.textContent = done + ' / ' + total + ' venues';
+    if (done === total) {
+      stepState('step-gemini', 'done', total+' venues');
+      stepState('step-done',   'done', 'complete ✓');
+      $('mainSpinner').style.display = 'none';
+      $('progressTitle').textContent = 'All metrics loaded!';
+      $('progressSub').textContent = 'Results are ready below ↓';
+      const gs = $('geminiStatus');
+      if (gs) gs.textContent = total + ' journals enriched via Gemini.';
+      // Auto-hide progress after 3s
+      setTimeout(() => { $('progress-panel').style.display = 'none'; }, 3000);
+    }
+  }
+
+  function renderMetrics(paperIdx, m) {
+    const el = $('metrics-'+paperIdx);
+    if (!el) return;
+
+    if (!m || m._not_found) {
+      el.innerHTML = '<span class="chip chip-src">no metrics found</span>';
+      return;
+    }
+
+    let html = '';
+
+    // Quartile chip
+    if (m.quartile) {
+      const qcls = {'Q1':'chip-q1','Q2':'chip-q2','Q3':'chip-q3','Q4':'chip-q4'}[m.quartile] || 'chip-src';
+      html += `<span class="chip ${qcls}">${m.quartile}</span>`;
+    }
+    // Impact Factor ← the critical one
+    if (m.impact_factor) {
+      const yr = m.impact_factor_year ? ` <span style="opacity:.65">(${m.impact_factor_year})</span>` : '';
+      html += `<span class="chip chip-if" title="Journal Impact Factor">IF&nbsp;${m.impact_factor}${yr}</span>`;
+    }
+    if (m.sjr) {
+      html += `<span class="chip chip-sjr" title="SCImago Journal Rank">SJR&nbsp;${m.sjr}</span>`;
+    }
+    if (m.cite_score) {
+      html += `<span class="chip chip-cs" title="CiteScore (Scopus)">CS&nbsp;${m.cite_score}</span>`;
+    }
+    if (m.h_index) {
+      html += `<span class="chip chip-h" title="Journal h-index">h&nbsp;${m.h_index}</span>`;
+    }
+    if (m.source) {
+      html += `<span class="chip chip-src">via ${m.source}</span>`;
+    }
+    html += `<span class="chip chip-gem">✦&nbsp;Gemini</span>`;
+
+    // Grounding sources
+    const sources = m.grounding_sources || [];
+    if (sources.length) {
+      const uid = 'src-'+paperIdx;
+      html += `<br><button class="p-sources-btn" onclick="toggleSrc('${uid}')">
+        ↳ ${sources.length} source${sources.length>1?'s':''} searched
+      </button>
+      <div class="p-sources" id="${uid}">
+        ${sources.map(s => `<a href="${s.uri}" target="_blank" rel="noopener">${s.title}</a>`).join('<br>')}
+        ${m.web_search_queries?.length ? '<br><em style="color:var(--smoke)">Queries: '+m.web_search_queries.join(', ')+'</em>' : ''}
+      </div>`;
+    }
+
+    el.innerHTML = html;
+  }
+
+  // Fetch one venue at a time (sequential to respect 15 req/min)
+  async function fetchVenue(venue, idx) {
+    const chip = chipMap[venue];
+    if (chip) chip.className = 'venue-chip loading';
+    try {
+      const r = await fetch('scholar.php?ajax_venue=' + encodeURIComponent(venue));
+      const m = await r.json();
+
+      const hasData = m && !m._not_found &&
+        (m.impact_factor || m.sjr || m.quartile || m.cite_score);
+
+      if (chip) chip.className = 'venue-chip ' + (hasData ? 'done' : 'no-data');
+
+      // Apply to all papers sharing this venue
+      const paperIds = venuePapers[venue] || [];
+      paperIds.forEach(pid => renderMetrics(pid, m));
+    } catch(e) {
+      if (chip) chip.className = 'venue-chip no-data';
+      (venuePapers[venue]||[]).forEach(pid => {
+        const el = $('metrics-'+pid);
+        if (el) el.innerHTML = '<span class="chip chip-src">lookup failed</span>';
+      });
+    }
+    updateProgress();
+  }
+
+  // Run sequentially (not parallel) to avoid Gemini rate limits
+  (async function run() {
+    for (let i = 0; i < venues.length; i++) {
+      await fetchVenue(venues[i], i);
+      if (i < venues.length-1) await new Promise(r=>setTimeout(r, 400)); // 400ms gap
+    }
+  })();
+})();
+<?php elseif($result && !$apiKey): ?>
+// API key not set — hide progress, show static
+$('progress-panel').style.display = 'none';
+<?php endif; ?>
+
+function toggleSrc(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('open');
+}
+</script>
 
 </body>
 </html>
