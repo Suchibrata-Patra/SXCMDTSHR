@@ -1,20 +1,22 @@
 <?php
 // ─────────────────────────────────────────────────────────────
-//  ScholarLens — index.php
-//  Nature-black academic UI · Live progress · Gemini IF
+//  ScholarLens — index.php  (Nature journal theme)
+//  Journal metrics powered by Gemini API + Google Search
 // ─────────────────────────────────────────────────────────────
-require_once 'scholar.php';
+$result     = null;
+$error      = null;
+$apiKeySet  = (defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '') !== 'YOUR_GEMINI_API_KEY_HERE'
+               && !empty(defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '');
 
-$result = null;
-$error  = null;
-$apiKey = GEMINI_API_KEY !== 'YOUR_GEMINI_API_KEY_HERE' && !empty(GEMINI_API_KEY);
-
+// We need scholar.php before checking the key
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['user_id'])) {
+    require_once 'scholar.php';
+    $apiKeySet = GEMINI_API_KEY !== 'YOUR_GEMINI_API_KEY_HERE' && !empty(GEMINI_API_KEY);
     $userId = trim($_POST['user_id']);
     if (preg_match('/[?&]user=([^&\s]+)/', $userId, $m)) $userId = $m[1];
     $userId = preg_replace('/[^A-Za-z0-9_\-]/', '', $userId);
     if (empty($userId)) {
-        $error = 'Invalid ID — paste the full Scholar URL or just the user ID.';
+        $error = 'Invalid user ID. Please paste a full Google Scholar URL or just the user ID.';
     } else {
         try {
             $result = fetchScholarProfile($userId);
@@ -22,658 +24,214 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['user_id'])) {
             $error = $e->getMessage();
         }
     }
+} else {
+    // Load to check the key
+    if (file_exists('scholar.php')) {
+        require_once 'scholar.php';
+        $apiKeySet = defined('GEMINI_API_KEY') && GEMINI_API_KEY !== 'YOUR_GEMINI_API_KEY_HERE' && !empty(GEMINI_API_KEY);
+    }
 }
 
-function qColor(string $q): array {
+function quartileColor(string $q): array {
     return match($q) {
-        'Q1' => ['#d4edda','#28a745','#155724'],
-        'Q2' => ['#fff3cd','#ffc107','#856404'],
-        'Q3' => ['#ffe5d0','#fd7e14','#7d3514'],
-        'Q4' => ['#f8d7da','#dc3545','#721c24'],
-        default => ['#2a2a2a','#555','#aaa'],
+        'Q1' => ['bg'=>'#e8f5e9','border'=>'#2e7d32','text'=>'#1b5e20'],
+        'Q2' => ['bg'=>'#fff8e1','border'=>'#f9a825','text'=>'#e65100'],
+        'Q3' => ['bg'=>'#fff3e0','border'=>'#ef6c00','text'=>'#bf360c'],
+        'Q4' => ['bg'=>'#fce4ec','border'=>'#c62828','text'=>'#b71c1c'],
+        default => ['bg'=>'#f5f5f5','border'=>'#bdbdbd','text'=>'#616161'],
     };
+}
+
+function safe(mixed $v, string $default = '—'): string {
+    return !empty($v) ? htmlspecialchars((string)$v) : $default;
 }
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ScholarLens — Research Profile Extractor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400&family=Source+Sans+3:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* ════════════════════════════════════════════════════════════
-   NATURE-BLACK ACADEMIC DESIGN SYSTEM
-   Inspired by: Nature.com dark overlays, Springer dark panels,
-   Cell Press bold headers — sharp monochrome editorial aesthetic
-   ════════════════════════════════════════════════════════════ */
+/* ── Reset ────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
-:root {
-  /* Core palette */
-  --ink:        #0a0a0a;
-  --ink-90:     #111111;
-  --ink-80:     #1a1a1a;
-  --ink-70:     #222222;
-  --ink-60:     #2e2e2e;
-  --rule:       #2a2a2a;
-  --rule-mid:   #383838;
-  --rule-lt:    #444444;
-  --smoke:      #888888;
-  --mist:       #aaaaaa;
-  --fog:        #cccccc;
-  --white:      #f5f4f0;   /* warm off-white like quality paper */
-  --pure:       #ffffff;
+:root{
+  --white:#ffffff;
+  --off-white:#f8f8f8;
+  --pale:#f3f3f3;
+  --rule:#d8d8d8;
+  --rule-lt:#ececec;
+  --tx-primary:#222;
+  --tx-body:#333;
+  --tx-meta:#666;
+  --tx-muted:#999;
+  --red:#c8102e;
+  --link:#006699;
+  --link-h:#004e75;
+  --gemini-purple:#7c4dff;
+  --gemini-bg:#f3f0ff;
+  --gemini-border:#d1c4e9;
+}
+html{font-size:16px;scroll-behavior:smooth}
+body{background:var(--white);color:var(--tx-body);font-family:'Source Sans 3','Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.6}
+a{color:var(--link);text-decoration:none}
+a:hover{color:var(--link-h);text-decoration:underline}
 
-  /* Nature red accent */
-  --red:        #c8102e;
-  --red-dim:    #8a0b1f;
-  --red-glow:   rgba(200,16,46,.15);
+/* ── Top stripe ───────────────────────────────────────────── */
+.brand-stripe{height:6px;background:var(--red)}
 
-  /* Gemini purple */
-  --gem:        #8b5cf6;
-  --gem-dim:    rgba(139,92,246,.12);
+/* ── Site header ──────────────────────────────────────────── */
+.site-header{border-bottom:1px solid var(--rule);background:var(--white)}
+.site-header-inner{max-width:1200px;margin:0 auto;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px}
+.logo-wrap{display:flex;align-items:center;gap:.55rem;text-decoration:none}
+.logo-mark{width:36px;height:36px;background:var(--red);border-radius:2px;display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Merriweather',serif;font-weight:900;font-size:1.1rem;flex-shrink:0}
+.logo-name{font-family:'Merriweather',serif;font-weight:700;font-size:1.15rem;color:var(--tx-primary);letter-spacing:-.01em}
+.logo-name span{color:var(--red)}
+.powered-badge{display:flex;align-items:center;gap:.3rem;font-size:.7rem;color:var(--tx-muted);font-style:italic}
+.gemini-dot{width:8px;height:8px;border-radius:50%;background:var(--gemini-purple);flex-shrink:0}
 
-  /* Impact factor green */
-  --if-green:   #22c55e;
-  --if-dim:     rgba(34,197,94,.12);
+/* ── Breadcrumb ───────────────────────────────────────────── */
+.breadcrumb{background:var(--off-white);border-bottom:1px solid var(--rule-lt);padding:.45rem 0;font-size:.75rem}
+.breadcrumb .inner{max-width:1200px;margin:0 auto;padding:0 2rem;display:flex;align-items:center;gap:.4rem;color:var(--tx-muted)}
+.breadcrumb a{color:var(--link);font-size:.75rem}
 
-  /* Typography */
-  --font-serif: 'EB Garamond', 'Georgia', serif;
-  --font-sans:  'Inter', 'Helvetica Neue', sans-serif;
-  --font-mono:  'JetBrains Mono', 'Courier New', monospace;
-}
+/* ── Page wrap ────────────────────────────────────────────── */
+.page{max-width:1200px;margin:0 auto;padding:0 2rem 4rem}
 
-*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-size: 16px; scroll-behavior: smooth; }
-body {
-  background: var(--ink);
-  color: var(--fog);
-  font-family: var(--font-sans);
-  font-weight: 400;
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  min-height: 100vh;
-}
+/* ── Search section ───────────────────────────────────────── */
+.search-section{padding:2.5rem 0 2rem;border-bottom:1px solid var(--rule);margin-bottom:2rem}
+.eyebrow{font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--red);margin-bottom:.45rem}
+.search-heading{font-family:'Merriweather',serif;font-size:1.5rem;font-weight:700;color:var(--tx-primary);margin-bottom:1.2rem;line-height:1.3}
+.search-row{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:.7rem}
+.search-input{flex:1;min-width:320px;height:44px;border:1.5px solid var(--rule);border-radius:3px;padding:0 1rem;font-family:'Source Sans 3',sans-serif;font-size:.9rem;color:var(--tx-body);background:var(--white);outline:none;transition:border-color .15s,box-shadow .15s}
+.search-input:focus{border-color:var(--link);box-shadow:0 0 0 3px rgba(0,102,153,.08)}
+.search-input::placeholder{color:var(--tx-muted)}
+.search-btn{height:44px;padding:0 1.6rem;background:var(--red);color:#fff;border:none;border-radius:3px;font-family:'Source Sans 3',sans-serif;font-size:.875rem;font-weight:600;cursor:pointer;letter-spacing:.02em;transition:background .15s;white-space:nowrap}
+.search-btn:hover{background:#a00d24}
+.search-hint{font-size:.78rem;color:var(--tx-muted);line-height:1.65}
+.search-hint code{font-family:'Source Code Pro',monospace;font-size:.73rem;background:var(--pale);padding:.1rem .35rem;border-radius:2px;color:var(--link)}
 
-/* ── Scrollbar ──────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 5px; background: var(--ink-80); }
-::-webkit-scrollbar-thumb { background: var(--rule-lt); border-radius: 3px; }
+/* ── API key banner ───────────────────────────────────────── */
+.api-banner{padding:.85rem 1.1rem;border-radius:3px;font-size:.83rem;margin:1.2rem 0;border-left:4px solid;line-height:1.65}
+.api-banner.warn{background:#fff8e1;border-color:#f9a825;color:#5d4037}
+.api-banner.info{background:var(--gemini-bg);border-color:var(--gemini-purple);color:#37007a}
+.api-banner strong{font-weight:700}
+.api-banner code{font-family:'Source Code Pro',monospace;font-size:.75rem;background:rgba(0,0,0,.06);padding:.1rem .35rem;border-radius:2px}
 
-/* ── Top red stripe ─────────────────────────────────────────── */
-.stripe { height: 3px; background: var(--red); }
+/* ── Alert ────────────────────────────────────────────────── */
+.alert{padding:.9rem 1.1rem;border-radius:3px;font-size:.85rem;margin:1.2rem 0;border-left:4px solid}
+.alert.error{background:#fff5f5;border-color:var(--red);color:#7a0000}
 
-/* ── Site header ────────────────────────────────────────────── */
-.site-header {
-  background: var(--ink-90);
-  border-bottom: 1px solid var(--rule);
-  position: sticky; top: 0; z-index: 100;
-  backdrop-filter: blur(12px);
-}
-.hdr-inner {
-  max-width: 1100px; margin: 0 auto;
-  padding: 0 2rem;
-  height: 58px;
-  display: flex; align-items: center; justify-content: space-between;
-}
-.logo {
-  display: flex; align-items: center; gap: .6rem;
-  text-decoration: none;
-}
-.logo-mark {
-  width: 32px; height: 32px;
-  background: var(--red);
-  border-radius: 3px;
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-serif);
-  font-weight: 700; font-size: 1rem;
-  color: var(--pure);
-  letter-spacing: -.02em;
-  flex-shrink: 0;
-}
-.logo-name {
-  font-family: var(--font-serif);
-  font-size: 1.2rem; font-weight: 700;
-  color: var(--white);
-  letter-spacing: -.01em;
-}
-.logo-name em { color: var(--red); font-style: normal; }
-.hdr-badge {
-  display: flex; align-items: center; gap: .35rem;
-  font-size: .7rem; color: var(--smoke);
-  font-family: var(--font-mono);
-  letter-spacing: .04em;
-}
-.hdr-badge .dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--gem); flex-shrink: 0;
-  box-shadow: 0 0 6px var(--gem);
-}
+/* ── Two-column layout ────────────────────────────────────── */
+.layout{display:grid;grid-template-columns:1fr 280px;gap:3rem;align-items:start}
 
-/* ── Breadcrumb ─────────────────────────────────────────────── */
-.breadcrumb {
-  background: var(--ink-80);
-  border-bottom: 1px solid var(--rule);
-  padding: .4rem 0; font-size: .72rem;
-}
-.breadcrumb .inner {
-  max-width: 1100px; margin: 0 auto; padding: 0 2rem;
-  display: flex; align-items: center; gap: .4rem;
-  color: var(--smoke);
-}
-.breadcrumb a { color: var(--mist); }
-.breadcrumb a:hover { color: var(--white); }
-.breadcrumb .sep { color: var(--rule-lt); }
+/* ── Article header ───────────────────────────────────────── */
+.art-header{padding-bottom:1.5rem;border-bottom:1px solid var(--rule);margin-bottom:1.75rem}
+.art-type{display:inline-block;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--red);border:1px solid var(--red);padding:.18rem .55rem;border-radius:2px;margin-bottom:.9rem}
+.researcher-row{display:flex;align-items:flex-start;gap:1rem;margin-bottom:.9rem}
+.r-avatar{width:68px;height:68px;border-radius:50%;object-fit:cover;border:2px solid var(--rule);flex-shrink:0}
+.r-avatar-ph{width:68px;height:68px;border-radius:50%;background:var(--pale);border:2px solid var(--rule);display:flex;align-items:center;justify-content:center;font-family:'Merriweather',serif;font-size:1.5rem;font-weight:700;color:var(--tx-meta);flex-shrink:0}
+.r-name{font-family:'Merriweather',serif;font-size:1.7rem;font-weight:700;color:var(--tx-primary);line-height:1.25;margin-bottom:.2rem;letter-spacing:-.01em}
+.r-affil{font-size:.9rem;color:var(--tx-meta);font-style:italic}
+.keywords{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.85rem}
+.kw{font-size:.72rem;background:var(--pale);color:var(--tx-meta);padding:.2rem .6rem;border-radius:2px;border:1px solid var(--rule-lt);font-weight:500;cursor:default}
+.kw:hover{background:#e8f4f8;color:var(--link);border-color:#b3d4e3}
 
-/* ── Page wrap ──────────────────────────────────────────────── */
-.page {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 2rem 6rem;
-}
+/* ── Section heading ──────────────────────────────────────── */
+.sec-h{font-family:'Merriweather',serif;font-size:1.05rem;font-weight:700;color:var(--tx-primary);margin-bottom:1rem;padding-bottom:.4rem;border-bottom:2px solid var(--tx-primary);letter-spacing:-.01em}
 
-/* ── Search section ─────────────────────────────────────────── */
-.search-section {
-  padding: 3rem 0 2.5rem;
-  border-bottom: 1px solid var(--rule);
-  margin-bottom: 2.5rem;
-}
-.search-eyebrow {
-  font-family: var(--font-mono);
-  font-size: .65rem; letter-spacing: .14em;
-  text-transform: uppercase; color: var(--red);
-  margin-bottom: .5rem;
-}
-.search-title {
-  font-family: var(--font-serif);
-  font-size: 2.1rem; font-weight: 700;
-  color: var(--white);
-  letter-spacing: -.02em; line-height: 1.2;
-  margin-bottom: 1.5rem;
-}
-.search-title span { color: var(--red); }
+/* ── Year chart ───────────────────────────────────────────── */
+.chart-wrap{margin-bottom:2rem}
+.chart-area{display:flex;align-items:flex-end;gap:4px;height:110px;padding-bottom:24px;border-bottom:1px solid var(--rule);border-left:1px solid var(--rule);position:relative}
+.bc{display:flex;flex-direction:column;align-items:center;flex:1;height:100%;justify-content:flex-end;gap:3px;position:relative}
+.bar{width:100%;background:var(--link);border-radius:1px 1px 0 0;min-height:2px}
+.bar:hover{opacity:.7}
+.bar-yr{position:absolute;bottom:-20px;font-size:.49rem;color:var(--tx-muted);transform:rotate(-45deg);transform-origin:top left;white-space:nowrap}
+.bar-n{font-size:.54rem;color:var(--tx-muted);position:absolute;bottom:102%;white-space:nowrap}
 
-.search-form {
-  display: flex; gap: .6rem; flex-wrap: wrap;
-  margin-bottom: .8rem;
-}
-.search-input {
-  flex: 1; min-width: 300px; height: 48px;
-  background: var(--ink-70);
-  border: 1px solid var(--rule-lt);
-  border-radius: 4px;
-  padding: 0 1.1rem;
-  font-family: var(--font-mono); font-size: .82rem;
-  color: var(--white);
-  outline: none;
-  transition: border-color .2s, box-shadow .2s;
-}
-.search-input:focus {
-  border-color: var(--red);
-  box-shadow: 0 0 0 3px var(--red-glow);
-}
-.search-input::placeholder { color: var(--smoke); }
+/* ── Papers list ──────────────────────────────────────────── */
+.papers{margin-bottom:2rem}
+.paper-item{padding:1.1rem 0;border-bottom:1px solid var(--rule-lt);display:grid;grid-template-columns:28px 1fr;gap:0 .75rem}
+.paper-n{font-size:.72rem;color:var(--tx-muted);font-family:'Source Code Pro',monospace;padding-top:.15rem;text-align:right}
+.paper-title{font-family:'Merriweather',serif;font-size:.9rem;font-weight:400;color:var(--tx-primary);line-height:1.45;margin-bottom:.3rem}
+.paper-title a{color:var(--link)}
+.paper-title a:hover{text-decoration:underline}
+.paper-meta{font-size:.77rem;color:var(--tx-meta);margin-bottom:.5rem;display:flex;flex-wrap:wrap;align-items:center;gap:.45rem}
+.meta-venue{font-style:italic}
+.meta-chip{font-size:.68rem;background:var(--pale);color:var(--tx-meta);padding:.1rem .4rem;border-radius:2px;border:1px solid var(--rule-lt);font-style:normal}
+.meta-cites{font-size:.7rem;color:var(--link);font-style:normal}
 
-.search-btn {
-  height: 48px; padding: 0 2rem;
-  background: var(--red); color: var(--pure);
-  border: none; border-radius: 4px;
-  font-family: var(--font-sans); font-weight: 600;
-  font-size: .875rem; letter-spacing: .03em;
-  cursor: pointer;
-  transition: background .15s, transform .1s;
-  white-space: nowrap;
-}
-.search-btn:hover { background: #a00d24; }
-.search-btn:active { transform: scale(.98); }
+/* ── Metric chips ─────────────────────────────────────────── */
+.chip-row{display:flex;flex-wrap:wrap;gap:.3rem;align-items:center;margin-bottom:.3rem}
+.chip{display:inline-flex;align-items:center;gap:.2rem;padding:.18rem .5rem;border-radius:2px;font-size:.68rem;font-family:'Source Sans 3',sans-serif;font-weight:600;border:1px solid;white-space:nowrap;line-height:1.4}
+.chip-if   {background:#e8f5e9;border-color:#a5d6a7;color:#1b5e20}
+.chip-if.estimated{background:#f1f8e9;border-color:#c5e1a5;color:#33691e}
+.chip-sjr  {background:#e8f4f8;border-color:#b3d4e3;color:#004e75}
+.chip-cs   {background:#ede7f6;border-color:#ce93d8;color:#4a148c}
+.chip-h    {background:#fff8e1;border-color:#ffe082;color:#5d4037}
+.chip-src  {background:var(--pale);border-color:var(--rule);color:var(--tx-muted);font-weight:400;font-size:.62rem}
+.chip-gemini{background:var(--gemini-bg);border-color:var(--gemini-border);color:var(--gemini-purple);font-weight:400;font-size:.62rem}
 
-.search-note {
-  font-size: .72rem; color: var(--smoke); line-height: 1.7;
-}
-.search-note code {
-  font-family: var(--font-mono); font-size: .68rem;
-  background: var(--ink-70); color: var(--mist);
-  padding: .1rem .4rem; border-radius: 3px;
-  border: 1px solid var(--rule-lt);
-}
+/* ── Grounding sources (tooltip-like collapsible) ─────────── */
+.sources-toggle{font-size:.65rem;color:var(--link);cursor:pointer;border:none;background:none;padding:0;font-family:'Source Sans 3',sans-serif;text-decoration:underline dotted;margin-top:.25rem}
+.sources-list{margin-top:.3rem;padding:.5rem .7rem;background:var(--gemini-bg);border:1px solid var(--gemini-border);border-radius:3px;display:none;font-size:.68rem;line-height:1.65}
+.sources-list.open{display:block}
+.sources-list a{color:var(--gemini-purple);font-size:.68rem}
 
-/* ── API key notice ─────────────────────────────────────────── */
-.notice {
-  margin: 1.2rem 0; padding: .85rem 1.1rem;
-  border-radius: 4px; font-size: .8rem; line-height: 1.65;
-  border-left: 3px solid;
-}
-.notice.warn { background: rgba(255,193,7,.07); border-color: #ffc107; color: #ffd54f; }
-.notice.active { background: var(--gem-dim); border-color: var(--gem); color: #c4b5fd; }
-.notice.error { background: var(--red-glow); border-color: var(--red); color: #fca5a5; }
-.notice a { color: inherit; text-decoration: underline dotted; }
-.notice code { font-family: var(--font-mono); font-size: .7rem;
-  background: rgba(255,255,255,.08); padding: .1rem .35rem; border-radius: 2px; }
+/* ── Sidebar ──────────────────────────────────────────────── */
+.sidebar{}
+.sb-card{border:1px solid var(--rule);border-radius:3px;margin-bottom:1.25rem;overflow:hidden}
+.sb-card-hd{background:var(--pale);padding:.65rem 1rem;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--tx-muted);border-bottom:1px solid var(--rule)}
+.sb-card-bd{padding:.9rem 1rem;background:var(--white)}
+.sb-row{display:flex;justify-content:space-between;align-items:baseline;padding:.35rem 0;border-bottom:1px solid var(--rule-lt);font-size:.82rem}
+.sb-row:last-child{border-bottom:none}
+.sb-label{color:var(--tx-meta)}
+.sb-val{font-weight:700;color:var(--tx-primary);font-family:'Merriweather',serif}
+.sb-action{display:block;width:100%;padding:.6rem 1rem;background:var(--link);color:#fff;text-align:center;font-size:.8rem;font-weight:600;border:none;border-radius:2px;cursor:pointer;text-decoration:none;transition:background .15s;margin-bottom:.5rem}
+.sb-action:hover{background:var(--link-h);color:#fff;text-decoration:none}
+.sb-note{font-size:.72rem;color:var(--tx-muted);line-height:1.5}
 
-/* ════════════════════════════════════════════════════════════
-   LIVE PROGRESS PANEL
-   ════════════════════════════════════════════════════════════ */
-#progress-panel {
-  display: none;
-  background: var(--ink-80);
-  border: 1px solid var(--rule-mid);
-  border-radius: 6px;
-  padding: 1.5rem;
-  margin: 2rem 0;
-}
-.progress-header {
-  display: flex; align-items: center; gap: .75rem;
-  margin-bottom: 1.25rem;
-}
-.progress-spinner {
-  width: 20px; height: 20px;
-  border: 2px solid var(--rule-lt);
-  border-top-color: var(--red);
-  border-radius: 50%;
-  animation: spin .7s linear infinite;
-  flex-shrink: 0;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.progress-title {
-  font-family: var(--font-serif); font-size: 1.05rem;
-  color: var(--white); font-weight: 500;
-}
-.progress-subtitle {
-  font-size: .72rem; color: var(--smoke);
-  font-family: var(--font-mono);
-}
+/* ── Gemini powered badge in sidebar ─────────────────────── */
+.gemini-badge{display:flex;align-items:center;gap:.4rem;font-size:.72rem;color:var(--gemini-purple);font-weight:600;margin-bottom:.7rem;padding:.4rem .6rem;background:var(--gemini-bg);border:1px solid var(--gemini-border);border-radius:3px}
+.gemini-icon{font-size:.9rem}
 
-/* Step list */
-.step-list { display: flex; flex-direction: column; gap: .5rem; }
-.step {
-  display: flex; align-items: center; gap: .7rem;
-  padding: .55rem .75rem;
-  border-radius: 4px;
-  background: var(--ink-70);
-  font-size: .8rem; color: var(--mist);
-  transition: background .3s, color .3s;
-}
-.step.active { background: rgba(200,16,46,.1); color: var(--white); }
-.step.done   { background: rgba(34,197,94,.08); color: #86efac; }
-.step.error  { background: rgba(200,16,46,.1);  color: #fca5a5; }
-.step-icon { font-size: .85rem; width: 18px; text-align: center; flex-shrink: 0; }
-.step-text { flex: 1; }
-.step-badge {
-  font-family: var(--font-mono); font-size: .65rem;
-  background: rgba(255,255,255,.07); padding: .1rem .4rem;
-  border-radius: 3px; color: var(--smoke);
-}
-.step.active .step-badge { color: var(--red); }
-.step.done   .step-badge { color: #4ade80; }
+/* ── Legend ───────────────────────────────────────────────── */
+.q-legend{display:flex;gap:.7rem;flex-wrap:wrap;margin-bottom:.75rem;font-size:.7rem;color:var(--tx-muted)}
+.q-leg-item{display:flex;align-items:center;gap:.3rem}
+.q-swatch{width:12px;height:12px;border-radius:2px;border:1px solid;flex-shrink:0}
 
-/* Venue progress */
-.venue-progress {
-  margin-top: 1rem;
-  border-top: 1px solid var(--rule);
-  padding-top: .9rem;
-}
-.vp-header {
-  display: flex; justify-content: space-between;
-  align-items: center; margin-bottom: .65rem;
-}
-.vp-label { font-size: .7rem; font-family: var(--font-mono); color: var(--smoke); letter-spacing: .06em; }
-.vp-count { font-size: .7rem; font-family: var(--font-mono); color: var(--red); }
+/* ── Footer ───────────────────────────────────────────────── */
+footer{margin-top:4rem;padding:1.5rem 0;border-top:1px solid var(--rule);font-size:.75rem;color:var(--tx-muted);text-align:center}
+footer a{color:var(--link)}
 
-.prog-track {
-  width: 100%; height: 4px;
-  background: var(--rule-mid); border-radius: 2px;
-  overflow: hidden; margin-bottom: .75rem;
+/* ── Responsive ───────────────────────────────────────────── */
+@media(max-width:820px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{order:-1}
 }
-.prog-fill {
-  height: 100%; background: var(--red);
-  border-radius: 2px; width: 0;
-  transition: width .5s ease;
+@media(max-width:560px){
+  .search-input{min-width:100%}
+  .r-name{font-size:1.4rem}
 }
-
-.venue-chips {
-  display: flex; flex-wrap: wrap; gap: .35rem;
-}
-.venue-chip {
-  font-family: var(--font-mono); font-size: .62rem;
-  padding: .2rem .6rem; border-radius: 3px;
-  border: 1px solid var(--rule-lt); color: var(--smoke);
-  background: var(--ink-70); max-width: 200px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  transition: all .3s;
-}
-.venue-chip.loading {
-  border-color: var(--red);
-  color: var(--red);
-  animation: pulse 1s ease-in-out infinite;
-}
-.venue-chip.done    { border-color: #166534; color: #4ade80; background: rgba(34,197,94,.07); }
-.venue-chip.no-data { border-color: var(--rule-lt); color: var(--rule-lt); }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
-
-/* ════════════════════════════════════════════════════════════
-   RESULTS LAYOUT
-   ════════════════════════════════════════════════════════════ */
-#results { display: none; }
-
-.results-layout {
-  display: grid;
-  grid-template-columns: 1fr 260px;
-  gap: 2.5rem;
-  align-items: start;
-}
-
-/* ── Profile card ───────────────────────────────────────────── */
-.profile-card {
-  background: var(--ink-80);
-  border: 1px solid var(--rule-mid);
-  border-radius: 6px;
-  padding: 1.75rem;
-  margin-bottom: 2rem;
-}
-.profile-type-tag {
-  display: inline-block;
-  font-family: var(--font-mono);
-  font-size: .62rem; letter-spacing: .12em;
-  text-transform: uppercase;
-  color: var(--red); border: 1px solid var(--red-dim);
-  padding: .15rem .55rem; border-radius: 3px;
-  margin-bottom: 1rem;
-}
-.profile-row {
-  display: flex; align-items: flex-start; gap: 1.1rem;
-  margin-bottom: .9rem;
-}
-.profile-avatar {
-  width: 72px; height: 72px; border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--rule-mid); flex-shrink: 0;
-}
-.profile-avatar-ph {
-  width: 72px; height: 72px; border-radius: 50%;
-  background: var(--ink-70);
-  border: 2px solid var(--rule-mid);
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-serif); font-size: 1.6rem; font-weight: 700;
-  color: var(--smoke); flex-shrink: 0;
-}
-.profile-name {
-  font-family: var(--font-serif);
-  font-size: 1.6rem; font-weight: 700;
-  color: var(--white); line-height: 1.2;
-  letter-spacing: -.02em; margin-bottom: .25rem;
-}
-.profile-affil {
-  font-size: .83rem; color: var(--smoke);
-  font-style: italic; line-height: 1.4;
-}
-
-.kw-list { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .75rem; }
-.kw {
-  font-size: .68rem; color: var(--mist);
-  background: var(--ink-70);
-  border: 1px solid var(--rule-lt);
-  padding: .2rem .6rem; border-radius: 3px;
-  cursor: default; transition: all .15s;
-}
-.kw:hover { border-color: var(--red-dim); color: var(--red); }
-
-/* ── Section heading ────────────────────────────────────────── */
-.sec-h {
-  font-family: var(--font-serif);
-  font-size: 1rem; font-weight: 700;
-  color: var(--white);
-  margin-bottom: 1.1rem;
-  padding-bottom: .4rem;
-  border-bottom: 1px solid var(--rule-mid);
-  letter-spacing: -.01em;
-  display: flex; align-items: center; gap: .6rem;
-}
-.sec-h .sec-count {
-  font-family: var(--font-mono); font-size: .68rem;
-  color: var(--smoke); font-weight: 400;
-  background: var(--ink-70); padding: .1rem .45rem;
-  border-radius: 3px; border: 1px solid var(--rule-lt);
-}
-
-/* ════════════════════════════════════════════════════════════
-   CHART — compact, pro, right-aligned
-   ════════════════════════════════════════════════════════════ */
-.chart-section { margin-bottom: 2.5rem; }
-.chart-outer {
-  background: var(--ink-80);
-  border: 1px solid var(--rule-mid);
-  border-radius: 6px;
-  padding: 1.25rem 1.4rem 1rem;
-}
-.chart-inner {
-  /* fixed height, NOT full-width — compact like Nature charts */
-  height: 140px;
-  display: flex;
-  align-items: flex-end;
-  gap: 6px;
-  border-bottom: 1px solid var(--rule-mid);
-  border-left: 1px solid var(--rule-mid);
-  padding: 0 0 0 4px;
-  max-width: 600px;   /* ← cap the width so it's not horizon-spanning */
-}
-.ch-col {
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: flex-end;
-  gap: 3px; flex: 1; max-width: 36px;
-  height: 100%; position: relative;
-}
-.ch-bar {
-  width: 100%;
-  background: var(--red);
-  border-radius: 2px 2px 0 0;
-  min-height: 2px;
-  transition: opacity .15s;
-  position: relative;
-}
-.ch-bar:hover { opacity: .75; }
-.ch-bar::after {
-  content: attr(data-n);
-  position: absolute; bottom: 100%; left: 50%;
-  transform: translateX(-50%);
-  font-family: var(--font-mono); font-size: .52rem;
-  color: var(--smoke); margin-bottom: 2px;
-  pointer-events: none;
-}
-.ch-yr {
-  font-family: var(--font-mono); font-size: .5rem;
-  color: var(--smoke);
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  transform: rotate(180deg);
-  margin-top: 3px;
-  white-space: nowrap;
-}
-.chart-meta {
-  margin-top: .6rem;
-  font-family: var(--font-mono); font-size: .62rem;
-  color: var(--smoke); display: flex; gap: 1.5rem;
-}
-.chart-meta span { display: flex; align-items: center; gap: .3rem; }
-.chart-meta .dot-r { width:8px;height:8px;border-radius:2px;background:var(--red);flex-shrink:0; }
-
-/* ════════════════════════════════════════════════════════════
-   PAPERS LIST
-   ════════════════════════════════════════════════════════════ */
-.papers-section { margin-bottom: 2rem; }
-
-.q-legend {
-  display: flex; flex-wrap: wrap; gap: .5rem 1.2rem;
-  margin-bottom: 1rem; font-size: .68rem; color: var(--smoke);
-}
-.ql-item { display: flex; align-items: center; gap: .3rem; }
-.ql-dot { width:10px;height:10px;border-radius:2px;flex-shrink:0; }
-
-.paper-item {
-  display: grid;
-  grid-template-columns: 26px 1fr;
-  gap: 0 .65rem;
-  padding: 1rem 0;
-  border-bottom: 1px solid var(--rule);
-}
-.p-num {
-  font-family: var(--font-mono); font-size: .65rem;
-  color: var(--rule-lt); padding-top: .1rem;
-  text-align: right; line-height: 1.6;
-}
-.p-body {}
-.p-title {
-  font-family: var(--font-serif);
-  font-size: .95rem; font-weight: 400;
-  color: var(--white); line-height: 1.4; margin-bottom: .3rem;
-}
-.p-title a { color: #6ab0d4; text-decoration: none; }
-.p-title a:hover { color: var(--white); text-decoration: underline; }
-
-.p-meta {
-  display: flex; flex-wrap: wrap; align-items: center; gap: .4rem;
-  font-size: .75rem; color: var(--smoke); margin-bottom: .5rem;
-}
-.p-venue { font-style: italic; color: var(--mist); }
-.p-year-chip {
-  font-family: var(--font-mono); font-size: .65rem;
-  background: var(--ink-70); color: var(--smoke);
-  border: 1px solid var(--rule-lt); padding: .08rem .4rem; border-radius: 3px;
-}
-.p-cite-chip {
-  font-family: var(--font-mono); font-size: .65rem; color: #6ab0d4;
-}
-
-/* Metric chips */
-.m-row { display: flex; flex-wrap: wrap; gap: .3rem; align-items: center; }
-.chip {
-  display: inline-flex; align-items: center; gap: .2rem;
-  padding: .16rem .5rem; border-radius: 3px;
-  font-size: .65rem; font-family: var(--font-mono);
-  border: 1px solid; line-height: 1.4; white-space: nowrap;
-}
-.chip-if   { background:var(--if-dim); border-color:#166534; color:var(--if-green); font-weight:600; }
-.chip-q1   { background:rgba(40,167,69,.12);  border-color:#166534; color:#4ade80; }
-.chip-q2   { background:rgba(255,193,7,.1);   border-color:#92400e; color:#fbbf24; }
-.chip-q3   { background:rgba(253,126,20,.1);  border-color:#92400e; color:#fb923c; }
-.chip-q4   { background:rgba(220,53,69,.1);   border-color:#7f1d1d; color:#f87171; }
-.chip-sjr  { background:rgba(107,176,212,.1); border-color:#164e63; color:#7dd3fc; }
-.chip-cs   { background:var(--gem-dim);       border-color:#4c1d95; color:#c4b5fd; }
-.chip-h    { background:rgba(251,191,36,.08); border-color:#78350f; color:#fbbf24; }
-.chip-src  { background:transparent; border-color:var(--rule-lt); color:var(--smoke); font-size:.6rem; }
-.chip-gem  { background:var(--gem-dim); border-color:#4c1d95; color:#a78bfa; font-size:.6rem; }
-.chip-load { background:var(--ink-70); border-color:var(--rule-lt); color:var(--smoke);
-             animation: pulse 1.2s ease-in-out infinite; }
-
-.p-sources-btn {
-  background:none; border:none; cursor:pointer;
-  font-size:.62rem; color:var(--smoke); font-family:var(--font-mono);
-  text-decoration:underline dotted; margin-top:.25rem;
-  display:block;
-}
-.p-sources-btn:hover { color:var(--mist); }
-.p-sources {
-  margin-top:.35rem; padding:.5rem .7rem;
-  background:var(--ink-70); border:1px solid var(--rule-lt);
-  border-radius:4px; font-size:.66rem; line-height:1.7;
-  display:none;
-}
-.p-sources.open { display:block; }
-.p-sources a { color:#7dd3fc; font-size:.66rem; }
-
-/* ════════════════════════════════════════════════════════════
-   SIDEBAR
-   ════════════════════════════════════════════════════════════ */
-.sidebar {}
-.sb-card {
-  background: var(--ink-80);
-  border: 1px solid var(--rule-mid);
-  border-radius: 6px;
-  margin-bottom: 1.25rem;
-  overflow: hidden;
-}
-.sb-hd {
-  background: var(--ink-70);
-  border-bottom: 1px solid var(--rule-mid);
-  padding: .55rem .9rem;
-  font-family: var(--font-mono);
-  font-size: .62rem; letter-spacing: .1em;
-  text-transform: uppercase; color: var(--smoke);
-}
-.sb-body { padding: .85rem .9rem; }
-.sb-row {
-  display: flex; justify-content: space-between; align-items: baseline;
-  padding: .35rem 0;
-  border-bottom: 1px solid var(--rule);
-  font-size: .8rem;
-}
-.sb-row:last-child { border-bottom: none; }
-.sb-label { color: var(--smoke); }
-.sb-val {
-  font-family: var(--font-serif);
-  font-weight: 700; font-size: 1rem;
-  color: var(--white);
-}
-.sb-btn {
-  display: block; width: 100%;
-  padding: .6rem; text-align: center;
-  background: var(--rule-mid);
-  color: var(--mist); border: 1px solid var(--rule-lt);
-  border-radius: 4px; font-size: .75rem; font-weight: 600;
-  text-decoration: none; transition: all .15s;
-  font-family: var(--font-sans);
-  margin-bottom: .5rem;
-}
-.sb-btn:hover { background: var(--rule-lt); color: var(--white); text-decoration: none; }
-.sb-btn.primary { background: var(--red); border-color: var(--red); color: var(--pure); }
-.sb-btn.primary:hover { background: #a00d24; }
-.sb-note { font-size: .68rem; color: var(--smoke); line-height: 1.55; }
-
-.gem-badge {
-  display: flex; align-items: center; gap: .4rem;
-  background: var(--gem-dim);
-  border: 1px solid rgba(139,92,246,.25);
-  border-radius: 4px; padding: .4rem .65rem;
-  font-size: .7rem; color: #c4b5fd;
-  font-family: var(--font-mono); margin-bottom: .75rem;
-}
-.gem-badge::before { content: '✦'; color: var(--gem); }
-
-/* ── Responsive ─────────────────────────────────────────────── */
-@media (max-width: 820px) {
-  .results-layout { grid-template-columns: 1fr; }
-  .sidebar { order: -1; }
-  .chart-inner { max-width: 100%; }
-}
-@media (max-width: 540px) {
-  .search-input { min-width: 100%; }
-  .search-title { font-size: 1.6rem; }
-}
-
-/* ── Footer ─────────────────────────────────────────────────── */
-.site-footer {
-  border-top: 1px solid var(--rule);
-  padding: 1.5rem 0;
-  text-align: center;
-  font-size: .72rem; color: var(--smoke);
-}
-.site-footer a { color: var(--mist); }
 </style>
 </head>
 <body>
 
-<div class="stripe"></div>
+<div class="brand-stripe"></div>
 
 <header class="site-header">
-  <div class="hdr-inner">
-    <a class="logo" href="/">
+  <div class="site-header-inner">
+    <a class="logo-wrap" href="/">
       <div class="logo-mark">SL</div>
-      <div class="logo-name">Scholar<em>Lens</em></div>
+      <div class="logo-name">Scholar<span>Lens</span></div>
     </a>
-    <div class="hdr-badge">
-      <div class="dot"></div>
-      Gemini 2.0 Flash · Google Search Grounding
+    <div class="powered-badge">
+      <div class="gemini-dot"></div>
+      Powered by Gemini + Google Search
     </div>
   </div>
 </header>
@@ -681,10 +239,10 @@ body {
 <div class="breadcrumb">
   <div class="inner">
     <a href="/">Home</a>
-    <span class="sep">›</span>
-    <span>Profile Extractor</span>
+    <span>›</span>
+    <span>Researcher Profile</span>
     <?php if ($result): ?>
-    <span class="sep">›</span>
+    <span>›</span>
     <span><?= htmlspecialchars($result['name']) ?></span>
     <?php endif; ?>
   </div>
@@ -692,478 +250,271 @@ body {
 
 <div class="page">
 
-  <!-- ── SEARCH SECTION ───────────────────────────────────────── -->
+  <!-- ── Search ─────────────────────────────────────────────── -->
   <section class="search-section">
-    <div class="search-eyebrow">// scholar profile extractor</div>
-    <h1 class="search-title">Research <span>Intelligence</span> Dashboard</h1>
+    <div class="eyebrow">Profile Search</div>
+    <div class="search-heading">Lookup a Google Scholar Researcher</div>
 
-    <?php if (!$apiKey): ?>
-    <div class="notice warn">
-      <strong>⚠ Gemini API key not set.</strong>
-      Journal metrics (Impact Factor, SJR, Quartile) need a key.<br>
-      1. Free key at <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a><br>
-      2. In <code>scholar.php</code> set <code>define('GEMINI_API_KEY', 'AIza...')</code><br>
-      Scholar profile + charts still work without a key.
+    <?php if (!$apiKeySet): ?>
+    <div class="api-banner warn">
+      <strong>⚠ Gemini API key not configured.</strong>
+      Journal metrics (Impact Factor, SJR, Quartile) are powered by Gemini AI + Google Search.
+      To enable them:<br>
+      1. Get a <strong>free</strong> key at <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a><br>
+      2. Open <code>scholar.php</code> and set <code>GEMINI_API_KEY</code> to your key, or set the environment variable <code>GEMINI_API_KEY</code>.<br>
+      Scholar profile lookup still works without a key — journal metrics will be blank.
     </div>
     <?php else: ?>
-    <div class="notice active">
-      ✦ Gemini 2.0 Flash active — Impact Factor fetched live via Google Search grounding.
-      Free tier: 1,500 requests/day · 15 req/min.
+    <div class="api-banner info">
+      ✦ <strong>Gemini API active.</strong>
+      Impact Factor and journal metrics are fetched in real-time using Gemini 2.0 Flash + Google Search grounding.
     </div>
     <?php endif; ?>
 
-    <form class="search-form" id="searchForm" method="POST">
-      <input class="search-input" type="text" name="user_id" id="userIdInput"
-        placeholder="Scholar URL or user ID — e.g. JicYPdAAAAAJ"
-        value="<?= htmlspecialchars($_POST['user_id'] ?? '') ?>">
-      <button class="search-btn" type="submit" id="searchBtn">
-        Analyze Profile →
-      </button>
+    <form method="POST">
+      <div class="search-row">
+        <input class="search-input" type="text" name="user_id"
+          placeholder="Paste Google Scholar URL or user ID — e.g. JicYPdAAAAAJ"
+          value="<?= htmlspecialchars($_POST['user_id'] ?? '') ?>">
+        <button class="search-btn" type="submit">Search →</button>
+      </div>
+      <div class="search-hint">
+        Scholar data fetched server-side (no CORS). &nbsp;·&nbsp;
+        Impact Factor via <code>Gemini 2.0 Flash</code> + <code>Google Search</code>. &nbsp;·&nbsp;
+        Gemini free tier: 1,500 requests/day.
+      </div>
     </form>
-    <div class="search-note">
-      Fetches server-side — no CORS. &nbsp;·&nbsp;
-      Scholar profile + stats parsed first. &nbsp;·&nbsp;
-      Then Gemini looks up <code>Impact Factor</code>, <code>SJR</code>, <code>Quartile</code>, <code>CiteScore</code> per journal. &nbsp;·&nbsp;
-      Progress shown live below.
-    </div>
   </section>
 
   <?php if ($error): ?>
-  <div class="notice error"><strong>Error:</strong> <?= htmlspecialchars($error) ?></div>
+  <div class="alert error"><strong>Error:</strong> <?= htmlspecialchars($error) ?></div>
   <?php endif; ?>
 
-  <!-- ════════════════════════════════════════════════════════
-       LIVE PROGRESS PANEL (shown during AJAX metric fetch)
-       ════════════════════════════════════════════════════════ -->
-  <div id="progress-panel">
-    <div class="progress-header">
-      <div class="progress-spinner" id="mainSpinner"></div>
-      <div>
-        <div class="progress-title" id="progressTitle">Fetching Scholar profile…</div>
-        <div class="progress-subtitle" id="progressSub">Connecting to Google Scholar</div>
-      </div>
-    </div>
-
-    <div class="step-list" id="stepList">
-      <div class="step" id="step-scholar">
-        <span class="step-icon">📡</span>
-        <span class="step-text">Fetching Google Scholar profile</span>
-        <span class="step-badge" id="step-scholar-badge">waiting</span>
-      </div>
-      <div class="step" id="step-parse">
-        <span class="step-icon">🔍</span>
-        <span class="step-text">Parsing papers, citations & metadata</span>
-        <span class="step-badge" id="step-parse-badge">waiting</span>
-      </div>
-      <div class="step" id="step-gemini">
-        <span class="step-icon">✦</span>
-        <span class="step-text">Gemini · looking up journal metrics via Google Search</span>
-        <span class="step-badge" id="step-gemini-badge">waiting</span>
-      </div>
-      <div class="step" id="step-done">
-        <span class="step-icon">✅</span>
-        <span class="step-text">All done — rendering results</span>
-        <span class="step-badge" id="step-done-badge">waiting</span>
-      </div>
-    </div>
-
-    <!-- Venue-level progress (shown when Gemini step active) -->
-    <div class="venue-progress" id="venueProgress" style="display:none">
-      <div class="vp-header">
-        <span class="vp-label">// JOURNAL LOOKUP PROGRESS</span>
-        <span class="vp-count" id="venueCount">0 / 0</span>
-      </div>
-      <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
-      <div class="venue-chips" id="venueChips"></div>
-    </div>
-  </div>
-
-  <!-- ════════════════════════════════════════════════════════
-       RESULTS  (populated by PHP + enriched by JS)
-       ════════════════════════════════════════════════════════ -->
   <?php if ($result): ?>
-  <div id="results" style="display:block">
-    <div class="results-layout">
 
-      <!-- ── MAIN CONTENT ──────────────────────────────────── -->
-      <main>
+  <div class="layout">
 
-        <!-- Profile card -->
-        <div class="profile-card">
-          <div class="profile-type-tag">// researcher · profile</div>
-          <div class="profile-row">
-            <?php if (!empty($result['avatar'])): ?>
-              <img class="profile-avatar" src="<?= htmlspecialchars($result['avatar']) ?>" alt="">
-            <?php else: ?>
-              <div class="profile-avatar-ph"><?= mb_strtoupper(mb_substr($result['name'],0,1)) ?></div>
+    <!-- ── Main ──────────────────────────────────────────────── -->
+    <main>
+
+      <!-- Profile header -->
+      <header class="art-header">
+        <div class="art-type">Researcher Profile</div>
+        <div class="researcher-row">
+          <?php if (!empty($result['avatar'])): ?>
+            <img class="r-avatar" src="<?= htmlspecialchars($result['avatar']) ?>" alt="">
+          <?php else: ?>
+            <div class="r-avatar-ph"><?= mb_strtoupper(mb_substr($result['name'],0,1)) ?></div>
+          <?php endif; ?>
+          <div>
+            <h1 class="r-name"><?= htmlspecialchars($result['name']) ?></h1>
+            <?php if ($result['affiliation']): ?>
+              <div class="r-affil"><?= htmlspecialchars($result['affiliation']) ?></div>
             <?php endif; ?>
-            <div>
-              <div class="profile-name"><?= htmlspecialchars($result['name']) ?></div>
-              <?php if ($result['affiliation']): ?>
-              <div class="profile-affil"><?= htmlspecialchars($result['affiliation']) ?></div>
-              <?php endif; ?>
-            </div>
-          </div>
-          <?php if ($result['interests']): ?>
-          <div class="kw-list">
-            <?php foreach ($result['interests'] as $kw): ?>
-              <span class="kw"><?= htmlspecialchars($kw) ?></span>
-            <?php endforeach; ?>
-          </div>
-          <?php endif; ?>
-        </div>
-
-        <!-- Chart -->
-        <?php
-          $ym = []; $totalPapers = 0;
-          foreach ($result['papers'] as $p) {
-            if (!empty($p['year'])) { $ym[$p['year']] = ($ym[$p['year']] ?? 0) + 1; $totalPapers++; }
-          }
-          ksort($ym);
-          $maxY = max(array_values($ym) ?: [1]);
-          $peakYear = array_search($maxY, $ym);
-        ?>
-        <div class="chart-section">
-          <h2 class="sec-h">
-            Publication Timeline
-            <span class="sec-count"><?= $totalPapers ?> papers · peak <?= $peakYear ?></span>
-          </h2>
-          <div class="chart-outer">
-            <div class="chart-inner">
-              <?php foreach ($ym as $yr => $n): ?>
-                <?php $h = max(3, (int)round(($n/$maxY)*118)); ?>
-                <div class="ch-col" title="<?= $n ?> papers · <?= $yr ?>">
-                  <div class="ch-bar" style="height:<?= $h ?>px" data-n="<?= $n ?>"></div>
-                  <div class="ch-yr"><?= $yr ?></div>
-                </div>
-              <?php endforeach; ?>
-            </div>
-            <div class="chart-meta">
-              <span><span class="dot-r"></span><?= count($ym) ?> years active</span>
-              <span>Peak: <?= $maxY ?> papers in <?= $peakYear ?></span>
-              <span>Total: <?= $totalPapers ?> indexed</span>
-            </div>
           </div>
         </div>
-
-        <!-- Papers -->
-        <div class="papers-section">
-          <h2 class="sec-h">
-            Publications
-            <span class="sec-count"><?= count($result['papers']) ?> papers</span>
-          </h2>
-
-          <?php if ($apiKey): ?>
-          <div class="q-legend">
-            <div class="ql-item"><div class="ql-dot" style="background:#4ade80"></div>Q1 — top 25%</div>
-            <div class="ql-item"><div class="ql-dot" style="background:#fbbf24"></div>Q2 — top 50%</div>
-            <div class="ql-item"><div class="ql-dot" style="background:#fb923c"></div>Q3 — top 75%</div>
-            <div class="ql-item"><div class="ql-dot" style="background:#f87171"></div>Q4 — bottom 25%</div>
-            <div class="ql-item"><div class="ql-dot" style="background:#22c55e"></div>IF — Impact Factor (live)</div>
-          </div>
-          <?php endif; ?>
-
-          <?php foreach ($result['papers'] as $i => $p): ?>
-          <?php $vc = htmlspecialchars($p['venue_clean'] ?? ''); ?>
-          <div class="paper-item" id="paper-<?= $i ?>">
-            <div class="p-num"><?= $i+1 ?></div>
-            <div class="p-body">
-              <div class="p-title">
-                <?php if (!empty($p['link'])): ?>
-                  <a href="<?= htmlspecialchars($p['link']) ?>" target="_blank" rel="noopener">
-                    <?= htmlspecialchars($p['title']) ?>
-                  </a>
-                <?php else: ?>
-                  <?= htmlspecialchars($p['title']) ?>
-                <?php endif; ?>
-              </div>
-              <div class="p-meta">
-                <?php if ($vc): ?>
-                  <span class="p-venue"><?= $vc ?></span>
-                <?php endif; ?>
-                <?php if (!empty($p['year'])): ?>
-                  <span class="p-year-chip"><?= htmlspecialchars($p['year']) ?></span>
-                <?php endif; ?>
-                <?php if (!empty($p['cited']) && $p['cited'] !== '0'): ?>
-                  <span class="p-cite-chip"><?= htmlspecialchars($p['cited']) ?> cited</span>
-                <?php endif; ?>
-              </div>
-
-              <!-- Metrics injected by JS — placeholder while loading -->
-              <?php if ($apiKey && !empty($p['venue_clean'])): ?>
-              <div class="m-row" id="metrics-<?= $i ?>"
-                data-venue="<?= htmlspecialchars($p['venue_clean']) ?>">
-                <span class="chip chip-load">✦ fetching metrics…</span>
-              </div>
-              <?php endif; ?>
-
-            </div>
-          </div>
+        <?php if ($result['interests']): ?>
+        <div class="keywords">
+          <?php foreach ($result['interests'] as $kw): ?>
+            <span class="kw"><?= htmlspecialchars($kw) ?></span>
           <?php endforeach; ?>
         </div>
+        <?php endif; ?>
+      </header>
 
-      </main>
+      <!-- Publication timeline -->
+      <?php
+        $yearMap = [];
+        foreach ($result['papers'] as $p) {
+          if (!empty($p['year'])) $yearMap[$p['year']] = ($yearMap[$p['year']] ?? 0) + 1;
+        }
+        ksort($yearMap);
+        $maxY = max(array_values($yearMap) ?: [1]);
+      ?>
+      <div class="chart-wrap">
+        <h2 class="sec-h">Publication Timeline</h2>
+        <div class="chart-area">
+          <?php foreach ($yearMap as $yr => $cnt): ?>
+            <?php $h = max(2, (int)round(($cnt/$maxY)*90)); ?>
+            <div class="bc" title="<?= $cnt ?> papers in <?= $yr ?>">
+              <span class="bar-n"><?= $cnt ?></span>
+              <div class="bar" style="height:<?= $h ?>px"></div>
+              <span class="bar-yr"><?= $yr ?></span>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      </div>
 
-      <!-- ── SIDEBAR ───────────────────────────────────────── -->
-      <aside class="sidebar">
+      <!-- Papers -->
+      <div class="papers">
+        <h2 class="sec-h">Publications (<?= count($result['papers']) ?>)</h2>
 
-        <div class="sb-card">
-          <div class="sb-hd">// citation stats</div>
-          <div class="sb-body">
-            <div class="sb-row">
-              <span class="sb-label">Total Citations</span>
-              <span class="sb-val"><?= htmlspecialchars($result['citations']) ?></span>
+        <!-- Quartile legend -->
+        <div class="q-legend">
+          <?php foreach (['Q1'=>'Top 25%','Q2'=>'Top 50%','Q3'=>'Top 75%','Q4'=>'Bottom 25%'] as $q=>$lbl): ?>
+            <?php $qc = quartileColor($q); ?>
+            <div class="q-leg-item">
+              <div class="q-swatch" style="background:<?= $qc['bg'] ?>;border-color:<?= $qc['border'] ?>"></div>
+              <span><?= $q ?> — <?= $lbl ?></span>
             </div>
-            <div class="sb-row">
-              <span class="sb-label">h-index</span>
-              <span class="sb-val"><?= htmlspecialchars($result['h_index']) ?></span>
-            </div>
-            <div class="sb-row">
-              <span class="sb-label">i10-index</span>
-              <span class="sb-val"><?= htmlspecialchars($result['i10_index']) ?></span>
-            </div>
-            <div class="sb-row">
-              <span class="sb-label">Papers indexed</span>
-              <span class="sb-val"><?= count($result['papers']) ?></span>
-            </div>
-            <div class="sb-row">
-              <span class="sb-label">Unique journals</span>
-              <span class="sb-val"><?= count($result['unique_venues']) ?></span>
-            </div>
+          <?php endforeach; ?>
+          <div class="q-leg-item">
+            <div class="q-swatch" style="background:#e8f5e9;border-color:#a5d6a7"></div>
+            <span>IF — Impact Factor (Gemini/Google Search)</span>
           </div>
         </div>
 
-        <div class="sb-card">
-          <div class="sb-hd">// export</div>
-          <div class="sb-body">
-            <a class="sb-btn primary" href="export.php?user_id=<?= urlencode($_POST['user_id']) ?>">
-              ↓ Download CSV
-            </a>
-            <div class="sb-note">
-              Includes title, venue, year, citations, Impact Factor, SJR, Quartile, CiteScore per paper.
+        <?php foreach ($result['papers'] as $i => $p): ?>
+        <?php $m = $p['metrics'] ?? null; ?>
+        <div class="paper-item">
+          <div class="paper-n"><?= $i+1 ?></div>
+          <div>
+            <div class="paper-title">
+              <?php if (!empty($p['link'])): ?>
+                <a href="<?= htmlspecialchars($p['link']) ?>" target="_blank" rel="noopener">
+                  <?= htmlspecialchars($p['title']) ?>
+                </a>
+              <?php else: ?>
+                <?= htmlspecialchars($p['title']) ?>
+              <?php endif; ?>
             </div>
+            <div class="paper-meta">
+              <?php $venue = $p['venue_clean'] ?? $p['venue'] ?? ''; ?>
+              <?php if ($venue): ?>
+                <span class="meta-venue"><?= htmlspecialchars($venue) ?></span>
+              <?php endif; ?>
+              <?php if (!empty($p['year'])): ?>
+                <span class="meta-chip"><?= htmlspecialchars($p['year']) ?></span>
+              <?php endif; ?>
+              <?php if (!empty($p['cited']) && $p['cited'] !== '0'): ?>
+                <span class="meta-cites"><?= htmlspecialchars($p['cited']) ?> citation<?= $p['cited']!=1?'s':'' ?></span>
+              <?php endif; ?>
+            </div>
+
+            <?php if ($m): ?>
+              <div class="chip-row">
+                <?php if (!empty($m['quartile'])): ?>
+                  <?php $qc = quartileColor($m['quartile']); ?>
+                  <span class="chip chip-quartile"
+                    style="background:<?= $qc['bg'] ?>;border-color:<?= $qc['border'] ?>;color:<?= $qc['text'] ?>">
+                    <?= safe($m['quartile']) ?>
+                  </span>
+                <?php endif; ?>
+
+                <?php if (!empty($m['impact_factor'])): ?>
+                  <span class="chip chip-if"
+                    title="Impact Factor <?= !empty($m['impact_factor_year']) ? '('.$m['impact_factor_year'].')' : '' ?>">
+                    IF <?= safe($m['impact_factor']) ?>
+                    <?php if (!empty($m['impact_factor_year'])): ?>
+                      <span style="font-weight:400;opacity:.75">(<?= safe($m['impact_factor_year']) ?>)</span>
+                    <?php endif; ?>
+                  </span>
+                <?php endif; ?>
+
+                <?php if (!empty($m['sjr'])): ?>
+                  <span class="chip chip-sjr" title="SCImago Journal Rank">SJR <?= safe($m['sjr']) ?></span>
+                <?php endif; ?>
+
+                <?php if (!empty($m['cite_score'])): ?>
+                  <span class="chip chip-cs" title="Scopus CiteScore">CS <?= safe($m['cite_score']) ?></span>
+                <?php endif; ?>
+
+                <?php if (!empty($m['h_index'])): ?>
+                  <span class="chip chip-h" title="Journal h-index">h-idx <?= safe($m['h_index']) ?></span>
+                <?php endif; ?>
+
+                <?php if (!empty($m['source'])): ?>
+                  <span class="chip chip-src">via <?= safe($m['source']) ?></span>
+                <?php endif; ?>
+
+                <span class="chip chip-gemini">✦ Gemini</span>
+              </div>
+
+              <?php
+                // Grounding sources
+                $sources = $m['grounding_sources'] ?? [];
+                if (!empty($sources)):
+                  $uid = 'src-'.$i;
+              ?>
+              <button class="sources-toggle" onclick="toggleSrc('<?= $uid ?>')">
+                View <?= count($sources) ?> search source<?= count($sources)>1?'s':'' ?> →
+              </button>
+              <div class="sources-list" id="<?= $uid ?>">
+                <strong>Search grounding sources:</strong><br>
+                <?php foreach ($sources as $src): ?>
+                  <a href="<?= htmlspecialchars($src['uri']) ?>" target="_blank" rel="noopener">
+                    <?= htmlspecialchars($src['title']) ?>
+                  </a><br>
+                <?php endforeach; ?>
+                <?php if (!empty($m['raw_queries'])): ?>
+                  <br><em>Queries used: <?= htmlspecialchars(implode(', ', $m['raw_queries'])) ?></em>
+                <?php endif; ?>
+              </div>
+            <?php endif; ?>
+
+            <?php elseif ($apiKeySet): ?>
+              <span style="font-size:.7rem;color:var(--tx-muted);font-style:italic">No metrics found for this venue.</span>
+            <?php endif; ?>
           </div>
         </div>
+        <?php endforeach; ?>
+      </div>
 
-        <div class="sb-card" id="geminiStatusCard" style="<?= $apiKey?'':'display:none' ?>">
-          <div class="sb-hd">// gemini metrics status</div>
-          <div class="sb-body">
-            <div class="gem-badge">Powered by Gemini 2.0 Flash</div>
-            <div class="sb-note" id="geminiStatus">
-              Looking up journal metrics…<br>
-              <span id="geminiProgress">0 / <?= count($result['unique_venues']) ?> venues</span>
-            </div>
+    </main>
+
+    <!-- ── Sidebar ─────────────────────────────────────────── -->
+    <aside class="sidebar">
+
+      <div class="sb-card">
+        <div class="sb-card-hd">Citation Metrics</div>
+        <div class="sb-card-bd">
+          <div class="sb-row"><span class="sb-label">Total Citations</span><span class="sb-val"><?= safe($result['citations']) ?></span></div>
+          <div class="sb-row"><span class="sb-label">h-index</span><span class="sb-val"><?= safe($result['h_index']) ?></span></div>
+          <div class="sb-row"><span class="sb-label">i10-index</span><span class="sb-val"><?= safe($result['i10_index']) ?></span></div>
+          <div class="sb-row"><span class="sb-label">Papers</span><span class="sb-val"><?= count($result['papers']) ?></span></div>
+        </div>
+      </div>
+
+      <div class="sb-card">
+        <div class="sb-card-hd">Download Data</div>
+        <div class="sb-card-bd">
+          <a class="sb-action" href="export.php?user_id=<?= urlencode($_POST['user_id']) ?>">↓ Download CSV</a>
+          <div class="sb-note">Includes title, venue, year, citations, Quartile, SJR, Impact Factor, CiteScore per paper.</div>
+        </div>
+      </div>
+
+      <div class="sb-card">
+        <div class="sb-card-hd">About Journal Metrics</div>
+        <div class="sb-card-bd">
+          <div class="gemini-badge"><span class="gemini-icon">✦</span> Powered by Gemini 2.0 Flash + Google Search</div>
+          <div class="sb-note" style="line-height:1.7">
+            <p style="margin-bottom:.6rem"><strong style="color:var(--tx-body)">Impact Factor (IF)</strong><br>Clarivate JIF — fetched live from the web via Gemini + Google Search grounding.</p>
+            <p style="margin-bottom:.6rem"><strong style="color:var(--tx-body)">SJR</strong><br>SCImago Journal Rank — prestige-weighted citation score.</p>
+            <p style="margin-bottom:.6rem"><strong style="color:var(--tx-body)">CiteScore</strong><br>Scopus 4-year citation average.</p>
+            <p style="margin-bottom:.6rem"><strong style="color:var(--tx-body)">Quartile</strong><br>Journal rank within its Scopus subject category.</p>
+            <p><a href="https://aistudio.google.com/apikey" target="_blank">Get free Gemini API key →</a></p>
           </div>
         </div>
+      </div>
 
-        <div class="sb-card">
-          <div class="sb-hd">// metric legend</div>
-          <div class="sb-body">
-            <div class="sb-note" style="line-height:1.9">
-              <strong style="color:var(--white)">IF</strong> — Clarivate Impact Factor (live via Gemini+Google)<br>
-              <strong style="color:var(--white)">SJR</strong> — SCImago Journal Rank (prestige-weighted)<br>
-              <strong style="color:var(--white)">CS</strong> — Scopus CiteScore (4yr avg)<br>
-              <strong style="color:var(--white)">Q1–Q4</strong> — Quartile in Scopus subject category<br>
-              <strong style="color:var(--white)">h-idx</strong> — Journal h-index<br>
-              <br>
-              <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#7dd3fc">
-                Get free Gemini API key →
-              </a>
-            </div>
-          </div>
-        </div>
+    </aside>
 
-      </aside>
-
-    </div>
   </div>
+
   <?php endif; ?>
 
 </div><!-- /.page -->
 
-<footer class="site-footer">
-  ScholarLens &nbsp;·&nbsp; Scholar data scraped server-side &nbsp;·&nbsp;
-  Metrics via Gemini 2.0 Flash + Google Search Grounding &nbsp;·&nbsp;
-  Not affiliated with Google, Clarivate, or Nature Publishing Group
+<footer>
+  ScholarLens &nbsp;·&nbsp; Scholar data via Google Scholar &nbsp;·&nbsp;
+  Journal metrics via <strong>Gemini 2.0 Flash + Google Search</strong> &nbsp;·&nbsp;
+  Not affiliated with Google, Clarivate, or Nature Publishing Group.
 </footer>
 
-<!-- ════════════════════════════════════════════════════════════
-     JAVASCRIPT — Live progress + AJAX metric fetching
-     ════════════════════════════════════════════════════════════ -->
 <script>
-// ── Helper ────────────────────────────────────────────────────
-const $ = id => document.getElementById(id);
-const stepState = (id, state, badge) => {
-  const el = $(id); if (!el) return;
-  el.className = 'step ' + state;
-  const b = el.querySelector('.step-badge');
-  if (b && badge) b.textContent = badge;
-};
-
-// ── Show progress while form is submitting (Scholar fetch) ────
-$('searchForm')?.addEventListener('submit', function() {
-  const panel = $('progress-panel');
-  if (panel) { panel.style.display = 'block'; }
-  stepState('step-scholar', 'active', 'connecting…');
-  $('searchBtn').textContent = 'Searching…';
-  $('searchBtn').disabled = true;
-  $('progressTitle').textContent = 'Fetching Scholar profile…';
-  $('progressSub').textContent = 'Server-side cURL → scholar.google.com';
-});
-
-<?php if ($result && $apiKey): ?>
-// ── AJAX: Fetch metrics for each unique venue ─────────────────
-(function() {
-  // Mark Scholar + parse steps done (server already finished)
-  stepState('step-scholar', 'done', 'done');
-  stepState('step-parse',   'done', '<?= count($result["papers"]) ?> papers');
-  stepState('step-gemini',  'active', 'starting…');
-  $('progress-panel').style.display = 'block';
-  $('mainSpinner').style.display = 'block';
-  $('progressTitle').textContent = 'Fetching journal metrics via Gemini…';
-  $('progressSub').textContent = 'Google Search grounding · Impact Factor · SJR · Quartile';
-
-  // All unique venues from PHP
-  const venues = <?= json_encode($result['unique_venues']) ?>;
-  const total  = venues.length;
-
-  // Map venue → paper indices that use it
-  const venuePapers = {};
-  document.querySelectorAll('[data-venue]').forEach(el => {
-    const v = el.getAttribute('data-venue');
-    if (!venuePapers[v]) venuePapers[v] = [];
-    venuePapers[v].push(el.id.replace('metrics-',''));
-  });
-
-  // Build venue chip UI
-  const vp = $('venueProgress');
-  vp.style.display = 'block';
-  const chips = $('venueChips');
-  const chipMap = {};
-  venues.forEach(v => {
-    const c = document.createElement('span');
-    c.className = 'venue-chip';
-    c.title = v;
-    c.textContent = v.length > 30 ? v.slice(0,28)+'…' : v;
-    chips.appendChild(c);
-    chipMap[v] = c;
-  });
-
-  let done = 0;
-
-  function updateProgress() {
-    done++;
-    $('venueCount').textContent = done + ' / ' + total;
-    $('progFill').style.width = Math.round((done/total)*100) + '%';
-    stepState('step-gemini', 'active', done+'/'+total+' venues');
-    const gp = $('geminiProgress');
-    if (gp) gp.textContent = done + ' / ' + total + ' venues';
-    if (done === total) {
-      stepState('step-gemini', 'done', total+' venues');
-      stepState('step-done',   'done', 'complete ✓');
-      $('mainSpinner').style.display = 'none';
-      $('progressTitle').textContent = 'All metrics loaded!';
-      $('progressSub').textContent = 'Results are ready below ↓';
-      const gs = $('geminiStatus');
-      if (gs) gs.textContent = total + ' journals enriched via Gemini.';
-      // Auto-hide progress after 3s
-      setTimeout(() => { $('progress-panel').style.display = 'none'; }, 3000);
-    }
-  }
-
-  function renderMetrics(paperIdx, m) {
-    const el = $('metrics-'+paperIdx);
-    if (!el) return;
-
-    if (!m || m._not_found) {
-      el.innerHTML = '<span class="chip chip-src">no metrics found</span>';
-      return;
-    }
-
-    let html = '';
-
-    // Quartile chip
-    if (m.quartile) {
-      const qcls = {'Q1':'chip-q1','Q2':'chip-q2','Q3':'chip-q3','Q4':'chip-q4'}[m.quartile] || 'chip-src';
-      html += `<span class="chip ${qcls}">${m.quartile}</span>`;
-    }
-    // Impact Factor ← the critical one
-    if (m.impact_factor) {
-      const yr = m.impact_factor_year ? ` <span style="opacity:.65">(${m.impact_factor_year})</span>` : '';
-      html += `<span class="chip chip-if" title="Journal Impact Factor">IF&nbsp;${m.impact_factor}${yr}</span>`;
-    }
-    if (m.sjr) {
-      html += `<span class="chip chip-sjr" title="SCImago Journal Rank">SJR&nbsp;${m.sjr}</span>`;
-    }
-    if (m.cite_score) {
-      html += `<span class="chip chip-cs" title="CiteScore (Scopus)">CS&nbsp;${m.cite_score}</span>`;
-    }
-    if (m.h_index) {
-      html += `<span class="chip chip-h" title="Journal h-index">h&nbsp;${m.h_index}</span>`;
-    }
-    if (m.source) {
-      html += `<span class="chip chip-src">via ${m.source}</span>`;
-    }
-    html += `<span class="chip chip-gem">✦&nbsp;Gemini</span>`;
-
-    // Grounding sources
-    const sources = m.grounding_sources || [];
-    if (sources.length) {
-      const uid = 'src-'+paperIdx;
-      html += `<br><button class="p-sources-btn" onclick="toggleSrc('${uid}')">
-        ↳ ${sources.length} source${sources.length>1?'s':''} searched
-      </button>
-      <div class="p-sources" id="${uid}">
-        ${sources.map(s => `<a href="${s.uri}" target="_blank" rel="noopener">${s.title}</a>`).join('<br>')}
-        ${m.web_search_queries?.length ? '<br><em style="color:var(--smoke)">Queries: '+m.web_search_queries.join(', ')+'</em>' : ''}
-      </div>`;
-    }
-
-    el.innerHTML = html;
-  }
-
-  // Fetch one venue at a time (sequential to respect 15 req/min)
-  async function fetchVenue(venue, idx) {
-    const chip = chipMap[venue];
-    if (chip) chip.className = 'venue-chip loading';
-    try {
-      const r = await fetch('scholar.php?ajax_venue=' + encodeURIComponent(venue));
-      const m = await r.json();
-
-      const hasData = m && !m._not_found &&
-        (m.impact_factor || m.sjr || m.quartile || m.cite_score);
-
-      if (chip) chip.className = 'venue-chip ' + (hasData ? 'done' : 'no-data');
-
-      // Apply to all papers sharing this venue
-      const paperIds = venuePapers[venue] || [];
-      paperIds.forEach(pid => renderMetrics(pid, m));
-    } catch(e) {
-      if (chip) chip.className = 'venue-chip no-data';
-      (venuePapers[venue]||[]).forEach(pid => {
-        const el = $('metrics-'+pid);
-        if (el) el.innerHTML = '<span class="chip chip-src">lookup failed</span>';
-      });
-    }
-    updateProgress();
-  }
-
-  // Run sequentially (not parallel) to avoid Gemini rate limits
-  (async function run() {
-    for (let i = 0; i < venues.length; i++) {
-      await fetchVenue(venues[i], i);
-      if (i < venues.length-1) await new Promise(r=>setTimeout(r, 400)); // 400ms gap
-    }
-  })();
-})();
-<?php elseif($result && !$apiKey): ?>
-// API key not set — hide progress, show static
-$('progress-panel').style.display = 'none';
-<?php endif; ?>
-
 function toggleSrc(id) {
   const el = document.getElementById(id);
-  if (el) el.classList.toggle('open');
+  el.classList.toggle('open');
 }
 </script>
 
