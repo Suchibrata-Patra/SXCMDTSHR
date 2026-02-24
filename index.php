@@ -705,7 +705,7 @@ $_SESSION['user_settings'] = $settings;
                                 <span style="color: #FF3B30;">*</span>
                             </label>
                             <input type="email" name="email" id="email" 
-                                   placeholder="recipient@example.com" value="suchibratapatra2003@gmail.com" required>
+                                   placeholder="recipient@example.com" required>
                             <p class="field-description">Primary recipient email address</p>
                         </div>
 
@@ -743,7 +743,7 @@ $_SESSION['user_settings'] = $settings;
                                 <span style="color: #FF3B30;">*</span>
                             </label>
                             <input type="text" name="subject" id="subject" 
-                                   placeholder="Enter email subject" value="Invitation to the Campus as Guest" required>
+                                   placeholder="Enter email subject" required>
                         </div>
 
                         <div class="form-group">
@@ -752,7 +752,7 @@ $_SESSION['user_settings'] = $settings;
                                 <span style="color: #FF3B30;">*</span>
                             </label>
                             <input type="text" name="articletitle" id="articletitle" 
-                                   placeholder="Article or document title" value="This is the email Tagline" required>
+                                   placeholder="Article or document title"  required>
                         </div>
                     </div>
 
