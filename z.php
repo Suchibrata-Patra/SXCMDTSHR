@@ -1,436 +1,110 @@
-<?php
-session_start();
-require 'config.php';
-require 'db_config.php';
+<tr style="color: white !important;">
+            <td class="footer-td" align="center" style="background-color:#07293A;
+                     padding-top:28px;padding-bottom:0;
+                     padding-left:32px;padding-right:32px;">
 
-// Security check
-if (!isset($_SESSION['smtp_user']) || !isset($_SESSION['smtp_pass'])) {
-    header("Location: login.php");
-    exit();
-}
-// This is the funvtionf of the things to be ddone by the model of the thinsg tobe developed by the things to be done so that I can do that 
-// But the model of ththieg to b
-// This is hs to be done by the model of teh thihs o be dvee,oped by the tmodel of the things
-fucntion getsendemILID($email){
-    $emailid = "suchibratapatra2003@gmail.com";
-    // $pasword of teh the things to be done b th emodel of the things to be develoepx by the thihgs to 
-}
+              <!-- Institution name -->
+              <p style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
+                       font-size:14.5px;font-weight:700;
+                       margin:0 0 6px 0;padding:0;line-height:1.4;text-align:center;">
+                St. Xavier&#8217;s College (Autonomous), Kolkata
+              </p>
 
-fucntion of the things to be done by the model of the things to be done so far is the model of teh things to be developed by the model of tehthigs to be dve[
-    of the model t0f the things to bdeveloed by the model
-]
+              <!-- Address -->
+              <p style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
+                       font-size:12px;
+                       margin:0 0 14px 0;padding:0;line-height:1.68;text-align:center;">
+                30, Mother Teresa Sarani, Kolkata &#8212; 700016, West Bengal, India
+              </p>
 
-$userEmail = $_SESSION['smtp_user'];
-$emailId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+              <!-- Contact: phone | email | website -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center"
+                style="mso-table-lspace:0pt;mso-table-rspace:0pt;margin-bottom:18px;">
+                <tr>
 
-if (!$emailId) {
-    header("Location: sent_history.php");
-    exit();
-}
+                  <!-- Phone -->
+                  <td valign="middle" style="padding-right:6px;line-height:0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                      stroke="#70A494" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path
+                        d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                    </svg>
+                  </td>
+                  <td valign="middle">
+                    <a href="tel:+919830275826" style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
+                            font-size:12px;text-decoration:none;line-height:1.5;">
+                      +91-9830275826
+                    </a>
+                  </td>
 
-/**  Get sent email by ID */
-function getSentEmailById($emailId, $userEmail) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) return null;
-        
-        $stmt = $pdo->prepare("
-            SELECT * FROM sent_emails_new 
-            WHERE id = ? AND sender_email = ? AND is_deleted = 0
-        ");
-        $stmt->execute([$emailId, $userEmail]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        error_log("Error fetching email: " . $e->getMessage());
-        return null;
-    }
-}
+                  <td style="padding-left:10px;padding-right:10px;">
+                    <span style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
+                                font-size:12px;">&#124;</span>
+                  </td>
 
-/* Get attachments for a sent email */
-function getSentEmailAttachments($emailId) {
-    try {
-        $pdo = getDatabaseConnection();
-        if (!$pdo) return [];
-        
-        $stmt = $pdo->prepare("
-            SELECT * FROM sent_email_attachments_new 
-            WHERE sent_email_id = ? 
-            ORDER BY uploaded_at ASC
-        ");
-        $stmt->execute([$emailId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        error_log("Error fetching attachments: " . $e->getMessage());
-        return [];
-    }
-}
+                  <!-- Email -->
+                  <td valign="middle" style="padding-right:6px;line-height:0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                      stroke="#70A494" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="2" y="4" width="20" height="16" rx="2" />
+                      <polyline points="2,4 12,13 22,4" />
+                    </svg>
+                  </td>
+                  <td valign="middle">
+                    <a href="/cdn-cgi/l/email-protection#c5b5a9a4a6a0a8a0abb185b6bda6a6a4a9eba0a1b0" style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
+                            font-size:12px;color:#7DBDAD;text-decoration:none;line-height:1.5;">
+                      <span class="__cf_email__"
+                        data-cfemail="51213d3032343c343f251122293232303d7f343524">datascience.placement@sxccal.edu</span>
+                    </a>
+                  </td>
 
-/* Format file size */
-function formatFileSize($bytes) {
-    if ($bytes <= 0) return "0 B";
-    $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    $power = floor(log($bytes, 1024));
-    $power = min($power, count($units) - 1);
-    $size = $bytes / pow(1024, $power);
-    return round($size, 2) . ' ' . $units[$power];
-}
+                  <td style="padding-left:10px;padding-right:10px;">
+                    <span style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
+                                font-size:12px;color:#3A6475;">&#124;</span>
+                  </td>
 
-// Fetch the email
-$email = getSentEmailById($emailId, $userEmail);
+                  <!-- Website -->
+                  <td valign="middle" style="padding-right:6px;line-height:0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                      stroke="#70A494" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="2" y1="12" x2="22" y2="12" />
+                      <path
+                        d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                    </svg>
+                  </td>
+                  <td valign="middle">
+                    <a href="https://sxccal.edu/postgraduate-department-of-data-science" style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
+                            font-size:12px;text-decoration:none;line-height:1.5;">
+                      www.sxccal.edu
+                    </a>
+                  </td>
 
-if (!$email) {
-    header("Location: sent_history.php");
-    exit();
-}
+                </tr>
+              </table>
 
-// Get attachments if any
-$attachments = [];
-if ($email['has_attachments']) {
-    $attachments = getSentEmailAttachments($emailId);
-}
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <?php
-        define('PAGE_TITLE', 'SXC MDTS | Dashboard');
-        include 'header.php';
-    ?> 
-    <style>
-        :root {
-            --sf-blue: #007AFF;
-            --sf-gray: #8E8E93;
-            --sf-bg: #F2F2F7;
-            --sf-card: rgba(255, 255, 255, 0.72);
-            --sf-border: rgba(0, 0, 0, 0.08);
-            --text-main: #1D1D1F;
-            --text-secondary: #6E6E73;
-        }
+              <!-- Divider -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+                style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
+                <tr>
+                  <td style="border-top:1px solid #1A4F67;font-size:0;line-height:0;
+                            padding-top:14px;">&#160;</td>
+                </tr>
+              </table>
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-font-smoothing: antialiased;
-        }
+              <!-- Accreditation line -->
+              <p style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
+                       font-size:10.5px;letter-spacing:0.4px;
+                       margin:0 0 8px 0;padding:0;line-height:1.6;text-align:center;">
+                NAAC A++ Accredited &#183; NIRF Rank 8 (2025) &#183; ISO 9001:2015 Certified
+              </p>
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
-            background-color: var(--sf-bg);
-            color: var(--text-main);
-            overflow-x: hidden;
-        }
+              <!-- Copyright -->
+              <p style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
+                       font-size:10.5px;color:#4A7A90;
+                       margin:0;padding:0 0 18px 0;line-height:1.5;text-align:center;">
+                &#169; 2026 St. Xavier&#8217;s College (Autonomous), Kolkata. All rights reserved.
+              </p>
 
-        /* Top Navigation Bar (Frosted Glass) */
-        .top-nav {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            background: rgba(242, 242, 247, 0.8);
-            backdrop-filter: saturate(180%) blur(20px);
-            border-bottom: 0.5px solid var(--sf-border);
-            padding: 12px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .nav-left { display: flex; align-items: center; gap: 12px; }
-
-        .btn-icon {
-            background: none;
-            border: none;
-            color: var(--sf-blue);
-            font-size: 17px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            cursor: pointer;
-            text-decoration: none;
-            font-weight: 400;
-            transition: opacity 0.2s;
-        }
-
-        .btn-icon:hover { opacity: 0.7; }
-
-        /* Main Content Wrapper */
-        .viewport {
-            max-width: 860px;
-            margin: 32px auto;
-            padding: 0 20px;
-            animation: slideUp 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-        }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Email Card Layout */
-        .mail-sheet {
-            background: #FFFFFF;
-            border-radius: 18px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.04);
-            border: 0.5px solid var(--sf-border);
-            overflow: hidden;
-        }
-
-        .header-section {
-            padding: 32px 40px;
-            border-bottom: 0.5px solid var(--sf-border);
-            background: linear-gradient(to bottom, #ffffff, #fafafa);
-        }
-
-        .subject-line {
-            font-size: 28px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            margin-bottom: 20px;
-            line-height: 1.2;
-        }
-
-        .meta-container {
-            display: grid;
-            gap: 8px;
-        }
-
-        .meta-row {
-            display: flex;
-            font-size: 14px;
-            align-items: baseline;
-        }
-
-        .meta-key {
-            color: var(--text-secondary);
-            width: 60px;
-            flex-shrink: 0;
-        }
-
-        .meta-value {
-            color: var(--text-main);
-            font-weight: 400;
-        }
-
-        .meta-value .email-addr {
-            color: var(--sf-gray);
-            font-size: 13px;
-        }
-
-        .date-pill {
-            margin-top: 12px;
-            font-size: 12px;
-            color: var(--sf-gray);
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        /* Body Content */
-        .content-section {
-            padding: 40px;
-            font-size: 17px;
-            line-height: 1.6;
-            color: #3A3A3C;
-        }
-
-        .content-section img {
-            max-width: 100%;
-            border-radius: 12px;
-        }
-
-        /* Attachments Section - Apple Style Cells */
-        .attachment-area {
-            background: #F9F9F9;
-            padding: 24px 40px;
-            border-top: 0.5px solid var(--sf-border);
-        }
-
-        .attachment-label {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 16px;
-            text-transform: uppercase;
-        }
-
-        .attachment-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 12px;
-        }
-
-        .attachment-cell {
-            background: white;
-            border: 0.5px solid var(--sf-border);
-            border-radius: 12px;
-            padding: 12px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
-        }
-
-        .attachment-cell:hover {
-            background: #F2F2F7;
-        }
-
-        .attachment-cell:active {
-            transform: scale(0.98);
-        }
-
-        .file-icon-box {
-            width: 40px;
-            height: 40px;
-            background: var(--sf-blue);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-        }
-
-        .file-info { overflow: hidden; }
-        .file-name {
-            font-size: 14px;
-            font-weight: 500;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .file-size {
-            font-size: 12px;
-            color: var(--sf-gray);
-        }
-
-        /* Danger Action */
-        .btn-delete {
-            background: #FF3B30;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-        }
-
-        @media (max-width: 600px) {
-            .header-section, .content-section, .attachment-area { padding: 24px; }
-            .subject-line { font-size: 22px; }
-        }
-    </style>
-</head>
-
-<body>
-    <nav class="top-nav">
-        <div class="nav-left">
-            <a href="sent_history.php" class="btn-icon">
-                <span class="material-icons-round">arrow_back_ios</span>
-                Sent
-            </a>
-        </div>
-        <div class="nav-right" style="display: flex; gap: 20px;">
-            <button onclick="window.print()" class="btn-icon">
-                <span class="material-icons-round">print</span>
-            </button>
-            <button onclick="deleteEmail()" class="btn-icon" style="color: #FF3B30;">
-                <span class="material-icons-round">delete_outline</span>
-            </button>
-        </div>
-    </nav>
-
-    <main class="viewport">
-        <article class="mail-sheet">
-            <header class="header-section">
-                <h1 class="subject-line"><?= htmlspecialchars($email['subject']) ?></h1>
-                
-                <div class="meta-container">
-                    <div class="meta-row">
-                        <span class="meta-key">From</span>
-                        <span class="meta-value">
-                            <strong><?= htmlspecialchars($email['sender_name'] ?? 'Unknown') ?></strong> 
-                            <span class="email-addr">&lt;<?= htmlspecialchars($email['sender_email']) ?>&gt;</span>
-                        </span>
-                    </div>
-                    <div class="meta-row">
-                        <span class="meta-key">To</span>
-                        <span class="meta-value"><?= htmlspecialchars($email['recipient_email']) ?></span>
-                    </div>
-                    <?php if (!empty($email['cc_list'])): ?>
-                    <div class="meta-row">
-                        <span class="meta-key">Cc</span>
-                        <span class="meta-value"><?= htmlspecialchars($email['cc_list']) ?></span>
-                    </div>
-                    <?php endif; ?>
-                </div>
-
-                <div class="date-pill">
-                    <?= date('l, M j, Y • g:i A', strtotime($email['sent_at'])) ?>
-                </div>
-            </header>
-
-            <section class="content-section">
-                <?php if (!empty($email['article_title'])): ?>
-                    <h2 style="margin-bottom: 20px; font-weight: 600;"><?= htmlspecialchars($email['article_title']) ?></h2>
-                <?php endif; ?>
-
-                <div class="email-text">
-                    <?php 
-                        if (!empty($email['body_html'])) {
-                            echo $email['body_html']; 
-                        } else {
-                            echo nl2br(htmlspecialchars($email['body_text'] ?? 'No content'));
-                        }
-                    ?>
-                </div>
-            </section>
-
-            <?php if (!empty($attachments)): ?>
-            <footer class="attachment-area">
-                <div class="attachment-label">Attachments (<?= count($attachments) ?>)</div>
-                <div class="attachment-grid">
-                    <?php foreach ($attachments as $attachment): ?>
-                    <div class="attachment-cell" onclick="downloadAttachment('<?= htmlspecialchars($attachment['file_path']) ?>', '<?= htmlspecialchars($attachment['original_filename']) ?>')">
-                        <div class="file-icon-box">
-                            <span class="material-icons-round">description</span>
-                        </div>
-                        <div class="file-info">
-                            <div class="file-name"><?= htmlspecialchars($attachment['original_filename']) ?></div>
-                            <div class="file-size"><?= formatFileSize($attachment['file_size']) ?></div>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-            </footer>
-            <?php endif; ?>
-        </article>
-    </main>
-
-    <script>
-        function downloadAttachment(filePath, filename) {
-            const link = document.createElement('a');
-            link.href = filePath;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        function deleteEmail() {
-            // Pro-level confirmation (Native style)
-            if (confirm('Delete Message?\nThis action cannot be undone.')) {
-                fetch('sent_history.php?action=delete&id=<?= $emailId ?>')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            window.location.href = 'sent_history.php';
-                        } else {
-                            alert('Something went wrong.');
-                        }
-                    });
-            }
-        }
-    </script>
-</body>
-</html>
+            </td>
+          </tr>
