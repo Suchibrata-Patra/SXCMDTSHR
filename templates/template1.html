@@ -183,7 +183,8 @@
                       <tr>
                         <td align="center" valign="middle"
                           style="background-color:#0b2d48;border:2px solid #0b2d48;border-radius:4px;">
-                          <a id="connectBtn"
+                          <a href="#"
+                            onclick="var n='{{RECIPIENT_NAME}}',c='{{COMPANY_NAME}}',b='Hi,\n\nI\'m '+n+' from '+c+' and I\'m interested in discussing hiring opportunities.\n\nBest regards,\n'+n;this.href='mailto:datascience.placement@sxccal.edu?subject='+encodeURIComponent('Job Inquiry from '+n)+'&body='+encodeURIComponent(b);return true;"
                             style="display:block;font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;font-size:12px;font-weight:700;color:#ffffff;text-decoration:none;text-align:center;line-height:1.4;padding-top:13px;padding-bottom:13px;padding-left:8px;padding-right:8px;">
                             <img src="https://hr.holidayseva.com/Assets/icons/connect.png" alt="Email"
                               style="display:inline-block;vertical-align:middle;margin-bottom:2px;margin-right:4px;height:20px;width:20px;">
