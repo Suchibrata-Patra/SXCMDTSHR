@@ -70,7 +70,7 @@
     /* ─── MOBILE RESPONSIVE ────────────────────────────────────── */
     @media only screen and (max-width: 600px) {
 
-      /* ── PAGE WRAPPER: center the card with breathing room */
+      /* ── PAGE WRAPPER */
       #bodyWrap>tr>td {
         padding-top: 16px !important;
         padding-bottom: 16px !important;
@@ -79,7 +79,7 @@
         background-color: #F2F4F6 !important;
       }
 
-      /* ── CARD: iOS-style contained card, NOT edge-to-edge */
+      /* ── CARD */
       .card {
         width: 100% !important;
         min-width: unset !important;
@@ -88,29 +88,42 @@
         box-shadow: 0 4px 24px rgba(7, 41, 58, 0.10) !important;
       }
 
-      /* ── TOP ACCENT BAR: matches card radius */
+      /* ── TOP ACCENT BAR */
       .top-accent-td {
         border-radius: 14px 14px 0 0 !important;
       }
 
-      /* ── BODY TEXT */
+      /* ── BODY TEXT — 25px on mobile */
       body p,
       .email-body p,
       p {
         font-size: 25px !important;
-        line-height: 1.58 !important;
-        letter-spacing: 0px !important;
+        line-height: 1.62 !important;
+        letter-spacing: -0.1px !important;
         word-spacing: 0px !important;
       }
 
-      /* ── EMAIL TITLE */
+      /* ── EMAIL TITLE — 25px, heavier weight for contrast */
       .email-title {
-        font-size: 21px !important;
-        letter-spacing: -0.3px !important;
-        line-height: 1.26 !important;
+        font-size: 25px !important;
+        font-weight: 800 !important;
+        letter-spacing: -0.5px !important;
+        line-height: 1.28 !important;
       }
 
-      /* ── SECTION PADDING — tighter iOS feel */
+      /* ── SKILL CHIP TEXT — 25px on mobile */
+      .chip-text {
+        font-size: 25px !important;
+        line-height: 1.4 !important;
+        letter-spacing: -0.2px !important;
+      }
+
+      /* ── SKILL CHIP CELLS — more padding for legibility */
+      .chip-td {
+        padding: 11px 16px !important;
+      }
+
+      /* ── SECTION PADDING */
       .section-body {
         padding-left: 20px !important;
         padding-right: 20px !important;
@@ -129,13 +142,12 @@
         height: 60px !important;
       }
 
-      /* ── ACTION BAR: buttons side by side, equal thirds */
+      /* ── ACTION BAR BUTTONS */
       .btn-cell {
         width: 33% !important;
         display: table-cell !important;
       }
 
-      /* ── BUTTONS: compact, tap-friendly, equal */
       .btn-link {
         font-size: 11.5px !important;
         padding: 11px 6px !important;
@@ -145,7 +157,7 @@
         box-sizing: border-box !important;
       }
 
-      /* ── FOOTER */
+      /* ── FOOTER — all text pure white */
       .footer-td {
         padding-left: 16px !important;
         padding-right: 16px !important;
@@ -153,14 +165,28 @@
         border-radius: 0 0 14px 14px !important;
       }
 
-      /* ── SIGNATURE */
-      .sig-name {
-        font-size: 14px !important;
+      .footer-td p,
+      .footer-td a,
+      .footer-td span {
+        color: #FFFFFF !important;
+        font-size: 13px !important;
       }
 
-      /* ── TITLE SECTION */
-      .title-section {
-        padding-top: 16px !important;
+      /* ── SIGNATURE — clean, readable */
+      .sig-name {
+        font-size: 18px !important;
+        font-weight: 800 !important;
+        letter-spacing: -0.3px !important;
+      }
+
+      .sig-title {
+        font-size: 15px !important;
+        font-weight: 500 !important;
+      }
+
+      .sig-institution {
+        font-size: 14px !important;
+        font-weight: 400 !important;
       }
     }
 
@@ -173,87 +199,58 @@
 
 <body style="margin:0;padding:0;background-color:#F2F4F6;">
 
-  <!-- ═══════════════════════════════════════════════════════
-     PAGE WRAPPER
-═══════════════════════════════════════════════════════ -->
-  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" id="bodyWrap" style="background-color:#F2F4F6;width:100%;border-collapse:collapse;
-              mso-table-lspace:0pt;mso-table-rspace:0pt;">
+  <!-- PAGE WRAPPER -->
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" id="bodyWrap"
+    style="background-color:#F2F4F6;width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
     <tr>
-      <td align="center" valign="top" style="padding-top:28px;padding-bottom:28px;
-               padding-left:0;padding-right:0;">
+      <td align="center" valign="top" style="padding-top:28px;padding-bottom:28px;padding-left:0;padding-right:0;">
 
-        <!-- ═══════════════════════════════════════
-           CARD — 600px centered
-      ═══════════════════════════════════════ -->
-        <table class="card" role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" style="width:600px;background-color:#FFFFFF;
-                    border:1px solid #C8CDD2;border-radius:6px;
-                    box-shadow:0 2px 20px rgba(7,41,58,0.08);
-                    mso-table-lspace:0pt;mso-table-rspace:0pt;">
-
+        <!-- CARD -->
+        <table class="card" role="presentation" border="0" cellpadding="0" cellspacing="0" width="600"
+          style="width:600px;background-color:#FFFFFF;border:1px solid #C8CDD2;border-radius:6px;box-shadow:0 2px 20px rgba(7,41,58,0.08);mso-table-lspace:0pt;mso-table-rspace:0pt;">
 
           <!-- TOP ACCENT RULE -->
           <tr>
-            <td style="background-color:#07293A;height:5px;font-size:0;line-height:0;
-                       padding:0;mso-line-height-rule:exactly;">&#160;</td>
+            <td class="top-accent-td"
+              style="background-color:#07293A;height:5px;font-size:0;line-height:0;padding:0;mso-line-height-rule:exactly;">
+              &#160;</td>
           </tr>
-          <!-- /TOP ACCENT RULE -->
 
           <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-             BLOCK 1 · HEADER
-             Left: college logo | Right: name, badge, accreditation, tag
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+               BLOCK 1 · HEADER
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
           <tr>
-            <td style="background-color:#FFFFFF;
-                     border-bottom:3px solid #07293A;
-                     padding:0;">
-
+            <td style="background-color:#FFFFFF;border-bottom:3px solid #07293A;padding:0;">
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
                 style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                 <tr>
-
-                  <!-- Left padding -->
                   <td width="24" style="width:24px;min-width:24px;font-size:0;line-height:0;">&#160;</td>
-
-                  <!-- College logo -->
-                  <td valign="middle" width="90" style="width:90px;min-width:90px;
-                           padding-top:20px;padding-bottom:20px;">
+                  <td valign="middle" width="90"
+                    style="width:90px;min-width:90px;padding-top:20px;padding-bottom:20px;">
                     <img class="college-logo" src="https://hr.holidayseva.com/Assets/image/sxc_logo.png" alt="SXC Logo"
                       width="80" height="80" style="display:block;width:80px;height:80px;" />
                   </td>
-
-                  <!-- Gap -->
                   <td width="18" style="width:18px;font-size:0;line-height:0;">&#160;</td>
-
-                  <!-- Text column -->
                   <td valign="middle" style="padding-top:18px;padding-bottom:18px;">
                     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
                       style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
-
-                      <!-- ROW A · College name -->
                       <tr>
                         <td style="padding-bottom:8px;">
-                          <p class="college-name" style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                                   font-size:20px;font-weight:800;color:#07293A;
-                                   line-height:1.18;letter-spacing:-0.5px;
-                                   margin:0;padding:0;">
+                          <p class="college-name"
+                            style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:20px;font-weight:800;color:#07293A;line-height:1.18;letter-spacing:-0.5px;margin:0;padding:0;">
                             St. Xavier&#8217;s College (Autonomous), Kolkata
                           </p>
                         </td>
                       </tr>
-
-                      <!-- ROW B · NIRF ranking badge -->
                       <tr>
                         <td style="padding-bottom:8px;">
                           <table role="presentation" border="0" cellpadding="0" cellspacing="0"
                             style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                             <tr>
-                              <td style="background-color:#07293A;
-                                       border-radius:6px;
-                                       padding-top:5px;padding-bottom:5px;
-                                       padding-left:11px;padding-right:11px;">
-                                <span style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                                            font-size:10px;font-weight:700;color:#FFFFFF;
-                                            letter-spacing:1px;white-space:nowrap;text-transform:uppercase;">
+                              <td
+                                style="background-color:#07293A;border-radius:6px;padding-top:5px;padding-bottom:5px;padding-left:11px;padding-right:11px;">
+                                <span
+                                  style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:10px;font-weight:700;color:#FFFFFF;letter-spacing:1px;white-space:nowrap;text-transform:uppercase;">
                                   Ranked 8th in India &#8212; NIRF 2025
                                 </span>
                               </td>
@@ -261,33 +258,24 @@
                           </table>
                         </td>
                       </tr>
-
-                      <!-- ROW C · Accreditation — subtle -->
                       <tr>
                         <td style="padding-bottom:10px;">
-                          <p style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                                   font-size:10.5px;color:#8A9BAA;line-height:1.7;letter-spacing:0.1px;
-                                   margin:0;padding:0;">
+                          <p
+                            style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:10.5px;color:#8A9BAA;line-height:1.7;letter-spacing:0.1px;margin:0;padding:0;">
                             Autonomous College (2006) &#183; College of Excellence &#183; NAAC A++ (4th Cycle, 2024)
                             &#183; ISO 9001:2015
                           </p>
                         </td>
                       </tr>
-
-                      <!-- ROW D · Official invitation tag -->
                       <tr>
                         <td>
                           <table role="presentation" border="0" cellpadding="0" cellspacing="0"
                             style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                             <tr>
-                              <td style="background-color:#FDF3F2;
-                                       border:1px solid #75251E;
-                                       border-radius:6px;
-                                       padding-top:5px;padding-bottom:5px;
-                                       padding-left:11px;padding-right:11px;">
-                                <span style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                                            font-size:9.5px;font-weight:700;color:#75251E;
-                                            letter-spacing:1.1px;white-space:nowrap;text-transform:uppercase;">
+                              <td
+                                style="background-color:#FDF3F2;border:1px solid #75251E;border-radius:6px;padding-top:5px;padding-bottom:5px;padding-left:11px;padding-right:11px;">
+                                <span
+                                  style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:9.5px;font-weight:700;color:#75251E;letter-spacing:1.1px;white-space:nowrap;text-transform:uppercase;">
                                   Official Invitation &#8212; Campus Recruitment, MSc Data Science 2026
                                 </span>
                               </td>
@@ -295,175 +283,86 @@
                           </table>
                         </td>
                       </tr>
-
                     </table>
                   </td>
-
-                  <!-- Right padding -->
                   <td width="24" style="width:24px;min-width:24px;font-size:0;line-height:0;">&#160;</td>
-
                 </tr>
               </table>
             </td>
           </tr>
-          <!-- END HEADER -->
-
 
           <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-             BLOCK 2 · ACTION BAR — 3 buttons side by side
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+               BLOCK 2 · ACTION BAR
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
           <tr>
-            <td style="background-color:#EDF1F3;
-                     border-bottom:1px solid #D8DDE2;
-                     padding-top:16px;padding-bottom:16px;
-                     padding-left:20px;padding-right:20px;">
-
+            <td
+              style="background-color:#EDF1F3;border-bottom:1px solid #D8DDE2;padding-top:16px;padding-bottom:16px;padding-left:20px;padding-right:20px;">
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
                 style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                 <tr>
-
-                  <!-- BTN 1: Connect With Placement Cell (filled) -->
                   <td class="btn-cell" valign="top" width="33%" style="width:33%;padding-right:5px;">
                     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
                       style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                       <tr>
-                        <td align="center" valign="middle" style="background-color:#07293A;
-                                 border:none;
-                                 border-radius:6px;">
-                          <a class="btn-link" href="mailto:datascience.placement@sxccal.edu" style="display:block;
-                                  font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                                  font-size:12px;font-weight:700;color:#FFFFFF;
-                                  text-decoration:none;text-align:center;line-height:1.4;letter-spacing:0.1px;
-                                  padding-top:12px;padding-bottom:12px;
-                                  padding-left:10px;padding-right:10px;">
-                            <img src="https://hr.holidayseva.com/Assets/icons/connect.png" alt="" style="display:inline-block;vertical-align:middle;
-                                      width:auto;height:20px;
-                                      margin-bottom:2px;margin-right:4px;
-                                      border:0;outline:none;" />
+                        <td align="center" valign="middle"
+                          style="background-color:#07293A;border:none;border-radius:6px;">
+                          <a class="btn-link" href="mailto:datascience.placement@sxccal.edu"
+                            style="display:block;font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:12px;font-weight:700;color:#FFFFFF;text-decoration:none;text-align:center;line-height:1.4;letter-spacing:0.1px;padding-top:12px;padding-bottom:12px;padding-left:10px;padding-right:10px;">
+                            <img src="https://hr.holidayseva.com/Assets/icons/connect.png" alt=""
+                              style="display:inline-block;vertical-align:middle;width:auto;height:20px;margin-bottom:2px;margin-right:4px;border:0;outline:none;" />
                             Connect With Us
                           </a>
-                          <!--<![endif]-->
                         </td>
                       </tr>
                     </table>
                   </td>
-
-                  <!-- BTN 2: Student Brochure PDF (outlined) -->
                   <td class="btn-cell" valign="top" width="34%" style="width:34%;padding-left:5px;padding-right:5px;">
                     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
                       style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                       <tr>
-                        <td align="center" valign="middle" style="background-color:#FFFFFF;
-                                 border:1.5px solid #07293A;
-                                 border-radius:6px;">
+                        <td align="center" valign="middle"
+                          style="background-color:#FFFFFF;border:1.5px solid #07293A;border-radius:6px;">
                           <a class="btn-link" href="https://drive.google.com/file/d/174oZ7Ls_x9JrYu_4Zp45mRxEsI_8szIT/"
-                            style="display:block;
-                                  font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                                  font-size:12px;font-weight:700;color:#07293A;
-                                  text-decoration:none;text-align:center;line-height:1.4;letter-spacing:0.1px;
-                                  padding-top:12px;padding-bottom:12px;
-                                  padding-left:10px;padding-right:10px;">
-                            <img src="https://hr.holidayseva.com/Assets/icons/download.png" alt="" style="display:inline-block;vertical-align:middle;
-                                      width:auto;height:20px;
-                                      margin-bottom:2px;margin-right:4px;
-                                      border:0;outline:none;" />
+                            style="display:block;font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:12px;font-weight:700;color:#07293A;text-decoration:none;text-align:center;line-height:1.4;letter-spacing:0.1px;padding-top:12px;padding-bottom:12px;padding-left:10px;padding-right:10px;">
+                            <img src="https://hr.holidayseva.com/Assets/icons/download.png" alt=""
+                              style="display:inline-block;vertical-align:middle;width:auto;height:20px;margin-bottom:2px;margin-right:4px;border:0;outline:none;" />
                             Student Brochure
                           </a>
-                          <!--<![endif]-->
                         </td>
                       </tr>
                     </table>
                   </td>
-
-                  <!-- BTN 3: Student CV Pack PDF (outlined) -->
                   <td class="btn-cell" valign="top" width="33%" style="width:33%;padding-left:5px;">
                     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
                       style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                       <tr>
-                        <td align="center" valign="middle" style="background-color:#FFFFFF;
-                                 border:1.5px solid #07293A;
-                                 border-radius:6px;">
+                        <td align="center" valign="middle"
+                          style="background-color:#FFFFFF;border:1.5px solid #07293A;border-radius:6px;">
                           <a class="btn-link" href="https://drive.google.com/file/d/1wwFKofEPonaXrrxoBIRhdCRDHKiRNMfV/"
-                            style="display:block;
-                                  font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                                  font-size:12px;font-weight:700;color:#07293A;
-                                  text-decoration:none;text-align:center;line-height:1.4;letter-spacing:0.1px;
-                                  padding-top:12px;padding-bottom:12px;
-                                  padding-left:10px;padding-right:10px;">
-                            <img src="https://hr.holidayseva.com/Assets/icons/card.png" alt="" style="display:inline-block;vertical-align:middle;
-                                      width:auto;height:20px;
-                                      margin-bottom:2px;margin-right:4px;
-                                      border:0;outline:none;" />
+                            style="display:block;font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:12px;font-weight:700;color:#07293A;text-decoration:none;text-align:center;line-height:1.4;letter-spacing:0.1px;padding-top:12px;padding-bottom:12px;padding-left:10px;padding-right:10px;">
+                            <img src="https://hr.holidayseva.com/Assets/icons/card.png" alt=""
+                              style="display:inline-block;vertical-align:middle;width:auto;height:20px;margin-bottom:2px;margin-right:4px;border:0;outline:none;" />
                             Student CV
                           </a>
-                          <!--<![endif]-->
                         </td>
                       </tr>
                     </table>
                   </td>
-
                 </tr>
               </table>
             </td>
           </tr>
-          <!-- END ACTION BAR -->
-          <!-- This is the model of the things to be develoepd by the model of teht hings 
-          Tobe done by the model of the things to be done by the model of the things such that I know the meaning and significance  of the eveey line foc does i Do write there in te dmodel if thethinsg 
-        of the thinsg -->
-
 
           <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-             BLOCK 3 · TYPE BADGE
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+               BLOCK 4 · EMAIL TITLE
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
           <tr>
-
-          </tr>
-          <!-- END TYPE BADGE -->
-
-
-          <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-             BLOCK 4 · EMAIL TITLE + AUTHOR
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-          <tr>
-            <td class="title-section section-body" style="padding-top:18px;padding-bottom:0;
-                     padding-left:36px;padding-right:36px;
-                     background-color:#FFFFFF;">
-
-              <p class="email-title" style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                       font-size:24px;font-weight:800;color:#07293A;
-                       line-height:1.25;letter-spacing:-0.6px;
-                       margin:0 0 14px 0;padding:0;">
+            <td class="title-section section-body"
+              style="padding-top:18px;padding-bottom:0;padding-left:36px;padding-right:36px;background-color:#FFFFFF;">
+              <p class="email-title"
+                style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:24px;font-weight:800;color:#07293A;line-height:1.25;letter-spacing:-0.6px;margin:0 0 14px 0;padding:0;">
                 {{articletitle}}
               </p>
-
-              <!-- Author attribution -->
-              <!-- <table role="presentation" border="0" cellpadding="0" cellspacing="0"
-                   style="mso-table-lspace:0pt;mso-table-rspace:0pt;margin-bottom:22px;">
-              <tr>
-                <td valign="middle"
-                    style="border-left:3px solid #519683;padding-left:11px;">
-                  <span class="sig-name" style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                                font-size:15px;font-weight:700;color:#07293A;
-                                display:block;line-height:1.4;">
-                    <a href="https://www.linkedin.com/in/durba-bhattacharya-b3821773/"
-                       style="color:#07293A;text-decoration:none;">
-                      Dr. Durba Bhattacharya
-                    </a>
-                  </span>
-                  <span style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                                font-size:13px;color:#4A5568;
-                                display:block;line-height:1.45;">
-                    Head of Department, Statistics &amp; Data Science
-                  </span>
-                  <span style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                                font-size:12px;color:#8A9BAA;
-                                display:block;line-height:1.45;">
-                    St. Xavier&#8217;s College (Autonomous), Kolkata
-                  </span>
-                </td>
-              </tr>
-            </table> -->
-
             </td>
           </tr>
 
@@ -478,73 +377,55 @@
               </table>
             </td>
           </tr>
-          <!-- END TITLE + AUTHOR -->
-
 
           <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-             BLOCK 5 · BODY — Salutation + Message
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+               BLOCK 5 · BODY
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
           <tr>
-            <td class="section-body" style="padding-top:30px;padding-bottom:0;
-                     padding-left:36px;padding-right:36px;
-                     background-color:#FFFFFF;">
+            <td class="section-body"
+              style="padding-top:30px;padding-bottom:0;padding-left:36px;padding-right:36px;background-color:#FFFFFF;">
 
-              <!-- Salutation -->
-              <p style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                       font-size:16px;font-weight:400;color:#2D3748;line-height:1.68;
-                       margin:0 0 16px 0;padding:0;">
+              <p
+                style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:16px;font-weight:400;color:#2D3748;line-height:1.68;margin:0 0 16px 0;padding:0;">
                 Dear {{RECIPIENT_NAME}},
               </p>
 
-              <!-- Greeting -->
-              <p style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                       font-size:16px;font-weight:400;color:#2D3748;line-height:1.68;
-                       margin:0 0 6px 0;padding:0;">
+              <p
+                style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:16px;font-weight:400;color:#2D3748;line-height:1.68;margin:0 0 6px 0;padding:0;">
                 Greetings from the Postgraduate Department of Data Science, St.&#160;Xavier&#8217;s College
                 (Autonomous), Kolkata.
               </p>
 
-              <!-- Well-being -->
-              <p style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                       font-size:16px;font-weight:400;color:#2D3748;line-height:1.68;
-                       margin:0 0 16px 0;padding:0;">
+              <p
+                style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:16px;font-weight:400;color:#2D3748;line-height:1.68;margin:0 0 16px 0;padding:0;">
                 I hope you are doing well.
               </p>
 
-              <!-- Purpose -->
-              <p style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                       font-size:16px;font-weight:400;color:#2D3748;line-height:1.68;
-                       margin:0 0 16px 0;padding:0;">
+              <p
+                style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:16px;font-weight:400;color:#2D3748;line-height:1.68;margin:0 0 16px 0;padding:0;">
                 I am writing to explore the possibility of connecting with <strong
-                  style="color:#75251E;font-weight:700;">{{COMPANY_NAME}}</strong> regarding
-                campus placement opportunities for our <strong style="color:#75251E;font-weight:600;">M.Sc. in Data
-                  Science (Batch 2024&#8211;2026)</strong>.
+                  style="color:#75251E;font-weight:700;">{{COMPANY_NAME}}</strong> regarding campus placement
+                opportunities for our <strong style="color:#75251E;font-weight:600;">M.Sc. in Data Science (Batch
+                  2024&#8211;2026)</strong>.
               </p>
 
-              <!-- Institutional standing -->
-              <p style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                       font-size:16px;font-weight:400;color:#2D3748;line-height:1.68;
-                       margin:0 0 16px 0;padding:0;">
+              <p
+                style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:16px;font-weight:400;color:#2D3748;line-height:1.68;margin:0 0 16px 0;padding:0;">
                 Recognized as the <strong style="color:#75251E;font-weight:700;">8th best college in India by the NIRF
-                  2025</strong> and designated as a
-                <strong style="color:#75251E;font-weight:700;">College of Excellence by the UGC</strong>,
-                St.&#160;Xavier&#8217;s College is among the leading
-                institutions in the country. Our M.Sc. program in Data Science is designed with a strong
-                interdisciplinary foundation, integrating Statistics, Computer Science, Mathematics, and applied
-                analytics, with emphasis on practical implementation through projects and industry exposure.
+                  2025</strong> and designated as a <strong style="color:#75251E;font-weight:700;">College of Excellence
+                  by the UGC</strong>, St.&#160;Xavier&#8217;s College is among the leading institutions in the
+                country. Our M.Sc. program in Data Science is designed with a strong interdisciplinary foundation,
+                integrating Statistics, Computer Science, Mathematics, and applied analytics, with emphasis on
+                practical implementation through projects and industry exposure.
               </p>
 
-              <!-- Skills section — Apple-level chip grid -->
+              <!-- Skills chip grid -->
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
                 style="mso-table-lspace:0pt;mso-table-rspace:0pt;margin-bottom:22px;">
                 <tr>
                   <td style="padding-top:2px;padding-bottom:0;">
-
-                    <!-- Label -->
-                    <p style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                             font-size:10px;font-weight:600;color:#8A9BAA;
-                             letter-spacing:1.3px;text-transform:uppercase;
-                             margin:0 0 12px 0;padding:0;">
+                    <p
+                      style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:10px;font-weight:600;color:#8A9BAA;letter-spacing:1.3px;text-transform:uppercase;margin:0 0 12px 0;padding:0;">
                       Core Competencies
                     </p>
 
@@ -556,11 +437,10 @@
                           <table role="presentation" border="0" cellpadding="0" cellspacing="0"
                             style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                             <tr>
-                              <td style="background-color:#F0F4F8;border:1px solid #DDE3EA;
-                                         border-radius:6px;padding:7px 13px;">
-                                <span style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                                            font-size:12.5px;font-weight:600;color:#07293A;
-                                            white-space:nowrap;letter-spacing:-0.1px;">
+                              <td class="chip-td"
+                                style="background-color:#F0F4F8;border:1px solid #DDE3EA;border-radius:6px;padding:7px 13px;">
+                                <span class="chip-text"
+                                  style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:12.5px;font-weight:600;color:#07293A;white-space:nowrap;letter-spacing:-0.1px;">
                                   Data Analysis &amp; Statistical Modeling
                                 </span>
                               </td>
@@ -571,11 +451,10 @@
                           <table role="presentation" border="0" cellpadding="0" cellspacing="0"
                             style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                             <tr>
-                              <td style="background-color:#F0F4F8;border:1px solid #DDE3EA;
-                                         border-radius:6px;padding:7px 13px;">
-                                <span style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                                            font-size:12.5px;font-weight:600;color:#07293A;
-                                            white-space:nowrap;letter-spacing:-0.1px;">
+                              <td class="chip-td"
+                                style="background-color:#F0F4F8;border:1px solid #DDE3EA;border-radius:6px;padding:7px 13px;">
+                                <span class="chip-text"
+                                  style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:12.5px;font-weight:600;color:#07293A;white-space:nowrap;letter-spacing:-0.1px;">
                                   Machine Learning &amp; Predictive Analytics
                                 </span>
                               </td>
@@ -593,11 +472,10 @@
                           <table role="presentation" border="0" cellpadding="0" cellspacing="0"
                             style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                             <tr>
-                              <td style="background-color:#F0F4F8;border:1px solid #DDE3EA;
-                                         border-radius:6px;padding:7px 13px;">
-                                <span style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                                            font-size:12.5px;font-weight:600;color:#07293A;
-                                            white-space:nowrap;letter-spacing:-0.1px;">
+                              <td class="chip-td"
+                                style="background-color:#F0F4F8;border:1px solid #DDE3EA;border-radius:6px;padding:7px 13px;">
+                                <span class="chip-text"
+                                  style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:12.5px;font-weight:600;color:#07293A;white-space:nowrap;letter-spacing:-0.1px;">
                                   Data Engineering Fundamentals
                                 </span>
                               </td>
@@ -608,11 +486,10 @@
                           <table role="presentation" border="0" cellpadding="0" cellspacing="0"
                             style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                             <tr>
-                              <td style="background-color:#F0F4F8;border:1px solid #DDE3EA;
-                                         border-radius:6px;padding:7px 13px;">
-                                <span style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                                            font-size:12.5px;font-weight:600;color:#07293A;
-                                            white-space:nowrap;letter-spacing:-0.1px;">
+                              <td class="chip-td"
+                                style="background-color:#F0F4F8;border:1px solid #DDE3EA;border-radius:6px;padding:7px 13px;">
+                                <span class="chip-text"
+                                  style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:12.5px;font-weight:600;color:#07293A;white-space:nowrap;letter-spacing:-0.1px;">
                                   Business Intelligence &amp; Visualization
                                 </span>
                               </td>
@@ -623,11 +500,10 @@
                           <table role="presentation" border="0" cellpadding="0" cellspacing="0"
                             style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                             <tr>
-                              <td style="background-color:#EDF4F1;border:1px solid #C4DDD5;
-                                         border-radius:6px;padding:7px 13px;">
-                                <span style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                                            font-size:12.5px;font-weight:600;color:#2C6B58;
-                                            white-space:nowrap;letter-spacing:-0.1px;">
+                              <td class="chip-td"
+                                style="background-color:#EDF4F1;border:1px solid #C4DDD5;border-radius:6px;padding:7px 13px;">
+                                <span class="chip-text"
+                                  style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:12.5px;font-weight:600;color:#2C6B58;white-space:nowrap;letter-spacing:-0.1px;">
                                   Applied AI &amp; Emerging Technologies
                                 </span>
                               </td>
@@ -641,18 +517,15 @@
                 </tr>
               </table>
 
-              <!-- Closing paragraphs -->
-              <p style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                       font-size:16px;font-weight:400;color:#2D3748;line-height:1.68;
-                       margin:0 0 16px 0;padding:0;">
+              <p
+                style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:16px;font-weight:400;color:#2D3748;line-height:1.68;margin:0 0 16px 0;padding:0;">
                 Depending on your organization&#8217;s requirements, our students are prepared to contribute across
                 analytics, technology, research, or data-driven decision-support roles. For your reference, we have
                 attached the Student profiles and placement brochure to this email.
               </p>
 
-              <p style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                       font-size:16px;font-weight:400;color:#2D3748;line-height:1.68;
-                       margin:0 0 16px 0;padding:0;">
+              <p
+                style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:16px;font-weight:400;color:#2D3748;line-height:1.68;margin:0 0 16px 0;padding:0;">
                 We would be grateful for the opportunity to understand your hiring needs and explore whether our
                 students may align with your current or upcoming requirements. If convenient, we would be happy to share
                 further details or arrange a brief discussion at your preferred time. Thank you for your time and
@@ -661,89 +534,78 @@
 
             </td>
           </tr>
-          <!-- END BODY -->
-
 
           <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-             BLOCK 6 · SIGNATURE
-             Left: sender photo (PNG) | Right: name, title, institution
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+               BLOCK 6 · SIGNATURE — clean typography
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
           <tr>
-            <td class="section-body" style="padding-top:0;padding-bottom:36px;
-                     padding-left:36px;padding-right:36px;
-                     background-color:#FFFFFF;">
+            <td class="section-body"
+              style="padding-top:0;padding-bottom:36px;padding-left:36px;padding-right:36px;background-color:#FFFFFF;">
 
-              <!-- Divider above signature -->
+              <!-- Divider -->
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
                 style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                 <tr>
-                  <td style="border-top:1px solid #E2E6EA;padding-top:26px;
-                            font-size:0;line-height:0;">&#160;</td>
+                  <td style="border-top:1px solid #E2E6EA;padding-top:26px;font-size:0;line-height:0;">&#160;</td>
                 </tr>
               </table>
 
-              <!-- Signature card: photo + details -->
+              <!-- Signature block -->
               <table role="presentation" border="0" cellpadding="0" cellspacing="0"
                 style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                 <tr>
 
-                  <!-- Sender photo -->
-                  <td valign="middle" style="padding-right:14px;">
-                    <img src="hr.holidayseva.com/Assets/image/durba_bhattacharya.png" alt="Dr. Durba Bhattacharya"
-                      width="52" height="52" style="display:block;width:56px;height:56px;
-                              border-radius:50%;
-                              border:2px solid #D8DDE2;" />
+                  <!-- Photo -->
+                  <td valign="middle" style="padding-right:16px;">
+                    <img src="https://hr.holidayseva.com/Assets/image/durba_bhattacharya.png"
+                      alt="Dr. Durba Bhattacharya" width="56" height="56"
+                      style="display:block;width:56px;height:56px;border-radius:50%;border:2px solid #D8DDE2;object-fit:cover;" />
                   </td>
 
-                  <!-- Name, designation, institution -->
-                  <td valign="middle" style="border-left:3px solid #519683;padding-left:11px;">
-                    <span class="sig-name" style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                                font-size:15px;font-weight:700;color:#07293A;
-                                display:block;line-height:1.4;">
+                  <!-- Name + title stack -->
+                  <td valign="middle" style="border-left:3px solid #519683;padding-left:14px;">
+
+                    <span class="sig-name"
+                      style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:15px;font-weight:800;color:#07293A;display:block;line-height:1.35;letter-spacing:-0.3px;margin-bottom:2px;">
                       <a href="https://www.linkedin.com/in/durba-bhattacharya-b3821773/"
                         style="color:#07293A;text-decoration:none;">
                         Dr. Durba Bhattacharya
                       </a>
                     </span>
-                    <span style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                                font-size:13px;color:#4A5568;
-                                display:block;line-height:1.45;">
+
+                    <span class="sig-title"
+                      style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:13px;font-weight:500;color:#4A5568;display:block;line-height:1.45;margin-bottom:1px;">
                       Head of Department, Data Science
                     </span>
-                    <span style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                                font-size:12px;color:#8A9BAA;
-                                display:block;line-height:1.45;">
+
+                    <span class="sig-institution"
+                      style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:12px;font-weight:400;color:#8A9BAA;display:block;line-height:1.45;">
                       St. Xavier&#8217;s College (Autonomous), Kolkata
                     </span>
-                  </td>
 
+                  </td>
                 </tr>
               </table>
 
             </td>
           </tr>
-          <!-- END SIGNATURE -->
-
 
           <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-             BLOCK 7 · FOOTER — compact and professional
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+               BLOCK 7 · FOOTER — all text pure white
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
           <tr>
-            <td class="footer-td" align="center" style="background-color:#07293A;
-                     padding-top:28px;padding-bottom:0;
-                     padding-left:32px;padding-right:32px;">
+            <td class="footer-td" align="center"
+              style="background-color:#07293A;padding-top:28px;padding-bottom:0;padding-left:32px;padding-right:32px;">
 
               <!-- Institution name -->
-              <p style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                       font-size:14.5px;font-weight:700;color:#FFFFFF;
-                       margin:0 0 6px 0;padding:0;line-height:1.4;text-align:center;">
+              <p
+                style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:14.5px;font-weight:700;color:#FFFFFF;margin:0 0 6px 0;padding:0;line-height:1.4;text-align:center;">
                 St. Xavier&#8217;s College (Autonomous), Kolkata
               </p>
 
               <!-- Address -->
-              <p style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                       font-size:12px;color:#A8B8C0;
-                       margin:0 0 14px 0;padding:0;line-height:1.68;text-align:center;">
+              <p
+                style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:12px;color:#FFFFFF;margin:0 0 14px 0;padding:0;line-height:1.68;text-align:center;opacity:0.75;">
                 30, Mother Teresa Sarani, Kolkata &#8212; 700016, West Bengal, India
               </p>
 
@@ -751,52 +613,47 @@
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center"
                 style="mso-table-lspace:0pt;mso-table-rspace:0pt;margin-bottom:18px;">
                 <tr>
-
-                  <!-- Phone -->
                   <td valign="middle" style="padding-right:6px;line-height:0;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
-                      stroke="#70A494" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path
                         d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                     </svg>
                   </td>
                   <td valign="middle">
-                    <a href="tel:+919830275826" style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                            font-size:12px;color:#7DBDAD;text-decoration:none;line-height:1.5;">
+                    <a href="tel:+919830275826"
+                      style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:12px;color:#FFFFFF;text-decoration:none;line-height:1.5;">
                       +91-9830275826
                     </a>
                   </td>
 
                   <td style="padding-left:10px;padding-right:10px;">
-                    <span style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                                font-size:12px;color:#3A6475;">&#124;</span>
+                    <span
+                      style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:12px;color:#FFFFFF;opacity:0.4;">&#124;</span>
                   </td>
 
-                  <!-- Email -->
                   <td valign="middle" style="padding-right:6px;line-height:0;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
-                      stroke="#70A494" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <rect x="2" y="4" width="20" height="16" rx="2" />
                       <polyline points="2,4 12,13 22,4" />
                     </svg>
                   </td>
                   <td valign="middle">
-                    <a href="/cdn-cgi/l/email-protection#c5b5a9a4a6a0a8a0abb185b6bda6a6a4a9eba0a1b0" style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                            font-size:12px;color:#7DBDAD;text-decoration:none;line-height:1.5;">
-                      <span class="__cf_email__"
-                        data-cfemail="51213d3032343c343f251122293232303d7f343524">datascience.placement@sxccal.edu</span>
+                    <a href="mailto:datascience.placement@sxccal.edu"
+                      style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:12px;color:#FFFFFF;text-decoration:none;line-height:1.5;">
+                      datascience.placement@sxccal.edu
                     </a>
                   </td>
 
                   <td style="padding-left:10px;padding-right:10px;">
-                    <span style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                                font-size:12px;color:#3A6475;">&#124;</span>
+                    <span
+                      style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:12px;color:#FFFFFF;opacity:0.4;">&#124;</span>
                   </td>
 
-                  <!-- Website -->
                   <td valign="middle" style="padding-right:6px;line-height:0;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
-                      stroke="#70A494" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <circle cx="12" cy="12" r="10" />
                       <line x1="2" y1="12" x2="22" y2="12" />
                       <path
@@ -804,12 +661,11 @@
                     </svg>
                   </td>
                   <td valign="middle">
-                    <a href="https://sxccal.edu/postgraduate-department-of-data-science" style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                            font-size:12px;color:#7DBDAD;text-decoration:none;line-height:1.5;">
+                    <a href="https://sxccal.edu/postgraduate-department-of-data-science"
+                      style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:12px;color:#FFFFFF;text-decoration:none;line-height:1.5;">
                       www.sxccal.edu
                     </a>
                   </td>
-
                 </tr>
               </table>
 
@@ -817,24 +673,33 @@
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
                 style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                 <tr>
-                  <td style="border-top:1px solid #1A4F67;font-size:0;line-height:0;
-                            padding-top:14px;">&#160;</td>
+                  <td style="border-top:1px solid rgba(255,255,255,0.15);font-size:0;line-height:0;padding-top:14px;">
+                    &#160;</td>
                 </tr>
               </table>
 
-              <!-- Accreditation line -->
-              <p style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                       font-size:10.5px;color:#70A494;letter-spacing:0.4px;
-                       margin:0 0 8px 0;padding:0;line-height:1.6;text-align:center;">
+              <!-- Accreditation -->
+              <p
+                style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:10.5px;color:#FFFFFF;letter-spacing:0.4px;margin:0 0 8px 0;padding:0;line-height:1.6;text-align:center;opacity:0.7;">
                 NAAC A++ Accredited &#183; NIRF Rank 8 (2025) &#183; ISO 9001:2015 Certified
               </p>
 
               <!-- Copyright -->
-              <p style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;
-                       font-size:10.5px;color:#4A7A90;
-                       margin:0;padding:0 0 18px 0;line-height:1.5;text-align:center;">
+              <p
+                style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Arial,sans-serif;font-size:10.5px;color:#FFFFFF;margin:0;padding:0 0 18px 0;line-height:1.5;text-align:center;opacity:0.5;">
                 &#169; 2026 St. Xavier&#8217;s College (Autonomous), Kolkata. All rights reserved.
               </p>
 
             </td>
           </tr>
+
+        </table>
+        <!-- /CARD -->
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+
+</html>
