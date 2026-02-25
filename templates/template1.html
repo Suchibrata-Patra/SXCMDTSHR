@@ -20,36 +20,16 @@
   <![endif]-->
 
   <style type="text/css">
-    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap');
-
-    /*
-    ═══════════════════════════════════════════════════
-      PRESTIGE PALETTE — Nature · MIT · Harvard · Apple
-    ═══════════════════════════════════════════════════
-      Authority Blue    #003B7C   headings, footer bg, badges
-      Accent Blue       #0050A0   buttons, accent bars, links
-      Hover Blue        #0061C2   hover state reference
-      Light Blue Tint   #F0F6FF   header gradient end, action bar
-      Ice Blue Tint     #F8FAFD   skill block bg
-      Sky Separator     #DDE6F0   dividers, card border
-      Page Wash         #EAECF2   outer background
-
-      Text – Primary    #1A2640   headings inline
-      Text – Body       #3D4F66   paragraphs
-      Text – Muted      #6E839A   captions, accreditation
-      Text – Caption    #98AABF   sub-labels, institution line
-
-      Gold Accent       #C8970A   invitation tag border/text
-      Gold Tint         #FDF6E3   invitation tag bg
-    ═══════════════════════════════════════════════════
-    */
+    * {
+      background-color: white;
+    }
 
     body,
     #bodyWrap {
       margin: 0 !important;
       padding: 0 !important;
       width: 100% !important;
-      background-color: #EAECF2 !important;
+      background-color: #eef1f5 !important;
       -webkit-text-size-adjust: 100%;
       -ms-text-size-adjust: 100%;
     }
@@ -73,262 +53,231 @@
     }
 
     .card {
-      width: 620px;
+      width: 600px;
     }
   </style>
 </head>
 
-<body style="margin:0;padding:0;background-color:#EAECF2;">
+<body style="margin:0;padding:0;background-color:#eef1f5;">
 
-  <!-- ═══════════════════════════════════════════════
-       PAGE WRAPPER
-  ═══════════════════════════════════════════════ -->
-  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" id="bodyWrap" style="background-color:#EAECF2;width:100%;border-collapse:collapse;
-           mso-table-lspace:0pt;mso-table-rspace:0pt;">
+  <!-- ═══════════════════════════════════════════════════════
+     PAGE WRAPPER
+═══════════════════════════════════════════════════════ -->
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" id="bodyWrap" style="background-color:#eef1f5;width:100%;border-collapse:collapse;
+              mso-table-lspace:0pt;mso-table-rspace:0pt;">
     <tr>
-      <td align="center" valign="top" style="padding-top:48px;padding-bottom:56px;padding-left:0;padding-right:0;">
+      <td align="center" valign="top" style="padding-top:28px;padding-bottom:28px;
+               padding-left:0;padding-right:0;">
 
         <!-- ═══════════════════════════════════════
-             CARD — 620px
-        ═══════════════════════════════════════ -->
-        <table class="card" role="presentation" border="0" cellpadding="0" cellspacing="0" width="620" style="width:620px;
-                 background-color:#ffffff;
-                 border-radius:12px;
-                 overflow:hidden;
-                 border:1px solid #DDE6F0;
-                 box-shadow:
-                   0 2px 6px  rgba(0,59,124,0.05),
-                   0 8px 32px rgba(0,59,124,0.08),
-                   0 1px 2px  rgba(0,0,0,0.04);
-                 mso-table-lspace:0pt;mso-table-rspace:0pt;">
+           CARD — 600px centered
+      ═══════════════════════════════════════ -->
+        <table class="card" role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" style="width:600px;background-color:#ffffff;
+                    border:1px solid #d5dde8;border-radius:4px;
+                    mso-table-lspace:0pt;mso-table-rspace:0pt;">
 
 
-          <!-- ═══════════════════════════════════════════════════
-               BLOCK 1 · HEADER
-               Gradient bg · Logo · Name · Badge · Accreditation · Tag
-               Bottom: 5px authority stripe
-          ═══════════════════════════════════════════════════ -->
+          <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+             BLOCK 1 · HEADER
+             Left: college logo | Right: name, badge, accreditation, tag
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
           <tr>
-            <td style="padding:0;background:#ffffff;">
+            <td style="background-color:#ffffff;
+                     border-bottom:4px solid #0b2d48;
+                     padding:0;">
 
-              <!-- Gradient header cell -->
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
                 style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                 <tr>
-                  <td style="background: linear-gradient(160deg, #ffffff 0%, #F0F6FF 100%);
-                             padding:0;">
+
+                  <!-- Left padding -->
+                  <td width="24" style="width:24px;min-width:24px;font-size:0;line-height:0;">&#160;
+                  </td>
+
+                  <!-- College logo -->
+                  <td valign="middle" width="90" style="width:90px;min-width:90px;
+                           padding-top:20px;padding-bottom:20px;">
+                    <img src="https://hr.holidayseva.com/Assets/image/sxc_logo.png" alt="SXC Logo" width="80"
+                      height="80" style="display:block;width:80px;height:80px;" />
+                  </td>
+
+                  <!-- Gap -->
+                  <td width="18" style="width:18px;font-size:0;line-height:0;">&#160;</td>
+
+                  <!-- Text column -->
+                  <td valign="middle" style="padding-top:18px;padding-bottom:18px;">
                     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
                       style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
+
+                      <!-- ROW A · College name -->
                       <tr>
-
-                        <!-- Left padding -->
-                        <td width="38" style="width:38px;min-width:38px;font-size:0;line-height:0;">&#160;</td>
-
-                        <!-- Logo -->
-                        <td valign="middle" width="88" style="width:88px;min-width:88px;
-                                 padding-top:32px;padding-bottom:28px;">
-                          <img src="https://hr.holidayseva.com/Assets/image/sxc_logo.png" alt="SXC Logo" width="80"
-                            height="80" style="display:block;width:80px;height:80px;
-                                      border-radius:10px;
-                                      border:1px solid #DDE6F0;
-                                      box-shadow:0 2px 8px rgba(0,59,124,0.10);" />
+                        <td style="padding-bottom:8px;">
+                          <p style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                                   font-size:19px;font-weight:700;color:#0b2d48;
+                                   line-height:1.25;letter-spacing:-0.2px;
+                                   margin:0;padding:0;">
+                            St. Xavier&#8217;s College (Autonomous), Kolkata
+                          </p>
                         </td>
+                      </tr>
 
-                        <!-- Gap -->
-                        <td width="22" style="width:22px;font-size:0;line-height:0;">&#160;</td>
-
-                        <!-- Text column -->
-                        <td valign="middle" style="padding-top:32px;padding-bottom:28px;padding-right:38px;">
-                          <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+                      <!-- ROW B · NIRF ranking badge -->
+                      <tr>
+                        <td style="padding-bottom:8px;">
+                          <table role="presentation" border="0" cellpadding="0" cellspacing="0"
                             style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
-
-                            <!-- A · College name -->
                             <tr>
-                              <td style="padding-bottom:5px;">
-                                <p style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                                           font-size:18.5px;font-weight:700;color:#003B7C;
-                                           line-height:1.2;letter-spacing:-0.25px;
-                                           margin:0;padding:0;">
-                                  St. Xavier&#8217;s College (Autonomous), Kolkata
-                                </p>
+                              <td style="background-color:#0b2d48;
+                                       border-radius:3px;
+                                       padding-top:5px;padding-bottom:5px;
+                                       padding-left:11px;padding-right:11px;">
+                                <span style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                                            font-size:11px;font-weight:700;color:#ffffff;
+                                            letter-spacing:0.3px;white-space:nowrap;">
+                                  Ranked 8th in India &#8212; NIRF 2025
+                                </span>
                               </td>
                             </tr>
-
-                            <!-- A2 · 4px micro-accent rule below name -->
-                            <tr>
-                              <td style="padding-bottom:11px;">
-                                <table role="presentation" border="0" cellpadding="0" cellspacing="0"
-                                  style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
-                                  <tr>
-                                    <td width="52" style="width:52px;border-top:4px solid #0050A0;
-                                             font-size:0;line-height:0;">&#160;</td>
-                                  </tr>
-                                </table>
-                              </td>
-                            </tr>
-
-                            <!-- B · NIRF badge -->
-                            <tr>
-                              <td style="padding-bottom:10px;">
-                                <table role="presentation" border="0" cellpadding="0" cellspacing="0"
-                                  style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
-                                  <tr>
-                                    <td style="background-color:#003B7C;
-                                               border-radius:4px;
-                                               padding:5px 12px 5px 12px;">
-                                      <span style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                                                    font-size:10px;font-weight:600;color:#ffffff;
-                                                    letter-spacing:0.6px;
-                                                    text-transform:uppercase;
-                                                    white-space:nowrap;">
-                                        Ranked 8th in India &#8212; NIRF 2025
-                                      </span>
-                                    </td>
-                                  </tr>
-                                </table>
-                              </td>
-                            </tr>
-
-                            <!-- C · Accreditation -->
-                            <tr>
-                              <td style="padding-bottom:12px;">
-                                <p style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                                           font-size:10.5px;font-weight:400;color:#98AABF;
-                                           line-height:1.75;
-                                           margin:0;padding:0;">
-                                  Autonomous College (2006) &#183; College of Excellence &#183;
-                                  NAAC A++ (4th Cycle, 2024) &#183; ISO 9001:2015
-                                </p>
-                              </td>
-                            </tr>
-
-                            <!-- D · Official invitation tag -->
-                            <tr>
-                              <td>
-                                <table role="presentation" border="0" cellpadding="0" cellspacing="0"
-                                  style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
-                                  <tr>
-                                    <td style="background-color:#FDF6E3;
-                                               border:1px solid #C8970A;
-                                               border-radius:4px;
-                                               padding:5px 12px 5px 12px;">
-                                      <span style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                                                    font-size:10px;font-weight:600;color:#7A5800;
-                                                    letter-spacing:0.3px;
-                                                    white-space:nowrap;">
-                                        Official Invitation &#8212; Campus Recruitment, MSc Data Science 2026
-                                      </span>
-                                    </td>
-                                  </tr>
-                                </table>
-                              </td>
-                            </tr>
-
                           </table>
                         </td>
-
                       </tr>
+
+                      <!-- ROW C · Accreditation — subtle -->
+                      <tr>
+                        <td style="padding-bottom:10px;">
+                          <p style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                                   font-size:11px;color:#7a8fa3;line-height:1.65;
+                                   margin:0;padding:0;">
+                            Autonomous College (2006) &#183; College of Excellence &#183;
+                            NAAC A++ (4th Cycle, 2024)
+                            &#183; ISO 9001:2015
+                          </p>
+                        </td>
+                      </tr>
+
+                      <!-- ROW D · Official invitation tag -->
+                      <tr>
+                        <td>
+                          <table role="presentation" border="0" cellpadding="0" cellspacing="0"
+                            style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
+                            <tr>
+                              <td style="background-color:#fdf8ed;
+                                       border:1px solid #c8920a;
+                                       border-radius:5px;
+                                       padding-top:5px;padding-bottom:5px;
+                                       padding-left:11px;padding-right:11px;">
+                                <span style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                                            font-size:10.5px;font-weight:700;color:#8a6200;
+                                            letter-spacing:0.2px;white-space:nowrap;">
+                                  Official Invitation &#8212; Campus Recruitment, MSc
+                                  Data Science 2026
+                                </span>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+
                     </table>
                   </td>
-                </tr>
 
-                <!-- 5px deep-blue authority stripe -->
-                <tr>
-                  <td style="background-color:#003B7C;
-                             font-size:0;line-height:5px;
-                             height:5px;">&#160;</td>
-                </tr>
+                  <!-- Right padding -->
+                  <td width="24" style="width:24px;min-width:24px;font-size:0;line-height:0;">&#160;
+                  </td>
 
+                </tr>
               </table>
             </td>
           </tr>
           <!-- END HEADER -->
 
 
-          <!-- ═══════════════════════════════════════════════════
-               BLOCK 2 · ACTION BAR
-               White bg · Solid primary + outlined secondaries
-          ═══════════════════════════════════════════════════ -->
+          <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+             BLOCK 2 · ACTION BAR — 3 buttons side by side
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
           <tr>
-            <td style="background-color:#ffffff;
-                       border-bottom:1px solid #DDE6F0;
-                       padding-top:16px;padding-bottom:16px;
-                       padding-left:32px;padding-right:32px;">
+            <td style="background-color:#f4f7fa;
+                     border-bottom:1px solid #d5dde8;
+                     padding-top:16px;padding-bottom:16px;
+                     padding-left:20px;padding-right:20px;">
 
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
                 style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                 <tr>
 
-                  <!-- BTN 1 — solid deep blue (primary) -->
-                  <td valign="middle" width="33%" style="width:33%;padding-right:7px;">
+                  <!-- BTN 1: Connect With Placement Cell (filled) -->
+                  <td valign="top" width="33%" style="width:33%;padding-right:5px;">
                     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
                       style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                       <tr>
-                        <td align="center" valign="middle" style="background-color:#003B7C;
-                                 border-radius:6px;
-                                 box-shadow:0 2px 8px rgba(0,59,124,0.18);">
+                        <td align="center" valign="middle" style="background-color:#0b2d48;
+                                 border:2px solid #0b2d48;
+                                 border-radius:4px;">
                           <a href="mailto:datascience.placement@sxccal.edu" style="display:block;
-                                    font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                                    font-size:11.5px;font-weight:600;color:#ffffff;
-                                    letter-spacing:0.2px;
-                                    text-decoration:none;text-align:center;line-height:1.35;
-                                    padding:12px 10px;">
+                                  font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                                  font-size:12px;font-weight:700;color:#ffffff;
+                                  text-decoration:none;text-align:center;line-height:1.4;
+                                  padding-top:13px;padding-bottom:13px;
+                                  padding-left:8px;padding-right:8px;">
                             <img src="https://hr.holidayseva.com/Assets/icons/connect.png" alt="" style="display:inline-block;vertical-align:middle;
-                                       width:auto;height:16px;
-                                       margin-bottom:1px;margin-right:5px;
-                                       border:0;outline:none;" />
+                                      width:auto;height:20px;
+                                      margin-bottom:2px;margin-right:4px;
+                                      border:0;outline:none;" />
                             Connect With Us
                           </a>
+                          <!--<![endif]-->
                         </td>
                       </tr>
                     </table>
                   </td>
 
-                  <!-- BTN 2 — white + blue outline (secondary) -->
-                  <td valign="middle" width="34%" style="width:34%;padding-left:7px;padding-right:7px;">
+                  <!-- BTN 2: Student Brochure PDF (outlined) -->
+                  <td valign="top" width="34%" style="width:34%;padding-left:5px;padding-right:5px;">
                     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
                       style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                       <tr>
                         <td align="center" valign="middle" style="background-color:#ffffff;
-                                 border:1.5px solid #0050A0;
-                                 border-radius:6px;">
+                                 border:2px solid #0b2d48;
+                                 border-radius:4px;">
                           <a href="https://drive.google.com/file/d/174oZ7Ls_x9JrYu_4Zp45mRxEsI_8szIT/" style="display:block;
-                                    font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                                    font-size:11.5px;font-weight:600;color:#0050A0;
-                                    letter-spacing:0.2px;
-                                    text-decoration:none;text-align:center;line-height:1.35;
-                                    padding:12px 10px;">
+                                  font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                                  font-size:12px;font-weight:700;color:#0b2d48;
+                                  text-decoration:none;text-align:center;line-height:1.4;
+                                  padding-top:13px;padding-bottom:13px;
+                                  padding-left:8px;padding-right:8px;">
                             <img src="https://hr.holidayseva.com/Assets/icons/download.png" alt="" style="display:inline-block;vertical-align:middle;
-                                       width:auto;height:16px;
-                                       margin-bottom:1px;margin-right:5px;
-                                       border:0;outline:none;" />
+                                      width:auto;height:20px;
+                                      margin-bottom:2px;margin-right:4px;
+                                      border:0;outline:none;" />
                             Student Brochure
                           </a>
+                          <!--<![endif]-->
                         </td>
                       </tr>
                     </table>
                   </td>
 
-                  <!-- BTN 3 — white + blue outline (secondary) -->
-                  <td valign="middle" width="33%" style="width:33%;padding-left:7px;">
+                  <!-- BTN 3: Student CV Pack PDF (outlined) -->
+                  <td valign="top" width="33%" style="width:33%;padding-left:5px;">
                     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
                       style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                       <tr>
                         <td align="center" valign="middle" style="background-color:#ffffff;
-                                 border:1.5px solid #0050A0;
-                                 border-radius:6px;">
+                                 border:2px solid #0b2d48;
+                                 border-radius:4px;">
                           <a href="https://drive.google.com/file/d/1wwFKofEPonaXrrxoBIRhdCRDHKiRNMfV/" style="display:block;
-                                    font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                                    font-size:11.5px;font-weight:600;color:#0050A0;
-                                    letter-spacing:0.2px;
-                                    text-decoration:none;text-align:center;line-height:1.35;
-                                    padding:12px 10px;">
+                                  font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                                  font-size:12px;font-weight:700;color:#0b2d48;
+                                  text-decoration:none;text-align:center;line-height:1.4;
+                                  padding-top:13px;padding-bottom:13px;
+                                  padding-left:8px;padding-right:8px;">
                             <img src="https://hr.holidayseva.com/Assets/icons/card.png" alt="" style="display:inline-block;vertical-align:middle;
-                                       width:auto;height:16px;
-                                       margin-bottom:1px;margin-right:5px;
-                                       border:0;outline:none;" />
+                                      width:auto;height:20px;
+                                      margin-bottom:2px;margin-right:4px;
+                                      border:0;outline:none;" />
                             Student CV
                           </a>
+                          <!--<![endif]-->
                         </td>
                       </tr>
                     </table>
@@ -339,51 +288,55 @@
             </td>
           </tr>
           <!-- END ACTION BAR -->
+          <!-- This is the model of the things to be develoepd by the model of teht hings 
+          Tobe done by the model of the things to be done by the model of the things such that I know the meaning and significance  of the eveey line foc does i Do write there in te dmodel if thethinsg 
+        of the thinsg -->
 
 
-          <!-- ═══════════════════════════════════════════════════
-               BLOCK 3 · TYPE BADGE (empty, preserved)
-          ═══════════════════════════════════════════════════ -->
+          <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+             BLOCK 3 · TYPE BADGE
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
           <tr>
-            <td></td>
+
           </tr>
+          <!-- END TYPE BADGE -->
 
 
-          <!-- ═══════════════════════════════════════════════════
-               BLOCK 4 · EMAIL TITLE
-          ═══════════════════════════════════════════════════ -->
+          <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+             BLOCK 4 · EMAIL TITLE + AUTHOR
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
           <tr>
-            <td style="padding-top:48px;padding-bottom:0;
-                       padding-left:52px;padding-right:52px;
-                       background-color:#ffffff;">
+            <td style="padding-top:14px;padding-bottom:0;
+                     padding-left:32px;padding-right:32px;
+                     background-color:#ffffff;">
 
-              <p style="font-family:'DM Serif Display',Georgia,'Times New Roman',Times,serif;
-                         font-size:27px;font-weight:400;color:#003B7C;
-                         line-height:1.35;letter-spacing:-0.15px;
-                         margin:0 0 36px 0;padding:0;">
+              <p style="font-family:Georgia,'Times New Roman',Times,serif;
+                       font-size:24px;font-weight:700;color:#0b1f2d;
+                       line-height:1.3;letter-spacing:-0.3px;
+                       margin:0 0 14px 0;padding:0;">
                 {{articletitle}}
               </p>
 
-              <!-- Author attribution (commented out, preserved) -->
+              <!-- Author attribution -->
               <!-- <table role="presentation" border="0" cellpadding="0" cellspacing="0"
                    style="mso-table-lspace:0pt;mso-table-rspace:0pt;margin-bottom:22px;">
               <tr>
                 <td valign="middle"
-                    style="border-left:3px solid #0050A0;padding-left:11px;">
-                  <span style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                                font-size:14px;font-weight:700;color:#0050A0;
+                    style="border-left:3px solid #0b2d48;padding-left:11px;">
+                  <span style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                                font-size:14px;font-weight:700;color:#2266aa;
                                 display:block;line-height:1.4;">
                     <a href="https://www.linkedin.com/in/durba-bhattacharya-b3821773/"
-                       style="color:#0050A0;text-decoration:none;">
+                       style="color:#2266aa;text-decoration:none;">
                       Dr. Durba Bhattacharya
                     </a>
                   </span>
-                  <span style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
+                  <span style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
                                 font-size:12.5px;color:#556677;
                                 display:block;line-height:1.4;">
                     Head of Department, Statistics &amp; Data Science
                   </span>
-                  <span style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
+                  <span style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
                                 font-size:12px;color:#8899aa;
                                 display:block;line-height:1.4;">
                     St. Xavier&#8217;s College (Autonomous), Kolkata
@@ -395,140 +348,128 @@
             </td>
           </tr>
 
-          <!-- Thin blue-tinted rule -->
+          <!-- Thin rule -->
           <tr>
-            <td style="padding-left:52px;padding-right:52px;background-color:#ffffff;">
+            <td style="padding-left:32px;padding-right:32px;background-color:#ffffff;">
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
                 style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                 <tr>
-                  <td style="border-top:1px solid #DDE6F0;font-size:0;line-height:0;">&#160;</td>
+                  <td style="border-top:1px solid #d5dde8;font-size:0;line-height:0;">&#160;</td>
                 </tr>
               </table>
             </td>
           </tr>
-          <!-- END TITLE -->
+          <!-- END TITLE + AUTHOR -->
 
 
-          <!-- ═══════════════════════════════════════════════════
-               BLOCK 5 · BODY — Salutation + Message
-          ═══════════════════════════════════════════════════ -->
+          <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+             BLOCK 5 · BODY — Salutation + Message
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
           <tr>
-            <td style="padding-top:38px;padding-bottom:0;
-                       padding-left:52px;padding-right:52px;
-                       background-color:#ffffff;">
+            <td style="padding-top:26px;padding-bottom:0;
+                     padding-left:32px;padding-right:32px;
+                     background-color:#ffffff;">
 
-              <!-- Salutation — serif, deep blue -->
-              <p style="font-family:'DM Serif Display',Georgia,'Times New Roman',Times,serif;
-                         font-size:17px;font-weight:400;color:#003B7C;
-                         line-height:1.85;
-                         margin:0 0 22px 0;padding:0;">
+              <!-- Salutation -->
+              <p style="font-family:Georgia,'Times New Roman',Times,serif;
+                       font-size:16px;color:#222222;line-height:1.85;
+                       margin:0 0 16px 0;padding:0;">
                 Dear {{RECIPIENT_NAME}},
               </p>
 
               <!-- Greeting -->
-              <p style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                         font-size:15px;font-weight:300;color:#3D4F66;
-                         line-height:1.95;
-                         margin:0 0 4px 0;padding:0;">
-                Greetings from the Postgraduate Department of Data Science, St.&#160;Xavier&#8217;s College
+              <p style="font-family:Georgia,'Times New Roman',Times,serif;
+                       font-size:15.5px;color:#333333;line-height:1.9;
+                       margin:0 0 6px 0;padding:0;">
+                Greetings from the Postgraduate Department of Data Science, St.&#160;Xavier&#8217;s
+                College
                 (Autonomous), Kolkata.
               </p>
 
               <!-- Well-being -->
-              <p style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                         font-size:15px;font-weight:300;color:#3D4F66;
-                         line-height:1.95;
-                         margin:0 0 24px 0;padding:0;">
+              <p style="font-family:Georgia,'Times New Roman',Times,serif;
+                       font-size:15.5px;color:#333333;line-height:1.9;
+                       margin:0 0 16px 0;padding:0;">
                 I hope you are doing well.
               </p>
 
               <!-- Purpose -->
-              <p style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                         font-size:15px;font-weight:300;color:#3D4F66;
-                         line-height:1.95;
-                         margin:0 0 24px 0;padding:0;">
+              <p style="font-family:Georgia,'Times New Roman',Times,serif;
+                       font-size:15.5px;color:#333333;line-height:1.9;
+                       margin:0 0 16px 0;padding:0;">
                 I am writing to explore the possibility of connecting with
-                <strong style="font-weight:600;color:#003B7C;">{{COMPANY_NAME}}</strong>
-                regarding campus placement opportunities for our M.Sc. in Data Science
-                (Batch 2024&#8211;2026).
+                <strong>{{COMPANY_NAME}}</strong> regarding
+                campus placement opportunities for our M.Sc. in Data Science (Batch 2024&#8211;2026).
               </p>
 
               <!-- Institutional standing -->
-              <p style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                         font-size:15px;font-weight:300;color:#3D4F66;
-                         line-height:1.95;
-                         margin:0 0 34px 0;padding:0;">
-                Recognized as the
-                <strong style="font-weight:600;color:#003B7C;">8th best college in India by the NIRF 2025</strong>
-                and designated as a
-                <strong style="font-weight:600;color:#003B7C;">College of Excellence by the UGC</strong>,
-                St.&#160;Xavier&#8217;s College is among the leading institutions in the country. Our M.Sc.
-                program in Data Science is designed with a strong interdisciplinary foundation, integrating
-                Statistics, Computer Science, Mathematics, and applied analytics, with emphasis on practical
-                implementation through projects and industry exposure.
+              <p style="font-family:Georgia,'Times New Roman',Times,serif;
+                       font-size:15.5px;color:#333333;line-height:1.9;
+                       margin:0 0 16px 0;padding:0;">
+                Recognized as the <strong>8th best college in India by the NIRF 2025</strong> and
+                designated as a
+                <strong>College of Excellence by the UGC</strong>, St.&#160;Xavier&#8217;s College is
+                among the leading
+                institutions in the country. Our M.Sc. program in Data Science is designed with a strong
+                interdisciplinary foundation, integrating Statistics, Computer Science, Mathematics, and
+                applied
+                analytics, with emphasis on practical implementation through projects and industry
+                exposure.
               </p>
 
-              <!-- Skills section label -->
-              <p style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                         font-size:10px;font-weight:600;color:#6E839A;
-                         letter-spacing:1.1px;text-transform:uppercase;
-                         margin:0 0 10px 0;padding:0;">
+              <!-- Skills heading -->
+              <p style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                       font-size:12px;font-weight:700;color:#0b2d48;
+                       letter-spacing:0.5px;text-transform:uppercase;
+                       margin:0 0 10px 0;padding:0;">
                 Our students are trained in areas such as:
               </p>
 
-              <!-- ── SKILL CAPSULE ──────────────────────────────
-                   Ice grey bg · 6px authority stripe · dot separators
-                   Floating editorial card shadow
-              ─────────────────────────────────────────────── -->
+              <!-- Skills — highlighted inline pipe-separated -->
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="mso-table-lspace:0pt;mso-table-rspace:0pt;
-                       margin-bottom:28px;
-                       background-color:#F8FAFD;
-                       border-left:6px solid #003B7C;
-                       border-radius:0 10px 10px 0;
-                       box-shadow:0 2px 12px rgba(0,59,124,0.07),0 1px 3px rgba(0,59,124,0.04);">
+                          margin-bottom:20px;
+                          background-color:#f4f7fa;
+                          border-left:3px solid #0b2d48;
+                          border-radius:3px;">
                 <tr>
-                  <td style="padding:22px 26px 22px 22px;">
-                    <p style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                               font-size:13.5px;font-weight:400;color:#1A2640;
-                               margin:0;padding:0;line-height:2.2;">
-
-                      <strong style="font-weight:600;color:#003B7C;">Data Analysis and Statistical Modeling</strong>
-                      <span style="color:#B8CCDF;padding-left:9px;padding-right:9px;font-size:10px;">&#9679;</span>
-
-                      <strong style="font-weight:600;color:#003B7C;">Machine Learning and Predictive Analytics</strong>
-                      <span style="color:#B8CCDF;padding-left:9px;padding-right:9px;font-size:10px;">&#9679;</span>
-
-                      <strong style="font-weight:600;color:#003B7C;">Data Engineering Fundamentals</strong>
-                      <span style="color:#B8CCDF;padding-left:9px;padding-right:9px;font-size:10px;">&#9679;</span>
-
-                      <strong style="font-weight:600;color:#003B7C;">Business Intelligence and Visualization</strong>
-                      <span style="color:#B8CCDF;padding-left:9px;padding-right:9px;font-size:10px;">&#9679;</span>
-
-                      <strong style="font-weight:600;color:#003B7C;">Applied AI and Emerging Technologies</strong>
-
+                  <td style="padding:14px 16px;">
+                    <p style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                             font-size:13.5px;color:#0b2d48;margin:0;padding:0;
+                             line-height:2;">
+                      <strong>Data Analysis and Statistical Modeling</strong>
+                      <span style="color:#9aafc4;padding-left:6px;padding-right:6px;">&#124;</span>
+                      <strong>Machine Learning and Predictive Analytics</strong>
+                      <span style="color:#9aafc4;padding-left:6px;padding-right:6px;">&#124;</span>
+                      <strong>Data Engineering Fundamentals</strong>
+                      <span style="color:#9aafc4;padding-left:6px;padding-right:6px;">&#124;</span>
+                      <strong>Business Intelligence and Visualization</strong>
+                      <span style="color:#9aafc4;padding-left:6px;padding-right:6px;">&#124;</span>
+                      <strong>Applied AI and Emerging Technologies</strong>
                     </p>
                   </td>
                 </tr>
               </table>
 
-              <!-- Closing para 1 -->
-              <p style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                         font-size:15px;font-weight:300;color:#3D4F66;
-                         line-height:1.95;
-                         margin:0 0 24px 0;padding:0;">
-                Depending on your organization&#8217;s requirements, our students are prepared to contribute across
-                analytics, technology, research, or data-driven decision-support roles. For your reference, we have
+              <!-- Closing paragraphs -->
+              <p style="font-family:Georgia,'Times New Roman',Times,serif;
+                       font-size:15.5px;color:#333333;line-height:1.9;
+                       margin:0 0 16px 0;padding:0;">
+                Depending on your organization&#8217;s requirements, our students are prepared to
+                contribute across
+                analytics, technology, research, or data-driven decision-support roles. For your
+                reference, we have
                 attached the Student profiles and placement brochure to this email.
               </p>
 
-              <!-- Closing para 2 -->
-              <p style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                         font-size:15px;font-weight:300;color:#3D4F66;
-                         line-height:1.95;
-                         margin:0 0 16px 0;padding:0;">
-                We would be grateful for the opportunity to understand your hiring needs and explore whether our
-                students may align with your current or upcoming requirements. If convenient, we would be happy to share
-                further details or arrange a brief discussion at your preferred time. Thank you for your time and
+              <p style="font-family:Georgia,'Times New Roman',Times,serif;
+                       font-size:15.5px;color:#333333;line-height:1.9;
+                       margin:0 0 16px 0;padding:0;">
+                We would be grateful for the opportunity to understand your hiring needs and explore
+                whether our
+                students may align with your current or upcoming requirements. If convenient, we would
+                be happy to share
+                further details or arrange a brief discussion at your preferred time. Thank you for your
+                time and
                 consideration.
               </p>
 
@@ -537,56 +478,55 @@
           <!-- END BODY -->
 
 
-          <!-- ═══════════════════════════════════════════════════
-               BLOCK 6 · SIGNATURE
-          ═══════════════════════════════════════════════════ -->
+          <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+             BLOCK 6 · SIGNATURE
+             Left: sender photo (PNG) | Right: name, title, institution
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
           <tr>
-            <td style="padding-top:0;padding-bottom:48px;
-                       padding-left:52px;padding-right:52px;
-                       background-color:#ffffff;">
+            <td style="padding-top:0;padding-bottom:32px;
+                     padding-left:32px;padding-right:32px;
+                     background-color:#ffffff;">
 
-              <!-- Hairline divider — blue-tinted -->
+              <!-- Divider above signature -->
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
                 style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                 <tr>
-                  <td style="border-top:1px solid #DDE6F0;
-                              padding-top:30px;
-                              font-size:0;line-height:0;">&#160;</td>
+                  <td style="border-top:1px solid #d5dde8;padding-top:22px;
+                            font-size:0;line-height:0;">&#160;</td>
                 </tr>
               </table>
 
-              <!-- Signature row -->
+              <!-- Signature card: photo + details -->
               <table role="presentation" border="0" cellpadding="0" cellspacing="0"
                 style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                 <tr>
 
-                  <!-- Photo -->
-                  <td valign="middle" style="padding-right:18px;">
+                  <!-- Sender photo -->
+                  <td valign="middle" style="padding-right:14px;">
                     <img src="hr.holidayseva.com/Assets/image/durba_bhattacharya.png" alt="Dr. Durba Bhattacharya"
-                      width="54" height="54" style="display:block;width:54px;height:54px;
-                                border-radius:50%;
-                                border:2px solid #DDE6F0;
-                                box-shadow:0 2px 8px rgba(0,59,124,0.10);" />
+                      width="52" height="52" style="display:block;width:52px;height:52px;
+                              border-radius:50%;
+                              border:2px solid #d5dde8;" />
                   </td>
 
-                  <!-- Details — left accent bar in accent blue -->
-                  <td valign="middle" style="border-left:3px solid #0050A0;padding-left:18px;">
-                    <span style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                                  font-size:14px;font-weight:600;color:#003B7C;
-                                  display:block;line-height:1.5;">
+                  <!-- Name, designation, institution -->
+                  <td valign="middle" style="border-left:3px solid #0b2d48;padding-left:11px;">
+                    <span style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                                font-size:14px;font-weight:700;color:#2266aa;
+                                display:block;line-height:1.4;">
                       <a href="https://www.linkedin.com/in/durba-bhattacharya-b3821773/"
-                        style="color:#003B7C;text-decoration:none;">
+                        style="color:#2266aa;text-decoration:none;">
                         Dr. Durba Bhattacharya
                       </a>
                     </span>
-                    <span style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                                  font-size:13px;font-weight:400;color:#4A6080;
-                                  display:block;line-height:1.55;">
+                    <span style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                                font-size:12.5px;color:#556677;
+                                display:block;line-height:1.4;">
                       Head of Department, Data Science
                     </span>
-                    <span style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                                  font-size:12px;font-weight:300;color:#98AABF;
-                                  display:block;line-height:1.55;">
+                    <span style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                                font-size:12px;color:#8899aa;
+                                display:block;line-height:1.4;">
                       St. Xavier&#8217;s College (Autonomous), Kolkata
                     </span>
                   </td>
@@ -599,104 +539,87 @@
           <!-- END SIGNATURE -->
 
 
-          <!-- ═══════════════════════════════════════════════════
-               BLOCK 7 · FOOTER
-               Deep authority blue · inset shadow separator
-               Balanced compact padding
-          ═══════════════════════════════════════════════════ -->
+          <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+             BLOCK 7 · FOOTER — compact and professional
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
           <tr>
-            <td align="center" style="background-color:#003B7C;
-                     border-radius:0 0 12px 12px;
-                     padding-top:0;padding-bottom:0;
-                     padding-left:40px;padding-right:40px;
-                     box-shadow:inset 0 3px 12px rgba(0,0,0,0.12);">
-
-              <!-- Inset shadow spacer row -->
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
-                style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
-                <tr>
-                  <td style="padding-top:26px;font-size:0;line-height:0;">&#160;</td>
-                </tr>
-              </table>
+            <td align="center" style="background-color:#0b2d48;
+                     padding-top:22px;padding-bottom:0;
+                     padding-left:28px;padding-right:28px;">
 
               <!-- Institution name -->
-              <p style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                         font-size:13.5px;font-weight:600;color:#ffffff;
-                         margin:0 0 5px 0;padding:0;line-height:1.4;text-align:center;
-                         letter-spacing:0.1px;">
+              <p style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                       font-size:14px;font-weight:700;color:#ffffff;
+                       margin:0 0 4px 0;padding:0;line-height:1.4;text-align:center;">
                 St. Xavier&#8217;s College (Autonomous), Kolkata
               </p>
 
               <!-- Address -->
-              <p style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                         font-size:12px;font-weight:300;color:#6A90BB;
-                         margin:0 0 18px 0;padding:0;line-height:1.8;text-align:center;">
+              <p style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                       font-size:12.5px;color:#dcdcdc;
+                       margin:0 0 14px 0;padding:0;line-height:1.75;text-align:center;">
                 30, Mother Teresa Sarani, Kolkata &#8212; 700016, West Bengal, India
               </p>
 
-              <!-- Contact row: phone · email · website -->
+              <!-- Contact: phone | email | website -->
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center"
                 style="mso-table-lspace:0pt;mso-table-rspace:0pt;margin-bottom:18px;">
                 <tr>
 
-                  <!-- Phone icon -->
-                  <td valign="middle" style="padding-right:5px;line-height:0;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none"
-                      stroke="#4A7AAA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07
-                               19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1
-                               4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0
-                               0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1
-                               2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                  <!-- Phone -->
+                  <td valign="middle" style="padding-right:6px;line-height:0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                      stroke="#6699bb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path
+                        d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                     </svg>
                   </td>
                   <td valign="middle">
-                    <a href="tel:+919830275826" style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                              font-size:11.5px;font-weight:400;color:#6A90BB;
-                              text-decoration:none;line-height:1.5;">
+                    <a href="tel:+919830275826" style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                            font-size:12.5px;color:#8aafc6;text-decoration:none;line-height:1.5;">
                       +91-9830275826
                     </a>
                   </td>
 
-                  <td style="padding-left:11px;padding-right:11px;">
-                    <span style="font-size:11px;color:#1A4A70;">&#124;</span>
+                  <td style="padding-left:10px;padding-right:10px;">
+                    <span style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                                font-size:12.5px;color:#3a607d;">&#124;</span>
                   </td>
 
-                  <!-- Email icon -->
-                  <td valign="middle" style="padding-right:5px;line-height:0;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none"
-                      stroke="#4A7AAA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <!-- Email -->
+                  <td valign="middle" style="padding-right:6px;line-height:0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                      stroke="#6699bb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <rect x="2" y="4" width="20" height="16" rx="2" />
                       <polyline points="2,4 12,13 22,4" />
                     </svg>
                   </td>
                   <td valign="middle">
-                    <a href="/cdn-cgi/l/email-protection#c5b5a9a4a6a0a8a0abb185b6bda6a6a4a9eba0a1b0" style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                              font-size:11.5px;font-weight:400;color:#6A90BB;
-                              text-decoration:none;line-height:1.5;">
+                    <a href="/cdn-cgi/l/email-protection#c5b5a9a4a6a0a8a0abb185b6bda6a6a4a9eba0a1b0" style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                            font-size:12.5px;color:#8aafc6;text-decoration:none;line-height:1.5;">
                       <span class="__cf_email__"
                         data-cfemail="51213d3032343c343f251122293232303d7f343524">datascience.placement@sxccal.edu</span>
                     </a>
                   </td>
 
-                  <td style="padding-left:11px;padding-right:11px;">
-                    <span style="font-size:11px;color:#1A4A70;">&#124;</span>
+                  <td style="padding-left:10px;padding-right:10px;">
+                    <span style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                                font-size:12.5px;color:#3a607d;">&#124;</span>
                   </td>
 
-                  <!-- Website icon -->
-                  <td valign="middle" style="padding-right:5px;line-height:0;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none"
-                      stroke="#4A7AAA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <!-- Website -->
+                  <td valign="middle" style="padding-right:6px;line-height:0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                      stroke="#6699bb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <circle cx="12" cy="12" r="10" />
                       <line x1="2" y1="12" x2="22" y2="12" />
-                      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10
-                               15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                      <path
+                        d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                     </svg>
                   </td>
                   <td valign="middle">
-                    <a href="https://sxccal.edu/postgraduate-department-of-data-science" style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                              font-size:11.5px;font-weight:400;color:#6A90BB;
-                              text-decoration:none;line-height:1.5;">
+                    <a href="https://sxccal.edu/postgraduate-department-of-data-science" style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                            font-size:12.5px;color:#8aafc6;text-decoration:none;line-height:1.5;">
                       www.sxccal.edu
                     </a>
                   </td>
@@ -704,43 +627,28 @@
                 </tr>
               </table>
 
-              <!-- Hairline divider -->
+              <!-- Divider -->
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
                 style="mso-table-lspace:0pt;mso-table-rspace:0pt;">
                 <tr>
-                  <td style="border-top:1px solid #0A3560;
-                              font-size:0;line-height:0;padding-top:14px;">&#160;</td>
+                  <td style="border-top:1px solid #1a4a6a;font-size:0;line-height:0;
+                            padding-top:14px;">&#160;</td>
                 </tr>
               </table>
 
-              <!-- Accreditation -->
-              <p style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                         font-size:10.5px;font-weight:300;color:#3E6890;
-                         margin:0 0 7px 0;padding:0;line-height:1.7;text-align:center;
-                         letter-spacing:0.2px;">
+              <!-- Accreditation line -->
+              <p style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                       font-size:11px;color:#5588aa;
+                       margin:0 0 8px 0;padding:0;line-height:1.6;text-align:center;">
                 NAAC A++ Accredited &#183; NIRF Rank 8 (2025) &#183; ISO 9001:2015 Certified
               </p>
 
               <!-- Copyright -->
-              <p style="font-family:'DM Sans',Arial,'Helvetica Neue',Helvetica,sans-serif;
-                         font-size:10.5px;font-weight:300;color:#2E527A;
-                         margin:0;padding:0 0 20px 0;line-height:1.5;text-align:center;">
+              <p style="font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+                       font-size:11px;color:#4a7090;
+                       margin:0;padding:0 0 18px 0;line-height:1.5;text-align:center;">
                 &#169; 2026 St. Xavier&#8217;s College (Autonomous), Kolkata. All rights reserved.
               </p>
 
             </td>
           </tr>
-          <!-- END FOOTER -->
-
-
-        </table>
-        <!-- END CARD -->
-
-      </td>
-    </tr>
-  </table>
-  <!-- END PAGE WRAPPER -->
-
-</body>
-
-</html>
