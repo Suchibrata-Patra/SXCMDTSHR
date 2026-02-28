@@ -300,7 +300,7 @@ try {
                         $batchUuid,
                         $recipientEmail,
                         $email['recipient_name'] ?? '',
-                        $email['subject'] ?? 'Bulk Email',
+                        $email['subject'] ?? 'Campus Placement Invitation | M.Sc. Data Science | St. Xavier’s College Kolkata',
                         $email['article_title'] ?? '',
                         $email['message_content'] ?? '',
                         $email['closing_wish'] ?? '',

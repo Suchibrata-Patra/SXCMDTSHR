@@ -652,8 +652,8 @@ function sendBulkEmail(
         }
 
         // Subject & body
-        $subject         = (string)($queueItem['subject']          ?: 'Official Communication');
-        $articleTitle    = (string)($queueItem['article_title']    ?: 'Official Communication');
+        $subject         = (string)($queueItem['subject']          ?: 'Campus Placement Invitation | M.Sc. Data Science | St. Xavier’s College Kolkata');
+        $articleTitle    = (string)($queueItem['article_title']    ?: 'Campus Placement Invitation | M.Sc. Data Science | St. Xavier’s College Kolkata');
         $messageContent  = (string)($queueItem['message_content']  ?: '');
         $closingWish     = (string)($queueItem['closing_wish']     ?: 'Best Regards,');
         $senderName      = (string)($queueItem['sender_name']      ?: $displayName);
