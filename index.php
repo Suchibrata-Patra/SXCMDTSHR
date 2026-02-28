@@ -743,7 +743,7 @@ $_SESSION['user_settings'] = $settings;
                                 <span style="color: #FF3B30;">*</span>
                             </label>
                             <input type="text" name="subject" id="subject" 
-                                   placeholder="Enter email subject" required>
+                                   placeholder="Enter email subject" value="Campus Placement Invitation | M.Sc. Data Science | St. Xavier’s College Kolkata" required>
                         </div>
 
                         <div class="form-group">
@@ -752,7 +752,7 @@ $_SESSION['user_settings'] = $settings;
                                 <span style="color: #FF3B30;">*</span>
                             </label>
                             <input type="text" name="articletitle" id="articletitle" 
-                                   placeholder="Article or document title"  required>
+                                   placeholder="Article or document title" value="Campus Placement Invitation | M.Sc. Data Science | St. Xavier’s College Kolkata" required>
                         </div>
                     </div>
 
