@@ -95,7 +95,7 @@ define('DEFAULT_BATCH_SIZE', 20);
  * Any file outside these paths will be rejected
  */
 define('ALLOWED_ATTACHMENT_DIRS', [
-    '/home/u955994755/domains/holidayseva.com/public_html/SXC_MDTS/File_Drive',
+    '/home/u955994755/domains/suchibrata.in/public_html/SXC_MDTS/File_Drive',
     __DIR__ . '/uploads/attachments',
 ]);
 

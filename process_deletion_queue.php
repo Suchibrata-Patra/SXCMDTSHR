@@ -61,7 +61,7 @@ function getImapConnection($userEmail, $imapServer, $imapPort, $password) {
  */
 function deleteEmailFromImap($userEmail, $imapUid, $mailbox = 'INBOX') {
     // IMAP credentials - you should configure these per user or globally
-    $imapServer = 'mail.holidayseva.com'; // Change to your IMAP server
+    $imapServer = 'mail.suchibrata.in'; // Change to your IMAP server
     $imapPort = 993;
     
     // Get password from user settings or config
