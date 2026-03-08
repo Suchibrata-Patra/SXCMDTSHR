@@ -521,7 +521,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </div>
             </div> -->
 
-            <h2>Authentication</h2>
+            <h2>Login</h2>
             <!-- <p class="subtitle">Enter your credentials to continue.</p> -->
 
             <?php if ($error): ?>
