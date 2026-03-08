@@ -22,7 +22,17 @@ if (!$hasSessionAuth && $hasEnvAuth) {
 $userEmail = $_SESSION['smtp_user'];
 
 // ── CONFIG ────────────────────────────────────────────────────────
-$driveDir = rtrim(env('DRIVE_DIR', '/home/u955994755/domains/suchibrata.in/public_html/SXC_MDTS/File_Drive'), '/');
+$driveDir = rtrim(env('DRIVE_DIR', '/File_Drive'), '/');
+// TEMP DEBUG - remove after fixing
+echo "<pre>";
+echo "Drive dir: " . $driveDir . "\n";
+echo "Dir exists: " . (is_dir($driveDir) ? 'YES' : 'NO') . "\n";
+echo "Files: ";
+if (is_dir($driveDir)) {
+    print_r(scandir($driveDir));
+}
+echo "</pre>";
+exit();
 $baseUrl    = rtrim(env('DRIVE_BASE_URL', (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF'])), '/');
 $maxUpload  = 50 * 1024 * 1024;  // 50 MB per file
 $shareBase  = $baseUrl . '/drive.php';
