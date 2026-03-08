@@ -36,8 +36,8 @@ function getDatabaseConnection() {
     try {
         // Get database credentials from environment
         $host = env('DB_HOST', 'localhost');
-        $dbname = env('DB_NAME', 'u955994755_SXC_MDTS');
-        $username = env('DB_USERNAME', 'u955994755_DB_supremacy');
+        $dbname = env('DB_NAME', 'u955994755_SXC_MDTS_');
+        $username = env('DB_USERNAME', 'u955994755_DB_supremacy_');
         $password = env('DB_PASSWORD', 'sxccal.edu#MDTS@2026');
         
         $dsn = "mysql:host=$host;dbname=$dbname;charset=utf8mb4";
