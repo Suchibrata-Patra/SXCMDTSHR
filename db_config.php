@@ -627,7 +627,7 @@ function loadImapConfigToSession($email, $password) {
             'port' => env('IMAP_PORT', 993),
             'encryption' => 'ssl'
         ],
-        'holidayseva.com' => [
+        'suchibrata.in' => [
             'server' => env('IMAP_HOST', 'imap.hostinger.com'),
             'port' => env('IMAP_PORT', 993),
             'encryption' => 'ssl'
