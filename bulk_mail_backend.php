@@ -335,19 +335,29 @@ try {
                         )
                     ");
                     
+                    // NOT NULL columns must never be empty strings.
+                    // MariaDB strict mode silently rejects rows where a NOT NULL
+                    // column (subject, article_title) receives '' with no DEFAULT.
+                    // That is why only the FIRST row saved - row 2+ all threw
+                    // DB exceptions that were swallowed by the catch() below.
+                    $defaultSubject = 'Campus Placement Invitation | M.Sc. Data Science | St. Xavier’s College Kolkata';
+
+                    $subjectVal      = trim((string)($email['subject']         ?? ''));
+                    $articleTitleVal = trim((string)($email['article_title']   ?? ''));
+
                     $stmt->execute([
                         $user_id,
                         $batchUuid,
                         $recipientEmail,
-                        $email['recipient_name'] ?? '',
-                        $email['subject'] ?? 'Campus Placement Invitation | M.Sc. Data Science | St. Xavier’s College Kolkata',
-                        $email['article_title'] ?? '',
-                        $email['message_content'] ?? '',
-                        $email['closing_wish'] ?? '',
-                        $email['sender_name'] ?? '',
-                        $email['sender_designation'] ?? '',
-                        $email['company_name'] ?? '',
-                        $email['additional_info'] ?? '',
+                        trim((string)($email['recipient_name']     ?? '')),
+                        $subjectVal      !== '' ? $subjectVal      : $defaultSubject,
+                        $articleTitleVal !== '' ? $articleTitleVal : $defaultSubject,
+                        trim((string)($email['message_content']    ?? '')),
+                        trim((string)($email['closing_wish']       ?? '')),
+                        trim((string)($email['sender_name']        ?? '')),
+                        trim((string)($email['sender_designation'] ?? '')),
+                        trim((string)($email['company_name']       ?? '')),
+                        trim((string)($email['additional_info']    ?? '')),
                         $attachmentId,
                         $driveFilePath
                     ]);
