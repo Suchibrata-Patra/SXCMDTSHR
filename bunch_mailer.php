@@ -1838,6 +1838,9 @@ if (!$hasSessionAuth && $hasEnvAuth) {
             // Apply auto-mapping for CSV columns
             const autoMappings = autoMapColumns(data.csv_columns);
             
+            // Track which fields are auto-mapped (for displaying "Auto" badge)
+            window.autoMappedFields = new Set(Object.keys(autoMappings));
+            
             // Merge mappings: use auto-mappings, but allow backend suggestions to override
             currentMapping = Object.assign({}, autoMappings, data.suggested_mapping || {});
 
@@ -1861,18 +1864,19 @@ if (!$hasSessionAuth && $hasEnvAuth) {
             grid.innerHTML = '';
 
             columns.forEach(col => {
-                const mapped    = currentMapping[col] || '';
-                const isMatched = !!mapped;
-                const isReq     = REQUIRED_FIELDS.includes(mapped);
+                const mapped       = currentMapping[col] || '';
+                const isMatched    = !!mapped;
+                const isAutoMapped = window.autoMappedFields && window.autoMappedFields.has(col);
+                const isReq        = REQUIRED_FIELDS.includes(mapped);
 
                 const row = document.createElement('div');
                 row.className = 'mapping-row' + (isMatched ? ' is-matched' : '');
                 row.dataset.csvCol = col;
 
-                // Determine if this column is required
+                // Determine badges
                 const reqBadge  = isReq
                     ? `<span class="field-badge badge-required">Required</span>` : '';
-                const autoBadge = isMatched
+                const autoBadge = isAutoMapped
                     ? `<span class="field-badge badge-auto">Auto</span>` : '';
 
                 const options = EMAIL_FIELDS.map(f =>
@@ -1917,8 +1921,13 @@ if (!$hasSessionAuth && $hasEnvAuth) {
 
             if (value) {
                 const isReq = REQUIRED_FIELDS.includes(value);
+                const isAutoMapped = window.autoMappedFields && window.autoMappedFields.has(col);
+                
                 if (isReq) labelEl.insertAdjacentHTML('beforeend', `<span class="field-badge badge-required">Required</span>`);
-                labelEl.insertAdjacentHTML('beforeend', `<span class="field-badge badge-auto">Mapped</span>`);
+                
+                // Show "Auto" if auto-mapped, otherwise show "Mapped"
+                const badgeText = isAutoMapped ? 'Auto' : 'Mapped';
+                labelEl.insertAdjacentHTML('beforeend', `<span class="field-badge badge-auto">${badgeText}</span>`);
             }
 
             updateMappingMeta();
