@@ -121,38 +121,27 @@ try {
                 throw new Exception('CSV file is empty or invalid');
             }
             
-            // Clean headers: trim whitespace AND strip BOM and hidden \r characters
-            $headers = array_map(function($h) {
-                return trim(preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $h));
-            }, $headers);
-            // Remove any empty header slots caused by trailing commas
-            $headers = array_values(array_filter($headers, function($h) { return $h !== ''; }));
-            $headerCount = count($headers);
+            // Clean headers
+            $headers = array_map('trim', $headers);
             
-            // Read ALL data rows (no cap — we need accurate total_rows for the queue)
+            // Read data rows (up to 100 for preview)
             $rowCount = 0;
             $previewRows = [];
             
-            while (($row = fgetcsv($handle)) !== false) {
-                // Trim each cell value
-                $row = array_map('trim', $row);
-                
-                // Pad or slice to match header count so combine never fails
-                if (count($row) < $headerCount) {
-                    $row = array_pad($row, $headerCount, '');
-                } elseif (count($row) > $headerCount) {
-                    $row = array_slice($row, 0, $headerCount);
+            while (($row = fgetcsv($handle)) !== false && $rowCount < 100) {
+                if (count($row) === count($headers)) {
+                    $rowData = array_combine($headers, $row);
+                    $csvData[] = $rowData;
+                    
+                    if ($rowCount < 5) {
+                        $previewRows[] = $rowData;
+                    }
+                    $rowCount++;
                 }
-                
-                // Skip completely blank rows
-                if (implode('', $row) === '') continue;
-                
-                $rowData = array_combine($headers, $row);
-                $csvData[] = $rowData;
-                
-                if ($rowCount < 5) {
-                    $previewRows[] = $rowData;
-                }
+            }
+            
+            // Count total rows
+            while (fgetcsv($handle) !== false) {
                 $rowCount++;
             }
             
@@ -163,9 +152,6 @@ try {
             $tempFile = tempnam($tempDir, 'csv_');
             copy($file['tmp_name'], $tempFile);
             $_SESSION['temp_csv_file'] = $tempFile;
-            // Also cache all rows in session as a fallback
-            $_SESSION['temp_csv_rows']    = $csvData;
-            $_SESSION['temp_csv_headers'] = $headers;
             
             // Auto-suggest mapping based on column names
             $suggestedMapping = [];
@@ -205,19 +191,8 @@ try {
             
         case 'parse_full_csv':
             // Parse full CSV file for processing
-            // Prefer session-cached rows (faster, avoids temp file GC issues)
-            if (isset($_SESSION['temp_csv_rows']) && is_array($_SESSION['temp_csv_rows']) && count($_SESSION['temp_csv_rows']) > 0) {
-                $rows = $_SESSION['temp_csv_rows'];
-                echo json_encode([
-                    'success' => true,
-                    'rows'    => $rows,
-                    'total'   => count($rows)
-                ]);
-                break;
-            }
-            
             if (!isset($_SESSION['temp_csv_file'])) {
-                throw new Exception('No CSV file in session. Please re-upload the CSV.');
+                throw new Exception('No CSV file in session');
             }
             
             $csvFile = $_SESSION['temp_csv_file'];
@@ -239,30 +214,15 @@ try {
                 throw new Exception('CSV file is empty or invalid');
             }
             
-            // Clean headers: strip BOM, \r, and invisible chars
-            $headers = array_map(function($h) {
-                return trim(preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $h));
-            }, $headers);
-            $headers = array_values(array_filter($headers, function($h) { return $h !== ''; }));
-            $headerCount = count($headers);
+            $headers = array_map('trim', $headers);
             
             // Read all data rows
             $rows = [];
             while (($row = fgetcsv($handle)) !== false) {
-                $row = array_map('trim', $row);
-                
-                // Pad or slice to exactly match header count
-                if (count($row) < $headerCount) {
-                    $row = array_pad($row, $headerCount, '');
-                } elseif (count($row) > $headerCount) {
-                    $row = array_slice($row, 0, $headerCount);
+                if (count($row) === count($headers)) {
+                    $rowData = array_combine($headers, $row);
+                    $rows[] = $rowData;
                 }
-                
-                // Skip blank rows
-                if (implode('', $row) === '') continue;
-                
-                $rowData = array_combine($headers, $row);
-                $rows[] = $rowData;
             }
             
             fclose($handle);
