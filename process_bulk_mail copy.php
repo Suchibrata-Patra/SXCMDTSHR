@@ -92,16 +92,12 @@ define('DEFAULT_BATCH_SIZE', 20);
 
 /**
  * Allowed attachment directories (path traversal protection)
- * DRIVE_DIR from .env is always included automatically.
+ * Any file outside these paths will be rejected
  */
-$_allowedDirs = [__DIR__ . '/uploads/attachments', __DIR__ . '/File_Drive'];
-$_envDriveDir = env('DRIVE_DIR');
-if (!empty($_envDriveDir)) {
-    $_allowedDirs[] = rtrim($_envDriveDir, '/\\');
-    $_realDriveDir = realpath($_envDriveDir);
-    if ($_realDriveDir !== false) { $_allowedDirs[] = $_realDriveDir; }
-}
-define('ALLOWED_ATTACHMENT_DIRS', array_unique($_allowedDirs));
+define('ALLOWED_ATTACHMENT_DIRS', [
+    '/home/u955994755/domains/suchibrata.in/public_html/SXC_MDTS/File_Drive',
+    __DIR__ . '/uploads/attachments',
+]);
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  AUTHENTICATION GUARD
@@ -683,18 +679,22 @@ function sendBulkEmail(
 
         if ($driveFilePath !== '') {
             if (!isAllowedAttachmentPath($driveFilePath)) {
-                // Log the warning but DO NOT block the email — send without attachment
-                logEvent('WARN', 'Attachment path outside allowed dirs — sending without attachment', [
-                    'path'     => $driveFilePath,
-                    'queue_id' => $queueItem['id'],
-                    'allowed'  => ALLOWED_ATTACHMENT_DIRS,
+                logEvent('WARN', 'Blocked unsafe attachment path', [
+                    'path' => $driveFilePath,
+                    'queue_id' => $queueItem['id']
                 ]);
-                $driveFilePath = ''; // Clear so the rest of the code skips it cleanly
-            } elseif (!file_exists($driveFilePath) || !is_readable($driveFilePath)) {
-                logEvent('WARN', 'Attachment file not found — sending without it', [
+                
+                return [
+                    'success'   => false,
+                    'permanent' => true,
+                    'error'     => 'Attachment path is outside the allowed directories.',
+                ];
+            }
+
+            if (!file_exists($driveFilePath) || !is_readable($driveFilePath)) {
+                logEvent('WARN', 'Attachment not found - continuing without it', [
                     'path' => $driveFilePath
                 ]);
-                $driveFilePath = '';
             } else {
                 $mail->addAttachment($driveFilePath, basename($driveFilePath));
             }
@@ -1068,28 +1068,19 @@ function ensureSchemaColumns(PDO $pdo): void
 }
 
 /**
- * Path traversal protection.
- * Uses realpath() when file exists; falls back to string-prefix check
- * so that newly-registered drive files are not blocked before first access.
+ * Path traversal protection
  */
 function isAllowedAttachmentPath(string $path): bool
 {
-    // Normalise the candidate path (resolve .. etc.) even if file missing
     $real = realpath($path);
-    $normPath = ($real !== false) ? $real : str_replace(['\\', '/./'], ['/', '/'], $path);
+
+    if ($real === false) {
+        return false;
+    }
 
     foreach (ALLOWED_ATTACHMENT_DIRS as $allowedDir) {
-        // Try realpath first, fall back to the raw configured dir string
         $realAllowed = realpath($allowedDir);
-        $checkDir    = ($realAllowed !== false) ? $realAllowed : rtrim($allowedDir, '/\\');
-
-        // Check if path starts with the allowed directory
-        $prefix = $checkDir . DIRECTORY_SEPARATOR;
-        if (strncmp($normPath, $prefix, strlen($prefix)) === 0) {
-            return true;
-        }
-        // Also match if path equals the dir itself (edge case)
-        if ($normPath === $checkDir) {
+        if ($realAllowed !== false && strncmp($real, $realAllowed . DIRECTORY_SEPARATOR, strlen($realAllowed) + 1) === 0) {
             return true;
         }
     }
