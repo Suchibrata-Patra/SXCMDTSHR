@@ -1722,6 +1722,68 @@ if (!$hasSessionAuth && $hasEnvAuth) {
             event.target.value = '';
         }
 
+        /* ═══ AUTO-MAPPING LOGIC ═════════════════════════════════════════ */
+        /**
+         * Auto-maps CSV columns to email fields based on keyword CONTAINS matching
+         * 
+         * Mapping Rules:
+         * 1. If column contains "subject" → "Email Subject"
+         * 2. If column contains "company" → "Company Name"
+         * 3. If column contains "mail_id" or "mail" → "Email Address"
+         * 
+         * @param {Array} columns - Array of CSV column names
+         * @returns {Object} - Mapping object { csvColumn: emailField }
+         */
+        function autoMapColumns(columns) {
+            if (!Array.isArray(columns) || columns.length === 0) {
+                return {};
+            }
+
+            const mapping = {};
+            const mappedFields = new Set();
+
+            columns.forEach(col => {
+                if (typeof col !== 'string') return;
+
+                const colLower = col.toLowerCase().trim();
+
+                // Skip if this field already has a mapping
+                if (mapping[col]) return;
+
+                // Rule 1: Check for "subject" (FIRST PRIORITY)
+                // Matches: "Mail_Subject", "Subject", "Email_Subject", "subject_line"
+                if (!mappedFields.has('Email Subject')) {
+                    if (colLower.includes('subject')) {
+                        mapping[col] = 'Email Subject';
+                        mappedFields.add('Email Subject');
+                        return;
+                    }
+                }
+
+                // Rule 2: Check for "company" (SECOND PRIORITY)
+                // Matches: "Company_Name", "company", "Company", "company_name"
+                if (!mappedFields.has('Company Name')) {
+                    if (colLower.includes('company')) {
+                        mapping[col] = 'Company Name';
+                        mappedFields.add('Company Name');
+                        return;
+                    }
+                }
+
+                // Rule 3: Check for "mail_id" or "mail" (THIRD PRIORITY)
+                // Matches: "mail_id", "mail_ID", "mail", "email"
+                if (!mappedFields.has('Email Address')) {
+                    if (colLower.includes('mail_id') || colLower === 'mail') {
+                        mapping[col] = 'Email Address';
+                        mappedFields.add('Email Address');
+                        return;
+                    }
+                }
+            });
+
+            return mapping;
+        }
+
         /* ═══ CSV UPLOAD & ANALYSIS ══════════════════════════════════════ */
         async function handleCSVUpload(event) {
             const file = event.target.files[0];
@@ -1773,7 +1835,11 @@ if (!$hasSessionAuth && $hasEnvAuth) {
         }
 
         function displayAnalysisResults(data) {
-            currentMapping = data.suggested_mapping || {};
+            // Apply auto-mapping for CSV columns
+            const autoMappings = autoMapColumns(data.csv_columns);
+            
+            // Merge mappings: use auto-mappings, but allow backend suggestions to override
+            currentMapping = Object.assign({}, autoMappings, data.suggested_mapping || {});
 
             buildMappingGrid(data.csv_columns);
             buildPreviewTable(data.csv_columns, data.preview_rows);
