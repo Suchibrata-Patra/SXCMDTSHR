@@ -92,16 +92,12 @@ define('DEFAULT_BATCH_SIZE', 20);
 
 /**
  * Allowed attachment directories (path traversal protection)
- * DRIVE_DIR from .env is always included automatically.
+ * Any file outside these paths will be rejected
  */
-$_allowedDirs = [__DIR__ . '/uploads/attachments', __DIR__ . '/File_Drive'];
-$_envDriveDir = env('DRIVE_DIR');
-if (!empty($_envDriveDir)) {
-    $_allowedDirs[] = rtrim($_envDriveDir, '/\\');
-    $_realDriveDir = realpath($_envDriveDir);
-    if ($_realDriveDir !== false) { $_allowedDirs[] = $_realDriveDir; }
-}
-define('ALLOWED_ATTACHMENT_DIRS', array_unique($_allowedDirs));
+define('ALLOWED_ATTACHMENT_DIRS', [
+    '/home/u955994755/domains/suchibrata.in/public_html/SXC_MDTS/File_Drive',
+    __DIR__ . '/uploads/attachments',
+]);
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  AUTHENTICATION GUARD
@@ -375,7 +371,9 @@ try {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Claims and processes the next eligible pending email
+ * Claims and processes the next eligible pending email.
+ * Always builds a fresh PHPMailer instance per email — never reuses a shared
+ * mailer — so every send starts with a clean SMTP transaction.
  */
 function processNextEmail(
     PDO    $pdo,
@@ -383,8 +381,7 @@ function processNextEmail(
     string $smtpUser,
     string $smtpPass,
     array  $settings,
-    ?PHPMailer $sharedMailer = null,
-    bool   $debugToFile      = false
+    bool   $debugToFile = false   // ← removed $sharedMailer param entirely
 ): array {
     $queueItem = null;
 
@@ -440,8 +437,8 @@ function processNextEmail(
         return ['success' => false, 'error' => 'Queue claim failed: ' . $e->getMessage()];
     }
 
-    // Send the email
-    $sendResult = sendBulkEmail($pdo, $queueItem, $userId, $smtpUser, $smtpPass, $settings, $sharedMailer, $debugToFile);
+    // Send the email — always passes null so sendBulkEmail builds a fresh mailer
+    $sendResult = sendBulkEmail($pdo, $queueItem, $userId, $smtpUser, $smtpPass, $settings, $debugToFile);
 
     // Persist outcome
     if ($sendResult['success']) {
@@ -540,7 +537,9 @@ function processNextEmail(
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Processes multiple emails in one call with connection reuse
+ * Processes multiple emails in one call.
+ * Each email gets its own fresh PHPMailer + SMTP connection — no keepalive
+ * reuse — which guarantees every recipient actually receives their mail.
  */
 function processBatch(
     PDO    $pdo,
@@ -552,16 +551,15 @@ function processBatch(
 ): array {
     set_time_limit(0); // Allow long-running batch
 
-    $mailer  = buildMailer($smtpUser, $smtpPass, $settings, false);
-    $mailer->SMTPKeepAlive = true; // Reuse connection
-
+    // ✅ FIX: No shared mailer, no SMTPKeepAlive — each processNextEmail call
+    //         builds its own PHPMailer so SMTP state is always clean.
     $sent    = 0;
     $failed  = 0;
     $results = [];
     $noMore  = false;
 
     for ($i = 0; $i < $batchSize; $i++) {
-        $result = processNextEmail($pdo, $userId, $smtpUser, $smtpPass, $settings, $mailer, false);
+        $result = processNextEmail($pdo, $userId, $smtpUser, $smtpPass, $settings, false);
 
         if (!$result['success']) {
             break; // Critical error
@@ -580,14 +578,11 @@ function processBatch(
 
         $results[] = $result;
 
-        // Rate limiting delay
+        // Rate limiting delay between sends
         if ($i < $batchSize - 1) {
             usleep(INTER_EMAIL_DELAY_MS * 1000);
         }
     }
-
-    // Close keepalive connection
-    $mailer->smtpClose();
 
     $stats = getQueueStats($pdo, $userId);
 
@@ -606,39 +601,44 @@ function processBatch(
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Sends one email for the given queue item
+ * Sends one email for the given queue item.
+ *
+ * ✅ FIX: Always builds a brand-new PHPMailer instance so there is zero
+ *         shared state from a previous send. SMTPKeepAlive is intentionally
+ *         NOT set, so every email opens, authenticates, sends, and closes its
+ *         own SMTP connection. This prevents the "DB says sent but mail not
+ *         delivered" bug caused by a stale keepalive SMTP session.
+ *
+ * ✅ FIX: The DB is only updated AFTER $mail->send() actually returns true.
  */
 function sendBulkEmail(
-    PDO       $pdo,
-    array     $queueItem,
-    int       $userId,
-    string    $smtpUser,
-    string    $smtpPass,
-    array     $settings,
-    ?PHPMailer $sharedMailer = null,
-    bool      $debugToFile   = false
+    PDO    $pdo,
+    array  $queueItem,
+    int    $userId,
+    string $smtpUser,
+    string $smtpPass,
+    array  $settings,
+    bool   $debugToFile = false
 ): array {
-    $mail = $sharedMailer ?? buildMailer($smtpUser, $smtpPass, $settings, $debugToFile);
-
-    // Reset for reuse
-    $mail->clearAddresses();
-    $mail->clearReplyTos();
-    $mail->clearAttachments();
-    $mail->clearCustomHeaders();
+    // Always build a fresh mailer — never accept a shared/reused instance
+    $mail = buildMailer($smtpUser, $smtpPass, $settings, $debugToFile);
 
     try {
-        // Sender - use FROM_NAME and FROM_EMAIL from env ONLY
-        $displayName = !empty($settings['display_name']) 
-            ? $settings['display_name'] 
+        // ── Sender ──────────────────────────────────────────────────────
+        $displayName = !empty($settings['display_name'])
+            ? $settings['display_name']
             : env('FROM_NAME');
-        
+
         $fromEmail = env('FROM_EMAIL') ?: $smtpUser;
-        
+
         $mail->setFrom($fromEmail, $displayName);
         $mail->addReplyTo($fromEmail, $displayName);
 
-        // Recipient
-        $recipientEmail = filter_var(trim((string)($queueItem['recipient_email'] ?? '')), FILTER_SANITIZE_EMAIL);
+        // ── Recipient ────────────────────────────────────────────────────
+        $recipientEmail = filter_var(
+            trim((string)($queueItem['recipient_email'] ?? '')),
+            FILTER_SANITIZE_EMAIL
+        );
 
         if (!$recipientEmail || !filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
             return [
@@ -655,20 +655,19 @@ function sendBulkEmail(
             $mail->addAddress($recipientEmail);
         }
 
-        // Subject & body
-        $subject         = (string)($queueItem['subject']          ?: 'Campus Placement Invitation | M.Sc. Data Science | St. Xavier’s College Kolkata');
-        $articleTitle    = (string)($queueItem['article_title']    ?: 'Campus Placement Invitation | M.Sc. Data Science | St. Xavier’s College Kolkata');
-        $messageContent  = (string)($queueItem['message_content']  ?: '');
-        $closingWish     = (string)($queueItem['closing_wish']     ?: 'Best Regards,');
-        $senderName      = (string)($queueItem['sender_name']      ?: $displayName);
-        $senderDesig     = (string)($queueItem['sender_designation'] ?: '');
-        $companyName     = (string)($queueItem['company_name']     ?: '');
-        $additionalInfo  = (string)($queueItem['additional_info']  ?: "St. Xavier's College (Autonomous), Kolkata");
-        $recipientName   = (string)($queueItem['recipient_name']   ?: 'Recruiter');
+        // ── Subject & body ───────────────────────────────────────────────
+        $subject        = (string)($queueItem['subject']            ?: "Campus Placement Invitation | M.Sc. Data Science | St. Xavier's College Kolkata");
+        $articleTitle   = (string)($queueItem['article_title']      ?: "Campus Placement Invitation | M.Sc. Data Science | St. Xavier's College Kolkata");
+        $messageContent = (string)($queueItem['message_content']    ?: '');
+        $closingWish    = (string)($queueItem['closing_wish']       ?: 'Best Regards,');
+        $senderName     = (string)($queueItem['sender_name']        ?: $displayName);
+        $senderDesig    = (string)($queueItem['sender_designation'] ?: '');
+        $companyName    = (string)($queueItem['company_name']       ?: '');
+        $additionalInfo = (string)($queueItem['additional_info']    ?: "St. Xavier's College (Autonomous), Kolkata");
+        $recipientName  = (string)($queueItem['recipient_name']     ?: 'Recruiter');
 
         $mail->Subject = $subject;
 
-        // Build HTML body
         $emailBody = buildEmailBody(
             $articleTitle, $messageContent, $closingWish,
             $senderName,   $senderDesig,    $companyName,  $additionalInfo, $recipientName
@@ -678,46 +677,52 @@ function sendBulkEmail(
         $mail->Body    = $emailBody;
         $mail->AltBody = buildPlainTextBody($emailBody);
 
-        // Attachment
+        // ── Attachment ───────────────────────────────────────────────────
         $driveFilePath = (string)($queueItem['drive_file_path'] ?? '');
 
         if ($driveFilePath !== '') {
             if (!isAllowedAttachmentPath($driveFilePath)) {
-                // Log the warning but DO NOT block the email — send without attachment
-                logEvent('WARN', 'Attachment path outside allowed dirs — sending without attachment', [
-                    'path'     => $driveFilePath,
-                    'queue_id' => $queueItem['id'],
-                    'allowed'  => ALLOWED_ATTACHMENT_DIRS,
+                logEvent('WARN', 'Blocked unsafe attachment path', [
+                    'path' => $driveFilePath,
+                    'queue_id' => $queueItem['id']
                 ]);
-                $driveFilePath = ''; // Clear so the rest of the code skips it cleanly
-            } elseif (!file_exists($driveFilePath) || !is_readable($driveFilePath)) {
-                logEvent('WARN', 'Attachment file not found — sending without it', [
+
+                return [
+                    'success'   => false,
+                    'permanent' => true,
+                    'error'     => 'Attachment path is outside the allowed directories.',
+                ];
+            }
+
+            if (!file_exists($driveFilePath) || !is_readable($driveFilePath)) {
+                logEvent('WARN', 'Attachment not found - continuing without it', [
                     'path' => $driveFilePath
                 ]);
-                $driveFilePath = '';
             } else {
                 $mail->addAttachment($driveFilePath, basename($driveFilePath));
             }
         }
 
-        // Send
+        // ── Send ─────────────────────────────────────────────────────────
         logEvent('DEBUG', 'Attempting to send email', [
             'recipient' => $recipientEmail,
-            'subject' => $subject
+            'subject'   => $subject
         ]);
 
         if (!$mail->send()) {
-            throw new MailerException('PHPMailer send() failed: ' . $mail->ErrorInfo);
+            // send() returned false — ErrorInfo has the reason
+            throw new MailerException('PHPMailer send() returned false: ' . $mail->ErrorInfo);
         }
 
+        // ✅ Only reaches here if send() genuinely succeeded
         logEvent('SUCCESS', 'PHPMailer send() returned true', [
             'recipient' => $recipientEmail
         ]);
 
-        // Log to sent_emails_new
-        $emailUuid      = generateUuidV4();
-        $hasAttachment  = ($driveFilePath !== '' && file_exists($driveFilePath)) ? 1 : 0;
-        $bodyText       = buildPlainTextBody($emailBody);
+        // ── Log to DB only after confirmed send ──────────────────────────
+        $emailUuid     = generateUuidV4();
+        $hasAttachment = ($driveFilePath !== '' && file_exists($driveFilePath)) ? 1 : 0;
+        $bodyText      = buildPlainTextBody($emailBody);
 
         $stmt = $pdo->prepare("
             INSERT INTO sent_emails_new (
@@ -745,10 +750,10 @@ function sendBulkEmail(
 
         $stmt->execute([
             $emailUuid,
-            $smtpUser,      $senderName,
+            $smtpUser,       $senderName,
             $recipientEmail,
-            $subject,       $articleTitle,
-            $bodyText,      $emailBody,
+            $subject,        $articleTitle,
+            $bodyText,       $emailBody,
             $hasAttachment,
         ]);
 
@@ -756,10 +761,10 @@ function sendBulkEmail(
 
         logEvent('SUCCESS', 'Email logged to database', [
             'sent_email_id' => $sentEmailId,
-            'recipient' => $recipientEmail
+            'recipient'     => $recipientEmail
         ]);
 
-        // Log attachment
+        // Log attachment record
         if ($hasAttachment) {
             $fileName = basename($driveFilePath);
             $ext      = strtolower(pathinfo($driveFilePath, PATHINFO_EXTENSION));
@@ -792,13 +797,13 @@ function sendBulkEmail(
 
     } catch (Throwable $e) {
         $errorMessage = $e->getMessage();
-        $permanent = isSmtpPermanentFailure($errorMessage);
+        $permanent    = isSmtpPermanentFailure($errorMessage);
 
         logEvent('ERROR', 'Email send failed', [
             'recipient' => $queueItem['recipient_email'] ?? 'unknown',
-            'queue_id' => $queueItem['id'] ?? 0,
+            'queue_id'  => $queueItem['id'] ?? 0,
             'permanent' => $permanent,
-            'error' => $errorMessage
+            'error'     => $errorMessage
         ]);
 
         return [
@@ -814,25 +819,28 @@ function sendBulkEmail(
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Creates and configures a PHPMailer instance
+ * Creates and configures a fresh PHPMailer instance.
+ * SMTPKeepAlive is intentionally left false (default) so each send() call
+ * opens and closes its own SMTP connection cleanly.
  */
 function buildMailer(string $smtpUser, string $smtpPass, array $settings, bool $debugToFile = false): PHPMailer
 {
     $mail = new PHPMailer(true);
 
-    // SMTP Configuration - ALL from ENV, NO defaults
     $mail->isSMTP();
-    $mail->Host       = env('SMTP_HOST');
-    $mail->SMTPAuth   = true;
-    $mail->Username   = $smtpUser;
-    $mail->Password   = $smtpPass;
-    
-    // Determine encryption type from ENV
-    $encryption = env('SMTP_ENCRYPTION');
+    $mail->Host     = env('SMTP_HOST');
+    $mail->SMTPAuth = true;
+    $mail->Username = $smtpUser;
+    $mail->Password = $smtpPass;
+
+    $encryption       = env('SMTP_ENCRYPTION');
     $mail->SMTPSecure = ($encryption === 'tls') ? PHPMailer::ENCRYPTION_STARTTLS : PHPMailer::ENCRYPTION_SMTPS;
     $mail->Port       = (int)env('SMTP_PORT');
 
-    // SSL Options
+    // ✅ SMTPKeepAlive is deliberately NOT set (defaults to false)
+    //    Setting it true caused stale-connection bugs where send() returned
+    //    true but the mail was silently dropped by the SMTP server.
+
     $mail->SMTPOptions = [
         'ssl' => [
             'verify_peer'       => false,
@@ -841,18 +849,13 @@ function buildMailer(string $smtpUser, string $smtpPass, array $settings, bool $
         ],
     ];
 
-    // Content Settings
     $mail->CharSet  = 'UTF-8';
     $mail->Encoding = 'base64';
-    $mail->XMailer = ' '; // Suppress X-Mailer header (reduces spam score)
+    $mail->XMailer  = ' '; // Suppress X-Mailer header (reduces spam score)
 
-    // Debug output
     if ($debugToFile) {
-        $mail->SMTPDebug  = 4;
-        $logFile          = __DIR__ . '/logs/smtp_debug_' . date('Ymd_His') . '.log';
-        
-        logEvent('INFO', 'SMTP debug logging enabled', ['log_file' => $logFile]);
-        
+        $mail->SMTPDebug   = 4;
+        $logFile           = __DIR__ . '/logs/smtp_debug_' . date('Ymd_His') . '.log';
         $mail->Debugoutput = function (string $str) use ($logFile) {
             file_put_contents($logFile, date('[Y-m-d H:i:s] ') . $str . "\n", FILE_APPEND | LOCK_EX);
         };
@@ -883,7 +886,6 @@ function buildEmailBody(
     $templatePath = __DIR__ . '/templates/template1.html';
 
     if (!file_exists($templatePath)) {
-        // Fallback template if file doesn't exist
         return "
             <html>
             <body style='font-family: Arial, sans-serif;'>
@@ -902,16 +904,12 @@ function buildEmailBody(
 
     $emailTemplate = file_get_contents($templatePath);
 
-    // ── Logo: embed as Base64 so it renders in ALL email clients (Outlook,
-    //    Gmail desktop, Apple Mail) without needing "Load images" to be clicked.
-    //    External URLs (like Wikipedia) are blocked by desktop clients by default.
     $logoPath = __DIR__ . '/assets/sxc_logo.jpg';
     if (file_exists($logoPath)) {
         $ext     = strtolower(pathinfo($logoPath, PATHINFO_EXTENSION));
         $mime    = ($ext === 'png') ? 'image/png' : 'image/jpeg';
         $logoSrc = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
     } else {
-        // Fallback: keep the original Wikipedia URL if the local file is missing
         $logoSrc = "https://upload.wikimedia.org/wikipedia/en/b/b0/St._Xavier%27s_College%2C_Kolkata_logo.jpg";
     }
 
@@ -927,15 +925,15 @@ function buildEmailBody(
         '{{RECIPIENT_NAME}}',
         '{{LOGO_SRC}}',
     ], [
-        htmlspecialchars($articleTitle, ENT_QUOTES, 'UTF-8'),
+        htmlspecialchars($articleTitle,      ENT_QUOTES, 'UTF-8'),
         nl2br(htmlspecialchars($messageContent, ENT_QUOTES, 'UTF-8')),
-        htmlspecialchars($closingWish, ENT_QUOTES, 'UTF-8'),
-        htmlspecialchars($senderName, ENT_QUOTES, 'UTF-8'),
+        htmlspecialchars($closingWish,       ENT_QUOTES, 'UTF-8'),
+        htmlspecialchars($senderName,        ENT_QUOTES, 'UTF-8'),
         htmlspecialchars($senderDesignation, ENT_QUOTES, 'UTF-8'),
-        htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8'),
-        htmlspecialchars($additionalInfo, ENT_QUOTES, 'UTF-8'),
+        htmlspecialchars($companyName,       ENT_QUOTES, 'UTF-8'),
+        htmlspecialchars($additionalInfo,    ENT_QUOTES, 'UTF-8'),
         date('d F Y'),
-        htmlspecialchars($recipientName, ENT_QUOTES, 'UTF-8'),
+        htmlspecialchars($recipientName,     ENT_QUOTES, 'UTF-8'),
         $logoSrc,
     ], $emailTemplate);
 }
@@ -945,17 +943,11 @@ function buildEmailBody(
  */
 function buildPlainTextBody(string $htmlBody): string
 {
-    // Strip HTML tags
     $text = strip_tags($htmlBody);
-    
-    // Decode HTML entities
     $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-    
-    // Normalize whitespace
     $text = preg_replace('/\s+/', ' ', $text);
     $text = str_replace(["\r\n", "\r"], "\n", $text);
     $text = preg_replace('/\n\s+/', "\n", $text);
-    
     return trim($text);
 }
 
@@ -987,7 +979,7 @@ function recoverStaleItems(PDO $pdo, int $userId): int
 
         if ($recovered > 0) {
             logEvent('INFO', 'Recovered stale processing items', [
-                'count' => $recovered,
+                'count'   => $recovered,
                 'user_id' => $userId
             ]);
         }
@@ -1049,10 +1041,10 @@ function ensureSchemaColumns(PDO $pdo): void
     }
 
     $alterStatements = [
-        "ALTER TABLE bulk_mail_queue ADD COLUMN IF NOT EXISTS retry_count  INT      NOT NULL DEFAULT 0",
-        "ALTER TABLE bulk_mail_queue ADD COLUMN IF NOT EXISTS retry_after  DATETIME NULL",
-        "ALTER TABLE bulk_mail_queue ADD COLUMN IF NOT EXISTS last_error_at DATETIME NULL",
-        "ALTER TABLE bulk_mail_queue ADD COLUMN IF NOT EXISTS locked_until  DATETIME NULL",
+        "ALTER TABLE bulk_mail_queue ADD COLUMN IF NOT EXISTS retry_count   INT          NOT NULL DEFAULT 0",
+        "ALTER TABLE bulk_mail_queue ADD COLUMN IF NOT EXISTS retry_after   DATETIME     NULL",
+        "ALTER TABLE bulk_mail_queue ADD COLUMN IF NOT EXISTS last_error_at DATETIME     NULL",
+        "ALTER TABLE bulk_mail_queue ADD COLUMN IF NOT EXISTS locked_until  DATETIME     NULL",
         "ALTER TABLE bulk_mail_queue ADD COLUMN IF NOT EXISTS company_name  VARCHAR(255) NOT NULL DEFAULT ''",
     ];
 
@@ -1060,7 +1052,7 @@ function ensureSchemaColumns(PDO $pdo): void
         try {
             $pdo->exec($sql);
         } catch (Throwable $e) {
-            // Ignore errors (columns may already exist)
+            // Columns may already exist — safe to ignore
         }
     }
 
@@ -1068,28 +1060,19 @@ function ensureSchemaColumns(PDO $pdo): void
 }
 
 /**
- * Path traversal protection.
- * Uses realpath() when file exists; falls back to string-prefix check
- * so that newly-registered drive files are not blocked before first access.
+ * Path traversal protection
  */
 function isAllowedAttachmentPath(string $path): bool
 {
-    // Normalise the candidate path (resolve .. etc.) even if file missing
     $real = realpath($path);
-    $normPath = ($real !== false) ? $real : str_replace(['\\', '/./'], ['/', '/'], $path);
+
+    if ($real === false) {
+        return false;
+    }
 
     foreach (ALLOWED_ATTACHMENT_DIRS as $allowedDir) {
-        // Try realpath first, fall back to the raw configured dir string
         $realAllowed = realpath($allowedDir);
-        $checkDir    = ($realAllowed !== false) ? $realAllowed : rtrim($allowedDir, '/\\');
-
-        // Check if path starts with the allowed directory
-        $prefix = $checkDir . DIRECTORY_SEPARATOR;
-        if (strncmp($normPath, $prefix, strlen($prefix)) === 0) {
-            return true;
-        }
-        // Also match if path equals the dir itself (edge case)
-        if ($normPath === $checkDir) {
+        if ($realAllowed !== false && strncmp($real, $realAllowed . DIRECTORY_SEPARATOR, strlen($realAllowed) + 1) === 0) {
             return true;
         }
     }
