@@ -1722,6 +1722,76 @@ if (!$hasSessionAuth && $hasEnvAuth) {
             event.target.value = '';
         }
 
+        /* ═══ AUTO-MAPPING LOGIC ═════════════════════════════════════════ */
+        /**
+         * Auto-maps CSV columns to email fields based on keyword matching
+         * 
+         * Mapping Rules:
+         * 1. Columns containing "Company" + "Name" OR "Company_Name" → "Company Name"
+         * 2. Columns containing "mail_id" OR "mail" (exact) OR "email" → "Email Address"
+         * 3. Columns containing "subject" → "Email Subject"
+         * 
+         * @param {Array} columns - Array of CSV column names
+         * @returns {Object} - Mapping object { csvColumn: emailField }
+         */
+        function autoMapColumns(columns) {
+            if (!Array.isArray(columns) || columns.length === 0) {
+                return {};
+            }
+
+            const mapping = {};
+            const mappedFields = new Set();
+
+            columns.forEach(col => {
+                if (typeof col !== 'string') return;
+
+                const colLower = col.toLowerCase().trim();
+                const colClean = colLower.replace(/[_\-\s]+/g, ''); // Remove separators for better matching
+
+                // Skip if already mapped
+                const fieldsMapped = Array.from(mappedFields);
+                if (fieldsMapped.length > 0 && fieldsMapped.some(f => mapping[col])) {
+                    return;
+                }
+
+                // Rule 1: Company Name
+                // Matches: "company_name", "company name", "company-name", "CompanyName", "Company_Name"
+                if (!mappedFields.has('Company Name')) {
+                    if (colClean === 'companyname' || 
+                        (colLower.includes('company') && colLower.includes('name'))) {
+                        mapping[col] = 'Company Name';
+                        mappedFields.add('Company Name');
+                        return;
+                    }
+                }
+
+                // Rule 2: Email Address
+                // Matches: "mail_id", "email", "email_address", "mail_address", "e-mail"
+                if (!mappedFields.has('Email Address')) {
+                    if (colLower === 'mail' || 
+                        colLower.includes('mail_id') || 
+                        colLower.includes('mail_address') ||
+                        colClean.includes('email')) {
+                        mapping[col] = 'Email Address';
+                        mappedFields.add('Email Address');
+                        return;
+                    }
+                }
+
+                // Rule 3: Email Subject
+                // Matches: "subject", "email_subject", "subject_line", "mail_subject"
+                if (!mappedFields.has('Email Subject')) {
+                    if (colLower.includes('subject')) {
+                        mapping[col] = 'Email Subject';
+                        mappedFields.add('Email Subject');
+                        return;
+                    }
+                }
+            });
+
+            return mapping;
+        }
+
         /* ═══ CSV UPLOAD & ANALYSIS ══════════════════════════════════════ */
         async function handleCSVUpload(event) {
             const file = event.target.files[0];
@@ -1773,7 +1843,11 @@ if (!$hasSessionAuth && $hasEnvAuth) {
         }
 
         function displayAnalysisResults(data) {
-            currentMapping = data.suggested_mapping || {};
+            // Apply auto-mapping for CSV columns
+            const autoMappings = autoMapColumns(data.csv_columns);
+            
+            // Merge mappings: use auto-mappings, but allow backend suggestions to override
+            currentMapping = Object.assign({}, autoMappings, data.suggested_mapping || {});
 
             buildMappingGrid(data.csv_columns);
             buildPreviewTable(data.csv_columns, data.preview_rows);

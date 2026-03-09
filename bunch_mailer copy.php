@@ -2075,11 +2075,22 @@ if (!$hasSessionAuth && $hasEnvAuth) {
         }
 
         async function processQueue() {
-            const btn              = document.getElementById('processQueueBtn');
-            const progressCard     = document.getElementById('processingProgress');
-            const progressFill     = document.getElementById('progressFill');
-            const progressText     = document.getElementById('progressText');
-            const pending          = parseInt(document.getElementById('stat-pending').textContent);
+            const btn          = document.getElementById('processQueueBtn');
+            const progressCard = document.getElementById('processingProgress');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+
+            // ✅ FIX: Always fetch the live pending count from the server,
+            //    never from the DOM (which can be stale or updated mid-loop).
+            let pending = 0;
+            try {
+                const statusResp = await fetch('process_bulk_mail.php?action=status');
+                const statusData = await statusResp.json();
+                pending = statusData.pending || 0;
+            } catch (e) {
+                showAlert('error', 'Could not fetch queue status');
+                return;
+            }
 
             if (pending === 0) { showAlert('error', 'No pending emails in queue'); return; }
 
@@ -2119,13 +2130,17 @@ if (!$hasSessionAuth && $hasEnvAuth) {
                             console.error(`✗ Failed to send to: ${data.recipient} - ${data.error}`);
                         }
 
-                        // Update progress bar IMMEDIATELY after each email
-                        const percentage = Math.round((processed / pending) * 100);
+                        // Update progress bar after each email
+                        // Use whichever total is larger in case retries pushed count above original pending
+                        const total      = Math.max(pending, processed);
+                        const percentage = Math.min(Math.round((processed / total) * 100), 99);
                         progressFill.style.width = percentage + '%';
                         progressText.textContent = `Processing ${processed}/${pending} (${percentage}%) · ${success} sent, ${failed} failed`;
 
-                        // Update stats in real-time
-                        await loadQueue();
+                        // ✅ FIX: Do NOT call loadQueue() inside the loop.
+                        //    Calling it mid-loop re-renders the DOM and can
+                        //    interfere with the in-progress fetch cycle.
+                        //    Queue is refreshed once after all emails are done.
 
                     } else {
                         // Error in processing
@@ -2142,12 +2157,13 @@ if (!$hasSessionAuth && $hasEnvAuth) {
                     console.error('Network error:', error);
                     failed++;
                     processed++;
-                    
+
                     // Update progress even on error
-                    const percentage = Math.round((processed / pending) * 100);
+                    const total      = Math.max(pending, processed);
+                    const percentage = Math.min(Math.round((processed / total) * 100), 99);
                     progressFill.style.width = percentage + '%';
                     progressText.textContent = `Processing ${processed}/${pending} (${percentage}%) · ${success} sent, ${failed} failed`;
-                    
+
                     // Continue to next email after network error
                     await new Promise(r => setTimeout(r, 250));
                 }
